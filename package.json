@@ -1,0 +1,23 @@
+{
+  "name": "stroy-hub-root",
+  "version": "1.0.0",
+  "description": "StroyHub.kz - Marketplace for construction materials",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix admin",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:admin": "npm run dev --prefix admin",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down"
+  },
+  "keywords": [
+    "marketplace",
+    "construction",
+    "materials",
+    "kazakhstan",
+    "stroy-hub"
+  ],
+  "author": "Antigravity Dev Team",
+  "license": "ISC"
+}
