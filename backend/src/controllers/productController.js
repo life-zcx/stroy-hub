@@ -1,13 +1,51 @@
 import prisma from '../config/db.js';
 
+// Helper to recursively fetch all descendant category IDs and slugs
+async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
+  let rootCategory;
+  
+  if (isNaN(categorySlugOrId)) {
+    rootCategory = await prisma.category.findUnique({
+      where: { slug: categorySlugOrId },
+      include: { children: true }
+    });
+  } else {
+    rootCategory = await prisma.category.findUnique({
+      where: { id: parseInt(categorySlugOrId) },
+      include: { children: true }
+    });
+  }
+
+  if (!rootCategory) {
+    return { slugs: [categorySlugOrId], ids: [] };
+  }
+
+  const slugs = [rootCategory.slug];
+  const ids = [rootCategory.id];
+  const queue = [...rootCategory.children];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    slugs.push(current.slug);
+    ids.push(current.id);
+
+    const withChildren = await prisma.category.findUnique({
+      where: { id: current.id },
+      include: { children: true }
+    });
+
+    if (withChildren && withChildren.children.length > 0) {
+      queue.push(...withChildren.children);
+    }
+  }
+
+  return { slugs, ids };
+}
+
 export const getAllProducts = async (req, res) => {
   const { category, search } = req.query;
   
   const where = {};
-  
-  if (category && category !== 'all') {
-    where.category = category;
-  }
   
   if (search) {
     where.name = {
@@ -17,10 +55,19 @@ export const getAllProducts = async (req, res) => {
   }
 
   try {
+    if (category && category !== 'all') {
+      const { slugs, ids } = await getDescendantCategorySlugsAndIds(category);
+      where.OR = [
+        { category: { in: slugs } },
+        { categoryId: { in: ids } }
+      ];
+    }
+
     const products = await prisma.product.findMany({
       where,
       include: {
-        supplier: true
+        supplier: true,
+        categoryRelation: true
       },
       orderBy: { id: 'desc' }
     });
@@ -35,7 +82,10 @@ export const getProductById = async (req, res) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id) },
-      include: { supplier: true }
+      include: { 
+        supplier: true,
+        categoryRelation: true
+      }
     });
     if (!product) {
       return res.status(404).json({ error: 'Товар не найден' });
@@ -47,7 +97,10 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const { name, description, category, price, oldPrice, rating, reviews, isHit, bulkDiscount, supplierId, imageUrl } = req.body;
+  const {
+    name, description, details, specifications, usage, category, price, oldPrice,
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
+  } = req.body;
   
   if (!name || !category || !price || !supplierId) {
     return res.status(400).json({ error: 'Обязательные поля: Название, Категория, Цена, Поставщик' });
@@ -75,7 +128,11 @@ export const createProduct = async (req, res) => {
       data: {
         name,
         description: description || null,
+        details: details || null,
+        specifications: specifications || null,
+        usage: usage || null,
         category,
+        categoryId: categoryId ? parseInt(categoryId) : null,
         price: parseFloat(price),
         oldPrice: oldPrice ? parseFloat(oldPrice) : null,
         image: finalImage,
@@ -98,7 +155,10 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, description, category, price, oldPrice, rating, reviews, isHit, bulkDiscount, supplierId, imageUrl } = req.body;
+  const {
+    name, description, details, specifications, usage, category, price, oldPrice,
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
+  } = req.body;
 
   try {
     const existing = await prisma.product.findUnique({
@@ -118,7 +178,11 @@ export const updateProduct = async (req, res) => {
     const data = {};
     if (name) data.name = name;
     if (description !== undefined) data.description = description || null;
+    if (details !== undefined) data.details = details || null;
+    if (specifications !== undefined) data.specifications = specifications || null;
+    if (usage !== undefined) data.usage = usage || null;
     if (category) data.category = category;
+    if (categoryId !== undefined) data.categoryId = categoryId ? parseInt(categoryId) : null;
     if (price) data.price = parseFloat(price);
     if (oldPrice !== undefined) data.oldPrice = oldPrice ? parseFloat(oldPrice) : null;
     if (finalImage) data.image = finalImage;

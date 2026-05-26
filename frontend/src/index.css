@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50/50 text-slate-800 font-sans selection:bg-emerald-500 selection:text-white;
+    @apply bg-slate-50/50 text-slate-800 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden;
   }
 }
 
@@ -54,4 +54,357 @@
 
 .animate-slide-up {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-blueprint-field {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  top: -2rem; /* Offsets standard top padding of main container */
+  height: calc(100% + 2rem);
+  pointer-events: none;
+  opacity: 0.3; /* Perfect balanced contrast - subtle and elegant, does not distract from text */
+  mask-image: linear-gradient(to bottom, black 55%, rgba(0, 0, 0, 0.3) 80%, transparent 100%);
+}
+
+.warehouse-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.15;
+  background:
+    radial-gradient(circle at 72% 22%, rgba(16, 185, 129, 0.32), transparent 24%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(16, 185, 129, 0.05));
+}
+
+.warehouse-scene::before {
+  content: "";
+  position: absolute;
+  left: 7%;
+  right: 5%;
+  bottom: 0;
+  height: 45%;
+  background: repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.26) 0 1px, transparent 1px 46px);
+  transform: perspective(360px) rotateX(64deg) translateY(36px);
+  transform-origin: bottom;
+}
+
+.warehouse-rack {
+  position: absolute;
+  top: 11%;
+  width: 35%;
+  height: 56%;
+  border: 3px solid rgba(15, 23, 42, 0.42);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 19%, rgba(15, 23, 42, 0.42) 19% 21%),
+    repeating-linear-gradient(90deg, transparent 0 22%, rgba(15, 23, 42, 0.36) 22% 24%),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(255, 255, 255, 0.16));
+  box-shadow: 18px 18px 0 rgba(15, 23, 42, 0.08);
+}
+
+.warehouse-rack-left {
+  left: 5%;
+  transform: perspective(360px) rotateY(-24deg) rotateZ(-1deg);
+}
+
+.warehouse-rack-right {
+  right: 5%;
+  transform: perspective(360px) rotateY(24deg) rotateZ(1deg);
+}
+
+.warehouse-pallet-stack {
+  position: absolute;
+  display: grid;
+  gap: 5px;
+}
+
+.warehouse-pallet-stack span {
+  display: block;
+  width: 70px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(5, 150, 105, 0.55), rgba(15, 23, 42, 0.35));
+  box-shadow: 7px 7px 0 rgba(15, 23, 42, 0.12);
+}
+
+.warehouse-pallet-stack-a {
+  left: 15%;
+  bottom: 17%;
+  transform: skewY(-8deg);
+}
+
+.warehouse-pallet-stack-b {
+  right: 16%;
+  bottom: 23%;
+  transform: skewY(8deg) scale(0.9);
+}
+
+.warehouse-forklift {
+  position: absolute;
+  right: 15%;
+  bottom: 11%;
+  width: 96px;
+  height: 48px;
+  filter: blur(1.6px);
+  transform: rotate(-4deg);
+}
+
+.warehouse-forklift::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  width: 50px;
+  height: 25px;
+  border-radius: 10px 14px 8px 8px;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.warehouse-forklift::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 17px;
+  width: 28px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(15, 23, 42, 0.78);
+  box-shadow: 0 -10px 0 rgba(15, 23, 42, 0.44);
+}
+
+.warehouse-forklift span {
+  position: absolute;
+  left: 18px;
+  bottom: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.82);
+  box-shadow: 35px 0 0 rgba(15, 23, 42, 0.82);
+}
+
+.hero-feature-card {
+  position: relative;
+  min-height: 152px;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
+  box-shadow:
+    0 26px 55px -34px rgba(15, 23, 42, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset -14px -18px 38px rgba(15, 23, 42, 0.035);
+  transform: perspective(900px) rotateX(1.2deg) rotateY(-1deg);
+}
+
+.hero-feature-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), transparent 42%);
+  pointer-events: none;
+}
+
+.hero-feature-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.coin-gear-model {
+  position: relative;
+  width: 58px;
+  height: 44px;
+  transform: rotate(-7deg);
+}
+
+.coin {
+  position: absolute;
+  left: 5px;
+  width: 34px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f8d56b, #c69218 70%, #8a640c);
+  border: 1px solid rgba(120, 83, 10, 0.34);
+  box-shadow: 0 9px 14px rgba(146, 104, 18, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.56);
+}
+
+.coin-one { bottom: 4px; }
+.coin-two { bottom: 14px; left: 8px; }
+.coin-three { bottom: 24px; left: 11px; }
+
+.mini-gear {
+  position: absolute;
+  right: 1px;
+  bottom: 7px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #f8fafc 0 24%, transparent 25%),
+    repeating-conic-gradient(from 7deg, #0f766e 0 12deg, #14b8a6 12deg 22deg, transparent 22deg 34deg),
+    radial-gradient(circle, #0f766e 0 58%, transparent 59%);
+  box-shadow: 0 9px 14px rgba(15, 118, 110, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+}
+
+.scroll-seal-model {
+  position: relative;
+  width: 62px;
+  height: 42px;
+  transform: rotate(6deg);
+}
+
+.scroll-body {
+  position: absolute;
+  inset: 8px 7px 9px 7px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #fff6dc, #e7c987);
+  box-shadow: 0 12px 16px rgba(148, 95, 28, 0.16), inset 0 1px 3px rgba(255, 255, 255, 0.72);
+}
+
+.scroll-edge {
+  position: absolute;
+  top: 5px;
+  width: 13px;
+  height: 31px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #fff8e7, #d9b66b);
+  border: 1px solid rgba(128, 84, 18, 0.2);
+}
+
+.scroll-edge-left { left: 0; }
+.scroll-edge-right { right: 0; }
+
+.wax-seal {
+  position: absolute;
+  right: 12px;
+  bottom: 1px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 26%, #fb7185, #b91c1c 68%);
+  box-shadow: 0 9px 14px rgba(185, 28, 28, 0.24), inset 0 2px 3px rgba(255, 255, 255, 0.34);
+}
+
+.truck-model {
+  position: relative;
+  width: 94px;
+  height: 47px;
+  transform: perspective(240px) rotateY(-16deg) rotateX(5deg);
+}
+
+.truck-body,
+.truck-cabin {
+  position: absolute;
+  bottom: 13px;
+  background: linear-gradient(145deg, #0f766e, #10b981);
+  box-shadow: 0 14px 18px rgba(15, 118, 110, 0.2), inset 0 2px 3px rgba(255, 255, 255, 0.36);
+}
+
+.truck-body {
+  left: 11px;
+  width: 50px;
+  height: 24px;
+  border-radius: 6px 4px 5px 7px;
+}
+
+.truck-cabin {
+  right: 10px;
+  width: 27px;
+  height: 28px;
+  border-radius: 7px 10px 5px 4px;
+}
+
+.truck-cabin::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  width: 12px;
+  height: 8px;
+  border-radius: 3px;
+  background: rgba(240, 253, 250, 0.78);
+}
+
+.truck-wheel {
+  position: absolute;
+  bottom: 4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e2e8f0 0 22%, #0f172a 24% 70%, #020617 71%);
+  box-shadow: 0 5px 8px rgba(15, 23, 42, 0.24);
+}
+
+.truck-wheel-front { right: 15px; }
+.truck-wheel-back { left: 20px; }
+
+.glossy-icon-shell {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow:
+    0 18px 30px -18px rgba(15, 23, 42, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset -8px -10px 18px rgba(15, 23, 42, 0.08);
+}
+
+.glossy-icon-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), transparent 46%);
+}
+
+.glossy-icon-shell svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 4px 5px rgba(15, 23, 42, 0.18));
+}
+
+.glossy-icon-emerald {
+  color: #065f46;
+  background: linear-gradient(145deg, #d1fae5, #10b981);
+}
+
+.glossy-icon-blue {
+  color: #1d4ed8;
+  background: linear-gradient(145deg, #dbeafe, #60a5fa);
+}
+
+.glossy-icon-violet {
+  color: #6d28d9;
+  background: linear-gradient(145deg, #ede9fe, #a78bfa);
+}
+
+.glossy-icon-green {
+  color: #166534;
+  background: linear-gradient(145deg, #dcfce7, #22c55e);
+}
+
+@media (max-width: 1023px) {
+  .hero-blueprint-field {
+    width: 100vw;
+    height: calc(100% + 2rem);
+    opacity: 0.25;
+    mask-image: linear-gradient(to bottom, black 50%, rgba(0, 0, 0, 0.2) 75%, transparent 100%);
+  }
+
+  .warehouse-scene {
+    opacity: 0.11;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-feature-card {
+    min-height: 138px;
+    padding: 1rem;
+  }
 }

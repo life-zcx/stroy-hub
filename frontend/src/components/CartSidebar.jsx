@@ -38,7 +38,7 @@ const getPremiumImage = (productName) => {
     return 'https://images.unsplash.com/photo-1590236166418-498c199859f8?auto=format&fit=crop&w=400&q=80'; // screws pile
   }
   if (name.includes('анкер') || name.includes('болт')) {
-    return 'https://images.unsplash.com/photo-1610962015564-3773c3736540?auto=format&fit=crop&w=400&q=80'; // metal anchors/bolts
+    return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=400&q=80'; // metal anchors/bolts
   }
   return null;
 };
@@ -304,7 +304,7 @@ export default function CartSidebar({
 
                     <div className="w-20 h-20 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                       <img 
-                        src={getPremiumImage(item.name) || item.image} 
+                        src={(item.image && !item.image.includes('placehold.co')) ? item.image : (getPremiumImage(item.name) || item.image)} 
                         alt={item.name} 
                         className="w-3/4 h-3/4 object-contain mix-blend-multiply"
                         onError={(e) => {

@@ -51,6 +51,17 @@ export const getSuppliers = async () => {
   return response.data;
 };
 
+// Categories API
+export const getCategories = async () => {
+  const response = await api.get('/categories');
+  return response.data;
+};
+
+export const getCategoryById = async (id) => {
+  const response = await api.get(`/categories/${id}`);
+  return response.data;
+};
+
 // Orders API (only returns customer's orders now thanks to backend logic!)
 export const getOrders = async () => {
   const response = await api.get('/orders');

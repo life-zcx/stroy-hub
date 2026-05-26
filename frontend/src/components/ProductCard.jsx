@@ -1,26 +1,12 @@
 import React from 'react';
-import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin } from 'lucide-react';
+import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
 
-const getPremiumImage = (productName) => {
-  const n = productName.toLowerCase();
-  if (n.includes('цемент'))      return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('rotband') || n.includes('штукатурка')) return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('доска'))       return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('брус'))        return 'https://images.unsplash.com/photo-1520156480391-11597d6db64d?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('перфоратор'))  return 'https://images.unsplash.com/photo-1608613304899-ea8098577e38?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('шуруповерт'))  return 'https://images.unsplash.com/photo-1534224039826-c7a0dea0e66a?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('tikkurila') || n.includes('краска интерьерная')) return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('эмаль') || n.includes('пф-115')) return 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('саморез'))     return 'https://images.unsplash.com/photo-1590236166418-498c199859f8?auto=format&fit=crop&w=400&q=80';
-  if (n.includes('анкер') || n.includes('болт')) return 'https://images.unsplash.com/photo-1610962015564-3773c3736540?auto=format&fit=crop&w=400&q=80';
-  return null;
-};
-
-export default function ProductCard({ product, onAddToCart, onOpenModal }) {
-  const imageSrc = getPremiumImage(product.name) || product.image;
+export default function ProductCard({ product, onAddToCart, onOpenModal, onOpenDetails }) {
+  const imageSrc = getProductImage(product);
 
   return (
     <div
@@ -50,7 +36,7 @@ export default function ProductCard({ product, onAddToCart, onOpenModal }) {
           className="w-3/4 h-3/4 object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80';
+            e.target.src = FALLBACK_PRODUCT_IMAGE;
           }}
         />
       </div>
@@ -105,13 +91,22 @@ export default function ProductCard({ product, onAddToCart, onOpenModal }) {
             )}
           </div>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-            className="w-full bg-slate-900 hover:bg-emerald-600 hover:shadow-lg text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="text-sm">В корзину</span>
-          </button>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+              className="bg-slate-900 hover:bg-emerald-600 hover:shadow-lg text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span className="text-sm">В корзину</span>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenDetails?.(product.id); }}
+              className="px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all flex items-center justify-center"
+              title="Открыть страницу товара"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

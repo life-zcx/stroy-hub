@@ -30,3 +30,55 @@ export const createSupplier = async (req, res) => {
     res.status(500).json({ error: 'Ошибка создания дистрибьютора: ' + error.message });
   }
 };
+
+// Update an existing supplier
+export const updateSupplier = async (req, res) => {
+  const { id } = req.params;
+  const { name, delivery, rating, reviews } = req.body;
+
+  try {
+    const existing = await prisma.supplier.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Дистрибьютор не найден' });
+    }
+
+    const data = {};
+    if (name) data.name = name;
+    if (delivery) data.delivery = delivery;
+    if (rating !== undefined) data.rating = parseFloat(rating);
+    if (reviews !== undefined) data.reviews = parseInt(reviews);
+
+    const updated = await prisma.supplier.update({
+      where: { id: parseInt(id) },
+      data
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка обновления дистрибьютора: ' + error.message });
+  }
+};
+
+// Delete a supplier
+export const deleteSupplier = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const existing = await prisma.supplier.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Дистрибьютор не найден' });
+    }
+
+    await prisma.supplier.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({ message: 'Дистрибьютор успешно удален' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка удаления дистрибьютора: ' + error.message });
+  }
+};

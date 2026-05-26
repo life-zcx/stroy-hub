@@ -38,20 +38,37 @@ model Supplier {
 }
 
 model Product {
-  id           Int         @id @default(autoincrement())
-  name         String
-  description  String?
-  category     String
-  price        Float
-  oldPrice     Float?
-  image        String
-  rating       Float       @default(4.5)
-  reviews      Int         @default(0)
-  isHit        Boolean     @default(false)
-  bulkDiscount String?
-  supplierId   Int
-  supplier     Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  orderItems   OrderItem[]
+  id             Int         @id @default(autoincrement())
+  name           String
+  description    String?
+  details        String?
+  specifications String?
+  usage          String?
+  category       String
+  price          Float
+  oldPrice       Float?
+  image          String
+  rating         Float       @default(4.5)
+  reviews        Int         @default(0)
+  isHit          Boolean     @default(false)
+  bulkDiscount   String?
+  supplierId     Int
+  supplier       Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  categoryId     Int?
+  categoryRelation Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String
+  slug      String     @unique
+  image     String?
+  parentId  Int?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Category[] @relation("CategoryHierarchy")
+  products  Product[]
+  createdAt DateTime   @default(now())
 }
 
 model Order {

@@ -12,6 +12,7 @@ async function main() {
   await prisma.product.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.supplier.deleteMany({});
+  await prisma.category.deleteMany({});
 
   // Создаем дистрибьюторов
   const suppliersData = [
@@ -85,11 +86,171 @@ async function main() {
     }
   });
 
-  // Создаем продукты
+  console.log('Создание дерева категорий...');
+
+  // Level 1: Root Categories (Родители с фото)
+  const mixes = await prisma.category.create({
+    data: {
+      name: 'Сухие смеси',
+      slug: 'mixes',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=800&auto=format&fit=crop'
+    }
+  });
+
+  const lumber = await prisma.category.create({
+    data: {
+      name: 'Пиломатериалы',
+      slug: 'lumber',
+      image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=800&auto=format&fit=crop'
+    }
+  });
+
+  const tools = await prisma.category.create({
+    data: {
+      name: 'Инструменты',
+      slug: 'tools',
+      image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=800&auto=format&fit=crop'
+    }
+  });
+
+  const paints = await prisma.category.create({
+    data: {
+      name: 'Краски',
+      slug: 'paints',
+      image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?q=80&w=800&auto=format&fit=crop'
+    }
+  });
+
+  const hardware = await prisma.category.create({
+    data: {
+      name: 'Крепеж',
+      slug: 'hardware',
+      image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?q=80&w=800&auto=format&fit=crop'
+    }
+  });
+
+  // Level 2 & 3: Subcategories (Подродители)
+  // Подкатегории для Сухие смеси
+  const cementMixes = await prisma.category.create({
+    data: {
+      name: 'Цементные смеси',
+      slug: 'cement-mixes',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=400&auto=format&fit=crop',
+      parentId: mixes.id
+    }
+  });
+
+  const gypsumMixes = await prisma.category.create({
+    data: {
+      name: 'Гипсовые смеси',
+      slug: 'gypsum-mixes',
+      image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=400&auto=format&fit=crop',
+      parentId: mixes.id
+    }
+  });
+
+  // Подкатегории для Пиломатериалы
+  const boards = await prisma.category.create({
+    data: {
+      name: 'Доски обрезные',
+      slug: 'boards',
+      image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=400&auto=format&fit=crop',
+      parentId: lumber.id
+    }
+  });
+
+  const beams = await prisma.category.create({
+    data: {
+      name: 'Брусья строганные',
+      slug: 'beams',
+      image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=400&auto=format&fit=crop',
+      parentId: lumber.id
+    }
+  });
+
+  // Подкатегории для Инструментов
+  const powerTools = await prisma.category.create({
+    data: {
+      name: 'Электроинструменты',
+      slug: 'power-tools',
+      image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=400&auto=format&fit=crop',
+      parentId: tools.id
+    }
+  });
+
+  const handTools = await prisma.category.create({
+    data: {
+      name: 'Ручные инструменты',
+      slug: 'hand-tools',
+      image: 'https://images.unsplash.com/photo-1530124560072-aae972497282?q=80&w=400&auto=format&fit=crop',
+      parentId: tools.id
+    }
+  });
+
+  // Третий уровень для Электроинструментов
+  const rotaryHammers = await prisma.category.create({
+    data: {
+      name: 'Перфораторы',
+      slug: 'rotary-hammers',
+      image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=400&auto=format&fit=crop',
+      parentId: powerTools.id
+    }
+  });
+
+  const screwdrivers = await prisma.category.create({
+    data: {
+      name: 'Шуруповерты',
+      slug: 'screwdrivers',
+      image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=400&auto=format&fit=crop',
+      parentId: powerTools.id
+    }
+  });
+
+  // Подкатегории для Красок
+  const interiorPaints = await prisma.category.create({
+    data: {
+      name: 'Интерьерные краски',
+      slug: 'interior-paints',
+      image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?q=80&w=400&auto=format&fit=crop',
+      parentId: paints.id
+    }
+  });
+
+  const enamels = await prisma.category.create({
+    data: {
+      name: 'Эмали глянцевые',
+      slug: 'enamels',
+      image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?q=80&w=400&auto=format&fit=crop',
+      parentId: paints.id
+    }
+  });
+
+  // Подкатегории для Крепежа
+  const woodScrews = await prisma.category.create({
+    data: {
+      name: 'Саморезы по дереву',
+      slug: 'wood-screws',
+      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?q=80&w=400&auto=format&fit=crop',
+      parentId: hardware.id
+    }
+  });
+
+  const anchorBolts = await prisma.category.create({
+    data: {
+      name: 'Анкерные болты',
+      slug: 'anchor-bolts',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=400&auto=format&fit=crop',
+      parentId: hardware.id
+    }
+  });
+
+  // Создаем продукты и привязываем их к конечным категориям
+  console.log('Создание товаров...');
   const productsData = [
     {
       name: 'Цемент Портланд М500 Д0, 50 кг',
       category: 'mixes',
+      categoryId: cementMixes.id,
       price: 2100,
       oldPrice: 2350,
       image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
@@ -102,6 +263,7 @@ async function main() {
     {
       name: 'Штукатурка гипсовая Knauf Rotband, 30 кг',
       category: 'mixes',
+      categoryId: gypsumMixes.id,
       price: 4300,
       oldPrice: null,
       image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80',
@@ -114,6 +276,7 @@ async function main() {
     {
       name: 'Доска обрезная 50х150х6000 мм, сосна 1 сорт',
       category: 'lumber',
+      categoryId: boards.id,
       price: 4500,
       oldPrice: 4800,
       image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400&auto=format&fit=crop&q=80',
@@ -126,6 +289,7 @@ async function main() {
     {
       name: 'Брус строганный 100х100х3000 мм, камерная сушка',
       category: 'lumber',
+      categoryId: beams.id,
       price: 3200,
       oldPrice: null,
       image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80',
@@ -138,6 +302,7 @@ async function main() {
     {
       name: 'Перфоратор Bosch GBH 2-28, 880 Вт, 3.2 Дж',
       category: 'tools',
+      categoryId: rotaryHammers.id,
       price: 78000,
       oldPrice: 85000,
       image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80',
@@ -150,6 +315,7 @@ async function main() {
     {
       name: 'Шуруповерт аккумуляторный Makita DDF482Z 18V',
       category: 'tools',
+      categoryId: screwdrivers.id,
       price: 65000,
       oldPrice: null,
       image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80',
@@ -162,6 +328,7 @@ async function main() {
     {
       name: 'Краска интерьерная Tikkurila Euro 7 моющаяся, 9 л',
       category: 'paints',
+      categoryId: interiorPaints.id,
       price: 18500,
       oldPrice: null,
       image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80',
@@ -174,6 +341,7 @@ async function main() {
     {
       name: 'Эмаль ПФ-115 глянцевая белая, 2.7 кг',
       category: 'paints',
+      categoryId: enamels.id,
       price: 2800,
       oldPrice: 3100,
       image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&auto=format&fit=crop&q=80',
@@ -186,9 +354,10 @@ async function main() {
     {
       name: 'Саморезы по дереву черные 3.5х55 мм, 500 шт',
       category: 'hardware',
+      categoryId: woodScrews.id,
       price: 1200,
       oldPrice: null,
-      image: 'https://images.unsplash.com/photo-1610962015564-3773c3736540?w=400&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?w=400&auto=format&fit=crop&q=80',
       rating: 4.7,
       reviews: 312,
       isHit: true,
@@ -198,6 +367,7 @@ async function main() {
     {
       name: 'Анкерный болт с гайкой 10x100 мм, 50 шт',
       category: 'hardware',
+      categoryId: anchorBolts.id,
       price: 3500,
       oldPrice: null,
       image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80',

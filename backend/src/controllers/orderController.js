@@ -14,7 +14,21 @@ export const createOrder = async (req, res) => {
   }
 
   try {
-    // Perform transaction to ensure consistent writing of Order and OrderItems
+    // 1. Verify that all products in the order exist in the database
+    const productIds = items.map(item => parseInt(item.productId));
+    const existingProducts = await prisma.product.findMany({
+      where: {
+        id: { in: productIds }
+      }
+    });
+
+    if (existingProducts.length !== productIds.length) {
+      return res.status(400).json({ 
+        error: 'Некоторые товары из вашей корзины устарели или больше не существуют (база данных была обновлена). Пожалуйста, очистите корзину и добавьте актуальные товары.' 
+      });
+    }
+
+    // 2. Perform transaction to ensure consistent writing of Order and OrderItems
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {

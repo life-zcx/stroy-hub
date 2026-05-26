@@ -1,26 +1,11 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, ShoppingCart, Zap, ShieldCheck, Clock, MapPin,
-  Package, Truck, Star, Tag, ChevronRight, CheckCircle2
+  Package, Truck, Star, Tag, ChevronRight, CheckCircle2, ArrowRight
 } from 'lucide-react';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
-
-const getPremiumImage = (productName) => {
-  const n = productName.toLowerCase();
-  if (n.includes('цемент'))      return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('rotband') || n.includes('штукатурка')) return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('доска'))       return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('брус'))        return 'https://images.unsplash.com/photo-1520156480391-11597d6db64d?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('перфоратор'))  return 'https://images.unsplash.com/photo-1608613304899-ea8098577e38?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('шуруповерт'))  return 'https://images.unsplash.com/photo-1534224039826-c7a0dea0e66a?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('tikkurila') || n.includes('краска интерьерная')) return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('эмаль') || n.includes('пф-115')) return 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('саморез'))     return 'https://images.unsplash.com/photo-1590236166418-498c199859f8?auto=format&fit=crop&w=800&q=80';
-  if (n.includes('анкер') || n.includes('болт')) return 'https://images.unsplash.com/photo-1610962015564-3773c3736540?auto=format&fit=crop&w=800&q=80';
-  return null;
-};
+import { formatPrice } from '../utils/formatPrice';
+import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 
 const CATEGORY_LABELS = {
   mixes: 'Сухие смеси',
@@ -30,7 +15,7 @@ const CATEGORY_LABELS = {
   hardware: 'Крепеж',
 };
 
-export default function ProductModal({ product, onClose, onAddToCart }) {
+export default function ProductModal({ product, onClose, onAddToCart, onOpenDetails }) {
   // Lock body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -44,10 +29,10 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const imageSrc = getPremiumImage(product.name) || product.image;
+  const imageSrc = getProductImage(product);
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : null;
 
-  return (
+  return createPortal(
     <>
       {/* Overlay */}
       <div
@@ -58,7 +43,7 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
       {/* Modal panel */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto pointer-events-auto animate-slide-up"
+          className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto animate-slide-up"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
@@ -69,9 +54,9 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
             <X className="h-5 w-5 text-slate-600" />
           </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-[0.95fr_1.05fr]">
             {/* ── Left: Image ── */}
-            <div className="relative bg-slate-50 rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none flex items-center justify-center p-8 min-h-[280px]">
+            <div className="relative bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none flex items-center justify-center p-6 sm:p-8 min-h-[300px] md:min-h-[500px] border-b md:border-b-0 md:border-r border-slate-100">
               {/* Badges */}
               <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {product.isHit && (
@@ -89,16 +74,16 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
               <img
                 src={imageSrc}
                 alt={product.name}
-                className="w-3/4 h-auto max-h-56 object-contain mix-blend-multiply drop-shadow-lg"
+                className="w-full max-w-[320px] h-[260px] md:h-[360px] object-contain drop-shadow-2xl"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80';
+                  e.target.src = FALLBACK_PRODUCT_IMAGE;
                 }}
               />
             </div>
 
             {/* ── Right: Info ── */}
-            <div className="p-6 md:p-7 flex flex-col">
+            <div className="p-6 md:p-8 flex flex-col">
               {/* Category breadcrumb */}
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold mb-3">
                 <span>Каталог</span>
@@ -128,7 +113,7 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
 
               {/* Description */}
               {product.description ? (
-                <p className="text-sm text-slate-600 leading-relaxed mb-4 bg-slate-50 rounded-2xl p-3.5">
+                <p className="text-sm text-slate-600 leading-relaxed mb-4 bg-slate-50 rounded-2xl p-3.5 max-h-28 overflow-y-auto">
                   {product.description}
                 </p>
               ) : (
@@ -188,6 +173,16 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
                   Добавить в корзину
                 </button>
                 <button
+                  onClick={() => {
+                    onClose();
+                    onOpenDetails?.(product.id);
+                  }}
+                  className="w-full py-3 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-sm font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+                >
+                  Открыть подробную страницу
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
                   onClick={onClose}
                   className="w-full py-2.5 text-slate-500 hover:text-slate-900 text-sm font-semibold transition-colors"
                 >
@@ -212,6 +207,7 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
