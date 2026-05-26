@@ -9,6 +9,8 @@ async function main() {
   // Очистка БД
   await prisma.orderItem.deleteMany({});
   await prisma.order.deleteMany({});
+  await prisma.partnerRequest.deleteMany({});
+  await prisma.callbackRequest.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.supplier.deleteMany({});
@@ -33,18 +35,18 @@ async function main() {
 
   // Создаем пользователей
   console.log('Создание тестовых учетных записей...');
-  
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const boschPassword = await bcrypt.hash('bosch123', 10);
-  const knaufPassword = await bcrypt.hash('knauf123', 10);
-  const customerPassword = await bcrypt.hash('customer123', 10);
+
+  const adminPassword = await bcrypt.hash('123', 10);
+  const boschPassword = await bcrypt.hash('123', 10);
+  const knaufPassword = await bcrypt.hash('123', 10);
+  const customerPassword = await bcrypt.hash('123', 10);
 
   // 1. Администратор платформы
   await prisma.user.create({
     data: {
       email: 'admin@stroy-hub.kz',
       password: adminPassword,
-      name: 'Григорий (Администратор)',
+      name: 'Юрий',
       phone: '8 (777) 111-22-33',
       role: 'ADMIN'
     }
@@ -382,6 +384,52 @@ async function main() {
   for (const prod of productsData) {
     await prisma.product.create({ data: prod });
   }
+
+  console.log('Создание промоакций...');
+
+  await prisma.promotion.createMany({
+    data: [
+      {
+        title: 'Скидка 10% на первый заказ от 50 000 ₸',
+        description: 'Используйте промокод при первом оформлении и получите дополнительную скидку на строительные материалы из любой категории.',
+        badge: 'Новый клиент',
+        promoCode: 'STROY10',
+        type: 'PROMOCODE',
+        discountType: 'PERCENT',
+        discountValue: 10,
+        minOrderAmount: 50000,
+        theme: 'emerald',
+        isActive: true,
+        showOnSite: true,
+      },
+      {
+        title: 'Сезонная акция на крупные закупки',
+        description: 'Сэкономьте 25 000 ₸ на крупном заказе материалов для строительства или ремонта.',
+        badge: 'Опт',
+        promoCode: 'MEGA25000',
+        type: 'PROMOCODE',
+        discountType: 'FIXED',
+        discountValue: 25000,
+        minOrderAmount: 300000,
+        theme: 'sunset',
+        isActive: true,
+        showOnSite: true,
+      },
+      {
+        title: 'Партнерская скидка на этой неделе',
+        description: 'Следите за разделом акций: каждый месяц можно запускать новые кампании без обязательного промокода.',
+        badge: 'Промо-страница',
+        promoCode: null,
+        type: 'CAMPAIGN',
+        discountType: 'PERCENT',
+        discountValue: 7,
+        minOrderAmount: 100000,
+        theme: 'royal',
+        isActive: true,
+        showOnSite: true,
+      },
+    ],
+  });
 
   console.log('Посев данных успешно завершен!');
 }

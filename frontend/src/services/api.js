@@ -73,4 +73,35 @@ export const createOrder = async (orderData) => {
   return response.data;
 };
 
+export const getPublicPromotions = async () => {
+  const response = await api.get('/promotions/public');
+  return response.data;
+};
+
+export const getHomePromotions = async () => {
+  const response = await api.get('/promotions/home');
+  return response.data;
+};
+
+export const getBrands = async () => {
+  const response = await api.get('/brands/public');
+  return response.data;
+};
+
+export const validatePromotionCode = async (promoCode, items, subtotalAmount) => {
+  const response = await api.post('/promotions/validate', { promoCode, items, subtotalAmount });
+  return response.data;
+};
+
+// Callback API
+export const createCallbackRequest = async (userName, userPhone) => {
+  const response = await api.post('/callbacks', { userName, userPhone });
+  return response.data;
+};
+
+export const createPartnerRequest = async (payload) => {
+  const response = await api.post('/partner-requests', payload);
+  return response.data;
+};
+
 export default api;

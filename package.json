@@ -9,7 +9,11 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:admin": "npm run dev --prefix admin",
     "docker:up": "docker-compose up --build",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "docker:prod:up": "docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build",
+    "docker:prod:down": "docker compose --env-file .env.production -f docker-compose.prod.yml down",
+    "db:push": "docker exec -it stroyhub_backend npx prisma db push",
+    "db:seed": "docker exec -it stroyhub_backend npm run prisma:seed"
   },
   "keywords": [
     "marketplace",

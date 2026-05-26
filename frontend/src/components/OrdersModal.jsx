@@ -66,9 +66,23 @@ export default function OrdersModal({ isOpen, onClose, orders }) {
                     ))}
                   </div>
 
-                  <div className="pt-2 border-t border-dashed border-gray-100 flex justify-between items-center text-xs">
-                    <span className="text-slate-500">Адрес: {order.clientAddress}</span>
-                    <span className="font-extrabold text-emerald-600 text-sm">Сумма: {formatPrice(order.totalAmount)}</span>
+                  <div className="pt-2 border-t border-dashed border-gray-100 space-y-2 text-xs">
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="text-slate-500">Адрес: {order.clientAddress}</span>
+                      <span className="font-semibold text-slate-500">Товары: {formatPrice(order.subtotalAmount || order.totalAmount)}</span>
+                    </div>
+                    {(order.discountAmount || order.promoCode) && (
+                      <div className="flex justify-between items-center gap-3 text-emerald-600">
+                        <span>
+                          Скидка {order.promoCode ? `(${order.promoCode})` : ''}
+                        </span>
+                        <span className="font-bold">- {formatPrice(order.discountAmount || 0)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="text-slate-500">Итог к оплате</span>
+                      <span className="font-extrabold text-emerald-600 text-sm">{formatPrice(order.totalAmount)}</span>
+                    </div>
                   </div>
                 </div>
               );

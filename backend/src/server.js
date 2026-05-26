@@ -9,26 +9,64 @@ import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import callbackRoutes from './routes/callbackRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import partnerRequestRoutes from './routes/partnerRequestRoutes.js';
+import promotionRoutes from './routes/promotionRoutes.js';
+import brandRoutes from './routes/brandRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === 'production';
+
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (!isProduction && allowedOrigins.length === 0) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Origin is not allowed by CORS'));
+  },
+};
 
 // ESM __dirname workaround
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
-app.use(cors({
-  origin: '*', // Allow all in dev, can be tightened later
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(express.json());
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '1mb' }));
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Debug middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -36,6 +74,11 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/callbacks', callbackRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/partner-requests', partnerRequestRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/brands', brandRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {
@@ -44,6 +87,18 @@ app.get('/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
+  if (err.message === 'Origin is not allowed by CORS') {
+    return res.status(403).json({ error: 'Запрос с этого источника запрещен.' });
+  }
+
+  if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ error: 'Размер файла превышает допустимый лимит.' });
+  }
+
+  if (err.message?.includes('Недопустимый формат файла')) {
+    return res.status(400).json({ error: err.message });
+  }
+
   console.error(err.stack);
   res.status(500).json({ error: 'Внутренняя ошибка сервера: ' + err.message });
 });

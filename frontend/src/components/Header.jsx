@@ -35,14 +35,18 @@ export default function Header({
   cartItemsCount,
   onOpenCart,
   onOpenAuthLogin,
+  onOpenCallback,
+  onOpenFavorites,
+  favoritesCount = 0,
   fetchMyOrders,
   handleLogout,
-  searchQuery,
+  searchQuery: globalSearchQuery,
   setSearchQuery,
   categories = [],
   products = [],
 }) {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [localSearchQuery, setLocalSearchQuery] = useState(globalSearchQuery || '');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const megaMenuRef = useRef(null);
 
@@ -52,26 +56,27 @@ export default function Header({
   };
 
   const handleCategoryClick = (cat) => {
-    setSelectedCategory(cat.slug); // Correct category selection using slug instead of ID
-    onNavigate('catalog'); // Navigate directly without resetting selection to 'all'
+    setSelectedCategory(cat.slug);
     setIsMegaMenuOpen(false);
   };
 
   const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
+    setLocalSearchQuery(e.target.value);
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setSearchQuery(localSearchQuery);
+    setSelectedCategory('all');
     navigateTo('catalog');
     setIsSearchFocused(false);
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (megaMenuRef.current && 
-          !megaMenuRef.current.contains(event.target) && 
-          !event.target.closest('.catalog-menu-container')) {
+      if (megaMenuRef.current &&
+        !megaMenuRef.current.contains(event.target) &&
+        !event.target.closest('.catalog-menu-container')) {
         setIsMegaMenuOpen(false);
       }
       if (!event.target.closest('.search-form-container')) {
@@ -85,15 +90,15 @@ export default function Header({
   const rootCategories = categories.filter(c => !c.parentId);
 
   // Filter products for the live autocomplete dropdown list
-  const matchedProducts = searchQuery.trim() === '' ? [] : products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const matchedProducts = localSearchQuery.trim() === '' ? [] : products.filter(p =>
+    p.name.toLowerCase().includes(localSearchQuery.toLowerCase())
   ).slice(0, 6);
 
   return (
     <>
       {/* Dimmed backdrop when Mega Menu is open */}
       {isMegaMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-950/30 backdrop-blur-[1px] z-30 animate-fade-in"
           onClick={() => setIsMegaMenuOpen(false)}
         />
@@ -135,31 +140,33 @@ export default function Header({
                 <span>Клиенту</span>
                 <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-white transition-colors" />
               </button>
-              <div className="absolute left-0 mt-1 hidden group-hover:block bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 z-50 animate-fade-in">
-                <button
-                  onClick={() => navigateTo('payment-terms')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Условия оплаты
-                </button>
-                <button
-                  onClick={() => navigateTo('delivery-terms')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Условия доставки
-                </button>
-                <button
-                  onClick={() => navigateTo('warranty')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Гарантия на товар
-                </button>
-                <button
-                  onClick={() => navigateTo('faq')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Вопрос-ответ
-                </button>
+              <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
+                <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
+                  <button
+                    onClick={() => navigateTo('payment-terms')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Условия оплаты
+                  </button>
+                  <button
+                    onClick={() => navigateTo('delivery-terms')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Условия доставки
+                  </button>
+                  <button
+                    onClick={() => navigateTo('warranty')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Гарантия на товар
+                  </button>
+                  <button
+                    onClick={() => navigateTo('faq')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Вопрос-ответ
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -172,25 +179,27 @@ export default function Header({
                 <span>Информация</span>
                 <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-white transition-colors" />
               </button>
-              <div className="absolute left-0 mt-1 hidden group-hover:block bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 z-50 animate-fade-in">
-                <button
-                  onClick={() => navigateTo('about')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  О нас
-                </button>
-                <button
-                  onClick={() => navigateTo('delivery')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Доставка и оплата
-                </button>
-                <button
-                  onClick={() => navigateTo('requisites')}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
-                >
-                  Реквизиты
-                </button>
+              <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
+                <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
+                  <button
+                    onClick={() => navigateTo('about')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    О нас
+                  </button>
+                  <button
+                    onClick={() => navigateTo('delivery')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Доставка и оплата
+                  </button>
+                  <button
+                    onClick={() => navigateTo('requisites')}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                  >
+                    Реквизиты
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -208,10 +217,68 @@ export default function Header({
             </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <a href="tel:88005553535" className="flex items-center gap-1.5 font-bold text-white hover:text-emerald-600 transition-colors">
-              <Phone className="h-3.5 w-3.5 text-emerald-600" /> 8 (800) 555-35-35
-            </a>
+          <div className="flex items-center gap-4">
+            <div className="relative group/phone">
+              <a
+                href="tel:88005553535"
+                className="flex items-center gap-1.5 font-bold text-white hover:text-emerald-500 transition-colors py-1"
+              >
+                <Phone className="h-3.5 w-3.5 text-emerald-600 group-hover/phone:animate-pulse" /> 8 (800) 555-35-35
+              </a>
+
+              {/* Contact Information Cards (Popup) */}
+              <div className="absolute right-0 top-full pt-3 hidden group-hover/phone:block z-[60] w-[320px] animate-fade-in pointer-events-auto">
+                <div className="shadow-2xl rounded-3xl overflow-hidden border border-white/10 ring-1 ring-black/5">
+                  {/* Top Card */}
+                  <div className="bg-white p-6 pb-5">
+                    <div className="flex flex-col gap-1 mb-4">
+                      <span className="text-lg font-bold text-slate-900 leading-tight">8 (800) 555-35-35</span>
+                      <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">По всем вопросам</span>
+                    </div>
+                    <button
+                      onClick={onOpenCallback}
+                      className="w-full bg-[#525252] hover:bg-slate-900 text-white font-bold py-3 rounded-2xl transition-all shadow-lg text-xs"
+                    >
+                      Заказать звонок
+                    </button>
+                  </div>
+
+                  {/* Bottom Card */}
+                  <div className="bg-slate-50 p-6 pt-5 flex flex-col gap-5">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">E-mail</span>
+                      <span className="text-slate-900 text-sm font-bold">zakaz@stroy-hub.kz</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">Режим работы</span>
+                      <span className="text-slate-900 text-sm font-bold">Пн. – Пт.: с 8:00 до 17:00</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <a href="#" className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-sky-100 hover:bg-sky-50 transition-all group/social">
+                        <svg className="w-5 h-5 text-sky-500 transition-transform group-hover/social:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                        </svg>
+                      </a>
+                      <a href="#" className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50 transition-all group/social">
+                        <svg className="w-5 h-5 text-emerald-500 transition-transform group-hover/social:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .01 5.403.007 12.04c0 2.12.552 4.191 1.598 6.056L0 24l6.105-1.602a11.832 11.832 0 005.937 1.61h.005c6.635 0 12.04-5.405 12.044-12.041a11.82 11.82 0 00-3.517-8.423" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Header direct call button */}
+            <button
+              onClick={onOpenCallback}
+              className="bg-emerald-600/10 hover:bg-emerald-600 border border-emerald-600/20 hover:border-emerald-600 text-emerald-500 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
+            >
+              Заказать звонок
+            </button>
           </div>
         </div>
       </div>
@@ -224,12 +291,11 @@ export default function Header({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-12 gap-4">
-            
+
             {/* Logo */}
             <div
               onClick={() => {
                 onNavigate('home');
-                setSelectedCategory('all');
                 setIsMegaMenuOpen(false);
               }}
               className="flex items-center cursor-pointer group shrink-0"
@@ -259,7 +325,7 @@ export default function Header({
                 <input
                   type="text"
                   placeholder="Поиск строительных материалов..."
-                  value={searchQuery}
+                  value={localSearchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => setIsSearchFocused(true)}
                   className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs text-slate-900 transition-all placeholder-slate-400 h-[42px]"
@@ -280,7 +346,7 @@ export default function Header({
                         key={p.id}
                         onClick={() => {
                           onNavigate('product', p.id);
-                          setSearchQuery('');
+                          setLocalSearchQuery('');
                           setIsSearchFocused(false);
                         }}
                         className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-all group"
@@ -379,10 +445,17 @@ export default function Header({
               {/* Favorites */}
               <button
                 type="button"
-                onClick={() => alert('Избранное будет доступно в следующем обновлении')}
-                className="flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                onClick={onOpenFavorites}
+                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
               >
-                <Heart className="h-5 w-5 mb-0.5" />
+                <div className="relative">
+                  <Heart className={`h-5 w-5 mb-0.5 ${favoritesCount > 0 ? 'fill-emerald-500 text-emerald-500' : ''}`} />
+                  {favoritesCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-black text-slate-950">
+                      {favoritesCount}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wide">Избранное</span>
               </button>
 
@@ -431,7 +504,7 @@ export default function Header({
 
           {/* Dynamic Full-Width Mega Menu Dropdown */}
           {isMegaMenuOpen && (
-            <div 
+            <div
               ref={megaMenuRef}
               className="absolute left-0 right-0 top-full mt-2 bg-white rounded-3xl border border-slate-200/85 shadow-2xl z-50 p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-h-[75vh] overflow-y-auto animate-slide-up"
             >
@@ -443,16 +516,16 @@ export default function Header({
                 rootCategories.map(rootCat => (
                   <div key={rootCat.id} className="space-y-4">
                     {/* Parent Root Category */}
-                    <div 
+                    <div
                       onClick={() => handleCategoryClick(rootCat)}
                       className="flex items-center gap-2.5 font-black text-slate-950 text-sm font-outfit cursor-pointer hover:text-emerald-600 transition-all border-b border-slate-100 pb-2.5 group"
                     >
                       {rootCat.image ? (
                         <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
-                          <img 
-                            src={rootCat.image} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                            onError={(e) => { e.target.style.display = 'none'; }} 
+                          <img
+                            src={rootCat.image}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         </div>
                       ) : (
@@ -476,7 +549,7 @@ export default function Header({
                             >
                               {sub.name}
                             </button>
-                            
+
                             {/* Sub-subcategories (3rd level) */}
                             <div className="flex flex-col gap-1 pl-2 border-l border-slate-100 mt-1">
                               {categories
@@ -514,7 +587,7 @@ export default function Header({
                   <input
                     type="text"
                     placeholder="Поиск товаров..."
-                    value={searchQuery}
+                    value={localSearchQuery}
                     onChange={handleSearchChange}
                     onFocus={() => setIsSearchFocused(true)}
                     className="w-full pl-10 pr-4 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600 text-sm"

@@ -132,12 +132,21 @@ export default function AuthModal({
                   onChange={(e) => handleSelectRegion(e.target.value)}
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 cursor-pointer"
                 >
-                  <option value="Алматы и область">Алматы и область</option>
-                  <option value="Астана и Акмолинская область">Астана и Акмолинская область</option>
-                  <option value="Шымкент и область">Шымкент и область</option>
-                  <option value="Караганда и область">Караганда и область</option>
-                  <option value="Атырау и область">Атырау и область</option>
-                  <option value="Усть-Каменогорск и ВКО">Усть-Каменогорск и ВКО</option>
+                  <option value="Алматы">Алматы</option>
+                  <option value="Астана">Астана</option>
+                  <option value="Шымкент">Шымкент</option>
+                  <option value="Караганда">Караганда</option>
+                  <option value="Актобе">Актобе</option>
+                  <option value="Атырау">Атырау</option>
+                  <option value="Актау">Актау</option>
+                  <option value="Усть-Каменогорск">Усть-Каменогорск</option>
+                  <option value="Павлодар">Павлодар</option>
+                  <option value="Тараз">Тараз</option>
+                  <option value="Костанай">Костанай</option>
+                  <option value="Кызылорда">Кызылорда</option>
+                  <option value="Уральск">Уральск</option>
+                  <option value="Петропавловск">Петропавловск</option>
+                  <option value="Туркестан">Туркестан</option>
                 </select>
               </div>
             </>

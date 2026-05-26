@@ -3,6 +3,7 @@ import Storefront from './pages/Storefront';
 import HomePage from './pages/Home';
 import Advisor from './pages/Advisor';
 import About from './pages/About';
+import FavoritesPage from './pages/Favorites';
 import Delivery from './pages/Delivery';
 import Legal from './pages/Legal';
 import ProductPage from './pages/ProductPage';
@@ -20,6 +21,7 @@ import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import OrdersModal from './components/OrdersModal';
 import RegionModal from './components/RegionModal';
+import CallbackModal from './components/CallbackModal';
 import Toast from './components/Toast';
 import useToast from './hooks/useToast';
 import useNavigation from './hooks/useNavigation';
@@ -28,20 +30,47 @@ import useCart from './hooks/useCart';
 import useCustomerAuth from './hooks/useCustomerAuth';
 import useOrders from './hooks/useOrders';
 import useRegion from './hooks/useRegion';
+import useFavorites from './hooks/useFavorites'
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState('user-agreement');
 
   const { toast, showToast } = useToast();
-  const { currentPage, currentProductId, setCurrentPage, openProductPage } = useNavigation();
-  const catalog = useCatalog(showToast);
+  const { currentPage, currentProductId, currentCategorySlug, setCurrentPage, openProductPage } = useNavigation();
+  const catalog = useCatalog(showToast, currentCategorySlug || 'all');
   const cart = useCart(showToast);
   const auth = useCustomerAuth(showToast);
   const orders = useOrders(auth.customer, showToast);
   const region = useRegion(showToast);
+  const favorites = useFavorites(showToast);
+
+  // Sync category from URL to catalog state
+  useEffect(() => {
+    if (currentPage === 'catalog' && currentCategorySlug) {
+      catalog.setSelectedCategory(currentCategorySlug);
+    } else if (currentPage === 'catalog' && !currentCategorySlug) {
+      catalog.setSelectedCategory('all');
+    }
+  }, [currentCategorySlug, currentPage]);
+
+  // Sync category from catalog state back to URL
+  const handleSetCategory = (slug) => {
+    catalog.setSelectedCategory(slug);
+    setCurrentPage('catalog', null, slug);
+  };
+
+  useEffect(() => {
+    localStorage.setItem('stroyhub_current_page', currentPage);
+    if (currentProductId) {
+      localStorage.setItem('stroyhub_product_id', currentProductId);
+    } else {
+      localStorage.removeItem('stroyhub_product_id');
+    }
+  }, [currentPage, currentProductId]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -61,16 +90,19 @@ export default function App() {
   }, [isUserMenuOpen]);
 
   useEffect(() => {
-    if (auth.authModalOpen || orders.ordersModalOpen || cart.isCartOpen) {
+    if (auth.authModalOpen || orders.ordersModalOpen || cart.isCartOpen || region.regionModalOpen || isCallbackModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
-  }, [auth.authModalOpen, orders.ordersModalOpen, cart.isCartOpen]);
+  }, [auth.authModalOpen, orders.ordersModalOpen, cart.isCartOpen, region.regionModalOpen, isCallbackModalOpen]);
 
   const handleLogout = () => {
     auth.handleLogout();
@@ -90,23 +122,26 @@ export default function App() {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         currentPage={currentPage}
         onNavigate={setCurrentPage}
-        setSelectedCategory={catalog.setSelectedCategory}
+        setSelectedCategory={handleSetCategory}
         cartItemsCount={cart.cartItemsCount}
         onOpenCart={() => cart.setIsCartOpen(true)}
         onOpenAuthLogin={auth.openLoginModal}
+        onOpenCallback={() => setIsCallbackModalOpen(true)}
+        onOpenFavorites={() => setCurrentPage('favorites')}
+        favoritesCount={favorites.favoritesCount}
         fetchMyOrders={orders.fetchMyOrders}
         handleLogout={handleLogout}
         searchQuery={catalog.searchQuery}
         setSearchQuery={catalog.setSearchQuery}
         categories={catalog.categories}
-        products={catalog.products}
+        products={catalog.allProducts}
       />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentPage === 'home' && (
           <HomePage
             onNavigate={setCurrentPage}
-            setSelectedCategory={catalog.setSelectedCategory}
+            setSelectedCategory={handleSetCategory}
             categories={catalog.categories}
           />
         )}
@@ -117,7 +152,7 @@ export default function App() {
             categories={catalog.categories}
             loading={catalog.loading}
             selectedCategory={catalog.selectedCategory}
-            setSelectedCategory={catalog.setSelectedCategory}
+            setSelectedCategory={handleSetCategory}
             searchQuery={catalog.searchQuery}
             setSearchQuery={catalog.setSearchQuery}
             onAddToCart={cart.handleAddToCart}
@@ -127,6 +162,8 @@ export default function App() {
             onOpenProduct={openProductPage}
             onNavigate={setCurrentPage}
             currentRegion={region.currentRegion}
+            onToggleFavorite={favorites.toggleFavorite}
+            isFavorite={favorites.isFavorite}
           />
         )}
 
@@ -147,19 +184,29 @@ export default function App() {
         {currentPage === 'warranty' && <Warranty />}
         {currentPage === 'faq' && <Faq />}
         {currentPage === 'requisites' && <Requisites />}
-        {currentPage === 'partners' && <Partners />}
+        {currentPage === 'partners' && <Partners showToast={showToast} />}
         {currentPage === 'promotions' && <Promotions />}
         {currentPage === 'product' && (
           <ProductPage
             productId={currentProductId}
             onBackToCatalog={() => {
-              catalog.setSelectedCategory('all');
               setCurrentPage('catalog');
             }}
             onAddToCart={cart.handleAddToCart}
             onNavigate={setCurrentPage}
             categories={catalog.categories}
-            setSelectedCategory={catalog.setSelectedCategory}
+            setSelectedCategory={handleSetCategory}
+          />
+        )}
+
+        {currentPage === 'favorites' && (
+          <FavoritesPage 
+            favorites={favorites.favorites}
+            onToggleFavorite={favorites.toggleFavorite}
+            onAddToCart={cart.handleAddToCart}
+            onOpenProduct={openProductPage}
+            onNavigate={setCurrentPage}
+            onClearAll={favorites.clearFavorites}
           />
         )}
       </main>
@@ -169,7 +216,7 @@ export default function App() {
         onOpenAuth={auth.openLoginModal}
         fetchMyOrders={orders.fetchMyOrders}
         onNavigate={setCurrentPage}
-        setSelectedCategory={catalog.setSelectedCategory}
+        setSelectedCategory={handleSetCategory}
         setLegalTab={setLegalTab}
       />
 
@@ -222,6 +269,13 @@ export default function App() {
         onClose={() => region.setRegionModalOpen(false)}
         currentRegion={region.currentRegion}
         handleSelectRegion={region.handleSelectRegion}
+        showToast={showToast}
+      />
+
+      <CallbackModal 
+        isOpen={isCallbackModalOpen}
+        onClose={() => setIsCallbackModalOpen(false)}
+        onNavigate={setCurrentPage}
         showToast={showToast}
       />
 

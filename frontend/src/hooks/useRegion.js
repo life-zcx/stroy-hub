@@ -1,18 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { findClosestCity } from '../utils/geo';
 
 export default function useRegion(showToast) {
   const [currentRegion, setCurrentRegion] = useState(() => {
-    return localStorage.getItem('stroyhub_region') || 'Алматы и область';
+    return localStorage.getItem('stroyhub_region') || 'Алматы';
   });
-  const [regionModalOpen, setRegionModalOpen] = useState(() => {
-    return !localStorage.getItem('stroyhub_region');
-  });
+  const [regionModalOpen, setRegionModalOpen] = useState(false);
+
+  useEffect(() => {
+    const savedRegion = localStorage.getItem('stroyhub_region');
+    
+    if (!savedRegion) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const cityName = findClosestCity(position.coords.latitude, position.coords.longitude);
+            handleSelectRegion(cityName);
+            showToast?.(`📍 Мы определили ваш город: ${cityName}`);
+          },
+          () => {
+            // If denied or error, open the modal
+            setRegionModalOpen(true);
+          }
+        );
+      } else {
+        setRegionModalOpen(true);
+      }
+    }
+  }, []);
 
   const handleSelectRegion = (region) => {
     setCurrentRegion(region);
     localStorage.setItem('stroyhub_region', region);
     setRegionModalOpen(false);
-    showToast?.(`📍 Ваш регион: ${region}`);
   };
 
   return {

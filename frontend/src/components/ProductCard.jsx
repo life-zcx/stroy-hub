@@ -1,11 +1,18 @@
 import React from 'react';
-import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin, ArrowRight, Heart } from 'lucide-react';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
 
-export default function ProductCard({ product, onAddToCart, onOpenModal, onOpenDetails }) {
+export default function ProductCard({ 
+  product, 
+  onAddToCart, 
+  onOpenModal, 
+  onOpenDetails,
+  onToggleFavorite,
+  isFavorite = false
+}) {
   const imageSrc = getProductImage(product);
 
   return (
@@ -27,6 +34,21 @@ export default function ProductCard({ product, onAddToCart, onOpenModal, onOpenD
           </span>
         )}
       </div>
+
+      {/* ── Favorite ── */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite?.(product);
+        }}
+        className={`absolute top-3 right-3 z-20 p-2 rounded-xl transition-all duration-300 shadow-sm ${
+          isFavorite 
+            ? 'bg-rose-500 text-white scale-110' 
+            : 'bg-white/80 backdrop-blur-sm text-slate-400 hover:text-rose-500 hover:bg-white'
+        }`}
+      >
+        <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+      </button>
 
       {/* ── Image zone (fixed height) ── */}
       <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">

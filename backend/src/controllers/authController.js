@@ -1,11 +1,22 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
+import { JWT_SECRET } from '../config/env.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stroyhub_super_secret_jwt_key_2026';
+const buildUserPayload = (user) => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  phone: user.phone,
+  address: user.address,
+  role: user.role,
+  supplierId: user.supplierId,
+  supplierName: user.supplier?.name || null,
+  isBlocked: user.isBlocked,
+});
 
 export const register = async (req, res) => {
-  const { email, password, name, phone, address, role, supplierId } = req.body;
+  const { email, password, name, phone, address } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email и пароль обязательны' });
@@ -32,9 +43,9 @@ export const register = async (req, res) => {
         name: name || null,
         phone: phone || null,
         address: address || null,
-        role: role || 'CUSTOMER',
-        supplierId: supplierId ? parseInt(supplierId) : null
-      }
+        role: 'CUSTOMER',
+      },
+      include: { supplier: true },
     });
 
     // Generate JWT token
@@ -46,15 +57,7 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       token,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        phone: newUser.phone,
-        address: newUser.address,
-        role: newUser.role,
-        supplierId: newUser.supplierId
-      }
+      user: buildUserPayload(newUser),
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при регистрации: ' + error.message });
@@ -78,6 +81,10 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'Ваш аккаунт заблокирован. Обратитесь к администратору.' });
+    }
+
     // Match password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -93,16 +100,7 @@ export const login = async (req, res) => {
 
     res.json({
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-        supplierId: user.supplierId,
-        supplierName: user.supplier?.name || null
-      }
+      user: buildUserPayload(user),
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка входа: ' + error.message });
@@ -120,16 +118,7 @@ export const getProfile = async (req, res) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      address: user.address,
-      role: user.role,
-      supplierId: user.supplierId,
-      supplierName: user.supplier?.name || null
-    });
+    res.json(buildUserPayload(user));
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения профиля: ' + error.message });
   }

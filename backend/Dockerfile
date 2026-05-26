@@ -14,5 +14,5 @@ COPY . .
 # Expose port
 EXPOSE 5000
 
-# We will run prisma generate and then start dev server
-CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+# Dev container: regenerate client, sync schema, then start watcher
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm run dev"]

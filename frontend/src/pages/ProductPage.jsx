@@ -118,7 +118,6 @@ export default function ProductPage({
         <button
           type="button"
           onClick={() => {
-            if (setSelectedCategory) setSelectedCategory('all');
             onBackToCatalog();
           }}
           className="inline-flex items-center justify-center gap-1.5 text-slate-500 hover:text-emerald-600 transition-colors text-xs font-bold shrink-0 cursor-pointer bg-transparent border-0 p-0"
@@ -139,7 +138,6 @@ export default function ProductPage({
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
           <button
             onClick={() => {
-              if (setSelectedCategory) setSelectedCategory('all');
               onBackToCatalog();
             }}
             className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
@@ -152,7 +150,6 @@ export default function ProductPage({
               <button
                 onClick={() => {
                   if (setSelectedCategory) setSelectedCategory(cat.slug || cat.id);
-                  onBackToCatalog();
                 }}
                 className="hover:text-emerald-600 transition-colors text-left cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
               >
@@ -293,31 +290,6 @@ export default function ProductPage({
         </div>
       </section>
 
-      <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-center overflow-hidden relative">
-        <div className="absolute right-0 top-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10 space-y-3">
-          <h2 className="text-2xl font-extrabold font-outfit">Рекомендации по применению</h2>
-          {usage.length > 0 ? (
-            <ul className="space-y-2 text-sm text-slate-300">
-              {usage.map((line, index) => (
-                <li key={`${line}-${index}`} className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-slate-300">Если нужны точные условия применения, запросите консультацию у поставщика перед заказом.</p>
-          )}
-        </div>
-        <div className="relative z-10 flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 p-4">
-          <Truck className="h-8 w-8 text-emerald-400" />
-          <div>
-            <p className="text-xs text-slate-400 uppercase font-bold">Логистика</p>
-            <p className="text-sm font-bold">Доставка по Казахстану со складов партнёров</p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

@@ -1,13 +1,59 @@
 import React, { useState } from 'react';
 import { Award, Briefcase, ChevronRight, CheckCircle2, Send } from 'lucide-react';
+import { createPartnerRequest } from '../services/api';
+import {
+  formatKazakhPhone,
+  normalizeInput,
+  validateComment,
+  validateCompanyName,
+  validateEmail,
+  validateName,
+  validatePhone,
+} from '../utils/formValidation';
 
-export default function Partners() {
+export default function Partners({ showToast }) {
   const [formSent, setFormSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({ name: '', company: '', phone: '', email: '', comments: '' });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormSent(true);
+
+    const validationError =
+      validateName(formData.name, 'Ваше имя') ||
+      validateCompanyName(formData.company) ||
+      validatePhone(formData.phone, 'Контактный телефон') ||
+      validateEmail(formData.email) ||
+      validateComment(formData.comments, 'Комментарий к заявке', 1200);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await createPartnerRequest({
+        contactName: normalizeInput(formData.name),
+        companyName: normalizeInput(formData.company),
+        contactPhone: formData.phone,
+        email: normalizeInput(formData.email).toLowerCase(),
+        comment: normalizeInput(formData.comments),
+      });
+
+      setFormSent(true);
+      setFormData({ name: '', company: '', phone: '', email: '', comments: '' });
+      showToast?.('✅ Партнерская заявка отправлена. Мы свяжемся с вами в течение 24 часов.');
+    } catch (submitError) {
+      const message = submitError.response?.data?.error || submitError.message;
+      setError(message);
+      showToast?.(`❌ ${message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,11 +116,14 @@ export default function Partners() {
                 <input
                   type="text"
                   required
-                  placeholder="Григорий"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
-                />
+                   placeholder="Григорий"
+                   value={formData.name}
+                   onChange={(e) => {
+                     setFormData({ ...formData, name: e.target.value });
+                     setError('');
+                   }}
+                   className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
+                 />
               </div>
 
               <div>
@@ -82,11 +131,14 @@ export default function Partners() {
                 <input
                   type="text"
                   required
-                  placeholder="ТОО СтройРесурс"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
-                />
+                   placeholder="ТОО СтройРесурс"
+                   value={formData.company}
+                   onChange={(e) => {
+                     setFormData({ ...formData, company: e.target.value });
+                     setError('');
+                   }}
+                   className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
+                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -95,22 +147,28 @@ export default function Partners() {
                   <input
                     type="tel"
                     required
-                    placeholder="+7 (707) 123-4567"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
-                  />
+                     placeholder="+7 (707) 123-4567"
+                     value={formData.phone}
+                     onChange={(e) => {
+                       setFormData({ ...formData, phone: formatKazakhPhone(e.target.value) });
+                       setError('');
+                     }}
+                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
+                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Электронная почта *</label>
                   <input
                     type="email"
                     required
-                    placeholder="partner@company.kz"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
-                  />
+                     placeholder="partner@company.kz"
+                     value={formData.email}
+                     onChange={(e) => {
+                       setFormData({ ...formData, email: e.target.value });
+                       setError('');
+                     }}
+                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs"
+                   />
                 </div>
               </div>
 
@@ -118,22 +176,32 @@ export default function Partners() {
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Комментарий к заявке</label>
                 <textarea
                   rows={3}
-                  placeholder="Какую продукцию поставляете, объемы складов..."
-                  value={formData.comments}
-                  onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs resize-none"
-                />
-              </div>
+                   placeholder="Какую продукцию поставляете, объемы складов..."
+                   value={formData.comments}
+                   onChange={(e) => {
+                     setFormData({ ...formData, comments: e.target.value });
+                     setError('');
+                   }}
+                   className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs resize-none"
+                 />
+               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 bg-slate-900 hover:bg-emerald-600 text-white font-extrabold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 shadow-md mt-2"
-              >
-                <Send className="h-4 w-4" />
-                Отправить предложение
-              </button>
-            </form>
-          )}
+               {error && (
+                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
+                   {error}
+                 </div>
+               )}
+
+               <button
+                 type="submit"
+                 disabled={loading}
+                 className="w-full py-3 bg-slate-900 hover:bg-emerald-600 text-white font-extrabold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 shadow-md mt-2"
+               >
+                 <Send className="h-4 w-4" />
+                 {loading ? 'Отправляем...' : 'Отправить предложение'}
+               </button>
+             </form>
+           )}
         </div>
       </div>
     </div>

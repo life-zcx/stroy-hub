@@ -1,5 +1,18 @@
 import prisma from '../config/db.js';
 
+function parseId(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function getRequesterSupplierId(req) {
+  return parseId(req.user?.supplierId);
+}
+
+function isSupplierUser(req) {
+  return req.user?.role === 'SUPPLIER';
+}
+
 // Helper to recursively fetch all descendant category IDs and slugs
 async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
   let rootCategory;
@@ -101,15 +114,26 @@ export const createProduct = async (req, res) => {
     name, description, details, specifications, usage, category, price, oldPrice,
     rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
   } = req.body;
+  const requestedSupplierId = parseId(supplierId);
+  const requesterSupplierId = getRequesterSupplierId(req);
+  const effectiveSupplierId = isSupplierUser(req) ? requesterSupplierId : requestedSupplierId;
   
-  if (!name || !category || !price || !supplierId) {
+  if (!name || !category || price === undefined || price === '' || !effectiveSupplierId) {
     return res.status(400).json({ error: 'Обязательные поля: Название, Категория, Цена, Поставщик' });
+  }
+
+  if (isSupplierUser(req) && !requesterSupplierId) {
+    return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+  }
+
+  if (isSupplierUser(req) && requestedSupplierId && requestedSupplierId !== requesterSupplierId) {
+    return res.status(403).json({ error: 'Нельзя создавать товары от имени другого поставщика.' });
   }
 
   try {
     // Check if supplier exists
     const supplier = await prisma.supplier.findUnique({
-      where: { id: parseInt(supplierId) }
+      where: { id: effectiveSupplierId }
     });
     
     if (!supplier) {
@@ -140,7 +164,7 @@ export const createProduct = async (req, res) => {
         reviews: reviews ? parseInt(reviews) : 0,
         isHit: isHit === 'true' || isHit === true,
         bulkDiscount: bulkDiscount || null,
-        supplierId: parseInt(supplierId)
+        supplierId: effectiveSupplierId
       },
       include: {
         supplier: true
@@ -159,6 +183,8 @@ export const updateProduct = async (req, res) => {
     name, description, details, specifications, usage, category, price, oldPrice,
     rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
   } = req.body;
+  const requesterSupplierId = getRequesterSupplierId(req);
+  const requestedSupplierId = supplierId === undefined ? undefined : parseId(supplierId);
 
   try {
     const existing = await prisma.product.findUnique({
@@ -166,6 +192,16 @@ export const updateProduct = async (req, res) => {
     });
     if (!existing) {
       return res.status(404).json({ error: 'Товар не найден' });
+    }
+
+    if (isSupplierUser(req)) {
+      if (!requesterSupplierId) {
+        return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+      }
+
+      if (existing.supplierId !== requesterSupplierId) {
+        return res.status(403).json({ error: 'Недостаточно прав для изменения этого товара.' });
+      }
     }
 
     let finalImage = existing.image;
@@ -190,14 +226,23 @@ export const updateProduct = async (req, res) => {
     if (reviews) data.reviews = parseInt(reviews);
     if (isHit !== undefined) data.isHit = isHit === 'true' || isHit === true;
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
-    if (supplierId) {
+
+    if (requestedSupplierId !== undefined) {
+      if (requestedSupplierId === null) {
+        return res.status(400).json({ error: 'Указан некорректный поставщик.' });
+      }
+
+      if (isSupplierUser(req) && requestedSupplierId !== requesterSupplierId) {
+        return res.status(403).json({ error: 'Нельзя передавать товар другому поставщику.' });
+      }
+
       const supplier = await prisma.supplier.findUnique({
-        where: { id: parseInt(supplierId) }
+        where: { id: requestedSupplierId }
       });
       if (!supplier) {
         return res.status(404).json({ error: 'Указанный дистрибьютор не найден' });
       }
-      data.supplierId = parseInt(supplierId);
+      data.supplierId = requestedSupplierId;
     }
 
     const updated = await prisma.product.update({
@@ -214,12 +259,24 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
+  const requesterSupplierId = getRequesterSupplierId(req);
+
   try {
     const existing = await prisma.product.findUnique({
       where: { id: parseInt(id) }
     });
     if (!existing) {
       return res.status(404).json({ error: 'Товар не найден' });
+    }
+
+    if (isSupplierUser(req)) {
+      if (!requesterSupplierId) {
+        return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+      }
+
+      if (existing.supplierId !== requesterSupplierId) {
+        return res.status(403).json({ error: 'Недостаточно прав для удаления этого товара.' });
+      }
     }
     
     await prisma.product.delete({

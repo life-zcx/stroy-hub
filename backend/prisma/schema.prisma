@@ -13,6 +13,22 @@ enum Role {
   CUSTOMER
 }
 
+enum PromotionType {
+  CAMPAIGN
+  PROMOCODE
+}
+
+enum PromotionDiscountType {
+  PERCENT
+  FIXED
+}
+
+enum PromotionScope {
+  ORDER
+  PRODUCT
+  CATEGORY
+}
+
 model User {
   id         Int       @id @default(autoincrement())
   email      String    @unique
@@ -23,8 +39,11 @@ model User {
   role       Role      @default(CUSTOMER)
   supplierId Int?
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  isBlocked  Boolean   @default(false)
+  blockedAt  DateTime?
   orders     Order[]
   createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
 }
 
 model Supplier {
@@ -35,6 +54,17 @@ model Supplier {
   reviews  Int       @default(0)
   products Product[]
   users    User[]
+}
+
+model Brand {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  logo        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Product {
@@ -72,17 +102,24 @@ model Category {
 }
 
 model Order {
-  id            Int         @id @default(autoincrement())
-  clientName    String
-  clientPhone   String
-  clientAddress String
-  paymentMethod String
-  status        String      @default("pending") // pending, processing, shipped, completed, cancelled
-  totalAmount   Float
-  userId        Int?
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt     DateTime    @default(now())
-  items         OrderItem[]
+  id              Int        @id @default(autoincrement())
+  clientName      String
+  clientPhone     String
+  clientAddress   String
+  paymentMethod   String
+  status          String     @default("pending") // pending, processing, shipped, completed, cancelled
+  subtotalAmount  Float      @default(0)
+  discountAmount  Float      @default(0)
+  totalAmount     Float
+  promoCode       String?
+  promotionTitle  String?
+  promotionId     Int?
+  promotionSnapshot Json?
+  promotion       Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  userId          Int?
+  user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt       DateTime   @default(now())
+  items           OrderItem[]
 }
 
 model OrderItem {
@@ -93,4 +130,55 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
+}
+
+model CallbackRequest {
+  id        Int      @id @default(autoincrement())
+  userName  String
+  userPhone String
+  comment   String?
+  status    String   @default("pending") // pending, completed, rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PartnerRequest {
+  id           Int      @id @default(autoincrement())
+  contactName  String
+  companyName  String
+  contactPhone String
+  email        String
+  comment      String?
+  status       String   @default("pending") // pending, contacted, approved, rejected
+  adminComment String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Promotion {
+  id            Int                    @id @default(autoincrement())
+  title         String
+  description   String
+  badge         String?
+  promoCode     String?                @unique
+  type          PromotionType          @default(CAMPAIGN)
+  scope         PromotionScope         @default(ORDER)
+  discountType  PromotionDiscountType
+  discountValue Float
+  minOrderAmount Float?
+  minQuantity   Int?
+  targetProductIds Int[]               @default([])
+  targetCategoryIds Int[]              @default([])
+  quantityTiers Json?
+  theme         String                 @default("emerald")
+  isActive      Boolean                @default(true)
+  showOnSite    Boolean                @default(true)
+  showOnHome    Boolean                @default(false)
+  usageLimit    Int?
+  usageCount    Int                    @default(0)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  orders        Order[]
 }

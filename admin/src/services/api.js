@@ -29,6 +29,32 @@ export const getProfile = async () => {
   return response.data;
 };
 
+// Users API
+export const getUsers = async () => {
+  const response = await api.get('/users');
+  return response.data;
+};
+
+export const createUser = async (userData) => {
+  const response = await api.post('/users', userData);
+  return response.data;
+};
+
+export const updateUser = async (id, userData) => {
+  const response = await api.put(`/users/${id}`, userData);
+  return response.data;
+};
+
+export const updateUserPassword = async (id, password) => {
+  const response = await api.put(`/users/${id}/password`, { password });
+  return response.data;
+};
+
+export const updateUserBlockStatus = async (id, isBlocked) => {
+  const response = await api.put(`/users/${id}/block`, { isBlocked });
+  return response.data;
+};
+
 // Products API
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products', { params });
@@ -116,6 +142,78 @@ export const getOrders = async () => {
 
 export const updateOrderStatus = async (id, status) => {
   const response = await api.put(`/orders/${id}/status`, { status });
+  return response.data;
+};
+
+// Promotions API
+export const getPromotions = async () => {
+  const response = await api.get('/promotions');
+  return response.data;
+};
+
+export const createPromotion = async (payload) => {
+  const response = await api.post('/promotions', payload);
+  return response.data;
+};
+
+export const updatePromotion = async (id, payload) => {
+  const response = await api.put(`/promotions/${id}`, payload);
+  return response.data;
+};
+
+export const deletePromotion = async (id) => {
+  const response = await api.delete(`/promotions/${id}`);
+  return response.data;
+};
+
+// Brands API
+export const getBrands = async () => {
+  const response = await api.get('/brands');
+  return response.data;
+};
+
+export const createBrand = async (formData) => {
+  const response = await api.post('/brands', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
+  return response.data;
+};
+
+export const updateBrand = async (id, formData) => {
+  const response = await api.put(`/brands/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
+  return response.data;
+};
+
+export const deleteBrand = async (id) => {
+  const response = await api.delete(`/brands/${id}`);
+  return response.data;
+};
+
+// Callbacks API
+export const getCallbacks = async () => {
+  const response = await api.get('/callbacks');
+  return response.data;
+};
+
+export const updateCallback = async (id, status, comment) => {
+  const response = await api.put(`/callbacks/${id}`, { status, comment });
+  return response.data;
+};
+
+// Partner requests API
+export const getPartnerRequests = async () => {
+  const response = await api.get('/partner-requests');
+  return response.data;
+};
+
+export const updatePartnerRequest = async (id, status, adminComment) => {
+  const response = await api.put(`/partner-requests/${id}`, { status, adminComment });
   return response.data;
 };
 

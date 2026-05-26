@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   ArrowRight, ShieldCheck, Truck, SlidersHorizontal,
-  Award, Building2
+  Award, Building2, TicketPercent
 } from 'lucide-react';
+import { getBrands, getHomePromotions } from '../services/api';
+import { formatPrice } from '../utils/formatPrice';
 
 export default function Home({ onNavigate, setSelectedCategory, categories = [] }) {
+  const [brands, setBrands] = useState([]);
+  const [homePromotions, setHomePromotions] = useState([]);
+
   // Root categories are those with no parentId
   const rootCategories = categories.filter(cat => cat.parentId === null);
 
@@ -26,7 +31,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
         { id: 'paints', name: 'Краски', desc: 'Интерьерные, фасадные, грунты', bg: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?q=80&w=400&auto=format&fit=crop' },
       ];
 
-  const brandLogos = [
+  const fallbackBrands = [
     { name: 'Bosch', desc: 'Проф. инструменты' },
     { name: 'Knauf', desc: 'Сухие смеси и ГКЛ' },
     { name: 'Tikkurila', desc: 'Премиум краски' },
@@ -34,6 +39,47 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
     { name: 'Технониколь', desc: 'Кровля и изоляция' },
     { name: 'Alina', desc: 'Казахстанский бренд' }
   ];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHomeData = async () => {
+      try {
+        const [loadedBrands, loadedPromotions] = await Promise.all([
+          getBrands(),
+          getHomePromotions(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setBrands(loadedBrands);
+        setHomePromotions(loadedPromotions);
+      } catch (error) {
+        console.error(error);
+        if (isMounted) {
+          setBrands([]);
+          setHomePromotions([]);
+        }
+      }
+    };
+
+    loadHomeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const brandLogos = brands.length > 0
+    ? brands.map((brand) => ({
+        id: brand.id,
+        name: brand.name,
+        desc: brand.description,
+        logo: brand.logo,
+      }))
+    : fallbackBrands;
 
   return (
     <div className="space-y-20 animate-fade-in-up font-sans text-slate-800">
@@ -267,6 +313,55 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
         </div>
       </div>
 
+      {homePromotions.length > 0 && (
+        <section className="space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-left space-y-1">
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции на главной</h2>
+              <p className="text-slate-500 text-sm">Показываем только те предложения, которые менеджер отметил для главной страницы</p>
+            </div>
+            <button onClick={() => onNavigate('promotions')} className="text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors">
+              Все акции
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {homePromotions.map((promotion) => (
+              <button
+                key={promotion.id}
+                type="button"
+                onClick={() => onNavigate('promotions')}
+                className="text-left rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 p-5 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-emerald-600 text-white">
+                      <TicketPercent className="h-3.5 w-3.5" />
+                      {promotion.badge || 'Акция'}
+                    </span>
+                    <h3 className="text-lg font-black text-slate-950 font-outfit leading-tight">{promotion.title}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{promotion.description}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="block text-[10px] uppercase font-black tracking-[0.18em] text-emerald-700">Промокод</span>
+                    <span className="block mt-1 px-3 py-2 rounded-xl bg-slate-900 text-white font-black tracking-[0.2em] text-sm">
+                      {promotion.promoCode || 'AUTO'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-emerald-100 flex items-center justify-between gap-3 text-xs">
+                  <span className="font-semibold text-slate-600">
+                    {promotion.discountType === 'PERCENT' ? `Скидка ${promotion.discountValue}%` : `Скидка ${formatPrice(promotion.discountValue)}`}
+                  </span>
+                  <span className="font-bold text-emerald-700">Открыть акцию</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 🛡️ KEY STRENGTHS (ПРЕИМУЩЕСТВА) */}
       <section className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -388,9 +483,12 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {brandLogos.map((brand, i) => (
             <div 
-              key={i}
+              key={brand.id || i}
               className="bg-white border border-slate-200/50 p-6 rounded-2xl flex flex-col items-center justify-center text-center hover:border-emerald-600/40 hover:shadow-sm transition-all group"
             >
+              {brand.logo ? (
+                <img src={brand.logo} alt={brand.name} className="h-12 max-w-[120px] object-contain mb-3 grayscale group-hover:grayscale-0 transition-all" />
+              ) : null}
               <span className="font-black text-slate-400 group-hover:text-slate-800 text-lg transition-colors tracking-tight font-outfit">{brand.name}</span>
               <span className="text-[9px] text-slate-400 mt-1 block">{brand.desc}</span>
             </div>
