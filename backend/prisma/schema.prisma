@@ -118,6 +118,8 @@ model Order {
   promotion       Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   userId          Int?
   user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cancellationReason String?
+  managerNotes       String?
   createdAt       DateTime   @default(now())
   items           OrderItem[]
 }

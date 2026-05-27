@@ -1,0 +1,10 @@
+{
+  "markups": {
+    "mixes": 15,
+    "lumber": 12,
+    "tools": 20,
+    "paints": 18,
+    "hardware": 34
+  },
+  "overrides": {}
+}

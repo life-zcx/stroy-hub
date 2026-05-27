@@ -1,4 +1,77 @@
 import prisma from '../config/db.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Helper path to store pricing settings
+const pricingSettingsPath = path.join(__dirname, '..', 'config', 'pricing_settings.json');
+
+// Default pricing settings
+const DEFAULT_PRICING_SETTINGS = {
+  markups: {
+    mixes: 15,
+    lumber: 12,
+    tools: 20,
+    paints: 18,
+    hardware: 25
+  },
+  overrides: {}
+};
+
+function readPricingSettings() {
+  try {
+    if (fs.existsSync(pricingSettingsPath)) {
+      const data = fs.readFileSync(pricingSettingsPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error reading pricing settings:', error);
+  }
+  return DEFAULT_PRICING_SETTINGS;
+}
+
+function writePricingSettings(settings) {
+  try {
+    const dir = path.dirname(pricingSettingsPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(pricingSettingsPath, JSON.stringify(settings, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error writing pricing settings:', error);
+    return false;
+  }
+}
+
+export const getPricingSettings = async (req, res) => {
+  try {
+    const settings = readPricingSettings();
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения настроек ценообразования: ' + error.message });
+  }
+};
+
+export const savePricingSettings = async (req, res) => {
+  const { markups, overrides } = req.body;
+  if (!markups || !overrides) {
+    return res.status(400).json({ error: 'Необходимо передать markups и overrides' });
+  }
+  try {
+    const success = writePricingSettings({ markups, overrides });
+    if (success) {
+      res.json({ message: 'Настройки ценообразования успешно сохранены' });
+    } else {
+      res.status(500).json({ error: 'Не удалось записать файл настроек' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сохранения настроек ценообразования: ' + error.message });
+  }
+};
 
 function parseId(value) {
   const parsed = Number.parseInt(value, 10);
@@ -84,7 +157,26 @@ export const getAllProducts = async (req, res) => {
       },
       orderBy: { id: 'desc' }
     });
-    res.json(products);
+
+    const settings = readPricingSettings();
+    const { markups, overrides } = settings;
+
+    const mappedProducts = products.map(p => {
+      const wholesalePrice = p.price;
+      const categoryMarkup = markups[p.category] !== undefined ? markups[p.category] : 15;
+      const activeMarkup = overrides[p.id] !== undefined ? overrides[p.id] : categoryMarkup;
+      const markupValue = wholesalePrice * (activeMarkup / 100);
+      const retailPrice = wholesalePrice + markupValue;
+
+      return {
+        ...p,
+        wholesalePrice,
+        price: retailPrice,
+        oldPrice: p.oldPrice ? p.oldPrice + p.oldPrice * (activeMarkup / 100) : null
+      };
+    });
+
+    res.json(mappedProducts);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения товаров: ' + error.message });
   }
@@ -103,7 +195,24 @@ export const getProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ error: 'Товар не найден' });
     }
-    res.json(product);
+
+    const settings = readPricingSettings();
+    const { markups, overrides } = settings;
+
+    const wholesalePrice = product.price;
+    const categoryMarkup = markups[product.category] !== undefined ? markups[product.category] : 15;
+    const activeMarkup = overrides[product.id] !== undefined ? overrides[product.id] : categoryMarkup;
+    const markupValue = wholesalePrice * (activeMarkup / 100);
+    const retailPrice = wholesalePrice + markupValue;
+
+    const mappedProduct = {
+      ...product,
+      wholesalePrice,
+      price: retailPrice,
+      oldPrice: product.oldPrice ? product.oldPrice + product.oldPrice * (activeMarkup / 100) : null
+    };
+
+    res.json(mappedProduct);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения товара: ' + error.message });
   }

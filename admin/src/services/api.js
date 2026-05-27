@@ -61,6 +61,16 @@ export const getProducts = async (params = {}) => {
   return response.data;
 };
 
+export const getPricingSettings = async () => {
+  const response = await api.get('/products/pricing/settings');
+  return response.data;
+};
+
+export const savePricingSettings = async (settings) => {
+  const response = await api.post('/products/pricing/settings', settings);
+  return response.data;
+};
+
 export const createProduct = async (formData) => {
   const response = await api.post('/products', formData, {
     headers: {
@@ -142,6 +152,11 @@ export const getOrders = async () => {
 
 export const updateOrderStatus = async (id, status) => {
   const response = await api.put(`/orders/${id}/status`, { status });
+  return response.data;
+};
+
+export const updateOrder = async (id, orderData) => {
+  const response = await api.put(`/orders/${id}`, orderData);
   return response.data;
 };
 

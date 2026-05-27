@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   FileSpreadsheet as FileSpreadsheetIcon,
   BadgeCheck as BadgeCheckIcon,
@@ -12,12 +11,18 @@ import {
   Hammer,
   RefreshCw,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  Truck,
+  BarChart3
 } from 'lucide-react';
 
 const tabIcons = {
   products: PackageIcon,
   orders: FileSpreadsheetIcon,
+  pricing: TrendingUp,
+  logistics: Truck,
+  analytics: BarChart3,
   callbacks: PhoneCallIcon,
   promotions: TicketPercentIcon,
   brands: BadgeCheckIcon,
@@ -30,6 +35,9 @@ const tabIcons = {
 const tabLabels = {
   products: 'Товары',
   orders: 'Заказы',
+  pricing: 'Ценообразование и Маржа',
+  logistics: 'Логистика и Маршруты',
+  analytics: 'Аналитика и Отчеты',
   callbacks: 'Обратные звонки',
   promotions: 'Акции и скидки',
   brands: 'Бренды-партнеры',

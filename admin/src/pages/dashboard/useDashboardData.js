@@ -24,6 +24,7 @@ import {
   updateCallback as updateCallbackAPI,
   updateCategory,
   updateOrderStatus,
+  updateOrder as updateOrderAPI,
   updatePromotion,
   updateProduct,
   updatePartnerRequest,
@@ -368,7 +369,7 @@ export function useDashboardData({ user, showToast }) {
       usage: product.usage || '',
       category: product.category || '',
       categoryId: product.categoryId || '',
-      price: product.price || '',
+      price: product.wholesalePrice || product.price || '',
       oldPrice: product.oldPrice || '',
       bulkDiscount: product.bulkDiscount || '',
       isHit: product.isHit || false,
@@ -755,6 +756,17 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const handleUpdateOrder = async (orderId, orderData) => {
+    try {
+      await updateOrderAPI(orderId, orderData);
+      showToast('💾 Заказ успешно сохранен!');
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка обновления заказа: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   const handleCallbackStatusChange = async (callbackId, newStatus) => {
     try {
       await updateCallbackAPI(callbackId, newStatus);
@@ -913,6 +925,7 @@ export function useDashboardData({ user, showToast }) {
     startEditCategory,
     handleDeleteCategory,
     handleStatusChange,
+    handleUpdateOrder,
     handleCallbackStatusChange,
     handleCallbackCommentUpdate,
     handlePartnerRequestStatusChange,

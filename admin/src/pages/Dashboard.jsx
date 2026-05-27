@@ -13,6 +13,9 @@ import PromotionsPage from './dashboard/pages/PromotionsPage';
 import ProductsPage from './dashboard/pages/ProductsPage';
 import SuppliersPage from './dashboard/pages/SuppliersPage';
 import UsersPage from './dashboard/pages/UsersPage';
+import PricingPage from './dashboard/pages/PricingPage';
+import LogisticsPage from './dashboard/pages/LogisticsPage';
+import AnalyticsPage from './dashboard/pages/AnalyticsPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
@@ -25,12 +28,15 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['products', 'orders', 'promotions', 'brands', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
+const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'promotions', 'brands', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
   products: 'Управление товарами',
   orders: 'Заказы и продажи',
+  pricing: 'Ценообразование и Маржа',
+  logistics: 'Оптимизация сборной доставки',
+  analytics: 'Аналитика и Отчеты',
   promotions: 'Акции и скидки',
   brands: 'Бренды-партнеры',
   callbacks: 'Обратные звонки',
@@ -116,6 +122,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     startEditCategory,
     handleDeleteCategory,
     handleStatusChange,
+    handleUpdateOrder,
     handleCallbackStatusChange,
     handleCallbackCommentUpdate,
     handlePartnerRequestStatusChange,
@@ -171,6 +178,9 @@ export default function Dashboard({ user, onLogout, showToast }) {
   const counts = {
     products: products.length,
     orders: orders.length,
+    pricing: 0,
+    logistics: 0,
+    analytics: 0,
     callbacks: callbacks.filter((callback) => callback.status === 'pending').length,
     partners: partnerRequests.filter((request) => request.status === 'pending').length,
     promotions: promotions.filter((promotion) => promotion.isCurrentlyActive).length,
@@ -182,14 +192,23 @@ export default function Dashboard({ user, onLogout, showToast }) {
 
   const renderPage = () => {
     switch (activePage) {
+      case 'pricing':
+        return <PricingPage showToast={showToast} />;
+      case 'logistics':
+        return <LogisticsPage showToast={showToast} />;
+      case 'analytics':
+        return <AnalyticsPage showToast={showToast} />;
       case 'orders':
         return (
           <OrdersPage
             orders={orders}
+            products={products}
             onStatusChange={handleStatusChange}
+            onUpdateOrder={handleUpdateOrder}
             formatPrice={formatPrice}
             getStatusText={getOrderStatusText}
             getStatusClass={getOrderStatusClass}
+            userRole={user.role}
           />
         );
       case 'callbacks':

@@ -271,3 +271,174 @@ export const updateOrderStatus = async (req, res) => {
     res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
   }
 };
+
+export const updateOrder = async (req, res) => {
+  const { id } = req.params;
+  const {
+    status,
+    cancellationReason,
+    managerNotes,
+    clientName,
+    clientPhone,
+    clientAddress,
+    items,
+  } = req.body;
+  const supplierId = getSupplierId(req.user);
+
+  try {
+    const orderId = parseInt(id, 10);
+    if (Number.isNaN(orderId)) {
+      return res.status(400).json({ error: 'Неверный ID заказа' });
+    }
+
+    // Find the existing order
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Заказ не найден' });
+    }
+
+    // Check permissions for Supplier
+    if (req.user?.role === 'SUPPLIER') {
+      if (!supplierId) {
+        return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+      }
+
+      const hasSupplierProducts = existingOrder.items.some(
+        (item) => item.product.supplierId === supplierId
+      );
+
+      if (!hasSupplierProducts) {
+        return res.status(403).json({ error: 'Недостаточно прав для изменения этого заказа.' });
+      }
+    }
+
+    const updateData = {};
+    if (status !== undefined) {
+      const validStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Неверный статус заказа' });
+      }
+      updateData.status = status;
+      if (status === 'cancelled' && cancellationReason) {
+        updateData.cancellationReason = cancellationReason;
+      } else if (status !== 'cancelled') {
+        updateData.cancellationReason = null;
+      }
+    }
+
+    if (managerNotes !== undefined) updateData.managerNotes = managerNotes;
+    if (clientName !== undefined) updateData.clientName = clientName;
+    if (clientPhone !== undefined) updateData.clientPhone = clientPhone;
+    if (clientAddress !== undefined) updateData.clientAddress = clientAddress;
+
+    // Perform inside a transaction if we are editing items
+    const result = await prisma.$transaction(async (tx) => {
+      if (items !== undefined && Array.isArray(items)) {
+        // Only Admin can modify order items
+        if (req.user?.role !== 'ADMIN') {
+          throw new Error('Только администратор может изменять состав заказа.');
+        }
+
+        if (items.length === 0) {
+          throw new Error('Заказ не может быть пустым. Если вы хотите отменить заказ, измените его статус на Отменен.');
+        }
+
+        // 1. Verify products exist
+        const productIds = items.map((item) => parseInt(item.productId, 10));
+        const existingProducts = await tx.product.findMany({
+          where: { id: { in: productIds } },
+        });
+
+        if (existingProducts.length !== productIds.length) {
+          throw new Error('Некоторые товары не найдены в базе данных.');
+        }
+
+        const normalizedItems = items.map((item) => {
+          const product = existingProducts.find((p) => p.id === parseInt(item.productId, 10));
+          return {
+            productId: product.id,
+            quantity: parseInt(item.quantity, 10),
+            price: product.price,
+          };
+        });
+
+        // Recalculate price details
+        const evaluationContext = await buildEvaluationContext(normalizedItems);
+        const subtotalAmount = evaluationContext.subtotalAmount;
+
+        let discountAmount = 0;
+        let finalTotalAmount = subtotalAmount;
+        let promoCodeToUse = existingOrder.promoCode;
+        let promotionIdToUse = existingOrder.promotionId;
+        let promotionTitleToUse = existingOrder.promotionTitle;
+        let promotionSnapshotToUse = existingOrder.promotionSnapshot;
+
+        if (promoCodeToUse) {
+          const promo = await tx.promotion.findUnique({
+            where: { promoCode: promoCodeToUse },
+          });
+
+          if (promo) {
+            const evaluation = evaluatePromotion(promo, evaluationContext);
+            if (evaluation.valid) {
+              discountAmount = evaluation.discountAmount;
+              finalTotalAmount = evaluation.totalAmount;
+              promotionSnapshotToUse = buildPromotionSnapshot(promo, evaluation);
+            } else {
+              promoCodeToUse = null;
+              promotionIdToUse = null;
+              promotionTitleToUse = null;
+              promotionSnapshotToUse = null;
+            }
+          }
+        }
+
+        updateData.subtotalAmount = subtotalAmount;
+        updateData.discountAmount = discountAmount;
+        updateData.totalAmount = finalTotalAmount;
+        updateData.promoCode = promoCodeToUse;
+        updateData.promotionId = promotionIdToUse;
+        updateData.promotionTitle = promotionTitleToUse;
+        updateData.promotionSnapshot = promotionSnapshotToUse;
+
+        // Delete old items
+        await tx.orderItem.deleteMany({
+          where: { orderId },
+        });
+
+        // Create new items
+        await tx.orderItem.createMany({
+          data: normalizedItems.map((item) => ({
+            orderId,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
+      }
+
+      // Update the order itself
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: updateData,
+        include: buildOrderItemsInclude(req.user),
+      });
+
+      return updatedOrder;
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: 'Ошибка обновления заказа: ' + error.message });
+  }
+};
