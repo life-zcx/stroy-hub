@@ -12,12 +12,13 @@ WORKDIR /app/admin
 COPY admin/package*.json ./
 RUN npm ci
 COPY admin/ ./
-RUN npm run build -- --base=/admin/
+RUN npm run build
 
 FROM nginx:1.27-alpine
 
 COPY deploy/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
-COPY --from=admin-builder /app/admin/dist /usr/share/nginx/html/admin
+COPY --from=admin-builder /app/admin/dist /usr/share/nginx/html_admin
 
 EXPOSE 80
+
