@@ -17,6 +17,8 @@ export default function AuthModal({
   setAuthPhone,
   authAddress,
   setAuthAddress,
+  authResetCode,
+  setAuthResetCode,
   authError,
   setAuthError,
   authLoading,
@@ -41,25 +43,30 @@ export default function AuthModal({
             <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[95px] -my-6 w-auto object-contain shrink-0" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
-          <p className="text-slate-500 text-xs mt-1">Авторизуйтесь для оформления заказов и отслеживания доставки</p>
+          <p className="text-slate-500 text-xs mt-1">
+            {authTab === 'forgot' ? 'Восстановление доступа к аккаунту' : 
+             authTab === 'reset' ? 'Установите новый пароль' : 
+             'Авторизуйтесь для оформления заказов и отслеживания доставки'}
+          </p>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          <button
-            onClick={() => { setAuthTab('login'); setAuthError(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-          >
-            Войти
-          </button>
-          <button
-            onClick={() => { setAuthTab('register'); setAuthError(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-          >
-            Регистрация
-          </button>
-        </div>
+        {/* Tab Switcher - only show for login/register */}
+        {(authTab === 'login' || authTab === 'register') && (
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => { setAuthTab('login'); setAuthError(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Войти
+            </button>
+            <button
+              onClick={() => { setAuthTab('register'); setAuthError(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              Регистрация
+            </button>
+          </div>
+        )}
 
         {authError && (
           <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-xl border border-red-100">
@@ -68,6 +75,8 @@ export default function AuthModal({
         )}
 
         <form onSubmit={handleAuthSubmit} className="space-y-4">
+          
+          {/* Email input - shown in login, register, forgot, reset */}
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Электронная почта *</label>
             <input
@@ -75,22 +84,57 @@ export default function AuthModal({
               value={authEmail}
               onChange={(e) => setAuthEmail(e.target.value)}
               required
+              disabled={authTab === 'reset'} // Lock email during reset step
               placeholder="alex@test.com"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 disabled:opacity-60"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Пароль *</label>
-            <input
-              type="password"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
-            />
-          </div>
+          {/* Verification Code input - only shown in 'reset' */}
+          {authTab === 'reset' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Код из письма *</label>
+              <input
+                type="text"
+                value={authResetCode}
+                onChange={(e) => setAuthResetCode(e.target.value)}
+                required
+                maxLength={6}
+                placeholder="123456"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 font-mono text-center tracking-widest text-lg"
+              />
+            </div>
+          )}
+
+          {/* Password input - shown in login, register, reset */}
+          {(authTab === 'login' || authTab === 'register' || authTab === 'reset') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
+                {authTab === 'reset' ? 'Новый пароль *' : 'Пароль *'}
+              </label>
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
+              />
+            </div>
+          )}
+
+          {/* Forgot Password Link - only shown in 'login' */}
+          {authTab === 'login' && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => { setAuthTab('forgot'); setAuthError(null); }}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-500 hover:underline bg-transparent border-0 cursor-pointer"
+              >
+                Забыли пароль?
+              </button>
+            </div>
+          )}
 
           {authTab === 'register' && (
             <>
@@ -155,11 +199,34 @@ export default function AuthModal({
 
           <button
             type="submit"
-            className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center"
+            className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center border-0 cursor-pointer"
             disabled={authLoading}
           >
-            {authLoading ? <Clock className="h-5 w-5 animate-spin" /> : authTab === 'login' ? 'Войти в систему' : 'Зарегистрироваться'}
+            {authLoading ? (
+              <Clock className="h-5 w-5 animate-spin" />
+            ) : authTab === 'login' ? (
+              'Войти в систему'
+            ) : authTab === 'register' ? (
+              'Зарегистрироваться'
+            ) : authTab === 'forgot' ? (
+              'Получить код восстановления'
+            ) : (
+              'Сбросить пароль'
+            )}
           </button>
+
+          {/* Go Back buttons for recovery flows */}
+          {(authTab === 'forgot' || authTab === 'reset') && (
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => { setAuthTab('login'); setAuthError(null); }}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors bg-transparent border-0 cursor-pointer"
+              >
+                Вернуться к авторизации
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

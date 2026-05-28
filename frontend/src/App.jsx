@@ -337,6 +337,8 @@ export default function App() {
         setAuthPhone={auth.setAuthPhone}
         authAddress={auth.authAddress}
         setAuthAddress={auth.setAuthAddress}
+        authResetCode={auth.authResetCode}
+        setAuthResetCode={auth.setAuthResetCode}
         authError={auth.authError}
         setAuthError={auth.setAuthError}
         authLoading={auth.authLoading}

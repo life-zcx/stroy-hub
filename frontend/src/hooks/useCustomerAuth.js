@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { getProfile, login, register } from '../services/api';
+import { getProfile, login, register, forgotPassword, resetPassword } from '../services/api';
 
 export default function useCustomerAuth(showToast) {
   const [customer, setCustomer] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authTab, setAuthTab] = useState('login');
+  const [authTab, setAuthTab] = useState('login'); // login, register, forgot, reset
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authAddress, setAuthAddress] = useState('');
+  const [authResetCode, setAuthResetCode] = useState('');
   const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -36,6 +37,7 @@ export default function useCustomerAuth(showToast) {
     setAuthName('');
     setAuthPhone('');
     setAuthAddress('');
+    setAuthResetCode('');
     setAuthError(null);
   };
 
@@ -50,7 +52,9 @@ export default function useCustomerAuth(showToast) {
         localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.(`👋 Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
-      } else {
+        setAuthModalOpen(false);
+        resetAuthForm();
+      } else if (authTab === 'register') {
         const payload = {
           email: authEmail,
           password: authPassword,
@@ -63,12 +67,22 @@ export default function useCustomerAuth(showToast) {
         localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.('🎉 Регистрация успешно завершена!');
+        setAuthModalOpen(false);
+        resetAuthForm();
+      } else if (authTab === 'forgot') {
+        await forgotPassword(authEmail);
+        showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
+        setAuthTab('reset');
+      } else if (authTab === 'reset') {
+        await resetPassword(authEmail, authResetCode, authPassword);
+        showToast?.('🔑 Пароль успешно изменен! Войдите с новым паролем.');
+        setAuthTab('login');
+        setAuthPassword('');
+        setAuthResetCode('');
       }
-      setAuthModalOpen(false);
-      resetAuthForm();
     } catch (err) {
       console.error(err);
-      setAuthError(err.response?.data?.error || err.message || 'Ошибка входа');
+      setAuthError(err.response?.data?.error || err.message || 'Ошибка');
     } finally {
       setAuthLoading(false);
     }
@@ -101,6 +115,8 @@ export default function useCustomerAuth(showToast) {
     setAuthPhone,
     authAddress,
     setAuthAddress,
+    authResetCode,
+    setAuthResetCode,
     authError,
     setAuthError,
     authLoading,

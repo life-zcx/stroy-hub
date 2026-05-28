@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
+import { sendEmail } from '../utils/email.js';
+
 
 const buildUserPayload = (user) => ({
   id: user.id,
@@ -123,3 +125,101 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ error: 'Ошибка получения профиля: ' + error.message });
   }
 };
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Укажите email' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      // For security reasons, don't disclose if user exists or not, but in B2B let's be explicit or return ok.
+      // Let's return error since it helps users correct their typos
+      return res.status(404).json({ error: 'Пользователь с таким email не найден' });
+    }
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Save token to database (delete any old recovery tokens for this email first)
+    await prisma.passwordResetToken.deleteMany({ where: { email } });
+    await prisma.passwordResetToken.create({
+      data: {
+        email,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Send email using Resend utility
+    const html = `
+      <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; font-size: 20px; font-weight: bold; margin-bottom: 8px;">Восстановление доступа TORMAG.KZ</h2>
+        <p style="color: #475569; font-size: 14px; margin-bottom: 24px;">Вы запросили сброс пароля. Используйте код ниже для подтверждения операции. Код действителен в течение 10 минут.</p>
+        <div style="background-color: #f1f5f9; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
+          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0f172a;">${code}</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 11px;">Если вы не совершали этот запрос, просто проигнорируйте это письмо.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: 'Код для восстановления пароля - TORMAG.KZ',
+      html,
+    });
+
+    res.json({ message: 'Код подтверждения успешно отправлен на вашу почту.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при отправке кода: ' + error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { email, code, password } = req.body;
+
+  if (!email || !code || !password) {
+    return res.status(400).json({ error: 'Пожалуйста, укажите email, код и новый пароль' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Verify recovery code
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: { email, code },
+    });
+
+    if (!resetToken) {
+      return res.status(400).json({ error: 'Неверный код подтверждения' });
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      return res.status(400).json({ error: 'Срок действия кода подтверждения истек. Запросите новый код.' });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword },
+    });
+
+    // Delete token so it cannot be reused
+    await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+
+    res.json({ message: 'Пароль успешно изменен. Теперь вы можете войти в систему.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка смены пароля: ' + error.message });
+  }
+};
+

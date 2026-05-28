@@ -126,4 +126,14 @@ export const recordAnalyticsEvent = async (payload) => {
   return response.data;
 };
 
+export const forgotPassword = async (email) => {
+  const response = await api.post('/auth/forgot-password', { email });
+  return response.data;
+};
+
+export const resetPassword = async (email, code, password) => {
+  const response = await api.post('/auth/reset-password', { email, code, password });
+  return response.data;
+};
+
 export default api;

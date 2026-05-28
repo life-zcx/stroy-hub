@@ -22,3 +22,5 @@ function parsePositiveInteger(value, fallback) {
 
 export const JWT_SECRET = requireEnv('JWT_SECRET');
 export const MAX_UPLOAD_SIZE_MB = parsePositiveInteger(process.env.MAX_UPLOAD_SIZE_MB, '5');
+export const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim() || '';
+
