@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 const KNOWN_PAGES = [
   'catalog', 'advisor', 'delivery', 'about', 'legal', 'favorites',
-  'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions'
+  'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions'
 ];
 
 const getInitialPage = () => {
@@ -17,25 +17,33 @@ const getInitialPage = () => {
   // Catalog with category check
   const catalogMatch = path.match(/^catalog\/(.+)$/);
   if (catalogMatch) {
-    return { page: 'catalog', productId: null, categorySlug: catalogMatch[1] };
+    return { page: 'catalog', productId: null, categorySlug: catalogMatch[1], orderId: null };
+  }
+
+  const orderMatch = path.match(/^orders\/(\d+)$/);
+  if (orderMatch) {
+    return { page: 'order-detail', productId: null, categorySlug: null, orderId: orderMatch[1] };
   }
 
   if (KNOWN_PAGES.includes(path)) {
-    return { page: path, productId: null, categorySlug: null };
+    return { page: path, productId: null, categorySlug: null, orderId: null };
   }
   
-  return { page: 'home', productId: null, categorySlug: null };
+  return { page: 'home', productId: null, categorySlug: null, orderId: null };
 };
 
 export default function useNavigation() {
   const [navigation, setNavigation] = useState(getInitialPage);
 
   const setCurrentPage = (page, productId = null, categorySlug = null) => {
-    setNavigation({ page, productId, categorySlug });
+    const orderId = page === 'order-detail' ? productId : null;
+    setNavigation({ page, productId: page === 'product' ? productId : null, categorySlug, orderId });
     
     let path = '/';
     if (page === 'product') {
       path = `/product/${productId}`;
+    } else if (page === 'order-detail') {
+      path = `/orders/${productId}`;
     } else if (page === 'catalog') {
       path = categorySlug && categorySlug !== 'all' ? `/catalog/${categorySlug}` : '/catalog';
     } else if (page !== 'home') {
@@ -63,6 +71,7 @@ export default function useNavigation() {
     currentPage: navigation.page,
     currentProductId: navigation.productId,
     currentCategorySlug: navigation.categorySlug,
+    currentOrderId: navigation.orderId,
     setCurrentPage,
     openProductPage,
   };

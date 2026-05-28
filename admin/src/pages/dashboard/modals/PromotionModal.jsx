@@ -104,7 +104,7 @@ export default function PromotionModal({
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Промокод</label>
-              <input type="text" name="promoCode" value={promotionForm.promoCode} onChange={onFormChange} placeholder="STROY10" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm uppercase tracking-[0.2em]" />
+              <input type="text" name="promoCode" value={promotionForm.promoCode} onChange={onFormChange} placeholder="TORMAG10" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm uppercase tracking-[0.2em]" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Область действия *</label>

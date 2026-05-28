@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Auto-inject JWT Customer token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('stroyhub_customer_token');
+  const token = localStorage.getItem('tormag_customer_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -37,7 +37,14 @@ export const getProfile = async () => {
 // Products API
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products', { params });
-  return response.data;
+  return Array.isArray(response.data) ? response.data : (response.data.data || []);
+};
+
+export const getProductsPage = async (params = {}) => {
+  const response = await api.get('/products', { params });
+  return Array.isArray(response.data)
+    ? { data: response.data, total: response.data.length, page: 1, totalPages: 1, hasMore: false }
+    : response.data;
 };
 
 export const getProductById = async (id) => {
@@ -63,8 +70,13 @@ export const getCategoryById = async (id) => {
 };
 
 // Orders API (only returns customer's orders now thanks to backend logic!)
-export const getOrders = async () => {
-  const response = await api.get('/orders');
+export const getOrders = async (params = {}) => {
+  const response = await api.get('/orders', { params });
+  return response.data;
+};
+
+export const getOrderById = async (id) => {
+  const response = await api.get(`/orders/${id}`);
   return response.data;
 };
 
@@ -101,6 +113,16 @@ export const createCallbackRequest = async (userName, userPhone) => {
 
 export const createPartnerRequest = async (payload) => {
   const response = await api.post('/partner-requests', payload);
+  return response.data;
+};
+
+export const recordPageView = async (payload) => {
+  const response = await api.post('/analytics/page-view', payload);
+  return response.data;
+};
+
+export const recordAnalyticsEvent = async (payload) => {
+  const response = await api.post('/analytics/event', payload);
   return response.data;
 };
 

@@ -1,7 +1,7 @@
 {
-  "name": "stroy-hub-root",
+  "name": "tormag-root",
   "version": "1.0.0",
-  "description": "StroyHub.kz - Marketplace for construction materials",
+  "description": "Tormag.kz - Marketplace for construction materials",
   "private": true,
   "scripts": {
     "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix admin",
@@ -12,15 +12,15 @@
     "docker:down": "docker-compose down",
     "docker:prod:up": "docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build",
     "docker:prod:down": "docker compose --env-file .env.production -f docker-compose.prod.yml down",
-    "db:push": "docker exec -it stroyhub_backend npx prisma db push",
-    "db:seed": "docker exec -it stroyhub_backend npm run prisma:seed"
+    "db:push": "docker exec tormag_backend npx prisma db push",
+    "db:seed": "docker exec tormag_backend npm run prisma:seed"
   },
   "keywords": [
     "marketplace",
     "construction",
     "materials",
     "kazakhstan",
-    "stroy-hub"
+    "tormag"
   ],
   "author": "Antigravity Dev Team",
   "license": "ISC"

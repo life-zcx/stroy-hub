@@ -44,7 +44,7 @@ async function main() {
   // 1. Администратор платформы
   await prisma.user.create({
     data: {
-      email: 'admin@stroy-hub.kz',
+      email: 'admin@tormag.kz',
       password: adminPassword,
       name: 'Юрий',
       phone: '8 (777) 111-22-33',
@@ -55,7 +55,7 @@ async function main() {
   // 2. Представитель Bosch
   await prisma.user.create({
     data: {
-      email: 'bosch@stroy-hub.kz',
+      email: 'bosch@tormag.kz',
       password: boschPassword,
       name: 'Представитель Bosch Official',
       phone: '8 (777) 999-88-77',
@@ -67,7 +67,7 @@ async function main() {
   // 3. Представитель Knauf
   await prisma.user.create({
     data: {
-      email: 'knauf@stroy-hub.kz',
+      email: 'knauf@tormag.kz',
       password: knaufPassword,
       name: 'Представитель Knauf Центр',
       phone: '8 (777) 444-55-66',
@@ -393,7 +393,7 @@ async function main() {
         title: 'Скидка 10% на первый заказ от 50 000 ₸',
         description: 'Используйте промокод при первом оформлении и получите дополнительную скидку на строительные материалы из любой категории.',
         badge: 'Новый клиент',
-        promoCode: 'STROY10',
+        promoCode: 'TORMAG10',
         type: 'PROMOCODE',
         discountType: 'PERCENT',
         discountValue: 10,

@@ -15,14 +15,14 @@ export default function useCustomerAuth(showToast) {
 
   useEffect(() => {
     const checkCustomerAuth = async () => {
-      const token = localStorage.getItem('stroyhub_customer_token');
+      const token = localStorage.getItem('tormag_customer_token');
       if (token) {
         try {
           const profile = await getProfile();
           setCustomer(profile);
         } catch (error) {
           console.error('Invalid customer token:', error);
-          localStorage.removeItem('stroyhub_customer_token');
+          localStorage.removeItem('tormag_customer_token');
         }
       }
     };
@@ -47,7 +47,7 @@ export default function useCustomerAuth(showToast) {
     try {
       if (authTab === 'login') {
         const data = await login(authEmail, authPassword);
-        localStorage.setItem('stroyhub_customer_token', data.token);
+        localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.(`👋 Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
       } else {
@@ -60,7 +60,7 @@ export default function useCustomerAuth(showToast) {
           role: 'CUSTOMER',
         };
         const data = await register(payload);
-        localStorage.setItem('stroyhub_customer_token', data.token);
+        localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.('🎉 Регистрация успешно завершена!');
       }
@@ -75,7 +75,7 @@ export default function useCustomerAuth(showToast) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('stroyhub_customer_token');
+    localStorage.removeItem('tormag_customer_token');
     setCustomer(null);
     showToast?.('🚪 Вы успешно вышли из профиля.');
   };

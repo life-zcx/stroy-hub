@@ -363,7 +363,7 @@ export default function OrdersPage({
       </head>
       <body>
         <div class="header">
-          <div class="logo">STROY<span>HUB</span></div>
+          <div class="logo">TORMAG<span>.KZ</span></div>
           <div class="title">
             <h1>РАСХОДНАЯ НАКЛАДНАЯ №${order.id}</h1>
             <p>Дата: ${new Date(order.createdAt).toLocaleString('ru-RU')}</p>
@@ -428,8 +428,8 @@ export default function OrdersPage({
         </div>
 
         <div class="footer">
-          <p>Благодарим вас за сотрудничество со строительным маркетплейсом StroyHub.kz!</p>
-          <p>По вопросам поддержки: support@stroyhub.kz</p>
+          <p>Благодарим вас за сотрудничество со строительным маркетплейсом Tormag.kz!</p>
+          <p>По вопросам поддержки: support@tormag.kz</p>
         </div>
 
         <script>
@@ -453,6 +453,14 @@ export default function OrdersPage({
       case 'cancelled': return <AlertCircle className="h-4 w-4 text-rose-500" />;
       default: return <Clock className="h-4 w-4 text-slate-500" />;
     }
+  };
+
+  const getStatusChangedAt = (order, status) => {
+    const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+    const entry = [...history].reverse().find((item) => item?.status === status);
+    if (entry?.changedAt) return new Date(entry.changedAt).toLocaleString('ru-RU');
+    if (status === 'pending') return new Date(order.createdAt).toLocaleString('ru-RU');
+    return 'Время появится после смены статуса';
   };
 
   return (
@@ -1126,9 +1134,9 @@ export default function OrdersPage({
                         <div className="absolute -left-[31px] top-0 bg-slate-900 text-white p-1 rounded-full border-2 border-white">
                           <ShoppingBag className="h-3 w-3" />
                         </div>
-                        <span className="font-black text-slate-800 block">Заказ оформлен на StroyHub</span>
+                        <span className="font-black text-slate-800 block">Заказ оформлен на Tormag</span>
                         <span className="text-[10px] text-slate-400 mt-0.5">
-                          {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
+                          {getStatusChangedAt(selectedOrder, 'pending')}
                         </span>
                       </div>
 
@@ -1145,7 +1153,7 @@ export default function OrdersPage({
                           ['processing', 'shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
                         }`}>Сборка и комплектация</span>
                         {['processing', 'shipped', 'completed'].includes(selectedOrder.status) && (
-                          <span className="text-[10px] text-slate-400">Склады подтвердили сборку материалов</span>
+                          <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'processing')}</span>
                         )}
                       </div>
 
@@ -1162,7 +1170,7 @@ export default function OrdersPage({
                           ['shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
                         }`}>Сборная доставка в пути</span>
                         {['shipped', 'completed'].includes(selectedOrder.status) && (
-                          <span className="text-[10px] text-slate-400">Грузовик выехал со складов к клиенту</span>
+                          <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'shipped')}</span>
                         )}
                       </div>
 
@@ -1173,7 +1181,7 @@ export default function OrdersPage({
                             <X className="h-3 w-3" />
                           </div>
                           <span className="font-black text-rose-600 block">Заказ отменен / Отказ</span>
-                          <span className="text-[10px] text-slate-400">Обработка заказа прекращена</span>
+                          <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'cancelled')}</span>
                         </div>
                       ) : (
                         <div className="relative">
@@ -1188,7 +1196,7 @@ export default function OrdersPage({
                             selectedOrder.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
                           }`}>Доставлен и завершен</span>
                           {selectedOrder.status === 'completed' && (
-                            <span className="text-[10px] text-slate-400">Материалы переданы покупателю</span>
+                            <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'completed')}</span>
                           )}
                         </div>
                       )}

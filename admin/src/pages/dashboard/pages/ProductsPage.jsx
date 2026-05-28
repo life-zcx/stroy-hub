@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Edit3 as EditIcon,
   Package as PackageIcon,
   Plus as PlusIcon,
   Trash2 as Trash2Icon,
+  Search as SearchIcon,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
+import { getProductsPaged } from '../../../services/api';
+
+const PAGE_SIZE = 50;
 
 export default function ProductsPage({
-  products,
   categories,
   onCreateProduct,
   onEditProduct,
@@ -15,32 +21,121 @@ export default function ProductsPage({
   formatPrice,
   getCategoryPath,
 }) {
+  const [page, setPage]             = useState(1);
+  const [search, setSearch]         = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [products, setProducts]     = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading]       = useState(true);
+
+  const debounceTimer = useRef(null);
+
+  // Debounce search input
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearch(val);
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(val);
+      setPage(1);
+    }, 400);
+  };
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await getProductsPaged({ page, limit: PAGE_SIZE, search: debouncedSearch });
+      setProducts(result.data || []);
+      setTotal(result.total || 0);
+      setTotalPages(result.totalPages || 1);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // After create/edit/delete, refresh current page
+  const handleDeleteWithRefresh = async (id) => {
+    await onDeleteProduct(id);
+    fetchProducts();
+  };
+
+  const handleEditProduct = (product) => {
+    onEditProduct(product);
+  };
+
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 font-outfit">Зарегистрированные товары</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Полный список ассортимента на витрине StroyHub</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {loading ? 'Загрузка...' : `${total.toLocaleString('ru-RU')} позиций в каталоге Tormag`}
+          </p>
         </div>
-        <button
-          onClick={onCreateProduct}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md transform hover:-translate-y-0.5"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Добавить товар
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Поиск по названию..."
+              value={search}
+              onChange={handleSearchChange}
+              className="pl-8 pr-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 w-52 transition-all"
+            />
+          </div>
+
+          {/* Reload */}
+          <button
+            onClick={fetchProducts}
+            disabled={loading}
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-40"
+            title="Обновить"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          {/* Add product */}
+          <button
+            onClick={onCreateProduct}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md transform hover:-translate-y-0.5"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Добавить товар
+          </button>
+        </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {products.length === 0 ? (
-          <p className="text-center py-20 text-slate-500">Товары отсутствуют.</p>
+        {loading && products.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+            <RefreshCw className="h-7 w-7 animate-spin text-blue-500 mb-2" />
+            <p className="text-xs font-bold uppercase tracking-widest">Загрузка товаров...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="py-20 text-center">
+            <PackageIcon className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm font-semibold">
+              {debouncedSearch ? `По запросу «${debouncedSearch}» ничего не найдено` : 'Товары отсутствуют'}
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-gray-150 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pr-2">Товар</th>
-                  <th className="pb-3 px-2">Категория в базе</th>
+                  <th className="pb-3 px-2">Категория</th>
                   <th className="pb-3 px-2">Дистрибьютор</th>
                   <th className="pb-3 px-2">Цена</th>
                   <th className="pb-3 pl-2 text-right">Действия</th>
@@ -49,43 +144,41 @@ export default function ProductsPage({
               <tbody>
                 {products.map((product) => (
                   <tr key={product.id} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
-                    <td className="py-3.5 pr-2 font-semibold text-slate-900 max-w-[280px] truncate flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
-                        <img
-                          src={product.image}
-                          className="w-full h-full object-contain"
-                          onError={(event) => {
-                            event.target.src = 'https://placehold.co/50x50';
-                          }}
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="truncate font-bold text-slate-900">{product.name}</span>
-                        {product.isHit && (
-                          <span className="text-[8px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded w-fit mt-0.5">
-                            ХИТ 🔥
-                          </span>
-                        )}
+                    <td className="py-3.5 pr-2 font-semibold text-slate-900 max-w-[280px] truncate">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                          <img
+                            src={product.image}
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.target.src = 'https://placehold.co/50x50'; }}
+                          />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate font-bold text-slate-900">{product.name}</span>
+                          {product.isHit && (
+                            <span className="text-[8px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded w-fit mt-0.5">ХИТ 🔥</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-2 text-slate-500 text-xs font-semibold">
                       {product.categoryRelation
                         ? getCategoryPath(product.categoryId)
-                        : (categories.find((category) => category.slug === product.category)?.name || product.category)}
+                        : (categories.find((c) => c.slug === product.category)?.name || product.category)}
                     </td>
                     <td className="py-3.5 px-2 text-slate-500 text-xs font-bold">{product.supplier?.name}</td>
                     <td className="py-3.5 px-2 font-extrabold text-slate-900">{formatPrice(product.price)}</td>
                     <td className="py-3.5 pl-2 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => onEditProduct(product)}
+                          onClick={() => handleEditProduct(product)}
                           className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
                           title="Редактировать товар"
                         >
                           <EditIcon className="h-4.5 w-4.5" />
                         </button>
                         <button
-                          onClick={() => onDeleteProduct(product.id)}
+                          onClick={() => handleDeleteWithRefresh(product.id)}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                           title="Удалить товар"
                         >
@@ -100,6 +193,57 @@ export default function ProductsPage({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs text-slate-500 font-semibold">
+            Страница <span className="font-black text-slate-800">{page}</span> из <span className="font-black text-slate-800">{totalPages}</span>
+            &nbsp;·&nbsp;
+            всего <span className="font-black text-slate-800">{total.toLocaleString('ru-RU')}</span> позиций
+          </span>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Назад
+            </button>
+
+            {/* Page numbers */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+              const pageNum = start + i;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  disabled={loading}
+                  className={`w-8 h-8 text-xs font-bold rounded-xl transition-all ${
+                    pageNum === page
+                      ? 'bg-slate-900 text-white shadow-md'
+                      : 'text-slate-600 bg-white border border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || loading}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Вперёд
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

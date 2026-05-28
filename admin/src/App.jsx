@@ -10,7 +10,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('stroyhub_admin_token');
+    const token = localStorage.getItem('tormag_admin_token');
     if (!token) {
       setLoading(false);
       return;
@@ -21,13 +21,13 @@ export default function App() {
       if (profile.role === 'ADMIN' || profile.role === 'SUPPLIER') {
         setUser(profile);
       } else {
-        localStorage.removeItem('stroyhub_admin_token');
-        localStorage.removeItem('stroyhub_admin_user');
+        localStorage.removeItem('tormag_admin_token');
+        localStorage.removeItem('tormag_admin_user');
       }
     } catch (error) {
       console.error('Ошибка проверки токена:', error);
-      localStorage.removeItem('stroyhub_admin_token');
-      localStorage.removeItem('stroyhub_admin_user');
+      localStorage.removeItem('tormag_admin_token');
+      localStorage.removeItem('tormag_admin_user');
     } finally {
       setLoading(false);
     }
@@ -43,8 +43,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('stroyhub_admin_token');
-    localStorage.removeItem('stroyhub_admin_user');
+    localStorage.removeItem('tormag_admin_token');
+    localStorage.removeItem('tormag_admin_user');
     setUser(null);
     showToast('🚪 Вы успешно вышли из панели управления.');
   };
@@ -58,7 +58,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center font-sans text-slate-400">
         <RefreshCw className="h-10 w-10 text-amber-500 animate-spin mb-3" />
-        <p className="text-sm font-semibold tracking-wide uppercase">Безопасное соединение stroy-hub...</p>
+        <p className="text-sm font-semibold tracking-wide uppercase">Безопасное соединение tormag...</p>
       </div>
     );
   }

@@ -7,7 +7,7 @@ export default function DashboardHeader({ user, isSupplier, loading, onReload, o
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-outfit">
-            Панель управления StroyHub
+            Панель управления Tormag
           </h1>
           <span className="text-xs bg-slate-900 text-amber-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
             {user.role}

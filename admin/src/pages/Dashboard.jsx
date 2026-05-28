@@ -3,6 +3,7 @@ import Sidebar from './dashboard/Sidebar';
 import BrandModal from './dashboard/modals/BrandModal';
 import CategoryModal from './dashboard/modals/CategoryModal';
 import ProductModal from './dashboard/modals/ProductModal';
+import { LogOut, RefreshCw } from 'lucide-react';
 import SupplierModal from './dashboard/modals/SupplierModal';
 import CallbacksPage from './dashboard/pages/CallbacksPage';
 import BrandsPage from './dashboard/pages/BrandsPage';
@@ -16,6 +17,7 @@ import UsersPage from './dashboard/pages/UsersPage';
 import PricingPage from './dashboard/pages/PricingPage';
 import LogisticsPage from './dashboard/pages/LogisticsPage';
 import AnalyticsPage from './dashboard/pages/AnalyticsPage';
+import SiteAnalyticsPage from './dashboard/pages/SiteAnalyticsPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
@@ -28,7 +30,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'promotions', 'brands', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
+const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'site-analytics', 'promotions', 'brands', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -37,6 +39,7 @@ const pageTitles = {
   pricing: 'Ценообразование и Маржа',
   logistics: 'Оптимизация сборной доставки',
   analytics: 'Аналитика и Отчеты',
+  'site-analytics': 'Посещаемость сайта',
   promotions: 'Акции и скидки',
   brands: 'Бренды-партнеры',
   callbacks: 'Обратные звонки',
@@ -56,6 +59,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     isSupplier,
     loading,
     products,
+    productTotal,
     suppliers,
     categories,
     orders,
@@ -147,6 +151,8 @@ export default function Dashboard({ user, onLogout, showToast }) {
     return getPageFromHash(window.location.hash, allowedPages);
   });
 
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
   useEffect(() => {
     const syncPageFromHash = () => {
       setActivePage(getPageFromHash(window.location.hash, allowedPages));
@@ -176,7 +182,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
   };
 
   const counts = {
-    products: products.length,
+    products: productTotal,
     orders: orders.length,
     pricing: 0,
     logistics: 0,
@@ -198,6 +204,8 @@ export default function Dashboard({ user, onLogout, showToast }) {
         return <LogisticsPage showToast={showToast} />;
       case 'analytics':
         return <AnalyticsPage showToast={showToast} />;
+      case 'site-analytics':
+        return <SiteAnalyticsPage showToast={showToast} />;
       case 'orders':
         return (
           <OrdersPage
@@ -285,7 +293,6 @@ export default function Dashboard({ user, onLogout, showToast }) {
       default:
         return (
           <ProductsPage
-            products={products}
             categories={categories}
             onCreateProduct={startCreateProduct}
             onEditProduct={startEditProduct}
@@ -297,8 +304,18 @@ export default function Dashboard({ user, onLogout, showToast }) {
     }
   };
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-50/50 flex font-sans">
+    <div className="h-screen overflow-hidden bg-slate-50/50 flex font-sans">
       {/* Sidebar Navigation */}
       <Sidebar
         activePage={activePage}
@@ -312,7 +329,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-72 min-h-screen flex flex-col relative overflow-x-hidden">
+      <main className="flex-1 ml-72 h-screen flex flex-col relative overflow-hidden">
         {/* Compact Top Bar */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-8 py-4 flex items-center justify-between">
           <div>
@@ -331,17 +348,59 @@ export default function Dashboard({ user, onLogout, showToast }) {
               </span>
             )}
             <div className="h-8 w-px bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-700">{user.name}</span>
-              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-[10px] font-black">
-                {user.name?.[0] || 'A'}
-              </div>
+            <div className="relative header-user-menu-container">
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+              >
+                <span className="text-xs font-bold text-slate-700">{user.name}</span>
+                <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-[10px] font-black uppercase shadow-sm">
+                  {user.name?.[0] || 'A'}
+                </div>
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2.5 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-2xl z-50 p-3 animate-fade-in-up">
+                  <div className="px-3 py-2.5 border-b border-slate-100 mb-2 text-left">
+                    <p className="text-xs font-extrabold text-slate-900 truncate">{user.name || 'Пользователь'}</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{user.role}</p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        reloadData();
+                      }}
+                      disabled={loading}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 text-blue-600 ${loading ? 'animate-spin' : ''}`} />
+                      <span>Синхронизировать</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      <span>Выйти из системы</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 p-8 animate-fade-in-up">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 animate-fade-in-up admin-main-scroll">
           {renderPage()}
         </div>
       </main>

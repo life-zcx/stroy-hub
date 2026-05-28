@@ -129,54 +129,109 @@ async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
 }
 
 export const getAllProducts = async (req, res) => {
-  const { category, search } = req.query;
-  
+  const {
+    category,
+    search,
+    supplierId,
+    page = 1,
+    limit = 50,
+    sort = 'popular',
+    minPrice,
+    maxPrice,
+    onlyHits,
+    onlyBulk,
+  } = req.query;
+
+  const pageNum  = Math.max(1, parseInt(page,  10) || 1);
+  const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+  const skip     = (pageNum - 1) * limitNum;
+
   const where = {};
-  
+
   if (search) {
-    where.name = {
-      contains: search,
-      mode: 'insensitive'
-    };
+    where.name = { contains: search, mode: 'insensitive' };
   }
+
+  if (supplierId) {
+    const sid = parseInt(supplierId, 10);
+    if (!isNaN(sid)) where.supplierId = sid;
+  }
+
+  if (onlyHits === 'true') {
+    where.isHit = true;
+  }
+
+  if (onlyBulk === 'true') {
+    where.bulkDiscount = { not: null };
+  }
+
+  const parsedMinPrice = Number.parseFloat(minPrice);
+  const parsedMaxPrice = Number.parseFloat(maxPrice);
+  if (Number.isFinite(parsedMinPrice) || Number.isFinite(parsedMaxPrice)) {
+    where.price = {};
+    if (Number.isFinite(parsedMinPrice)) where.price.gte = parsedMinPrice;
+    if (Number.isFinite(parsedMaxPrice)) where.price.lte = parsedMaxPrice;
+  }
+
+  const orderBy = (() => {
+    switch (sort) {
+      case 'priceAsc':
+        return { price: 'asc' };
+      case 'priceDesc':
+        return { price: 'desc' };
+      case 'rating':
+        return { rating: 'desc' };
+      default:
+        return { id: 'desc' };
+    }
+  })();
 
   try {
     if (category && category !== 'all') {
       const { slugs, ids } = await getDescendantCategorySlugsAndIds(category);
       where.OR = [
         { category: { in: slugs } },
-        { categoryId: { in: ids } }
+        { categoryId: { in: ids } },
       ];
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      include: {
-        supplier: true,
-        categoryRelation: true
-      },
-      orderBy: { id: 'desc' }
-    });
+    const [total, products] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: { supplier: true, categoryRelation: true },
+        orderBy,
+        skip,
+        take: limitNum,
+      }),
+    ]);
 
     const settings = readPricingSettings();
     const { markups, overrides } = settings;
 
     const mappedProducts = products.map(p => {
-      const wholesalePrice = p.price;
-      const categoryMarkup = markups[p.category] !== undefined ? markups[p.category] : 15;
-      const activeMarkup = overrides[p.id] !== undefined ? overrides[p.id] : categoryMarkup;
-      const markupValue = wholesalePrice * (activeMarkup / 100);
-      const retailPrice = wholesalePrice + markupValue;
+      const wholesalePrice  = p.price;
+      const categoryMarkup  = markups[p.category] !== undefined ? markups[p.category] : 15;
+      const activeMarkup    = overrides[p.id]     !== undefined ? overrides[p.id]     : categoryMarkup;
+      const markupValue     = wholesalePrice * (activeMarkup / 100);
+      const retailPrice     = wholesalePrice + markupValue;
 
       return {
         ...p,
         wholesalePrice,
-        price: retailPrice,
-        oldPrice: p.oldPrice ? p.oldPrice + p.oldPrice * (activeMarkup / 100) : null
+        price:    retailPrice,
+        oldPrice: p.oldPrice ? p.oldPrice + p.oldPrice * (activeMarkup / 100) : null,
       };
     });
 
-    res.json(mappedProducts);
+    res.json({
+      data:       mappedProducts,
+      total,
+      page:       pageNum,
+      limit:      limitNum,
+      totalPages: Math.ceil(total / limitNum),
+      hasMore:    pageNum * limitNum < total,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения товаров: ' + error.message });
   }
@@ -250,7 +305,7 @@ export const createProduct = async (req, res) => {
     }
 
     // Determine image path: uploaded file or external URL
-    let finalImage = 'https://placehold.co/400x300/f8fafc/475569?text=StroyHub';
+    let finalImage = 'https://placehold.co/400x300/f8fafc/475569?text=Tormag';
     if (req.file) {
       finalImage = `/uploads/${req.file.filename}`;
     } else if (imageUrl) {

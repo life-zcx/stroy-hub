@@ -42,6 +42,8 @@ model User {
   isBlocked  Boolean   @default(false)
   blockedAt  DateTime?
   orders     Order[]
+  pageViews  PageView[]
+  analyticsEvents AnalyticsEvent[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 }
@@ -85,6 +87,7 @@ model Product {
   supplierId     Int
   supplier       Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   orderItems     OrderItem[]
+  analyticsEvents AnalyticsEvent[]
   categoryId     Int?
   categoryRelation Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 }
@@ -115,6 +118,7 @@ model Order {
   promotionTitle  String?
   promotionId     Int?
   promotionSnapshot Json?
+  statusHistory  Json?
   promotion       Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   userId          Int?
   user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -122,6 +126,7 @@ model Order {
   managerNotes       String?
   createdAt       DateTime   @default(now())
   items           OrderItem[]
+  analyticsEvents AnalyticsEvent[]
 }
 
 model OrderItem {
@@ -183,4 +188,55 @@ model Promotion {
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   orders        Order[]
+}
+
+model PageView {
+  id        Int      @id @default(autoincrement())
+  path      String
+  title     String?
+  referrer  String?
+  userAgent String?
+  ip        String?
+  sessionId String?
+  region    String?
+  country   String?
+  city      String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model AnalyticsEvent {
+  id          Int      @id @default(autoincrement())
+  type        String
+  path        String?
+  sessionId   String?
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  productId   Int?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  orderId     Int?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  searchQuery String?
+  value       Float?
+  metadata    Json?
+  userAgent   String?
+  ip          String?
+  region      String?
+  country     String?
+  city        String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([productId])
+  @@index([orderId])
+  @@index([searchQuery])
 }

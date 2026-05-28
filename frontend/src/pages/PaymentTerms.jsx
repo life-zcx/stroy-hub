@@ -6,7 +6,7 @@ export default function PaymentTerms() {
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left">
       <div className="space-y-3">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Условия оплаты</h1>
-        <p className="text-slate-500 text-sm">Все способы и детали осуществления расчетов на платформе StroyHub</p>
+        <p className="text-slate-500 text-sm">Все способы и детали осуществления расчетов на платформе Tormag</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -64,7 +64,7 @@ export default function PaymentTerms() {
         <div>
           <h4 className="font-bold text-slate-900 text-sm">Безопасность сделок</h4>
           <p className="text-slate-500 text-xs mt-1 leading-relaxed">
-            StroyHub защищает ваши средства. Деньги депонируются на платформе до момента подтверждения успешного получения и проверки товара на месте. Если товар имеет брак, вы сможете быстро оформить возврат.
+            Tormag защищает ваши средства. Деньги депонируются на платформе до момента подтверждения успешного получения и проверки товара на месте. Если товар имеет брак, вы сможете быстро оформить возврат.
           </p>
         </div>
       </div>

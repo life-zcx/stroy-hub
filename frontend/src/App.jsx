@@ -15,11 +15,12 @@ import Faq from './pages/Faq';
 import Requisites from './pages/Requisites';
 import Partners from './pages/Partners';
 import Promotions from './pages/Promotions';
+import MyOrders from './pages/MyOrders';
+import MyOrderDetails from './pages/MyOrderDetails';
 import CartSidebar from './components/CartSidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
-import OrdersModal from './components/OrdersModal';
 import RegionModal from './components/RegionModal';
 import CallbackModal from './components/CallbackModal';
 import Toast from './components/Toast';
@@ -31,6 +32,7 @@ import useCustomerAuth from './hooks/useCustomerAuth';
 import useOrders from './hooks/useOrders';
 import useRegion from './hooks/useRegion';
 import useFavorites from './hooks/useFavorites'
+import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,7 +42,7 @@ export default function App() {
   const [legalTab, setLegalTab] = useState('user-agreement');
 
   const { toast, showToast } = useToast();
-  const { currentPage, currentProductId, currentCategorySlug, setCurrentPage, openProductPage } = useNavigation();
+  const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
   const catalog = useCatalog(showToast, currentCategorySlug || 'all');
   const cart = useCart(showToast);
   const auth = useCustomerAuth(showToast);
@@ -64,13 +66,33 @@ export default function App() {
   };
 
   useEffect(() => {
-    localStorage.setItem('stroyhub_current_page', currentPage);
+    localStorage.setItem('tormag_current_page', currentPage);
     if (currentProductId) {
-      localStorage.setItem('stroyhub_product_id', currentProductId);
+      localStorage.setItem('tormag_product_id', currentProductId);
     } else {
-      localStorage.removeItem('stroyhub_product_id');
+      localStorage.removeItem('tormag_product_id');
     }
   }, [currentPage, currentProductId]);
+
+  useEffect(() => {
+    setAnalyticsContext({
+      region: region.currentRegion,
+      country: 'Казахстан',
+      city: region.currentRegion,
+    });
+  }, [region.currentRegion]);
+
+  useEffect(() => {
+    trackEvent('page_view', {
+      path: window.location.pathname,
+      title: document.title,
+      referrer: document.referrer,
+      sessionId: getAnalyticsSessionId(),
+      region: region.currentRegion,
+      country: 'Казахстан',
+      city: region.currentRegion,
+    });
+  }, [currentPage, currentProductId, currentCategorySlug, currentOrderId, region.currentRegion]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -90,7 +112,7 @@ export default function App() {
   }, [isUserMenuOpen]);
 
   useEffect(() => {
-    if (auth.authModalOpen || orders.ordersModalOpen || cart.isCartOpen || region.regionModalOpen || isCallbackModalOpen) {
+    if (auth.authModalOpen || cart.isCartOpen || region.regionModalOpen || isCallbackModalOpen) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
     } else {
@@ -102,7 +124,13 @@ export default function App() {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, [auth.authModalOpen, orders.ordersModalOpen, cart.isCartOpen, region.regionModalOpen, isCallbackModalOpen]);
+  }, [auth.authModalOpen, cart.isCartOpen, region.regionModalOpen, isCallbackModalOpen]);
+
+  useEffect(() => {
+    if (currentPage === 'orders' && auth.customer) {
+      orders.fetchMyOrders();
+    }
+  }, [currentPage, auth.customer]);
 
   const handleLogout = () => {
     auth.handleLogout();
@@ -129,12 +157,13 @@ export default function App() {
         onOpenCallback={() => setIsCallbackModalOpen(true)}
         onOpenFavorites={() => setCurrentPage('favorites')}
         favoritesCount={favorites.favoritesCount}
-        fetchMyOrders={orders.fetchMyOrders}
+        onOpenOrders={() => setCurrentPage('orders')}
         handleLogout={handleLogout}
         searchQuery={catalog.searchQuery}
         setSearchQuery={catalog.setSearchQuery}
         categories={catalog.categories}
-        products={catalog.allProducts}
+        products={catalog.searchSuggestions}
+        loadSearchSuggestions={catalog.loadSearchSuggestions}
       />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -151,14 +180,24 @@ export default function App() {
             products={catalog.products}
             categories={catalog.categories}
             loading={catalog.loading}
+            loadingMore={catalog.loadingMore}
+            hasMore={catalog.hasMore}
+            total={catalog.total}
             selectedCategory={catalog.selectedCategory}
             setSelectedCategory={handleSetCategory}
             searchQuery={catalog.searchQuery}
             setSearchQuery={catalog.setSearchQuery}
-            onAddToCart={cart.handleAddToCart}
-            onRefresh={catalog.loadProducts}
             sortBy={catalog.sortBy}
             setSortBy={catalog.setSortBy}
+            priceRange={catalog.priceRange}
+            setPriceRange={catalog.setPriceRange}
+            onlyHits={catalog.onlyHits}
+            setOnlyHits={catalog.setOnlyHits}
+            onlyBulk={catalog.onlyBulk}
+            setOnlyBulk={catalog.setOnlyBulk}
+            onAddToCart={cart.handleAddToCart}
+            onRefresh={catalog.loadProducts}
+            onLoadMore={catalog.loadMoreProducts}
             onOpenProduct={openProductPage}
             onNavigate={setCurrentPage}
             currentRegion={region.currentRegion}
@@ -186,6 +225,32 @@ export default function App() {
         {currentPage === 'requisites' && <Requisites />}
         {currentPage === 'partners' && <Partners showToast={showToast} />}
         {currentPage === 'promotions' && <Promotions />}
+        {currentPage === 'orders' && (
+          <MyOrders
+            customer={auth.customer}
+            orders={orders.orders}
+            loading={orders.ordersLoading}
+            hasMore={orders.ordersHasMore}
+            total={orders.ordersTotal}
+            onRefresh={orders.fetchMyOrders}
+            onLoadMore={orders.loadMoreOrders}
+            onOpenAuth={auth.openLoginModal}
+            onNavigate={setCurrentPage}
+          />
+        )}
+        {currentPage === 'order-detail' && (
+          <MyOrderDetails
+            customer={auth.customer}
+            orderId={currentOrderId}
+            orders={orders.orders}
+            loading={orders.orderDetailsLoading}
+            error={orders.orderDetailsError}
+            onRefresh={orders.fetchOrderDetails}
+            onLoadOrder={orders.fetchOrderDetails}
+            onOpenAuth={auth.openLoginModal}
+            onNavigate={setCurrentPage}
+          />
+        )}
         {currentPage === 'product' && (
           <ProductPage
             productId={currentProductId}
@@ -214,7 +279,6 @@ export default function App() {
       <Footer
         customer={auth.customer}
         onOpenAuth={auth.openLoginModal}
-        fetchMyOrders={orders.fetchMyOrders}
         onNavigate={setCurrentPage}
         setSelectedCategory={handleSetCategory}
         setLegalTab={setLegalTab}
@@ -256,12 +320,6 @@ export default function App() {
         handleAuthSubmit={auth.handleAuthSubmit}
         currentRegion={region.currentRegion}
         handleSelectRegion={region.handleSelectRegion}
-      />
-
-      <OrdersModal
-        isOpen={orders.ordersModalOpen}
-        onClose={() => orders.setOrdersModalOpen(false)}
-        orders={orders.orders}
       />
 
       <RegionModal

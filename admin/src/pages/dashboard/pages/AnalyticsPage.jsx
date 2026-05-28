@@ -43,7 +43,7 @@ export default function AnalyticsPage({ showToast }) {
 
   useEffect(() => {
     loadAnalyticsData();
-  }, []);
+  }, [timeRange]);
 
   // Saved markups config for calculating profit/margin on orders
   const markups = useMemo(() => {
@@ -54,8 +54,8 @@ export default function AnalyticsPage({ showToast }) {
       if (pricingSettings.markups) baseMarkups = pricingSettings.markups;
       if (pricingSettings.overrides) productOverrides = pricingSettings.overrides;
     } else {
-      const saved = localStorage.getItem('stroyhub_markups');
-      const overrides = localStorage.getItem('stroyhub_product_overrides');
+      const saved = localStorage.getItem('tormag_markups');
+      const overrides = localStorage.getItem('tormag_product_overrides');
       if (saved) {
         try { baseMarkups = JSON.parse(saved); } catch (e) {}
       }

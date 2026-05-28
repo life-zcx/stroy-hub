@@ -17,6 +17,7 @@ import {
   getOrders,
   getPartnerRequests,
   getPromotions,
+  getProductsPaged,
   getProducts,
   getSuppliers,
   getUsers,
@@ -132,7 +133,10 @@ function toIsoOrNull(value) {
 }
 
 export function useDashboardData({ user, showToast }) {
+  // products is now only a lightweight first-page batch for sidebar counts.
+  // Full paginated listing lives in ProductsPage and PricingPage.
   const [products, setProducts] = useState([]);
+  const [productTotal, setProductTotal] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -179,8 +183,11 @@ export function useDashboardData({ user, showToast }) {
     setLoading(true);
 
     try {
-      const loadedProducts = await getProducts();
-      setProducts(loadedProducts);
+      // Load only first page of products to populate sidebar count.
+      // ProductsPage / PricingPage each manage their own paginated fetches.
+      const firstPage = await getProductsPaged({ page: 1, limit: 50 });
+      setProducts(firstPage.data || []);
+      setProductTotal(firstPage.total || 0);
 
       const loadedSuppliers = await getSuppliers();
       setSuppliers(loadedSuppliers);
@@ -859,6 +866,7 @@ export function useDashboardData({ user, showToast }) {
     isSupplier,
     loading,
     products,
+    productTotal,
     suppliers,
     categories,
     orders,

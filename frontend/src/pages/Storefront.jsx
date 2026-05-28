@@ -23,16 +23,25 @@ export default function Storefront({
   loading,
   selectedCategory,
   setSelectedCategory,
+  searchQuery,
+  sortBy,
+  setSortBy,
+  priceRange,
+  setPriceRange,
+  onlyHits,
+  setOnlyHits,
+  onlyBulk,
+  setOnlyBulk,
+  loadingMore,
+  hasMore,
+  total,
+  onLoadMore,
   onAddToCart,
   onOpenProduct,
   onToggleFavorite,
   isFavorite,
 }) {
   const [viewMode, setViewMode] = useState('grid');
-  const [sortBy, setSortBy] = useState('popular');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 200000 });
-  const [onlyHits, setOnlyHits] = useState(false);
-  const [onlyBulk, setOnlyBulk] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -57,22 +66,8 @@ export default function Storefront({
   }, [selectedCategory, categories]);
 
   const processedProducts = useMemo(() => {
-    let result = [...products];
-
-    // Filter by price
-    result = result.filter(p => p.price >= priceRange.min && p.price <= priceRange.max);
-
-    // Filter by flags
-    if (onlyHits) result = result.filter(p => p.isHit);
-    if (onlyBulk) result = result.filter(p => p.isBulkPrice);
-
-    // Sort
-    if (sortBy === 'priceAsc') result.sort((a, b) => a.price - b.price);
-    if (sortBy === 'priceDesc') result.sort((a, b) => b.price - a.price);
-    if (sortBy === 'rating') result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
-    return result;
-  }, [products, priceRange, onlyHits, onlyBulk, sortBy]);
+    return products;
+  }, [products]);
 
   const activeFilterCount = (onlyHits ? 1 : 0) + (onlyBulk ? 1 : 0) + (priceRange.min > 0 || priceRange.max < 200000 ? 1 : 0);
 
@@ -222,7 +217,7 @@ export default function Storefront({
   );
 
   // If no category selected, show root Tiles view
-  if (selectedCategory === 'all' && loading === false && products.length > 0 && priceRange.min === 0 && priceRange.max === 200000 && !onlyHits && !onlyBulk) {
+  if (selectedCategory === 'all' && !searchQuery && loading === false && products.length > 0 && priceRange.min === 0 && priceRange.max === 200000 && !onlyHits && !onlyBulk) {
     return (
       <div className="space-y-12 animate-fade-in-up">
         {/* Banner or Title can go here */}
@@ -330,7 +325,7 @@ export default function Storefront({
              <div className="flex items-center justify-between gap-4 mt-2 pb-3 border-b border-slate-100 mb-2">
                <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-slate-400 font-medium tracking-tight">Найдено {processedProducts.length} позиций</p>
+                    <p className="text-xs text-slate-400 font-medium tracking-tight">Найдено {total || processedProducts.length} позиций</p>
                   </div>
                </div>
 
@@ -371,7 +366,7 @@ export default function Storefront({
         )}
 
         {/* ═══ PRODUCT GRID ═══ */}
-        {loading ? (
+        {loading && products.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center">
             <RefreshCw className="h-10 w-10 text-emerald-600 animate-spin mb-4" />
             <p className="text-sm font-black text-slate-400 uppercase tracking-widest animate-pulse">Загружаем товары...</p>
@@ -393,23 +388,39 @@ export default function Storefront({
             </button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {processedProducts.map(product => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={onAddToCart}
-                onOpenModal={setSelectedProduct}
-                onOpenDetails={onOpenProduct}
-                onToggleFavorite={onToggleFavorite}
-                isFavorite={isFavorite?.(product.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+              {processedProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={onAddToCart}
+                  onOpenModal={setSelectedProduct}
+                  onOpenDetails={onOpenProduct}
+                  onToggleFavorite={onToggleFavorite}
+                  isFavorite={isFavorite?.(product.id)}
+                />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="pt-6 text-center">
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-emerald-200 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingMore ? 'animate-spin' : ''}`} />
+                  Показать еще
+                </button>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="space-y-5">
-            {processedProducts.map(product => (
-              <div key={product.id} className="bg-white border border-slate-100 p-5 rounded-3xl hover:shadow-xl hover:border-emerald-500/10 transition-all flex flex-col sm:flex-row items-center gap-6 relative group text-left">
+          <>
+            <div className="space-y-5">
+              {processedProducts.map(product => (
+                <div key={product.id} className="bg-white border border-slate-100 p-5 rounded-3xl hover:shadow-xl hover:border-emerald-500/10 transition-all flex flex-col sm:flex-row items-center gap-6 relative group text-left">
                 {product.isHit && (
                   <span className="absolute top-5 left-5 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase flex items-center gap-1 z-10 shadow-lg shadow-red-500/30">
                     <Zap className="h-3 w-3 fill-current" /> Хит
@@ -433,7 +444,7 @@ export default function Storefront({
                       <span className="text-[10px] text-slate-400 font-bold uppercase">Цена</span>
                       <p className="text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
                     </div>
-                    {product.isBulkPrice && (
+                    {product.bulkDiscount && (
                        <div className="bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5">
                          <Tag className="h-3 w-3 text-emerald-600" />
                          <span className="text-[10px] font-bold text-emerald-700 uppercase">Оптом дешевле</span>
@@ -455,9 +466,23 @@ export default function Storefront({
                     <ArrowRight className="h-5 w-5" />
                   </button>
                 </div>
+                </div>
+              ))}
+            </div>
+            {hasMore && (
+              <div className="pt-6 text-center">
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-emerald-200 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingMore ? 'animate-spin' : ''}`} />
+                  Показать еще
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

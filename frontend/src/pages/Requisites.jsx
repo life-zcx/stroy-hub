@@ -6,7 +6,7 @@ export default function Requisites() {
 
   const handleCopy = () => {
     const text = `
-Наименование компании: ТОО "StroyHub" (СтройХаб)
+Наименование компании: ТОО "Tormag" (Тормаг)
 БИН: 260540019284
 Юридический адрес: Республика Казахстан, г. Алматы, Бостандыкский район, проспект Аль-Фараби, 77/7, офис 12
 Расчетный счет (KZT): KZ859261827495018273
@@ -24,7 +24,7 @@ export default function Requisites() {
       <div className="space-y-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Реквизиты компании</h1>
-          <p className="text-slate-500 text-sm">Официальные юридические и банковские данные ТОО «StroyHub»</p>
+          <p className="text-slate-500 text-sm">Официальные юридические и банковские данные ТОО «Tormag»</p>
         </div>
         <button
           onClick={handleCopy}
@@ -38,7 +38,7 @@ export default function Requisites() {
       <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm overflow-hidden space-y-6">
         <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
           <Building2 className="h-5 w-5 text-emerald-600" />
-          <h3 className="font-extrabold text-slate-900 text-lg font-outfit">ТОО «StroyHub»</h3>
+          <h3 className="font-extrabold text-slate-900 text-lg font-outfit">ТОО «Tormag»</h3>
         </div>
 
         <div className="overflow-x-auto">
@@ -46,11 +46,11 @@ export default function Requisites() {
             <tbody>
               <tr className="border-b border-slate-100">
                 <td className="py-3 pr-4 font-bold text-slate-400 uppercase w-1/3">Полное наименование</td>
-                <td className="py-3 pl-4 font-bold text-slate-900">Товарищество с ограниченной ответственностью «StroyHub»</td>
+                <td className="py-3 pl-4 font-bold text-slate-900">Товарищество с ограниченной ответственностью «Tormag»</td>
               </tr>
               <tr className="border-b border-slate-100">
                 <td className="py-3 pr-4 font-bold text-slate-400 uppercase">Сокращенное название</td>
-                <td className="py-3 pl-4 font-semibold text-slate-900">ТОО «StroyHub» (СтройХаб)</td>
+                <td className="py-3 pl-4 font-semibold text-slate-900">ТОО «Tormag» (Тормаг)</td>
               </tr>
               <tr className="border-b border-slate-100">
                 <td className="py-3 pr-4 font-bold text-slate-400 uppercase">БИН</td>

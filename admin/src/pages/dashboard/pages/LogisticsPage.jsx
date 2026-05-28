@@ -32,7 +32,7 @@ export default function LogisticsPage({ showToast }) {
 
   // Dynamic Logistics Tariffs State synced with localStorage
   const [rates, setRates] = useState(() => {
-    const saved = localStorage.getItem('stroyhub_logistics_rates');
+    const saved = localStorage.getItem('tormag_logistics_rates');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -197,7 +197,7 @@ export default function LogisticsPage({ showToast }) {
   };
 
   const saveRatesToStorage = () => {
-    localStorage.setItem('stroyhub_logistics_rates', JSON.stringify(rates));
+    localStorage.setItem('tormag_logistics_rates', JSON.stringify(rates));
     showToast?.('💾 Новые тарифы логистики и ГСМ успешно сохранены!');
     setShowConfig(false);
   };

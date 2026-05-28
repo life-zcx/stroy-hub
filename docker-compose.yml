@@ -3,18 +3,18 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: stroyhub_postgres
+    container_name: tormag_postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-stroyhub_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stroyhub_secure_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-stroyhub}
+      POSTGRES_USER: ${POSTGRES_USER:-tormag_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tormag_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-tormag}
     ports:
       - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stroyhub_user} -d ${POSTGRES_DB:-stroyhub}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tormag_user} -d ${POSTGRES_DB:-tormag}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,13 +23,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: stroyhub_backend
+    container_name: tormag_backend
     restart: always
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-stroyhub_user}:${POSTGRES_PASSWORD:-stroyhub_secure_pass}@db:5432/${POSTGRES_DB:-stroyhub}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tormag_user}:${POSTGRES_PASSWORD:-tormag_secure_pass}@db:5432/${POSTGRES_DB:-tormag}?schema=public
       PORT: 5000
       NODE_ENV: development
-      JWT_SECRET: ${JWT_SECRET:-stroyhub_dev_jwt_secret_local}
+      JWT_SECRET: ${JWT_SECRET:-tormag_dev_jwt_secret_local}
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-5}
     ports:
       - "5000:5000"
@@ -45,7 +45,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: stroyhub_frontend
+    container_name: tormag_frontend
     restart: always
     ports:
       - "3000:3000"
@@ -61,7 +61,7 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
-    container_name: stroyhub_admin
+    container_name: tormag_admin
     restart: always
     ports:
       - "3001:3001"

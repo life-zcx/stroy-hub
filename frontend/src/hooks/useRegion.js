@@ -3,12 +3,12 @@ import { findClosestCity } from '../utils/geo';
 
 export default function useRegion(showToast) {
   const [currentRegion, setCurrentRegion] = useState(() => {
-    return localStorage.getItem('stroyhub_region') || 'Алматы';
+    return localStorage.getItem('tormag_region') || 'Алматы';
   });
   const [regionModalOpen, setRegionModalOpen] = useState(false);
 
   useEffect(() => {
-    const savedRegion = localStorage.getItem('stroyhub_region');
+    const savedRegion = localStorage.getItem('tormag_region');
     
     if (!savedRegion) {
       if (navigator.geolocation) {
@@ -31,7 +31,7 @@ export default function useRegion(showToast) {
 
   const handleSelectRegion = (region) => {
     setCurrentRegion(region);
-    localStorage.setItem('stroyhub_region', region);
+    localStorage.setItem('tormag_region', region);
     setRegionModalOpen(false);
   };
 

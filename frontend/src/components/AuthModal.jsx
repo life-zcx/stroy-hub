@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Hammer, Clock } from 'lucide-react';
+import logoImg from '../tormag.png';
 
 export default function AuthModal({
   isOpen,
@@ -36,8 +37,8 @@ export default function AuthModal({
         </button>
 
         <div className="text-center">
-          <div className="inline-flex bg-gradient-to-br from-teal-500 to-emerald-600 p-2.5 rounded-xl text-white mb-2 shadow-lg shadow-emerald-500/10">
-            <Hammer className="h-6 w-6" strokeWidth={2.5} />
+          <div className="inline-flex items-center justify-center mb-1">
+            <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[95px] -my-6 w-auto object-contain shrink-0" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
           <p className="text-slate-500 text-xs mt-1">Авторизуйтесь для оформления заказов и отслеживания доставки</p>

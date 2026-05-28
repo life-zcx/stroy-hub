@@ -1,7 +1,7 @@
 {
-  "name": "stroy-hub-backend",
+  "name": "tormag-backend",
   "version": "1.0.0",
-  "description": "Backend API for StroyHub.kz",
+  "description": "Backend API for Tormag.kz",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

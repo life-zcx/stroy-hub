@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Auto-inject JWT Admin token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('stroyhub_admin_token');
+  const token = localStorage.getItem('tormag_admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -56,9 +56,19 @@ export const updateUserBlockStatus = async (id, isBlocked) => {
 };
 
 // Products API
+// Returns paginated { data, total, page, totalPages }
+export const getProductsPaged = async ({ page = 1, limit = 50, search = '', category = '', supplierId = '' } = {}) => {
+  const response = await api.get('/products', {
+    params: { page, limit, search: search || undefined, category: category || undefined, supplierId: supplierId || undefined },
+  });
+  return response.data; // { data, total, page, totalPages }
+};
+
+// Legacy helper: returns only the data array from page 1 (used in useDashboardData for counts)
 export const getProducts = async (params = {}) => {
-  const response = await api.get('/products', { params });
-  return response.data;
+  const response = await api.get('/products', { params: { limit: 50, ...params } });
+  // Handle both old (array) and new (paginated) response shapes
+  return Array.isArray(response.data) ? response.data : (response.data.data || []);
 };
 
 export const getPricingSettings = async () => {
@@ -229,6 +239,11 @@ export const getPartnerRequests = async () => {
 
 export const updatePartnerRequest = async (id, status, adminComment) => {
   const response = await api.put(`/partner-requests/${id}`, { status, adminComment });
+  return response.data;
+};
+
+export const getSiteAnalytics = async (range = 'week') => {
+  const response = await api.get('/analytics/summary', { params: { range } });
   return response.data;
 };
 

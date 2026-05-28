@@ -29,7 +29,7 @@ export default function Services() {
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left">
       <div className="space-y-3">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Наши услуги</h1>
-        <p className="text-slate-500 text-sm">Профессиональные сервисные решения для застройщиков и частных клиентов от StroyHub</p>
+        <p className="text-slate-500 text-sm">Профессиональные сервисные решения для застройщиков и частных клиентов от Tormag</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -50,8 +50,8 @@ export default function Services() {
           Свяжитесь с нашим отделом продаж! Мы поможем организовать нестандартные поставки, договориться о рассрочке платежа или аренде спецтехники.
         </p>
         <div className="pt-2">
-          <a href="tel:88005553535" className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold rounded-xl transition-all shadow-lg text-sm">
-            Позвонить: 8 (800) 555-35-35
+          <a href="tel:77077111653" className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold rounded-xl transition-all shadow-lg text-sm">
+            Позвонить: 8 (707) 711-16-53
           </a>
         </div>
       </div>

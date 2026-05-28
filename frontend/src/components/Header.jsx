@@ -3,6 +3,8 @@ import {
   ShoppingCart, Search, Menu, X, Hammer, ShieldCheck, Phone,
   MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare,
 } from 'lucide-react';
+import logoImg from '../tormag.png';
+import { trackEvent } from '../utils/analytics';
 
 const MOBILE_NAV_ITEMS = [
   { id: 'home', name: 'Главная' },
@@ -38,12 +40,13 @@ export default function Header({
   onOpenCallback,
   onOpenFavorites,
   favoritesCount = 0,
-  fetchMyOrders,
+  onOpenOrders,
   handleLogout,
   searchQuery: globalSearchQuery,
   setSearchQuery,
   categories = [],
   products = [],
+  loadSearchSuggestions,
 }) {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(globalSearchQuery || '');
@@ -67,10 +70,22 @@ export default function Header({
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setSearchQuery(localSearchQuery);
+    if (localSearchQuery.trim()) {
+      trackEvent('search', { searchQuery: localSearchQuery.trim() });
+    }
     setSelectedCategory('all');
     navigateTo('catalog');
     setIsSearchFocused(false);
   };
+
+  useEffect(() => {
+    const query = localSearchQuery.trim();
+    const timer = setTimeout(() => {
+      loadSearchSuggestions?.(query);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localSearchQuery, loadSearchSuggestions]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -89,10 +104,7 @@ export default function Header({
 
   const rootCategories = categories.filter(c => !c.parentId);
 
-  // Filter products for the live autocomplete dropdown list
-  const matchedProducts = localSearchQuery.trim() === '' ? [] : products.filter(p =>
-    p.name.toLowerCase().includes(localSearchQuery.toLowerCase())
-  ).slice(0, 6);
+  const matchedProducts = localSearchQuery.trim() === '' ? [] : products.slice(0, 6);
 
   return (
     <>
@@ -112,7 +124,7 @@ export default function Header({
               onClick={onOpenRegion}
               className="flex items-center gap-1.5 hover:text-white cursor-pointer transition-colors font-semibold"
             >
-              <MapPin className="h-3.5 w-3.5 text-emerald-600" /> {currentRegion}
+              <MapPin className="h-3.5 w-3.5 text-blue-600" /> {currentRegion}
             </span>
           </div>
 
@@ -144,25 +156,25 @@ export default function Header({
                 <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
                   <button
                     onClick={() => navigateTo('payment-terms')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Условия оплаты
                   </button>
                   <button
                     onClick={() => navigateTo('delivery-terms')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Условия доставки
                   </button>
                   <button
                     onClick={() => navigateTo('warranty')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Гарантия на товар
                   </button>
                   <button
                     onClick={() => navigateTo('faq')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Вопрос-ответ
                   </button>
@@ -183,19 +195,19 @@ export default function Header({
                 <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
                   <button
                     onClick={() => navigateTo('about')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     О нас
                   </button>
                   <button
                     onClick={() => navigateTo('delivery')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Доставка и оплата
                   </button>
                   <button
                     onClick={() => navigateTo('requisites')}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Реквизиты
                   </button>
@@ -220,10 +232,10 @@ export default function Header({
           <div className="flex items-center gap-4">
             <div className="relative group/phone">
               <a
-                href="tel:88005553535"
-                className="flex items-center gap-1.5 font-bold text-white hover:text-emerald-500 transition-colors py-1"
+                href="tel:77077111653"
+                className="flex items-center gap-1.5 font-bold text-white hover:text-blue-500 transition-colors py-1"
               >
-                <Phone className="h-3.5 w-3.5 text-emerald-600 group-hover/phone:animate-pulse" /> 8 (800) 555-35-35
+                <Phone className="h-3.5 w-3.5 text-blue-600 group-hover/phone:animate-pulse" /> 8 (707) 711-16-53
               </a>
 
               {/* Contact Information Cards (Popup) */}
@@ -232,7 +244,7 @@ export default function Header({
                   {/* Top Card */}
                   <div className="bg-white p-6 pb-5">
                     <div className="flex flex-col gap-1 mb-4">
-                      <span className="text-lg font-bold text-slate-900 leading-tight">8 (800) 555-35-35</span>
+                      <span className="text-lg font-bold text-slate-900 leading-tight">8 (707) 711-16-53</span>
                       <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">По всем вопросам</span>
                     </div>
                     <button
@@ -247,7 +259,7 @@ export default function Header({
                   <div className="bg-slate-50 p-6 pt-5 flex flex-col gap-5">
                     <div className="flex flex-col gap-1">
                       <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">E-mail</span>
-                      <span className="text-slate-900 text-sm font-bold">zakaz@stroy-hub.kz</span>
+                      <span className="text-slate-900 text-sm font-bold">zakaz@tormag.kz</span>
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -256,12 +268,22 @@ export default function Header({
                     </div>
 
                     <div className="flex gap-2">
-                      <a href="#" className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-sky-100 hover:bg-sky-50 transition-all group/social">
+                      <a
+                        href="https://t.me/lifezcx"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-sky-100 hover:bg-sky-50 transition-all group/social"
+                      >
                         <svg className="w-5 h-5 text-sky-500 transition-transform group-hover/social:scale-110" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                         </svg>
                       </a>
-                      <a href="#" className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50 transition-all group/social">
+                      <a
+                        href="https://wa.me/77077111653"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50 transition-all group/social"
+                      >
                         <svg className="w-5 h-5 text-emerald-500 transition-transform group-hover/social:scale-110" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .01 5.403.007 12.04c0 2.12.552 4.191 1.598 6.056L0 24l6.105-1.602a11.832 11.832 0 005.937 1.61h.005c6.635 0 12.04-5.405 12.044-12.041a11.82 11.82 0 00-3.517-8.423" />
                         </svg>
@@ -275,7 +297,7 @@ export default function Header({
             {/* Header direct call button */}
             <button
               onClick={onOpenCallback}
-              className="bg-emerald-600/10 hover:bg-emerald-600 border border-emerald-600/20 hover:border-emerald-600 text-emerald-500 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
+              className="bg-blue-600/10 hover:bg-blue-600 border border-blue-600/20 hover:border-blue-600 text-blue-500 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
             >
               Заказать звонок
             </button>
@@ -300,23 +322,18 @@ export default function Header({
               }}
               className="flex items-center cursor-pointer group shrink-0"
             >
-              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-2 rounded-xl mr-2.5 shadow-lg shadow-emerald-500/10 group-hover:scale-105 transition-transform">
-                <Hammer className="h-5.5 w-5.5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-900 font-outfit">
-                stroy-<span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-600">hub.kz</span>
-              </span>
+              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" className="h-[120px] -my-9 -ml-9 w-auto object-contain" />
             </div>
 
             {/* Catalog & Search Block in the center */}
-            <div className="hidden lg:flex items-center flex-grow max-w-2xl mx-8 gap-3 catalog-menu-container">
+            <div className="hidden lg:flex items-center flex-grow max-w-3xl mx-8 gap-3 catalog-menu-container">
               {/* Catalog Button (with mega-menu toggling) */}
               <button
                 type="button"
                 onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shrink-0 h-[42px]"
               >
-                {isMegaMenuOpen ? <X className="h-4 w-4 text-emerald-400" /> : <Menu className="h-4 w-4 text-slate-300" />}
+                {isMegaMenuOpen ? <X className="h-4 w-4 text-blue-400" /> : <Menu className="h-4 w-4 text-slate-300" />}
                 <span>Каталог</span>
               </button>
 
@@ -328,11 +345,11 @@ export default function Header({
                   value={localSearchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => setIsSearchFocused(true)}
-                  className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-xs text-slate-900 transition-all placeholder-slate-400 h-[42px]"
+                  className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600/50 text-xs text-slate-900 transition-all placeholder-slate-400 h-[42px]"
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 bottom-1 px-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-lg flex items-center justify-center transition-colors"
+                  className="absolute right-1 top-1 bottom-1 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -356,7 +373,7 @@ export default function Header({
                             <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
                           </div>
                           <div className="text-left min-w-0">
-                            <h4 className="font-bold text-slate-900 text-xs truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
+                            <h4 className="font-bold text-slate-900 text-xs truncate group-hover:text-blue-600 transition-colors">{p.name}</h4>
                             <span className="text-[9px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
                           </div>
                         </div>
@@ -378,9 +395,9 @@ export default function Header({
                   <button
                     type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                    className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
                   >
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase mb-0.5">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-emerald-400 to-emerald-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase mb-0.5">
                       {customer.name ? customer.name[0] : 'U'}
                     </div>
                     <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
@@ -399,11 +416,11 @@ export default function Header({
                           type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
-                            fetchMyOrders();
+                            onOpenOrders();
                           }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                         >
-                          <ClipboardList className="h-4.5 w-4.5 text-emerald-600" />
+                          <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
                           <span>Мои заказы</span>
                         </button>
                         <button
@@ -425,7 +442,7 @@ export default function Header({
                 <button
                   type="button"
                   onClick={onOpenAuthLogin}
-                  className="flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
                 >
                   <User className="h-5 w-5 mb-0.5" />
                   <span className="text-[10px] font-extrabold uppercase tracking-wide">Войти</span>
@@ -436,7 +453,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => alert('Сравнение товаров будет доступно в следующем обновлении')}
-                className="flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
               >
                 <GitCompare className="h-5 w-5 mb-0.5" />
                 <span className="text-[10px] font-extrabold uppercase tracking-wide">Сравнение</span>
@@ -446,12 +463,12 @@ export default function Header({
               <button
                 type="button"
                 onClick={onOpenFavorites}
-                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
               >
                 <div className="relative">
-                  <Heart className={`h-5 w-5 mb-0.5 ${favoritesCount > 0 ? 'fill-emerald-500 text-emerald-500' : ''}`} />
+                  <Heart className={`h-5 w-5 mb-0.5 ${favoritesCount > 0 ? 'fill-blue-600 text-blue-600' : ''}`} />
                   {favoritesCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-black text-slate-950">
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
                       {favoritesCount}
                     </span>
                   )}
@@ -463,12 +480,12 @@ export default function Header({
               <button
                 type="button"
                 onClick={onOpenCart}
-                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 transition-all"
+                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
               >
                 <div className="relative">
                   <ShoppingCart className="h-5 w-5 mb-0.5" />
                   {cartItemsCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-black text-slate-950">
+                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
                       {cartItemsCount}
                     </span>
                   )}
@@ -486,7 +503,7 @@ export default function Header({
               >
                 <ShoppingCart className="h-5 w-5" />
                 {cartItemsCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-black text-slate-950">
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[8px] font-black text-white">
                     {cartItemsCount}
                   </span>
                 )}
@@ -646,6 +663,21 @@ export default function Header({
                     {tab.name}
                   </button>
                 ))}
+                {customer && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenOrders();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
+                      ? 'bg-emerald-600/10 text-emerald-700'
+                      : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                  >
+                    Мои заказы
+                  </button>
+                )}
               </div>
             </div>
           )}

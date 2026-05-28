@@ -79,8 +79,8 @@ html {
   pointer-events: none;
   opacity: 0.15;
   background:
-    radial-gradient(circle at 72% 22%, rgba(16, 185, 129, 0.32), transparent 24%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(16, 185, 129, 0.05));
+    radial-gradient(circle at 72% 22%, rgba(0, 98, 190, 0.32), transparent 24%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(0, 98, 190, 0.05));
 }
 
 .warehouse-scene::before {
@@ -104,7 +104,7 @@ html {
   background:
     repeating-linear-gradient(0deg, transparent 0 19%, rgba(15, 23, 42, 0.42) 19% 21%),
     repeating-linear-gradient(90deg, transparent 0 22%, rgba(15, 23, 42, 0.36) 22% 24%),
-    linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(255, 255, 255, 0.16));
+    linear-gradient(135deg, rgba(0, 98, 190, 0.18), rgba(255, 255, 255, 0.16));
   box-shadow: 18px 18px 0 rgba(15, 23, 42, 0.08);
 }
 
@@ -129,7 +129,7 @@ html {
   width: 70px;
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(180deg, rgba(5, 150, 105, 0.55), rgba(15, 23, 42, 0.35));
+  background: linear-gradient(180deg, rgba(0, 98, 190, 0.55), rgba(15, 23, 42, 0.35));
   box-shadow: 7px 7px 0 rgba(15, 23, 42, 0.12);
 }
 
@@ -248,9 +248,9 @@ html {
   border-radius: 50%;
   background:
     radial-gradient(circle, #f8fafc 0 24%, transparent 25%),
-    repeating-conic-gradient(from 7deg, #0f766e 0 12deg, #14b8a6 12deg 22deg, transparent 22deg 34deg),
-    radial-gradient(circle, #0f766e 0 58%, transparent 59%);
-  box-shadow: 0 9px 14px rgba(15, 118, 110, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+    repeating-conic-gradient(from 7deg, #0052A3 0 12deg, #40A9FF 12deg 22deg, transparent 22deg 34deg),
+    radial-gradient(circle, #0052A3 0 58%, transparent 59%);
+  box-shadow: 0 9px 14px rgba(0, 82, 163, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.5);
 }
 
 .scroll-seal-model {
@@ -303,8 +303,8 @@ html {
 .truck-cabin {
   position: absolute;
   bottom: 13px;
-  background: linear-gradient(145deg, #0f766e, #10b981);
-  box-shadow: 0 14px 18px rgba(15, 118, 110, 0.2), inset 0 2px 3px rgba(255, 255, 255, 0.36);
+  background: linear-gradient(145deg, #0052A3, #0062BE);
+  box-shadow: 0 14px 18px rgba(0, 82, 163, 0.2), inset 0 2px 3px rgba(255, 255, 255, 0.36);
 }
 
 .truck-body {
@@ -374,8 +374,8 @@ html {
 }
 
 .glossy-icon-emerald {
-  color: #065f46;
-  background: linear-gradient(145deg, #d1fae5, #10b981);
+  color: #004385;
+  background: linear-gradient(145deg, #E0EFFF, #0062BE);
 }
 
 .glossy-icon-blue {

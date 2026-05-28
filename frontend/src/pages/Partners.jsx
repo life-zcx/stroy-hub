@@ -60,7 +60,7 @@ export default function Partners({ showToast }) {
     <div className="max-w-4xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left">
       <div className="space-y-3">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Сотрудничество и партнерство</h1>
-        <p className="text-slate-500 text-sm">Продавайте строительные материалы оптовым и розничным клиентам по всему Казахстану через платформу StroyHub</p>
+        <p className="text-slate-500 text-sm">Продавайте строительные материалы оптовым и розничным клиентам по всему Казахстану через платформу Tormag</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -97,7 +97,7 @@ export default function Partners({ showToast }) {
 
         {/* Contact Form */}
         <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm">
-          <h3 className="font-extrabold text-slate-950 text-lg font-outfit border-b border-slate-100 pb-3 mb-5">Стать партнером StroyHub</h3>
+          <h3 className="font-extrabold text-slate-950 text-lg font-outfit border-b border-slate-100 pb-3 mb-5">Стать партнером Tormag</h3>
           
           {formSent ? (
             <div className="text-center py-12 space-y-4 animate-fade-in">

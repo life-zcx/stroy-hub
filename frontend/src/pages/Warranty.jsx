@@ -21,7 +21,7 @@ export default function Warranty() {
         </div>
 
         <p className="text-slate-500 text-sm leading-relaxed">
-          StroyHub является официальной партнерской площадкой авторизованных дилеров крупнейших брендов строительной индустрии (Knauf, Bosch, Alina Group, Ceresit, Bergauf). Мы гарантируем защиту от подделок и фальсификата. Все товары имеют официальные сертификаты соответствия стандартам ГОСТ и СТ-КЗ, которые предоставляются по первому требованию покупателя.
+          Tormag является официальной партнерской площадкой авторизованных дилеров крупнейших брендов строительной индустрии (Knauf, Bosch, Alina Group, Ceresit, Bergauf). Мы гарантируем защиту от подделок и фальсификата. Все товары имеют официальные сертификаты соответствия стандартам ГОСТ и СТ-КЗ, которые предоставляются по первому требованию покупателя.
         </p>
       </div>
 
@@ -55,7 +55,7 @@ export default function Warranty() {
           <div className="flex gap-3">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600/20 text-emerald-400 text-xs font-black shrink-0 mt-0.5">2</span>
             <p className="text-slate-300">
-              Свяжитесь со службой поддержки StroyHub или отправьте рекламацию с фотографиями на электронный адрес: <strong className="text-white">support@stroy-hub.kz</strong>.
+              Свяжитесь со службой поддержки Tormag или отправьте рекламацию с фотографиями на электронный адрес: <strong className="text-white">support@tormag.kz</strong>.
             </p>
           </div>
           <div className="flex gap-3">

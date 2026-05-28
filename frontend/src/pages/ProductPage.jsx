@@ -6,6 +6,7 @@ import {
 import { getProductById } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
+import { trackEvent } from '../utils/analytics';
 
 const CATEGORY_LABELS = {
   mixes: 'Сухие смеси',
@@ -40,6 +41,14 @@ export default function ProductPage({
       try {
         const data = await getProductById(productId);
         setProduct(data);
+        trackEvent('product_view', {
+          productId: data.id,
+          value: data.price,
+          metadata: {
+            name: data.name,
+            category: data.category,
+          },
+        });
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.error || 'Товар не найден');

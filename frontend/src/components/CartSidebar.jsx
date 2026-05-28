@@ -14,6 +14,7 @@ import {
 import { createOrder, validatePromotionCode } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
+import { trackEvent } from '../utils/analytics';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
@@ -187,7 +188,17 @@ export default function CartSidebar({
         })),
       };
 
-      await createOrder(orderPayload);
+      const createdOrder = await createOrder(orderPayload);
+
+      trackEvent('order_created', {
+        orderId: createdOrder.id,
+        value: createdOrder.totalAmount || finalTotal,
+        metadata: {
+          itemsCount: cartItemsCount,
+          paymentMethod: formData.paymentMethod,
+          promoCode: orderPayload.promoCode,
+        },
+      });
 
       showToast('🎉 Заказ успешно оформлен! Статус доставки можно отслеживать в разделе «Мои заказы»');
       onClearCart();
@@ -409,7 +420,7 @@ export default function CartSidebar({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center"
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? <Clock className="h-5 w-5 animate-spin" /> : 'Подтвердить'}
@@ -523,7 +534,7 @@ export default function CartSidebar({
                           setPromoCode(event.target.value.toUpperCase());
                           setPromoError('');
                         }}
-                        placeholder="Например, STROY10"
+                        placeholder="Например, TORMAG10"
                         className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold tracking-[0.15em] uppercase focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                       />
                       <button
@@ -575,7 +586,16 @@ export default function CartSidebar({
               </div>
 
               <button
-                onClick={() => setCheckoutMode(true)}
+                onClick={() => {
+                  trackEvent('checkout_start', {
+                    value: finalTotal,
+                    metadata: {
+                      itemsCount: cartItemsCount,
+                      cartLines: cart.length,
+                    },
+                  });
+                  setCheckoutMode(true);
+                }}
                 className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
               >
                 Перейти к оформлению

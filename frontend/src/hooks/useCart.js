@@ -1,17 +1,27 @@
 import { useEffect, useState } from 'react';
+import { trackEvent } from '../utils/analytics';
 
 export default function useCart(showToast) {
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('stroyhub_cart');
+    const saved = localStorage.getItem('tormag_cart');
     return saved ? JSON.parse(saved) : [];
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('stroyhub_cart', JSON.stringify(cart));
+    localStorage.setItem('tormag_cart', JSON.stringify(cart));
   }, [cart]);
 
   const handleAddToCart = (product) => {
+    trackEvent('add_to_cart', {
+      productId: product.id,
+      value: product.price,
+      metadata: {
+        name: product.name,
+        category: product.category,
+      },
+    });
+
     setCart(prev => {
       const exists = prev.find(item => item.id === product.id);
       if (exists) {

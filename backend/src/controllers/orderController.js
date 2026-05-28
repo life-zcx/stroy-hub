@@ -32,6 +32,47 @@ function buildOrderItemsInclude(user) {
   };
 }
 
+function buildOrderWhere(user) {
+  const where = {};
+  const supplierId = getSupplierId(user);
+
+  if (user.role === 'CUSTOMER') {
+    where.userId = user.id;
+  } else if (user.role === 'SUPPLIER') {
+    where.items = {
+      some: {
+        product: {
+          supplierId,
+        },
+      },
+    };
+  }
+
+  return where;
+}
+
+function createStatusHistoryEntry(status, changedAt = new Date()) {
+  return {
+    status,
+    changedAt: changedAt.toISOString(),
+  };
+}
+
+function buildStatusHistory(existingOrder, nextStatus) {
+  const currentHistory = Array.isArray(existingOrder.statusHistory)
+    ? existingOrder.statusHistory
+    : [createStatusHistoryEntry(existingOrder.status || 'pending', existingOrder.createdAt || new Date())];
+
+  if (existingOrder.status === nextStatus) {
+    return currentHistory;
+  }
+
+  return [
+    ...currentHistory,
+    createStatusHistoryEntry(nextStatus),
+  ];
+}
+
 export const createOrder = async (req, res) => {
   const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode } = req.body;
 
@@ -136,6 +177,7 @@ export const createOrder = async (req, res) => {
           promotionTitle: reservedPromotion?.title || null,
           promotionId: reservedPromotion?.id || null,
           promotionSnapshot: buildPromotionSnapshot(reservedPromotion, reservedEvaluation),
+          statusHistory: [createStatusHistoryEntry('pending')],
           userId: parseInt(userId),
           items: {
             create: normalizedItems.map((item) => ({
@@ -178,34 +220,47 @@ export const createOrder = async (req, res) => {
 
 export const getAllOrders = async (req, res) => {
   const user = req.user;
-  const where = {};
   const supplierId = getSupplierId(user);
 
   if (!user) {
     return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
   }
 
-  // Filter orders by role:
-  // - CUSTOMER: only their own orders
-  // - SUPPLIER: orders containing their products
-  // - ADMIN: all orders
-  if (user.role === 'CUSTOMER') {
-    where.userId = user.id;
-  } else if (user.role === 'SUPPLIER') {
+  if (user.role === 'SUPPLIER') {
     if (!supplierId) {
       return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
     }
-
-    where.items = {
-      some: {
-        product: {
-          supplierId
-        }
-      }
-    };
   }
 
   try {
+    const where = buildOrderWhere(user);
+    const page = Number.parseInt(req.query.page, 10);
+    const limit = Math.min(Number.parseInt(req.query.limit, 10) || 20, 50);
+    const usePagination = Number.isFinite(page) && page > 0;
+    const summaryOnly = req.query.summary === 'true';
+
+    if (usePagination) {
+      const [orders, total] = await prisma.$transaction([
+        prisma.order.findMany({
+          where,
+          ...(summaryOnly ? { include: { _count: { select: { items: true } } } } : { include: buildOrderItemsInclude(user) }),
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.order.count({ where }),
+      ]);
+
+      return res.json({
+        data: orders,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
+      });
+    }
+
     const orders = await prisma.order.findMany({
       where,
       include: buildOrderItemsInclude(user),
@@ -214,6 +269,42 @@ export const getAllOrders = async (req, res) => {
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения списка заказов: ' + error.message });
+  }
+};
+
+export const getOrderById = async (req, res) => {
+  const user = req.user;
+  const supplierId = getSupplierId(user);
+  const orderId = Number.parseInt(req.params.id, 10);
+
+  if (!user) {
+    return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
+  }
+
+  if (Number.isNaN(orderId)) {
+    return res.status(400).json({ error: 'Неверный ID заказа' });
+  }
+
+  if (user.role === 'SUPPLIER' && !supplierId) {
+    return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+  }
+
+  try {
+    const order = await prisma.order.findFirst({
+      where: {
+        ...buildOrderWhere(user),
+        id: orderId,
+      },
+      include: buildOrderItemsInclude(user),
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Заказ не найден' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения заказа: ' + error.message });
   }
 };
 
@@ -262,7 +353,10 @@ export const updateOrderStatus = async (req, res) => {
 
     const updated = await prisma.order.update({
       where: { id: orderId },
-      data: { status },
+      data: {
+        status,
+        statusHistory: buildStatusHistory(existing, status),
+      },
       include: buildOrderItemsInclude(req.user)
     });
 
@@ -329,6 +423,7 @@ export const updateOrder = async (req, res) => {
         return res.status(400).json({ error: 'Неверный статус заказа' });
       }
       updateData.status = status;
+      updateData.statusHistory = buildStatusHistory(existingOrder, status);
       if (status === 'cancelled' && cancellationReason) {
         updateData.cancellationReason = cancellationReason;
       } else if (status !== 'cancelled') {

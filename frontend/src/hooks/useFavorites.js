@@ -4,7 +4,7 @@ export default function useFavorites(showToast) {
   // Initialize state directly from localStorage to prevent "empty overwrite" bug
   const [favorites, setFavorites] = useState(() => {
     try {
-      const savedFavorites = localStorage.getItem('stroyhub_favorites');
+      const savedFavorites = localStorage.getItem('tormag_favorites');
       return savedFavorites ? JSON.parse(savedFavorites) : [];
     } catch (e) {
       console.error('Error loading favorites from storage:', e);
@@ -14,7 +14,7 @@ export default function useFavorites(showToast) {
 
   // Save favorites to local storage whenever they change
   useEffect(() => {
-    localStorage.setItem('stroyhub_favorites', JSON.stringify(favorites));
+    localStorage.setItem('tormag_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
   const toggleFavorite = (product) => {

@@ -14,6 +14,7 @@ import userRoutes from './routes/userRoutes.js';
 import partnerRequestRoutes from './routes/partnerRequestRoutes.js';
 import promotionRoutes from './routes/promotionRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 dotenv.config();
 
@@ -62,9 +63,20 @@ app.use(express.json({ limit: '1mb' }));
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Debug middleware
+// Request logging middleware. Full records are available through docker logs.
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  const startedAt = Date.now();
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const logLevel = res.statusCode >= 500 ? 'ERROR' : res.statusCode >= 400 ? 'WARN' : 'INFO';
+    const userId = req.user?.id ? ` user=${req.user.id}` : '';
+    const ip = req.ip || req.socket?.remoteAddress || '-';
+    console.log(
+      `[${new Date().toISOString()}] ${logLevel} ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms ip=${ip}${userId}`
+    );
+  });
+
   next();
 });
 
@@ -79,6 +91,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/partner-requests', partnerRequestRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/brands', brandRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {
@@ -99,10 +112,14 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: err.message });
   }
 
-  console.error(err.stack);
+  console.error(`[${new Date().toISOString()}] ERROR ${req.method} ${req.originalUrl}`, {
+    message: err.message,
+    stack: err.stack,
+    userId: req.user?.id || null,
+  });
   res.status(500).json({ error: 'Внутренняя ошибка сервера: ' + err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Сервер StroyHub запущен на порту ${PORT}`);
+  console.log(`Сервер Tormag запущен на порту ${PORT}`);
 });
