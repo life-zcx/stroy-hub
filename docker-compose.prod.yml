@@ -26,6 +26,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-5}
+      RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
       db:
         condition: service_healthy
