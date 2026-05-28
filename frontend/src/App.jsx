@@ -74,6 +74,29 @@ export default function App() {
     }
   }, [currentPage, currentProductId]);
 
+  // Dynamic SEO Page Titles
+  useEffect(() => {
+    const pageTitles = {
+      home: "TORMAG — Всё для стройки и ремонта",
+      catalog: "TORMAG - Каталог стройматериалов",
+      advisor: "TORMAG - Умный подбор стройматериалов",
+      about: "TORMAG - О компании",
+      delivery: "TORMAG - Доставка и оплата",
+      services: "TORMAG - Строительные услуги",
+      partners: "TORMAG - Наши партнеры",
+      promotions: "TORMAG - Акции и скидки",
+      favorites: "TORMAG - Избранные товары",
+      orders: "TORMAG - Мои заказы",
+      requisites: "TORMAG - Реквизиты компании",
+      faq: "TORMAG - Вопрос-ответ",
+      legal: "TORMAG - Юридическая информация",
+      product: "TORMAG - Просмотр товара"
+    };
+
+    const newTitle = pageTitles[currentPage] || "TORMAG — Всё для стройки и ремонта";
+    document.title = newTitle;
+  }, [currentPage]);
+
   useEffect(() => {
     setAnalyticsContext({
       region: region.currentRegion,
@@ -265,7 +288,7 @@ export default function App() {
         )}
 
         {currentPage === 'favorites' && (
-          <FavoritesPage 
+          <FavoritesPage
             favorites={favorites.favorites}
             onToggleFavorite={favorites.toggleFavorite}
             onAddToCart={cart.handleAddToCart}
@@ -330,7 +353,7 @@ export default function App() {
         showToast={showToast}
       />
 
-      <CallbackModal 
+      <CallbackModal
         isOpen={isCallbackModalOpen}
         onClose={() => setIsCallbackModalOpen(false)}
         onNavigate={setCurrentPage}

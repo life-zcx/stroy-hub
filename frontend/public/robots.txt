@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /order-success
+
+Sitemap: https://tormag.kz/sitemap.xml
