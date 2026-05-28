@@ -114,7 +114,7 @@ export default function Footer({
         </div>
 
         <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-          <p>© 2026 ТОО «Tormag Technologies». Все права защищены.</p>
+          <p>© 2026 TORMAG.KZ  Все права защищены.</p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
             <button onClick={() => openLegal('user-agreement')} className="hover:text-white transition-colors">Пользовательское соглашение</button>
             <button onClick={() => openLegal('offer')} className="hover:text-white transition-colors">Публичная оферта</button>

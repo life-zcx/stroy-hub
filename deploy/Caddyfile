@@ -1,0 +1,18 @@
+# Caddy configuration for tormag.kz
+# Place this file on your Ubuntu host or run it via Docker
+
+tormag.kz, www.tormag.kz {
+    # Automatic HTTPS is fully managed by Caddy! No certbot needed.
+    
+    # Reverse proxy to the Docker Gateway container
+    # Since GATEWAY_PORT will be 8080 in this setup, we proxy there:
+    reverse_proxy 127.0.0.1:8080
+
+    # Compression for text assets
+    encode gzip zstd
+
+    # Basic logging
+    log {
+        output file /var/log/caddy/tormag_access.log
+    }
+}
