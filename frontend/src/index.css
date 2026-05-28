@@ -347,51 +347,46 @@ html {
 
 .glossy-icon-shell {
   position: relative;
-  width: 3rem;
-  height: 3rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 1.25rem;
+  border-radius: 0.85rem;
   overflow: hidden;
-  box-shadow:
-    0 18px 30px -18px rgba(15, 23, 42, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset -8px -10px 18px rgba(15, 23, 42, 0.08);
-}
-
-.glossy-icon-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), transparent 46%);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
 .glossy-icon-shell svg {
   position: relative;
   z-index: 1;
-  filter: drop-shadow(0 4px 5px rgba(15, 23, 42, 0.18));
 }
 
 .glossy-icon-emerald {
-  color: #004385;
-  background: linear-gradient(145deg, #E0EFFF, #0062BE);
+  color: #0f766e;
+  background-color: #f0fdfa;
+  border-color: #ccfbf1;
 }
 
 .glossy-icon-blue {
   color: #1d4ed8;
-  background: linear-gradient(145deg, #dbeafe, #60a5fa);
+  background-color: #eff6ff;
+  border-color: #dbeafe;
 }
 
 .glossy-icon-violet {
   color: #6d28d9;
-  background: linear-gradient(145deg, #ede9fe, #a78bfa);
+  background-color: #f5f3ff;
+  border-color: #ede9fe;
 }
 
 .glossy-icon-green {
-  color: #166534;
-  background: linear-gradient(145deg, #dcfce7, #22c55e);
+  color: #15803d;
+  background-color: #f0fdf4;
+  border-color: #dcfce7;
 }
+
 
 @media (max-width: 1023px) {
   .hero-blueprint-field {
