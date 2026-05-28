@@ -322,11 +322,11 @@ export default function Header({
               }}
               className="flex items-center cursor-pointer group shrink-0"
             >
-              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" className="h-[120px] -my-9 -ml-9 w-auto object-contain" />
+              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" className="h-14 w-auto object-contain" />
             </div>
 
             {/* Catalog & Search Block in the center */}
-            <div className="hidden lg:flex items-center flex-grow max-w-3xl mx-8 gap-3 catalog-menu-container">
+            <div className="hidden lg:flex items-center flex-grow max-w-5xl ml-4 mr-8 gap-3 catalog-menu-container">
               {/* Catalog Button (with mega-menu toggling) */}
               <button
                 type="button"

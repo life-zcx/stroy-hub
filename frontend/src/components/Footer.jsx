@@ -25,7 +25,7 @@ export default function Footer({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center mb-4">
-              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" className="h-[90px] -my-5 -ml-7 w-auto object-contain brightness-0 invert" />
+              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" className="h-11 w-auto object-contain brightness-0 invert" />
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs mb-6">
               TORMAG.KZ — крупнейший строительный маркетплейс Казахстана. Всё для качественного строительства, ремонта и благоустройства вашего дома напрямую от ведущих дистрибьюторов по лучшим ценам.
