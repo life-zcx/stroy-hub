@@ -15,7 +15,7 @@ export const sendEmail = async ({ to, subject, html }) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Tormag.kz <onboarding@resend.dev>',
+        from: 'Tormag.kz <noreply@tormag.kz>',
         to,
         subject,
         html
