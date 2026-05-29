@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
+import { sendTelegramNotification } from '../utils/telegram.js';
 
 function getSupplierId(user) {
   const parsed = Number.parseInt(user?.supplierId, 10);
@@ -209,6 +210,9 @@ export const createOrder = async (req, res) => {
 
       return order;
     });
+
+    // Send Telegram Notification (runs asynchronously in the background)
+    sendTelegramNotification(result);
 
     res.status(201).json(result);
   } catch (error) {

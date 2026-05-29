@@ -22,6 +22,8 @@ export default function AuthModal({
   authError,
   setAuthError,
   authLoading,
+  resendCooldown,
+  handleResendCode,
   handleAuthSubmit,
   currentRegion,
   handleSelectRegion,
@@ -103,6 +105,22 @@ export default function AuthModal({
                 placeholder="123456"
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 font-mono text-center tracking-widest text-lg"
               />
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendCooldown > 0 || authLoading}
+                  className={`text-xs font-semibold bg-transparent border-0 cursor-pointer ${
+                    resendCooldown > 0 
+                      ? 'text-slate-400 cursor-not-allowed' 
+                      : 'text-emerald-600 hover:text-emerald-500 hover:underline'
+                  }`}
+                >
+                  {resendCooldown > 0 
+                    ? `Отправить код повторно через ${resendCooldown} сек` 
+                    : 'Отправить код повторно'}
+                </button>
+              </div>
             </div>
           )}
 

@@ -11,8 +11,33 @@ export default function useCustomerAuth(showToast) {
   const [authPhone, setAuthPhone] = useState('');
   const [authAddress, setAuthAddress] = useState('');
   const [authResetCode, setAuthResetCode] = useState('');
-  const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || authLoading) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      await forgotPassword(authEmail);
+      showToast?.('✉️ Код подтверждения отправлен повторно!');
+      setResendCooldown(60);
+    } catch (err) {
+      setAuthError(err.response?.data?.error || err.message || 'Ошибка при повторной отправке');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkCustomerAuth = async () => {
@@ -72,6 +97,7 @@ export default function useCustomerAuth(showToast) {
       } else if (authTab === 'forgot') {
         await forgotPassword(authEmail);
         showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
+        setResendCooldown(60);
         setAuthTab('reset');
       } else if (authTab === 'reset') {
         await resetPassword(authEmail, authResetCode, authPassword);
@@ -120,6 +146,8 @@ export default function useCustomerAuth(showToast) {
     authError,
     setAuthError,
     authLoading,
+    resendCooldown,
+    handleResendCode,
     handleAuthSubmit,
     handleLogout,
     openLoginModal,

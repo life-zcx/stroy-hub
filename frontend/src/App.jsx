@@ -342,6 +342,8 @@ export default function App() {
         authError={auth.authError}
         setAuthError={auth.setAuthError}
         authLoading={auth.authLoading}
+        resendCooldown={auth.resendCooldown}
+        handleResendCode={auth.handleResendCode}
         handleAuthSubmit={auth.handleAuthSubmit}
         currentRegion={region.currentRegion}
         handleSelectRegion={region.handleSelectRegion}

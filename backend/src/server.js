@@ -15,6 +15,7 @@ import partnerRequestRoutes from './routes/partnerRequestRoutes.js';
 import promotionRoutes from './routes/promotionRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import { getDynamicSitemap } from './controllers/sitemapController.js';
 
 dotenv.config();
 
@@ -81,6 +82,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.get('/sitemap.xml', getDynamicSitemap);
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/products', productRoutes);
