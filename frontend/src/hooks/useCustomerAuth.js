@@ -11,6 +11,7 @@ export default function useCustomerAuth(showToast) {
   const [authPhone, setAuthPhone] = useState('');
   const [authAddress, setAuthAddress] = useState('');
   const [authResetCode, setAuthResetCode] = useState('');
+  const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
