@@ -50,7 +50,7 @@ export const sendTelegramNotification = async (order) => {
         }
       })
       .catch((err) => {
-        console.error('[TELEGRAM ERROR] Failed to send Telegram request:', err.message);
+        console.error(`[TELEGRAM ERROR] Failed to send Telegram request to ${url}:`, err);
       });
   } catch (error) {
     console.error('[TELEGRAM ERROR] Error compiling Telegram message:', error.message);
