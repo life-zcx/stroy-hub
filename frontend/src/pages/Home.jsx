@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRight, ShieldCheck, Truck, SlidersHorizontal,
-  Award, Building2, TicketPercent
+  Award, Building2, TicketPercent, FileSpreadsheet
 } from 'lucide-react';
 import { getBrands, getHomePromotions } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -113,7 +113,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap gap-6 sm:gap-8 pt-4">
                 <button
                   type="button"
                   onClick={() => onNavigate('catalog')}
@@ -124,11 +124,11 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                 </button>
                 <button
                   type="button"
-                  onClick={() => onNavigate('advisor')}
-                  className="px-8 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-2xl transition-all flex items-center gap-2 text-xs uppercase tracking-wider shadow-sm"
+                  onClick={() => onNavigate('estimate')}
+                  className="inline-flex items-center gap-2 text-slate-700 hover:text-blue-600 font-extrabold transition-all text-xs uppercase tracking-wider py-3.5 group"
                 >
-                  Умный подборщик
-                  <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+                  Заказ по смете
+                  <ArrowRight className="h-4.5 w-4.5 text-blue-600 transition-transform group-hover:translate-x-1" />
                 </button>
               </div>
             </div>
@@ -324,17 +324,16 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
       {/* 🛠️ WIDGET TEASER CARD */}
       <section className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-600/20 rounded-[2.5rem] p-8 md:p-12 text-left flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
         <div className="space-y-4 max-w-xl relative z-10">
-          <span className="text-[10px] bg-emerald-600/10 text-emerald-700 border border-emerald-600/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider">Интеллектуальная система</span>
           <h3 className="text-2xl md:text-3xl font-extrabold text-slate-950 font-outfit">Затрудняетесь с выбором материалов?</h3>
           <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-            Воспользуйтесь нашим интерактивным умным подборщиком. Укажите тип ваших строительных или отделочных работ, выберите подходящий бюджетный уровень — и система мгновенно сформирует идеальный комплект товаров со складов поставщиков в Алматы.
+            Воспользуйтесь нашим интерактивным умным калькулятором. Укажите тип ваших строительных или отделочных работ, выберите подходящий бюджетный уровень — и система мгновенно сформирует идеальный комплект товаров со складов в Алматы.
           </p>
         </div>
         <button
           onClick={() => onNavigate('advisor')}
-          className="px-8 py-4 bg-slate-900 hover:bg-emerald-600 hover:text-slate-950 text-white font-extrabold rounded-2xl shadow-lg transition-all flex items-center gap-2 transform hover:-translate-y-0.5 shrink-0 z-10"
+          className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5 shrink-0 z-10"
         >
-          Запустить подборщик
+          Рассчитать материалы
           <SlidersHorizontal className="h-4.5 w-4.5 text-emerald-600" />
         </button>
       </section>

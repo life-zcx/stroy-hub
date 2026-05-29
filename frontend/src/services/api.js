@@ -136,4 +136,15 @@ export const resetPassword = async (email, code, password) => {
   return response.data;
 };
 
+export const matchEstimate = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/products/match-estimate', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};
+
 export default api;

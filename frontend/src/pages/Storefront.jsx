@@ -382,7 +382,7 @@ export default function Storefront({
             </div>
             <button 
               onClick={() => { resetFilters(); setSelectedCategory('all'); }} 
-              className="bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-emerald-600 transition-all"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all transform hover:-translate-y-0.5 shadow-md"
             >
               Сбросить фильтры
             </button>
@@ -455,7 +455,7 @@ export default function Storefront({
                 <div className="flex sm:flex-col items-center gap-3 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-slate-100">
                   <button 
                     onClick={() => onAddToCart(product)}
-                    className="flex-grow sm:w-16 h-12 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-slate-900/5 active:scale-95"
+                    className="flex-grow sm:w-16 h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl flex items-center justify-center transition-all shadow-md transform hover:-translate-y-0.5 active:scale-95"
                   >
                     <Zap className="h-5 w-5" />
                   </button>

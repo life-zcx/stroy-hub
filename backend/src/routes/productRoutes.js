@@ -1,7 +1,7 @@
 import express from 'express';
 import { 
   getAllProducts, getProductById, createProduct, updateProduct, deleteProduct,
-  getPricingSettings, savePricingSettings, importProductsXlsx
+  getPricingSettings, savePricingSettings, importProductsXlsx, matchEstimateXlsx
 } from '../controllers/productController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
 import { imageUpload, excelUpload } from '../config/upload.js';
@@ -14,6 +14,7 @@ router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePrici
 
 // Public endpoints
 router.get('/', getAllProducts);
+router.post('/match-estimate', excelUpload.single('file'), matchEstimateXlsx);
 router.get('/:id', getProductById);
 
 // Bulk product imports

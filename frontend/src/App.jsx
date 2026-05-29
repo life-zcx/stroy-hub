@@ -3,6 +3,7 @@ import Storefront from './pages/Storefront';
 import HomePage from './pages/Home';
 import Advisor from './pages/Advisor';
 import About from './pages/About';
+import EstimatePage from './pages/EstimatePage';
 import FavoritesPage from './pages/Favorites';
 import Delivery from './pages/Delivery';
 import Legal from './pages/Legal';
@@ -90,6 +91,7 @@ export default function App() {
       requisites: "TORMAG - Реквизиты компании",
       faq: "TORMAG - Вопрос-ответ",
       legal: "TORMAG - Юридическая информация",
+      estimate: "TORMAG - Заказ по смете",
       product: "TORMAG - Просмотр товара"
     };
 
@@ -238,6 +240,13 @@ export default function App() {
         )}
 
         {currentPage === 'about' && <About />}
+        {currentPage === 'estimate' && (
+          <EstimatePage
+            onAddToCart={cart.handleAddToCart}
+            onNavigate={setCurrentPage}
+            showToast={showToast}
+          />
+        )}
         {currentPage === 'delivery' && <Delivery />}
         {currentPage === 'legal' && <Legal defaultTab={legalTab} onNavigate={setCurrentPage} />}
         {currentPage === 'services' && <Services />}

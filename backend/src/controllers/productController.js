@@ -626,10 +626,7 @@ export const importProductsXlsx = async (req, res) => {
           updatedCount++;
         } else {
           await tx.product.create({ data });
-          createdCount++;
-        }
-      }
-    });
+    }
 
     res.json({
       success: true,
@@ -639,5 +636,200 @@ export const importProductsXlsx = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка импорта товаров: ' + error.message });
+  }
+};
+
+export const matchEstimateXlsx = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не загружен' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ error: 'Файл пустой' });
+    }
+
+    // Try to find the headers row or assume columns
+    let nameColIdx = 0;
+    let qtyColIdx = 1;
+    let headerRowIdx = -1;
+
+    // Scan the first 15 rows to detect headers
+    for (let r = 0; r < Math.min(15, rows.length); r++) {
+      const row = rows[r];
+      if (!row || !Array.isArray(row)) continue;
+      
+      const hasName = row.some((cell, idx) => {
+        if (typeof cell !== 'string') return false;
+        const val = cell.toLowerCase();
+        return val.includes('наименование') || val.includes('товар') || val.includes('номенклатура') || val.includes('имя') || val.includes('product') || val.includes('name');
+      });
+
+      const hasQty = row.some((cell, idx) => {
+        if (typeof cell !== 'string') return false;
+        const val = cell.toLowerCase();
+        return val.includes('количество') || val.includes('кол-во') || val.includes('кол') || val.includes('qty') || val.includes('count') || val.includes('объем');
+      });
+
+      if (hasName && hasQty) {
+        headerRowIdx = r;
+        // Find exact indices
+        row.forEach((cell, idx) => {
+          if (typeof cell !== 'string') return;
+          const val = cell.toLowerCase();
+          if (val.includes('наименование') || val.includes('товар') || val.includes('номенклатура') || val.includes('имя') || val.includes('product') || val.includes('name')) {
+            nameColIdx = idx;
+          } else if (val.includes('количество') || val.includes('кол-во') || val.includes('кол') || val.includes('qty') || val.includes('count') || val.includes('объем')) {
+            qtyColIdx = idx;
+          }
+        });
+        break;
+      }
+    }
+
+    const startRowIdx = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+    const parsedItems = [];
+
+    // Fetch all active products
+    const allProducts = await prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        oldPrice: true,
+        image: true,
+        category: true,
+        isHit: true,
+        rating: true
+      }
+    });
+
+    const cleanName = (str) => {
+      if (!str) return '';
+      return String(str)
+        .toLowerCase()
+        .replace(/[^a-zа-яё0-9\s.-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const tokenize = (str) => {
+      return cleanName(str)
+        .split(' ')
+        .filter(t => t.length >= 2);
+    };
+
+    let totalRows = 0;
+    let matchedCount = 0;
+    let alternativeCount = 0;
+    let notFoundCount = 0;
+
+    for (let r = startRowIdx; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      const rawName = row[nameColIdx];
+      const rawQty = row[qtyColIdx];
+
+      if (!rawName || typeof rawName === 'object') continue;
+
+      const nameStr = String(rawName).trim();
+      if (!nameStr || nameStr.toLowerCase().includes('итого') || nameStr.toLowerCase().includes('всего') || nameStr.toLowerCase().includes('наименование') || nameStr.length < 3) {
+        continue;
+      }
+
+      totalRows++;
+      let qty = parseInt(rawQty, 10);
+      if (isNaN(qty) || qty <= 0) qty = 1;
+
+      const queryTokens = tokenize(nameStr);
+      if (queryTokens.length === 0) {
+        parsedItems.push({
+          originalName: nameStr,
+          requestedQuantity: qty,
+          status: 'not_found',
+          matchedProduct: null,
+          alternatives: []
+        });
+        notFoundCount++;
+        continue;
+      }
+
+      // Score all products
+      const scoredProducts = allProducts.map(p => {
+        const productTokens = tokenize(p.name);
+        
+        let matchedTokensCount = 0;
+        queryTokens.forEach(qt => {
+          if (productTokens.includes(qt)) {
+            matchedTokensCount++;
+          } else {
+            const hasSub = productTokens.some(pt => pt.includes(qt) || qt.includes(pt));
+            if (hasSub) matchedTokensCount += 0.5;
+          }
+        });
+
+        const tokenMatchRatio = matchedTokensCount / queryTokens.length;
+        const exactBonus = cleanName(p.name) === cleanName(nameStr) ? 2.0 : 0;
+        const isSubstring = cleanName(p.name).includes(cleanName(nameStr)) || cleanName(nameStr).includes(cleanName(p.name));
+        const substringBonus = isSubstring ? 0.4 : 0;
+
+        const lenDiff = Math.abs(p.name.length - nameStr.length);
+        const lenPenalty = Math.min(0.3, lenDiff * 0.003);
+
+        const totalScore = tokenMatchRatio * 1.5 + exactBonus + substringBonus - lenPenalty;
+
+        return { product: p, score: totalScore, tokenMatchRatio };
+      });
+
+      const matches = scoredProducts
+        .filter(m => m.score > 0.3)
+        .sort((a, b) => b.score - a.score);
+
+      if (matches.length === 0) {
+        parsedItems.push({
+          originalName: nameStr,
+          requestedQuantity: qty,
+          status: 'not_found',
+          matchedProduct: null,
+          alternatives: []
+        });
+        notFoundCount++;
+      } else {
+        const topMatch = matches[0];
+        const alternatives = matches.slice(1, 4).map(m => m.product);
+        const status = topMatch.score >= 1.2 || topMatch.tokenMatchRatio >= 0.75 ? 'exact' : 'alternative';
+
+        if (status === 'exact') matchedCount++;
+        else alternativeCount++;
+
+        parsedItems.push({
+          originalName: nameStr,
+          requestedQuantity: qty,
+          status,
+          matchedProduct: topMatch.product,
+          alternatives
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      summary: {
+        totalRows,
+        matched: matchedCount,
+        alternatives: alternativeCount,
+        notFound: notFoundCount
+      },
+      items: parsedItems
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сопоставления сметы: ' + error.message });
   }
 };

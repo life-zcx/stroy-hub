@@ -192,11 +192,11 @@ export default function Partners({ showToast }) {
                  </div>
                )}
 
-               <button
-                 type="submit"
-                 disabled={loading}
-                 className="w-full py-3 bg-slate-900 hover:bg-emerald-600 text-white font-extrabold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 shadow-md mt-2"
-               >
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl transition-all text-xs flex items-center justify-center gap-1.5 shadow-md mt-2 transform hover:-translate-y-0.5"
+                >
                  <Send className="h-4 w-4" />
                  {loading ? 'Отправляем...' : 'Отправить предложение'}
                </button>

@@ -19,6 +19,7 @@ const MOBILE_NAV_ITEMS = [
   { id: 'requisites', name: 'Реквизиты' },
   { id: 'partners', name: 'Партнеры' },
   { id: 'promotions', name: 'Акции' },
+  { id: 'estimate', name: 'Заказ по смете 📄' },
   { id: 'advisor', name: 'Умный подбор' },
 ];
 
@@ -226,6 +227,18 @@ export default function Header({
               className={`hover:text-white transition-colors ${currentPage === 'promotions' ? 'text-white font-bold' : ''}`}
             >
               Акции
+            </button>
+            <button
+              onClick={() => navigateTo('estimate')}
+              className={`hover:text-white transition-colors ${currentPage === 'estimate' ? 'text-white font-bold' : ''}`}
+            >
+              Заказ по смете
+            </button>
+            <button
+              onClick={() => navigateTo('advisor')}
+              className={`hover:text-white transition-colors ${currentPage === 'advisor' ? 'text-white font-bold' : ''}`}
+            >
+              Расчет материалов
             </button>
           </div>
 
@@ -449,15 +462,7 @@ export default function Header({
                 </button>
               )}
 
-              {/* Comparison */}
-              <button
-                type="button"
-                onClick={() => alert('Сравнение товаров будет доступно в следующем обновлении')}
-                className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
-              >
-                <GitCompare className="h-5 w-5 mb-0.5" />
-                <span className="text-[10px] font-extrabold uppercase tracking-wide">Сравнение</span>
-              </button>
+
 
               {/* Favorites */}
               <button
@@ -518,6 +523,7 @@ export default function Header({
               </button>
             </div>
           </div>
+
 
           {/* Dynamic Full-Width Mega Menu Dropdown */}
           {isMegaMenuOpen && (

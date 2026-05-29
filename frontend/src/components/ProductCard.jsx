@@ -116,7 +116,7 @@ export default function ProductCard({
           <div className="grid grid-cols-[1fr_auto] gap-2">
             <button
               onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-              className="bg-slate-900 hover:bg-emerald-600 hover:shadow-lg text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-md"
             >
               <ShoppingCart className="h-4 w-4" />
               <span className="text-sm">В корзину</span>

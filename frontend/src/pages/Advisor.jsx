@@ -424,18 +424,15 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-2 sm:px-4">
       
-      {/* Premium Gradient Header */}
-      <div className="relative p-6 sm:p-10 rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white shadow-xl overflow-hidden border border-white/5">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 -mb-20 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+      {/* Premium Minimalist Header */}
+      <div className="relative p-6 sm:p-10 rounded-[2rem] bg-white border border-slate-200 shadow-sm">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4 max-w-3xl">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight font-outfit leading-tight bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent">
-              Умный подборщик материалов
+          <div className="space-y-3 max-w-3xl">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-outfit text-slate-950">
+              Умный калькулятор материалов
             </h1>
-            <p className="text-slate-350 text-sm sm:text-base leading-relaxed font-medium">
-              Выберите тип строительных работ, укажите размеры и задайте бюджет. Наша интеллектуальная система рассчитает точный объём материалов по строительным нормам СНиП РК.
+            <p className="text-slate-500 text-sm sm:text-base leading-relaxed font-semibold">
+              Выберите тип строительных или отделочных работ, укажите размеры конструкции и задайте бюджетный уровень. Система автоматически рассчитает точный объём и спецификацию материалов по строительным нормам СНиП РК.
             </p>
           </div>
         </div>
@@ -443,7 +440,6 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
 
       {/* Main interactive panel */}
       <div className="bg-white border border-slate-200/80 rounded-[2.5rem] shadow-xl p-6 sm:p-10 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500" />
         
         {advisorStep === 1 ? (
           /* Step 1: Sleek Configuration Dashboard */
@@ -452,7 +448,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
             {/* Steps Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
               <div className="flex items-center gap-3">
-                <div className="bg-slate-900 text-emerald-400 p-3 rounded-2xl shadow-lg">
+                <div className="bg-slate-100 border border-slate-200 text-blue-600 p-3 rounded-2xl">
                   <SlidersHorizontal className="h-5.5 w-5.5" />
                 </div>
                 <div className="text-left">
@@ -460,7 +456,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                   <p className="text-xs text-slate-400 font-medium">Заполните спецификации вашего будущего проекта</p>
                 </div>
               </div>
-              <span className="bg-slate-100 text-slate-655 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm border border-slate-200">
+              <span className="bg-slate-100 text-slate-600 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm border border-slate-200">
                 Шаг 1 из 2
               </span>
             </div>
@@ -486,21 +482,21 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                           onClick={() => setSelectedProjectId(proj.id)}
                           className={`p-5 rounded-2xl border text-left transition-all flex gap-4 items-start relative cursor-pointer min-h-[6.5rem] w-full ${
                             isSelected 
-                              ? 'bg-slate-900 border-slate-900 text-white shadow-xl scale-[1.01] ring-4 ring-emerald-500/20' 
+                              ? 'bg-blue-50/50 border-blue-600 text-slate-950 shadow-sm scale-[1.01] ring-4 ring-blue-500/10' 
                               : 'bg-slate-50/50 hover:bg-slate-100/70 border-slate-200 text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          <div className={`p-3 rounded-xl shrink-0 transition-transform ${isSelected ? 'bg-emerald-500 text-slate-950 scale-110' : 'bg-slate-200 text-slate-600'}`}>
+                          <div className={`p-3 rounded-xl shrink-0 transition-transform ${isSelected ? 'bg-blue-600 text-white scale-110' : 'bg-slate-200 text-slate-600'}`}>
                             <IconComponent className="h-5 w-5 stroke-[2]" />
                           </div>
                           <div className="space-y-1 pr-6 whitespace-normal break-words text-left">
                             <span className="block font-black text-sm font-outfit tracking-tight leading-tight">{proj.name}</span>
-                            <span className={`block text-[11px] leading-relaxed font-medium ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                            <span className={`block text-[11px] leading-relaxed font-medium ${isSelected ? 'text-slate-700' : 'text-slate-500'}`}>
                               {proj.desc}
                             </span>
                           </div>
                           {isSelected && (
-                            <span className="absolute top-4 right-4 bg-emerald-500 text-slate-950 rounded-full p-0.5 shadow">
+                            <span className="absolute top-4 right-4 bg-blue-600 text-white rounded-full p-0.5 shadow">
                               <Check className="h-3 w-3 stroke-[3.5]" />
                             </span>
                           )}
@@ -513,7 +509,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                 {/* 2. Premium Dimension Sliders */}
                 <div className="space-y-5 bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/80 rounded-3xl p-6 sm:p-8">
                   <div className="flex items-center gap-2.5 border-b border-slate-200/60 pb-3.5 mb-4">
-                    <Calculator className="h-5 w-5 text-emerald-600" />
+                    <Calculator className="h-5 w-5 text-blue-600" />
                     <span className="text-xs font-black text-slate-800 uppercase tracking-widest text-left">
                       Геометрические параметры объекта
                     </span>
@@ -524,7 +520,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                       <div key={field.id} className="space-y-3 bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm hover:border-slate-300 transition-all text-left">
                         <div className="flex items-center justify-between text-xs font-black text-slate-700">
                           <span className="font-outfit tracking-wide">{field.label}</span>
-                          <span className="text-emerald-700 font-extrabold text-sm bg-emerald-50 border border-emerald-200 py-0.5 px-3 rounded-lg shadow-inner shrink-0">
+                          <span className="text-blue-700 font-extrabold text-sm bg-blue-50 border border-blue-200 py-0.5 px-3 rounded-lg shadow-inner shrink-0">
                             {dimensions[field.id]} {field.unit}
                           </span>
                         </div>
@@ -537,7 +533,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                             step={field.step || 1}
                             value={dimensions[field.id]}
                             onChange={(e) => handleDimensionChange(field.id, e.target.value)}
-                            className="w-full h-2 bg-slate-100 rounded-lg cursor-pointer accent-emerald-650 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            className="w-full h-2 bg-slate-100 rounded-lg cursor-pointer accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                           />
                         </div>
                         
@@ -577,7 +573,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                         tag: 'Золотая середина',
                         desc: 'Сертифицированные бренды с превосходным балансом долговечности и стоимости. Идеально для жилых домов.', 
                         color: 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
-                        activeColor: 'border-emerald-600 bg-gradient-to-br from-emerald-50/50 to-teal-50/50 text-slate-900 ring-4 ring-emerald-500/15'
+                        activeColor: 'border-blue-600 bg-gradient-to-br from-blue-50/50 to-sky-50/50 text-slate-900 ring-4 ring-blue-500/15'
                       },
                       { 
                         id: 'premium', 
@@ -601,7 +597,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                             <span className="block font-black text-xs uppercase tracking-wider">{bud.label}</span>
                             <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${
                               isSelected 
-                                ? bud.id === 'budget' ? 'bg-white/20 text-white' : 'bg-emerald-600/15 text-emerald-800' 
+                                ? bud.id === 'budget' ? 'bg-white/20 text-white' : 'bg-blue-600/15 text-blue-800' 
                                 : 'bg-slate-200/60 text-slate-550'
                             }`}>
                               {bud.tag}
@@ -670,9 +666,9 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
               
               <button 
                 onClick={handleAdvisorSelect}
-                className="w-full sm:w-auto bg-slate-950 hover:bg-emerald-600 text-white font-black py-4 px-8 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest border-0 cursor-pointer shadow-lg hover:shadow-emerald-500/20 shrink-0"
+                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-black py-4 px-8 rounded-2xl transition-all transform hover:-translate-y-0.5 shadow-md flex items-center justify-center gap-2 uppercase text-xs tracking-widest border-0 cursor-pointer shrink-0"
               >
-                <Sparkles className="h-4 w-4 animate-pulse text-emerald-400" /> Сформировать смету
+                Сформировать смету
               </button>
             </div>
 

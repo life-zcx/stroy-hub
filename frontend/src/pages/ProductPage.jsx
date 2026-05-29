@@ -109,7 +109,7 @@ export default function ProductPage({
         <button
           type="button"
           onClick={onBackToCatalog}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-sm font-bold transition-all shadow-md transform hover:-translate-y-0.5"
         >
           <ArrowLeft className="h-4 w-4" />
           Вернуться в каталог
@@ -261,7 +261,7 @@ export default function ProductPage({
                   onAddToCart(product);
                   showToast?.(`🛒 «${product.name}» добавлен в корзину`);
                 }}
-                className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-extrabold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md transform hover:-translate-y-0.5"
               >
                 <ShoppingCart className="h-5 w-5" />
                 Добавить в корзину

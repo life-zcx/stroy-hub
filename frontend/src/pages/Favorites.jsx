@@ -73,7 +73,7 @@ export default function FavoritesPage({
             </p>
             <button 
               onClick={() => onNavigate?.('catalog')}
-              className="bg-slate-900 text-white font-bold py-3 px-8 rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 w-full shadow-lg shadow-slate-900/10"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 w-full transform hover:-translate-y-0.5"
             >
               <ShoppingBag className="h-4 w-4" />
               Перейти в каталог
@@ -146,7 +146,7 @@ export default function FavoritesPage({
                   </div>
                   <button 
                     onClick={() => onAddToCart(product)}
-                    className="bg-slate-900 hover:bg-emerald-600 text-white p-3.5 rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95"
+                    className="bg-slate-900 hover:bg-slate-800 text-white p-3.5 rounded-2xl transition-all shadow-md transform hover:-translate-y-0.5 active:scale-95"
                     title="В корзину"
                   >
                     <ShoppingBag className="h-5 w-5" />
