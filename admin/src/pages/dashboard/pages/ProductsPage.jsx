@@ -9,6 +9,7 @@ import {
   ChevronRight,
   RefreshCw,
   Upload as UploadIcon,
+  Download as DownloadIcon,
   AlertTriangle,
   X as XIcon,
 } from 'lucide-react';
@@ -63,6 +64,26 @@ export default function ProductsPage({
       setImporting(false);
       e.target.value = ''; // Reset
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = ['Название', 'Цена', 'Категория', 'Бренд', 'Описание', 'Характеристики', 'Старая цена', 'Хит'];
+    const exampleRow = ['Ротбанд Кнауф 30 кг', '3450', 'Сухие смеси', 'Knauf', 'Штукатурка универсальная гипсовая', 'Вес: 30 кг', '3800', 'да'];
+    
+    // Join with semicolons (Cyrillic standard for Russian/Kazakhstan Excel environments)
+    const csvContent = '\uFEFF' + [
+      headers.join(';'),
+      exampleRow.join(';')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'шаблон_прайс_листа_tormag.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const debounceTimer = useRef(null);
@@ -138,6 +159,16 @@ export default function ProductsPage({
             title="Обновить"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          {/* Download Template */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm border border-slate-200 transform hover:-translate-y-0.5"
+            title="Скачать шаблон таблицы в формате CSV"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            Скачать шаблон
           </button>
 
           {/* Import XLSX */}
