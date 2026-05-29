@@ -41,3 +41,28 @@ export const imageUpload = multer({
   },
   fileFilter,
 });
+
+const allowedExcelMimeTypes = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+  'application/octet-stream', // sometimes windows returns this for csv/xlsx
+]);
+
+function excelFileFilter(req, file, cb) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!allowedExcelMimeTypes.has(file.mimetype) && ext !== '.xlsx' && ext !== '.xls' && ext !== '.csv') {
+    cb(new Error('Недопустимый формат файла. Разрешены только XLSX, XLS и CSV.'));
+    return;
+  }
+  cb(null, true);
+}
+
+export const excelUpload = multer({
+  storage: multer.memoryStorage(), // spreadsheet files are small and easy to parse in-memory
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for price lists
+  },
+  fileFilter: excelFileFilter,
+});
+

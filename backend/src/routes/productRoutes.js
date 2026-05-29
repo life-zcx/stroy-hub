@@ -1,10 +1,10 @@
 import express from 'express';
 import { 
   getAllProducts, getProductById, createProduct, updateProduct, deleteProduct,
-  getPricingSettings, savePricingSettings 
+  getPricingSettings, savePricingSettings, importProductsXlsx
 } from '../controllers/productController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
-import { imageUpload } from '../config/upload.js';
+import { imageUpload, excelUpload } from '../config/upload.js';
 
 const router = express.Router();
 
@@ -15,6 +15,9 @@ router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePrici
 // Public endpoints
 router.get('/', getAllProducts);
 router.get('/:id', getProductById);
+
+// Bulk product imports
+router.post('/import-xlsx', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), excelUpload.single('file'), importProductsXlsx);
 
 // Protected endpoints for administrators and suppliers only
 router.post('/', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), imageUpload.single('imageFile'), createProduct);

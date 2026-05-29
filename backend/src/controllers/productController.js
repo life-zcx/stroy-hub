@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import xlsx from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -86,7 +87,6 @@ function isSupplierUser(req) {
   return req.user?.role === 'SUPPLIER';
 }
 
-// Helper to recursively fetch all descendant category IDs and slugs
 async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
   let rootCategory;
   
@@ -450,5 +450,194 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: 'Товар успешно удален' });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка удаления товара: ' + error.message });
+  }
+};
+
+export const importProductsXlsx = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Пожалуйста, загрузите файл Excel (.xlsx, .xls) или .csv' });
+  }
+
+  const requesterSupplierId = getRequesterSupplierId(req);
+  const bodySupplierId = req.body.supplierId ? parseInt(req.body.supplierId) : null;
+  const effectiveSupplierId = isSupplierUser(req) ? requesterSupplierId : (bodySupplierId || requesterSupplierId);
+
+  if (!effectiveSupplierId) {
+    return res.status(400).json({ error: 'Необходимо указать ID поставщика (supplierId).' });
+  }
+
+  try {
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(sheet);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Файл пуст или содержит некорректные данные' });
+    }
+
+    const categories = await prisma.category.findMany();
+    const brands = await prisma.brand.findMany();
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: effectiveSupplierId }
+    });
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Указанный поставщик не найден' });
+    }
+
+    const categoryMap = {};
+    categories.forEach(c => {
+      categoryMap[c.name.toLowerCase().trim()] = c;
+    });
+
+    const brandNames = new Set(brands.map(b => b.name.toLowerCase().trim()));
+
+    const errors = [];
+    const validRows = [];
+
+    const getVal = (row, possibleKeys) => {
+      for (const key of Object.keys(row)) {
+        const normalizedKey = key.toLowerCase().trim();
+        if (possibleKeys.includes(normalizedKey)) {
+          return row[key];
+        }
+      }
+      return null;
+    };
+
+    rows.forEach((row, index) => {
+      const rowNum = index + 2;
+      
+      const name = getVal(row, ['название', 'наименование', 'name', 'product name']);
+      const priceVal = getVal(row, ['цена', 'цена (тенге)', 'цена(тенге)', 'стоимость', 'price']);
+      const categoryName = getVal(row, ['категория', 'category']);
+      const brandName = getVal(row, ['бренд', 'brand']);
+
+      const description = getVal(row, ['описание', 'description']) || null;
+      const details = getVal(row, ['детали', 'details']) || null;
+      const specifications = getVal(row, ['характеристики', 'спецификация', 'specifications', 'specs']) || null;
+      const usage = getVal(row, ['применение', 'usage']) || null;
+      const bulkDiscount = getVal(row, ['скидка', 'оптовая скидка', 'bulk discount', 'discount']) || null;
+      const isHitVal = getVal(row, ['хит', 'популярный', 'is hit', 'hit']);
+      const oldPriceVal = getVal(row, ['старая цена', 'old price', 'oldprice']);
+
+      if (!name) {
+        errors.push({ row: rowNum, error: 'Отсутствует название товара' });
+        return;
+      }
+
+      const price = parseFloat(priceVal);
+      if (isNaN(price) || price <= 0) {
+        errors.push({ row: rowNum, error: `Недопустимая цена: "${priceVal}". Должно быть положительное число` });
+        return;
+      }
+
+      if (!categoryName) {
+        errors.push({ row: rowNum, error: 'Отсутствует категория' });
+        return;
+      }
+
+      const normCategory = categoryName.toString().toLowerCase().trim();
+      const matchedCategory = categoryMap[normCategory];
+      if (!matchedCategory) {
+        errors.push({ 
+          row: rowNum, 
+          error: `Категория "${categoryName}" не найдена в базе данных.` 
+        });
+        return;
+      }
+
+      if (!brandName) {
+        errors.push({ row: rowNum, error: 'Отсутствует бренд' });
+        return;
+      }
+
+      const normBrand = brandName.toString().toLowerCase().trim();
+      if (!brandNames.has(normBrand)) {
+        errors.push({ 
+          row: rowNum, 
+          error: `Бренд "${brandName}" не найден в базе данных.` 
+        });
+        return;
+      }
+
+      let isHit = false;
+      if (isHitVal) {
+        const normHit = isHitVal.toString().toLowerCase().trim();
+        isHit = normHit === 'да' || normHit === 'yes' || normHit === 'true' || normHit === '1';
+      }
+
+      const oldPrice = oldPriceVal ? parseFloat(oldPriceVal) : null;
+
+      validRows.push({
+        name: name.toString().trim(),
+        description: description ? description.toString().trim() : null,
+        details: details ? details.toString().trim() : null,
+        specifications: specifications ? specifications.toString().trim() : null,
+        usage: usage ? usage.toString().trim() : null,
+        category: matchedCategory.slug,
+        categoryId: matchedCategory.id,
+        price,
+        oldPrice: (oldPrice && !isNaN(oldPrice)) ? oldPrice : null,
+        isHit,
+        bulkDiscount: bulkDiscount ? bulkDiscount.toString().trim() : null,
+        supplierId: effectiveSupplierId,
+        image: 'https://placehold.co/400x300/f8fafc/475569?text=Tormag'
+      });
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Файл содержит ошибки валидации', 
+        errors 
+      });
+    }
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      for (const data of validRows) {
+        const existing = await tx.product.findFirst({
+          where: {
+            name: data.name,
+            supplierId: data.supplierId
+          }
+        });
+
+        if (existing) {
+          await tx.product.update({
+            where: { id: existing.id },
+            data: {
+              description: data.description,
+              details: data.details,
+              specifications: data.specifications,
+              usage: data.usage,
+              category: data.category,
+              categoryId: data.categoryId,
+              price: data.price,
+              oldPrice: data.oldPrice,
+              isHit: data.isHit,
+              bulkDiscount: data.bulkDiscount
+            }
+          });
+          updatedCount++;
+        } else {
+          await tx.product.create({ data });
+          createdCount++;
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Импорт успешно завершен',
+      createdCount,
+      updatedCount
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка импорта товаров: ' + error.message });
   }
 };
