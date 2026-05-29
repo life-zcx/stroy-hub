@@ -97,6 +97,13 @@ app.use('/api/analytics', analyticsRoutes);
 
 // Silent Geolocation helper endpoint to bypass client AdBlockers
 app.get('/api/geo', async (req, res) => {
+  // If Cloudflare is active and has determined the city, leverage it instantly (zero API delay!)
+  const cfCity = req.headers['cf-ipcity'];
+  if (cfCity) {
+    console.log(`[GEO IP] Cloudflare header detected city: ${cfCity}`);
+    return res.json({ city: cfCity });
+  }
+
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || '';
   
   if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('172.')) {
