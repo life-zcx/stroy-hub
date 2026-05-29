@@ -56,18 +56,15 @@ export const updateUserBlockStatus = async (id, isBlocked) => {
 };
 
 // Products API
-// Returns paginated { data, total, page, totalPages }
 export const getProductsPaged = async ({ page = 1, limit = 50, search = '', category = '', supplierId = '' } = {}) => {
   const response = await api.get('/products', {
     params: { page, limit, search: search || undefined, category: category || undefined, supplierId: supplierId || undefined },
   });
-  return response.data; // { data, total, page, totalPages }
+  return response.data;
 };
 
-// Legacy helper: returns only the data array from page 1 (used in useDashboardData for counts)
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products', { params: { limit: 50, ...params } });
-  // Handle both old (array) and new (paginated) response shapes
   return Array.isArray(response.data) ? response.data : (response.data.data || []);
 };
 
@@ -90,13 +87,27 @@ export const createProduct = async (formData) => {
   return response.data;
 };
 
+export const updateProduct = async (id, formData) => {
+  const response = await api.put(`/products/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
+  return response.data;
+};
+
 export const deleteProduct = async (id) => {
   const response = await api.delete(`/products/${id}`);
   return response.data;
 };
 
-export const updateProduct = async (id, formData) => {
-  const response = await api.put(`/products/${id}`, formData, {
+export const importProductsXlsx = async (file, supplierId) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (supplierId) {
+    formData.append('supplierId', supplierId);
+  }
+  const response = await api.post('/products/import-xlsx', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     }

@@ -8,8 +8,11 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  Upload as UploadIcon,
+  AlertTriangle,
+  X as XIcon,
 } from 'lucide-react';
-import { getProductsPaged } from '../../../services/api';
+import { getProductsPaged, importProductsXlsx } from '../../../services/api';
 
 const PAGE_SIZE = 50;
 
@@ -28,6 +31,39 @@ export default function ProductsPage({
   const [total, setTotal]           = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading]       = useState(true);
+  const [importing, setImporting]   = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [importSuccess, setImportSuccess] = useState('');
+
+  const fileInputRef = useRef(null);
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportErrors([]);
+    setImportSuccess('');
+
+    try {
+      const res = await importProductsXlsx(file);
+      if (res.success) {
+        setImportSuccess(`Импорт успешно завершен! Создано товаров: ${res.createdCount || 0}, обновлено: ${res.updatedCount || 0}`);
+        fetchProducts();
+      }
+    } catch (err) {
+      console.error(err);
+      const errData = err.response?.data;
+      if (errData?.errors) {
+        setImportErrors(errData.errors);
+      } else {
+        setImportErrors([{ row: 'Система', error: errData?.error || err.message || 'Ошибка импорта' }]);
+      }
+    } finally {
+      setImporting(false);
+      e.target.value = ''; // Reset
+    }
+  };
 
   const debounceTimer = useRef(null);
 
@@ -104,6 +140,23 @@ export default function ProductsPage({
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
+          {/* Import XLSX */}
+          <button
+            onClick={() => fileInputRef.current.click()}
+            disabled={importing}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <UploadIcon className="h-4 w-4" />
+            {importing ? 'Импорт...' : 'Импорт прайса (.xlsx)'}
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportExcel}
+            accept=".xlsx, .xls, .csv"
+            className="hidden"
+          />
+
           {/* Add product */}
           <button
             onClick={onCreateProduct}
@@ -114,6 +167,67 @@ export default function ProductsPage({
           </button>
         </div>
       </div>
+
+      {/* Import Success Banner */}
+      {importSuccess && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-emerald-800 text-xs font-semibold animate-slide-up">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            {importSuccess}
+          </div>
+          <button onClick={() => setImportSuccess('')} className="p-1 text-emerald-500 hover:text-emerald-800 hover:bg-emerald-100 rounded-lg transition-all">
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Import Errors Modal */}
+      {importErrors.length > 0 && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 flex flex-col max-h-[80vh] overflow-hidden animate-scale-up">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-red-600">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                <h3 className="text-base font-extrabold font-outfit text-slate-900">Ошибки валидации файла импорта</h3>
+              </div>
+              <button 
+                onClick={() => setImportErrors([])} 
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-3">
+              <p className="text-xs font-semibold text-slate-500">
+                Импорт был прерван. Пожалуйста, исправьте следующие ошибки в файле и загрузите его повторно:
+              </p>
+              <div className="space-y-2">
+                {importErrors.map((err, idx) => (
+                  <div key={idx} className="p-3 bg-red-50/50 border border-red-100 rounded-xl text-xs flex gap-2">
+                    <span className="font-black text-red-700 whitespace-nowrap bg-red-100/60 px-2 py-0.5 rounded-lg h-fit">
+                      Строка {err.row}
+                    </span>
+                    <span className="font-semibold text-slate-700 leading-relaxed">{err.error}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setImportErrors([])} 
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+              >
+                Понятно
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
