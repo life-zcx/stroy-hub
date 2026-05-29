@@ -101,7 +101,6 @@ export default function useRegion(showToast) {
       if (matchedCity) {
         console.log(`[GEO IP] Successfully matched: "${cityLower}" -> "${matchedCity}"`);
         handleSelectRegion(matchedCity);
-        showToast?.(`📍 Мы определили ваш город: ${matchedCity}`);
         return true;
       }
       return false;
@@ -115,7 +114,6 @@ export default function useRegion(showToast) {
             const cityName = findClosestCity(position.coords.latitude, position.coords.longitude);
             console.log('[GEO IP] Browser HTML5 coords matched closest city:', cityName);
             handleSelectRegion(cityName);
-            showToast?.(`📍 Мы определили ваш город: ${cityName}`);
           },
           (err) => {
             console.warn('[GEO IP] Browser Geolocation denied or failed:', err);
