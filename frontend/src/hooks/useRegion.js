@@ -11,26 +11,26 @@ export default function useRegion(showToast) {
     const savedRegion = localStorage.getItem('tormag_region');
     
     if (!savedRegion) {
-      console.log('[GEO IP] No saved region found. Attempting silent IP geolocation...');
+      console.log('[GEO IP] No saved region found. Attempting silent first-party IP geolocation...');
       
-      // Try ipapi.co first
-      fetch('https://ipapi.co/json/')
+      // Fetch from our OWN backend (completely AdBlock-safe!)
+      fetch('/api/geo')
         .then((res) => {
-          if (!res.ok) throw new Error('ipapi.co lookup failed');
+          if (!res.ok) throw new Error('First-party geo lookup failed');
           return res.json();
         })
         .then((data) => {
-          console.log('[GEO IP] ipapi.co response:', data);
+          console.log('[GEO IP] Backend response:', data);
           const apiCity = data.city ? data.city.toLowerCase().trim() : '';
           
           if (!processCity(apiCity)) {
-            console.log('[GEO IP] City not mapped from ipapi.co. Trying backup provider...');
-            tryBackupProvider();
+            console.log('[GEO IP] City not mapped from backend. Falling back to browser GPS...');
+            triggerBrowserGeolocation();
           }
         })
         .catch((err) => {
-          console.warn('[GEO IP] ipapi.co failed:', err.message);
-          tryBackupProvider();
+          console.warn('[GEO IP] Backend geolocation failed:', err.message);
+          triggerBrowserGeolocation();
         });
     }
 
@@ -105,27 +105,6 @@ export default function useRegion(showToast) {
         return true;
       }
       return false;
-    }
-
-    function tryBackupProvider() {
-      // Try ipinfo.io as a highly reliable HTTPS backup
-      fetch('https://ipinfo.io/json')
-        .then((res) => {
-          if (!res.ok) throw new Error('ipinfo.io lookup failed');
-          return res.json();
-        })
-        .then((data) => {
-          console.log('[GEO IP] ipinfo.io response:', data);
-          const apiCity = data.city ? data.city.toLowerCase().trim() : '';
-          if (!processCity(apiCity)) {
-            console.log('[GEO IP] Backup city also not mapped. Falling back to browser GPS...');
-            triggerBrowserGeolocation();
-          }
-        })
-        .catch((err) => {
-          console.warn('[GEO IP] Backup provider failed:', err.message);
-          triggerBrowserGeolocation();
-        });
     }
 
     function triggerBrowserGeolocation() {

@@ -95,6 +95,31 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
+// Silent Geolocation helper endpoint to bypass client AdBlockers
+app.get('/api/geo', async (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || '';
+  
+  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('172.')) {
+    return res.json({ city: 'Almaty' });
+  }
+
+  try {
+    const response = await fetch(`https://ipapi.co/${ip}/json/`);
+    if (!response.ok) throw new Error('ipapi.co failed');
+    const data = await response.json();
+    return res.json({ city: data.city || 'Almaty' });
+  } catch (error) {
+    try {
+      const response = await fetch(`https://ipinfo.io/${ip}/json`);
+      if (!response.ok) throw new Error('ipinfo.io failed');
+      const data = await response.json();
+      return res.json({ city: data.city || 'Almaty' });
+    } catch (e) {
+      return res.json({ city: 'Almaty' });
+    }
+  }
+});
+
 // Healthcheck
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
