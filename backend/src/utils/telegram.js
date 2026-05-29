@@ -1,5 +1,6 @@
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID?.trim() || '';
+const TELEGRAM_API_BASE = process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org';
 
 export const sendTelegramNotification = async (order) => {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
@@ -23,7 +24,9 @@ export const sendTelegramNotification = async (order) => {
       `📦 *Состав заказа:*\n${itemsText}\n\n` +
       `💰 *Итого к оплате:* *${order.totalAmount.toLocaleString('ru-RU')} ₸*`;
 
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    // Remove any trailing slashes from the base API URL
+    const apiBase = TELEGRAM_API_BASE.replace(/\/+$/, '');
+    const url = `${apiBase}/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
     // We run it asynchronously and catch errors to never block order confirmation
     fetch(url, {
