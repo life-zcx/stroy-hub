@@ -27,6 +27,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-5}
       RESEND_API_KEY: ${RESEND_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     depends_on:
       db:
         condition: service_healthy
