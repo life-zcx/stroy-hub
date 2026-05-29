@@ -287,12 +287,95 @@ export default function Dashboard({ user, onLogout, showToast }) {
             onUpdateUser={handleUpdateUser}
             onUpdateUserPassword={handleUpdateUserPassword}
             onToggleUserBlock={handleToggleUserBlock}
+      case 'orders':
+        return (
+          <OrdersPage
+            orders={orders}
+            products={products}
+            onStatusChange={handleStatusChange}
+            onUpdateOrder={handleUpdateOrder}
+            formatPrice={formatPrice}
+            getStatusText={getOrderStatusText}
+            getStatusClass={getOrderStatusClass}
+            userRole={user.role}
+          />
+        );
+      case 'callbacks':
+        return (
+          <CallbacksPage
+            callbacks={callbacks}
+            onStatusChange={handleCallbackStatusChange}
+            onCommentUpdate={handleCallbackCommentUpdate}
+            getCallbackStatusClass={getCallbackStatusClass}
+            getCallbackStatusText={getCallbackStatusText}
+          />
+        );
+      case 'promotions':
+        return isSupplier ? null : (
+          <PromotionsPage
+            promotions={promotions}
+            onCreatePromotion={startCreatePromotion}
+            onEditPromotion={startEditPromotion}
+            onDeletePromotion={handleDeletePromotion}
+            formatPrice={formatPrice}
+          />
+        );
+      case 'brands':
+        return isSupplier ? null : (
+          <BrandsPage
+            brands={brands}
+            onCreateBrand={startCreateBrand}
+            onEditBrand={startEditBrand}
+            onDeleteBrand={handleDeleteBrand}
+          />
+        );
+      case 'categories':
+        return isSupplier ? null : (
+          <CategoriesPage
+            categories={categories}
+            hierarchicalCategories={hierarchicalCategories}
+            onCreateCategory={startCreateCategory}
+            onEditCategory={startEditCategory}
+            onDeleteCategory={handleDeleteCategory}
+          />
+        );
+      case 'partners':
+        return isSupplier ? null : (
+          <PartnerRequestsPage
+            requests={partnerRequests}
+            onStatusChange={handlePartnerRequestStatusChange}
+            onCommentUpdate={handlePartnerRequestCommentUpdate}
+            getStatusClass={getPartnerRequestStatusClass}
+            getStatusText={getPartnerRequestStatusText}
+          />
+        );
+      case 'suppliers':
+        return isSupplier ? null : (
+          <SuppliersPage
+            suppliers={suppliers}
+            onCreateSupplier={startCreateSupplier}
+            onEditSupplier={startEditSupplier}
+            onDeleteSupplier={handleDeleteSupplier}
+          />
+        );
+      case 'users':
+        return isSupplier ? null : (
+          <UsersPage
+            currentUser={user}
+            users={users}
+            suppliers={suppliers}
+            onCreateUser={handleCreateUser}
+            onUpdateUser={handleUpdateUser}
+            onUpdateUserPassword={handleUpdateUserPassword}
+            onToggleUserBlock={handleToggleUserBlock}
           />
         );
       case 'products':
       default:
         return (
           <ProductsPage
+            user={user}
+            suppliers={suppliers}
             categories={categories}
             onCreateProduct={startCreateProduct}
             onEditProduct={startEditProduct}

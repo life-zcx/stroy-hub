@@ -18,6 +18,8 @@ import { getProductsPaged, importProductsXlsx } from '../../../services/api';
 const PAGE_SIZE = 50;
 
 export default function ProductsPage({
+  user,
+  suppliers = [],
   categories,
   onCreateProduct,
   onEditProduct,
@@ -32,24 +34,43 @@ export default function ProductsPage({
   const [total, setTotal]           = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading]       = useState(true);
+  
   const [importing, setImporting]   = useState(false);
   const [importErrors, setImportErrors] = useState([]);
   const [importSuccess, setImportSuccess] = useState('');
+  
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  // Set default selected supplier for admin
+  useEffect(() => {
+    if (suppliers.length > 0 && !selectedSupplierId) {
+      setSelectedSupplierId(suppliers[0].id.toString());
+    }
+  }, [suppliers, selectedSupplierId]);
 
   const fileInputRef = useRef(null);
 
-  const handleImportExcel = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleImportExcel = async () => {
+    if (!selectedFile) return;
+    
+    const supplierId = user?.role === 'SUPPLIER' ? user.supplierId : selectedSupplierId;
+    if (!supplierId) {
+      alert('Пожалуйста, выберите дистрибьютора');
+      return;
+    }
 
     setImporting(true);
     setImportErrors([]);
     setImportSuccess('');
 
     try {
-      const res = await importProductsXlsx(file);
+      const res = await importProductsXlsx(selectedFile, supplierId);
       if (res.success) {
         setImportSuccess(`Импорт успешно завершен! Создано товаров: ${res.createdCount || 0}, обновлено: ${res.updatedCount || 0}`);
+        setIsImportModalOpen(false);
+        setSelectedFile(null);
         fetchProducts();
       }
     } catch (err) {
@@ -62,7 +83,7 @@ export default function ProductsPage({
       }
     } finally {
       setImporting(false);
-      e.target.value = ''; // Reset
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -173,20 +194,12 @@ export default function ProductsPage({
 
           {/* Import XLSX */}
           <button
-            onClick={() => fileInputRef.current.click()}
-            disabled={importing}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md transform hover:-translate-y-0.5"
           >
             <UploadIcon className="h-4 w-4" />
-            {importing ? 'Импорт...' : 'Импорт прайса (.xlsx)'}
+            Импорт прайса (.xlsx)
           </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImportExcel}
-            accept=".xlsx, .xls, .csv"
-            className="hidden"
-          />
 
           {/* Add product */}
           <button
@@ -198,6 +211,118 @@ export default function ProductsPage({
           </button>
         </div>
       </div>
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-scale-up">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-emerald-600">
+                <UploadIcon className="h-5 w-5 shrink-0" />
+                <h3 className="text-base font-extrabold font-outfit text-slate-900">Импорт прайс-листа</h3>
+              </div>
+              <button 
+                onClick={() => { setIsImportModalOpen(false); setSelectedFile(null); }} 
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                disabled={importing}
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Supplier Selection for Admin */}
+              {user?.role === 'ADMIN' ? (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Дистрибьютор / Поставщик</label>
+                  <select
+                    value={selectedSupplierId}
+                    onChange={(e) => setSelectedSupplierId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                    disabled={importing}
+                  >
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Поставщик</span>
+                  <p className="text-xs font-bold text-slate-700">{user?.supplierName}</p>
+                </div>
+              )}
+
+              {/* File Upload Area */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Выберите файл прайс-листа</label>
+                <div 
+                  onClick={() => !importing && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                    selectedFile 
+                      ? 'border-emerald-300 bg-emerald-50/20' 
+                      : 'border-slate-250 hover:border-slate-400 hover:bg-slate-50/50'
+                  } ${importing ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <UploadIcon className={`h-8 w-8 mx-auto mb-2 ${selectedFile ? 'text-emerald-500' : 'text-slate-300'}`} />
+                  {selectedFile ? (
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-[280px] mx-auto">{selectedFile.name}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">Нажмите для выбора файла</p>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Поддерживаются XLSX, XLS, CSV</p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  accept=".xlsx, .xls, .csv"
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                disabled={importing}
+              >
+                <DownloadIcon className="h-3.5 w-3.5" />
+                Шаблон
+              </button>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsImportModalOpen(false); setSelectedFile(null); }}
+                  className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                  disabled={importing}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportExcel}
+                  disabled={importing || !selectedFile}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {importing ? 'Загрузка...' : 'Запустить импорт'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Success Banner */}
       {importSuccess && (
