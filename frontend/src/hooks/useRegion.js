@@ -11,101 +11,135 @@ export default function useRegion(showToast) {
     const savedRegion = localStorage.getItem('tormag_region');
     
     if (!savedRegion) {
-      // 1. Try to fetch location by IP silently (without browser popups)
+      console.log('[GEO IP] No saved region found. Attempting silent IP geolocation...');
+      
+      // Try ipapi.co first
       fetch('https://ipapi.co/json/')
         .then((res) => {
-          if (!res.ok) throw new Error('IP geo lookup failed');
+          if (!res.ok) throw new Error('ipapi.co lookup failed');
           return res.json();
         })
         .then((data) => {
+          console.log('[GEO IP] ipapi.co response:', data);
           const apiCity = data.city ? data.city.toLowerCase().trim() : '';
           
-          // English-to-Russian mapping for Kazakhstan cities
-          const CITY_TRANSLATIONS = {
-            'almaty': 'Алматы',
-            'astana': 'Астана',
-            'nur-sultan': 'Астана',
-            'shymkent': 'Шымкент',
-            'karaganda': 'Караганда',
-            'qaraghandy': 'Караганда',
-            'atyrau': 'Атырау',
-            'aktobe': 'Актобе',
-            'ust-kamenogorsk': 'Усть-Каменогорск',
-            'oskemen': 'Усть-Каменогорск',
-            'pavlodar': 'Павлодар',
-            'taraz': 'Тараз',
-            'uralsk': 'Уральск',
-            'oral': 'Уральск',
-            'kostanay': 'Костанай',
-            'kustanay': 'Костанай',
-            'kyzylorda': 'Кызылорда',
-            'aktau': 'Актау',
-            'petropavlovsk': 'Петропавловск',
-            'kokshetau': 'Кокшетау',
-            'taldykorgan': 'Талдыкорган',
-            'turkestan': 'Туркестан',
-            'semey': 'Семей',
-            'semipalatinsk': 'Семей',
-            'temirtau': 'Темиртау',
-            'zhezkazgan': 'Жезказган',
-            'rudny': 'Рудный',
-            'ekibastuz': 'Экибастуз',
-            'kentau': 'Кентау',
-            'zhanaozen': 'Жанаозен',
-            'satpayev': 'Сатпаев',
-            'kaskelen': 'Каскелен',
-            'stepnogorsk': 'Степногорск',
-            'shuchinsk': 'Щучинск',
-            'konaev': 'Конаев',
-            'kapchagay': 'Конаев',
-            'ridder': 'Риддер',
-            'saran': 'Сарань',
-            'aksu': 'Аксу',
-            'tekeli': 'Текели',
-            'zhitikara': 'Житикара',
-            'aralsk': 'Аральск',
-            'lisakovsk': 'Лисаковск',
-            'atbasar': 'Атбасар',
-            'shalkar': 'Шалкар',
-            'khromtau': 'Хромтау',
-            'ayagoz': 'Аягоз',
-            'zaysan': 'Зайсан',
-            'shemonaikha': 'Шемонаиха',
-            'altay': 'Алтай',
-            'balkhash': 'Балхаш',
-            'ereymentau': 'Ерейментау',
-            'esil': 'Есиль',
-            'makat': 'Макат',
-            'shu': 'Шу',
-            'kandyagash': 'Кандыагаш',
-            'fort-shevchenko': 'Форт-Шевченко'
-          };
+          if (!processCity(apiCity)) {
+            console.log('[GEO IP] City not mapped from ipapi.co. Trying backup provider...');
+            tryBackupProvider();
+          }
+        })
+        .catch((err) => {
+          console.warn('[GEO IP] ipapi.co failed:', err.message);
+          tryBackupProvider();
+        });
+    }
 
-          const matchedCity = CITY_TRANSLATIONS[apiCity];
-          if (matchedCity) {
-            handleSelectRegion(matchedCity);
-            showToast?.(`📍 Мы определили ваш город: ${matchedCity}`);
-          } else {
-            // If the IP-detected city is not in our mapping, fallback to browser geolocation
+    // English-to-Russian mapping for Kazakhstan cities
+    const CITY_TRANSLATIONS = {
+      'almaty': 'Алматы',
+      'astana': 'Астана',
+      'nur-sultan': 'Астана',
+      'shymkent': 'Шымкент',
+      'karaganda': 'Караганда',
+      'qaraghandy': 'Караганда',
+      'atyrau': 'Атырау',
+      'aktobe': 'Актобе',
+      'ust-kamenogorsk': 'Усть-Каменогорск',
+      'oskemen': 'Усть-Каменогорск',
+      'pavlodar': 'Павлодар',
+      'taraz': 'Тараз',
+      'uralsk': 'Уральск',
+      'oral': 'Уральск',
+      'kostanay': 'Костанай',
+      'kustanay': 'Костанай',
+      'kyzylorda': 'Кызылорда',
+      'aktau': 'Актау',
+      'petropavlovsk': 'Петропавловск',
+      'kokshetau': 'Кокшетау',
+      'taldykorgan': 'Талдыкорган',
+      'turkestan': 'Туркестан',
+      'semey': 'Семей',
+      'semipalatinsk': 'Семей',
+      'temirtau': 'Темиртау',
+      'zhezkazgan': 'Жезказган',
+      'rudny': 'Рудный',
+      'ekibastuz': 'Экибастуз',
+      'kentau': 'Кентау',
+      'zhanaozen': 'Жанаозен',
+      'satpayev': 'Сатпаев',
+      'kaskelen': 'Каскелен',
+      'stepnogorsk': 'Степногорск',
+      'shuchinsk': 'Щучинск',
+      'konaev': 'Конаев',
+      'kapchagay': 'Конаев',
+      'ridder': 'Риддер',
+      'saran': 'Сарань',
+      'aksu': 'Аксу',
+      'tekeli': 'Текели',
+      'zhitikara': 'Житикара',
+      'aralsk': 'Аральск',
+      'lisakovsk': 'Лисаковск',
+      'atbasar': 'Атбасар',
+      'shalkar': 'Шалкар',
+      'khromtau': 'Хромтау',
+      'ayagoz': 'Аягоз',
+      'zaysan': 'Зайсан',
+      'shemonaikha': 'Шемонаиха',
+      'altay': 'Алтай',
+      'balkhash': 'Балхаш',
+      'ereymentau': 'Ерейментау',
+      'esil': 'Есиль',
+      'makat': 'Макат',
+      'shu': 'Шу',
+      'kandyagash': 'Кандыагаш',
+      'fort-shevchenko': 'Форт-Шевченко'
+    };
+
+    function processCity(cityLower) {
+      if (!cityLower) return false;
+      const matchedCity = CITY_TRANSLATIONS[cityLower];
+      if (matchedCity) {
+        console.log(`[GEO IP] Successfully matched: "${cityLower}" -> "${matchedCity}"`);
+        handleSelectRegion(matchedCity);
+        showToast?.(`📍 Мы определили ваш город: ${matchedCity}`);
+        return true;
+      }
+      return false;
+    }
+
+    function tryBackupProvider() {
+      // Try ipinfo.io as a highly reliable HTTPS backup
+      fetch('https://ipinfo.io/json')
+        .then((res) => {
+          if (!res.ok) throw new Error('ipinfo.io lookup failed');
+          return res.json();
+        })
+        .then((data) => {
+          console.log('[GEO IP] ipinfo.io response:', data);
+          const apiCity = data.city ? data.city.toLowerCase().trim() : '';
+          if (!processCity(apiCity)) {
+            console.log('[GEO IP] Backup city also not mapped. Falling back to browser GPS...');
             triggerBrowserGeolocation();
           }
         })
-        .catch(() => {
-          // If IP fetch fails, fallback to browser geolocation
+        .catch((err) => {
+          console.warn('[GEO IP] Backup provider failed:', err.message);
           triggerBrowserGeolocation();
         });
     }
 
     function triggerBrowserGeolocation() {
+      console.log('[GEO IP] Requesting browser HTML5 Geolocation coordinates...');
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const cityName = findClosestCity(position.coords.latitude, position.coords.longitude);
+            console.log('[GEO IP] Browser HTML5 coords matched closest city:', cityName);
             handleSelectRegion(cityName);
             showToast?.(`📍 Мы определили ваш город: ${cityName}`);
           },
-          () => {
-            // If denied or error, open the modal
+          (err) => {
+            console.warn('[GEO IP] Browser Geolocation denied or failed:', err);
             setRegionModalOpen(true);
           }
         );
