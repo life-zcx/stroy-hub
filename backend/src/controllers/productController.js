@@ -626,7 +626,10 @@ export const importProductsXlsx = async (req, res) => {
           updatedCount++;
         } else {
           await tx.product.create({ data });
-    }
+          createdCount++;
+        }
+      }
+    });
 
     res.json({
       success: true,
