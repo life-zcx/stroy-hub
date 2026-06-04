@@ -31,6 +31,17 @@ export default function AuthModal({
 }) {
   if (!isOpen) return null;
 
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return { score: 0, text: '', colorClass: '' };
+    if (pwd.length < 6) return { score: 1, text: 'Слишком короткий (минимум 6 символов)', colorClass: 'bg-red-500 text-red-500' };
+    const hasLetters = /[a-zA-Zа-яА-Я]/.test(pwd);
+    const hasNumbers = /\d/.test(pwd);
+    if (hasLetters && hasNumbers) return { score: 3, text: 'Надежный пароль', colorClass: 'bg-emerald-500 text-emerald-500' };
+    return { score: 2, text: 'Средний пароль (добавьте буквы или цифры)', colorClass: 'bg-amber-500 text-amber-500' };
+  };
+
+  const pwdStrength = getPasswordStrength(authPassword);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white border border-gray-150 p-8 rounded-3xl shadow-2xl relative space-y-6 animate-fade-in-up">
@@ -142,6 +153,24 @@ export default function AuthModal({
                 placeholder="••••••••"
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
               />
+              {authTab === 'register' && authPassword && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex gap-1 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full transition-all duration-300 ${
+                      pwdStrength.score === 1 ? 'w-1/3 bg-red-500' :
+                      pwdStrength.score === 2 ? 'w-2/3 bg-amber-500' :
+                      'w-full bg-emerald-500'
+                    }`} />
+                  </div>
+                  <span className={`text-[10px] font-bold ${
+                    pwdStrength.score === 1 ? 'text-red-500' :
+                    pwdStrength.score === 2 ? 'text-amber-500' :
+                    'text-emerald-600'
+                  }`}>
+                    {pwdStrength.text}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

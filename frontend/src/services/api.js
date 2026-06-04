@@ -14,9 +14,22 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
+
+// Auto-logout if token is expired (401 Unauthorized)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      const token = localStorage.getItem('tormag_customer_token');
+      if (token) {
+        localStorage.removeItem('tormag_customer_token');
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Auth API
 export const login = async (email, password) => {

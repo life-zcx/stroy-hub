@@ -3881,3 +3881,23 @@
 {"durationMs":33,"ip":"172.20.0.6","level":"info","message":"POST /api/analytics/page-view 201 33ms","method":"POST","status":201,"timestamp":"2026-06-04T11:27:46.601Z","url":"/api/analytics/page-view","userId":null}
 {"durationMs":14,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 14ms","method":"GET","status":304,"timestamp":"2026-06-04T11:27:46.669Z","url":"/api/brands/public","userId":null}
 {"durationMs":18,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 18ms","method":"GET","status":304,"timestamp":"2026-06-04T11:27:46.674Z","url":"/api/promotions/home","userId":null}
+{"level":"info","message":"Сервер Tormag запущен на порту 5000","timestamp":"2026-06-04T11:34:08.293Z"}
+{"level":"info","message":"Успешно подключено к Redis","timestamp":"2026-06-04T11:34:08.303Z"}
+{"level":"info","message":"Categories cache hit","timestamp":"2026-06-04T11:35:12.577Z"}
+{"level":"info","message":"Products cache hit: products:all:{\"page\":\"1\",\"limit\":\"24\",\"sort\":\"popular\"}","timestamp":"2026-06-04T11:35:12.591Z"}
+{"durationMs":134,"ip":"172.20.0.6","level":"info","message":"GET /api/categories 304 134ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.623Z","url":"/api/categories","userId":null}
+{"durationMs":123,"ip":"172.20.0.6","level":"info","message":"GET /api/products?page=1&limit=24&sort=popular 304 123ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.631Z","url":"/api/products?page=1&limit=24&sort=popular","userId":null}
+{"level":"info","message":"Categories cache hit","timestamp":"2026-06-04T11:35:12.652Z"}
+{"durationMs":4,"ip":"172.20.0.6","level":"info","message":"GET /api/categories 304 4ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.655Z","url":"/api/categories","userId":null}
+{"level":"info","message":"Products cache hit: products:all:{\"page\":\"1\",\"limit\":\"24\",\"sort\":\"popular\"}","timestamp":"2026-06-04T11:35:12.662Z"}
+{"durationMs":6,"ip":"172.20.0.6","level":"info","message":"GET /api/products?page=1&limit=24&sort=popular 304 6ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.666Z","url":"/api/products?page=1&limit=24&sort=popular","userId":null}
+{"durationMs":257,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 257ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.731Z","url":"/api/brands/public","userId":null}
+{"durationMs":304,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 304ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.751Z","url":"/api/promotions/home","userId":null}
+{"durationMs":212,"ip":"172.20.0.6","level":"info","message":"POST /api/analytics/page-view 201 212ms","method":"POST","status":201,"timestamp":"2026-06-04T11:35:12.779Z","url":"/api/analytics/page-view","userId":null}
+{"durationMs":21,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 21ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.816Z","url":"/api/promotions/home","userId":null}
+{"durationMs":44,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 44ms","method":"GET","status":304,"timestamp":"2026-06-04T11:35:12.833Z","url":"/api/brands/public","userId":null}
+{"durationMs":32,"ip":"172.20.0.6","level":"warn","message":"POST /api/auth/send-register-code 400 32ms","method":"POST","status":400,"timestamp":"2026-06-04T11:35:42.099Z","url":"/api/auth/send-register-code","userId":null}
+{"durationMs":22,"ip":"172.20.0.6","level":"warn","message":"POST /api/auth/send-register-code 400 22ms","method":"POST","status":400,"timestamp":"2026-06-04T11:36:22.736Z","url":"/api/auth/send-register-code","userId":null}
+{"durationMs":59,"ip":"172.20.0.6","level":"info","message":"POST /api/auth/send-register-code 200 59ms","method":"POST","status":200,"timestamp":"2026-06-04T11:36:29.999Z","url":"/api/auth/send-register-code","userId":null}
+{"level":"info","message":"Сервер Tormag запущен на порту 5000","timestamp":"2026-06-04T11:44:27.306Z"}
+{"level":"info","message":"Успешно подключено к Redis","timestamp":"2026-06-04T11:44:27.323Z"}

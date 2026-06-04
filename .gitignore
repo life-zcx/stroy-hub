@@ -23,3 +23,7 @@ yarn-error.log*
 /backend/uploads/*
 !/backend/uploads/.gitkeep
 postgres_data/
+
+# Logs
+backend/logs/
+*.log
