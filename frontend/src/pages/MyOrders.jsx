@@ -130,159 +130,189 @@ export default function MyOrders({
     .filter(o => o.status === 'completed')
     .reduce((sum, o) => sum + o.totalAmount, 0);
   const bonusPoints = Math.round(completedOrdersTotal * 0.03);
+  const userInitials = (customer.name || 'Покупатель').charAt(0).toUpperCase();
 
   return (
-    <section className="space-y-7">
-      <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Личный кабинет</p>
-          <h1 className="mt-1 font-outfit text-3xl font-black text-slate-950">Мой профиль</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            История покупок, бонусы и персональные настройки.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Обновить
-        </button>
-      </div>
-
-      {/* Profile Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm">
-        <div className="md:col-span-2 space-y-4">
-          <h3 className="text-lg font-black font-outfit text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <User className="h-5 w-5 text-blue-600" />
-            Личные данные покупателя
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-semibold text-slate-600">
-            <div className="flex items-center gap-2.5">
-              <User className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-              <span>{customer.name || 'Имя не указано'}</span>
+    <section className="space-y-8">
+      {/* Premium Dashboard Header & Profile Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        
+        {/* Left Side: Profile Card */}
+        <div className="lg:col-span-2 rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-2xl font-outfit flex items-center justify-center shadow-md shadow-blue-500/10">
+              {userInitials}
             </div>
-            <div className="flex items-center gap-2.5">
-              <Mail className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-              <span>{customer.email}</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Phone className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-              <span>{customer.phone || 'Телефон не указан'}</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <MapPin className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-              <span className="truncate" title={customer.address}>{customer.address || 'Адрес доставки не указан'}</span>
-            </div>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 p-5 rounded-2xl flex flex-col justify-between gap-4">
-          <div className="flex justify-between items-start">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Бонусная программа</span>
-              <h4 className="text-2xl font-black font-outfit text-slate-950 mt-1">{bonusPoints.toLocaleString('ru-RU')} ₸</h4>
-            </div>
-            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md shadow-amber-500/10">
-              <Gift className="h-5 w-5" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Личный кабинет</span>
+              <h2 className="text-2xl font-black font-outfit text-slate-950 mt-0.5">
+                {customer.name || 'Покупатель'}
+              </h2>
             </div>
           </div>
-          <p className="text-[11px] font-bold text-amber-800 leading-normal">
-            Накапливайте бонусы! Мы возвращаем 3% от суммы каждого выполненного заказа на ваш бонусный счет.
-          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-5 text-sm font-semibold text-slate-600">
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Электронная почта</span>
+                <span className="block text-slate-900 truncate">{customer.email}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone className="h-5 w-5 text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Телефон связи</span>
+                <span className="block text-slate-900">{customer.phone || 'Не указан'}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 sm:col-span-2">
+              <MapPin className="h-5 w-5 text-slate-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Основной адрес доставки</span>
+                <span className="block text-slate-900 truncate" title={customer.address}>
+                  {customer.address || 'Адрес доставки не указан'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: High-End Golden Card */}
+        <div className="rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 border border-slate-800 p-6 sm:p-8 shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden text-white">
+          <div className="absolute -right-16 -top-16 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute -left-16 -bottom-16 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
+          
+          <div className="flex justify-between items-start relative z-10">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400/80">Бонусная программа</span>
+              <h4 className="text-3xl font-black font-outfit text-white mt-1.5">
+                {bonusPoints.toLocaleString('ru-RU')} ₸
+              </h4>
+            </div>
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-2xl shadow-lg">
+              <Gift className="h-6 w-6 stroke-[2]" />
+            </div>
+          </div>
+
+          <div className="space-y-1 relative z-10">
+            <p className="text-[11px] font-bold text-slate-350 leading-relaxed">
+              Накапливайте бонусы! Мы возвращаем 3% от суммы каждого выполненного заказа. 
+            </p>
+            <p className="text-[9px] font-semibold text-amber-400/70">
+              *Бонусы становятся активными после смены статуса на «Выполнен»
+            </p>
+          </div>
         </div>
       </div>
 
-      {loading && orders.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm font-bold text-slate-400">
-          Загружаем ваши заказы...
-        </div>
-      ) : orders.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <ShoppingBag className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-          <h2 className="text-lg font-black text-slate-900">Заказов пока нет</h2>
-          <p className="mt-2 text-sm text-slate-500">Оформите заказ из каталога, и он появится на этой странице.</p>
+      {/* Orders Grid */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-left">
+            История ваших заказов ({total || orders.length})
+          </h3>
           <button
             type="button"
-            onClick={() => onNavigate('catalog')}
-            className="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-500"
+            onClick={onRefresh}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-655 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200/85 py-2 px-4 rounded-xl transition-colors cursor-pointer"
           >
-            Перейти в каталог
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+            Обновить список
           </button>
         </div>
-      ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm">
-          <div className="hidden grid-cols-[1fr_160px_130px_260px] gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 md:grid">
-            <span>Заказ</span>
-            <span>Статус</span>
-            <span>Сумма</span>
-            <span className="text-right">Действие</span>
-          </div>
-          {orders.map((order) => {
-            const statusMeta = getStatusMeta(order.status);
-            const StatusIcon = statusMeta.icon;
 
-            return (
-              <article key={order.id} className="grid gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-outfit text-lg font-black text-slate-950">Заказ №{order.id}</h2>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                      {order._count?.items ?? order.items?.length ?? 0} поз.
+        {loading && orders.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm font-bold text-slate-400">
+            Загружаем ваши заказы...
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-350 bg-white p-12 text-center">
+            <ShoppingBag className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+            <h2 className="text-lg font-black text-slate-900">Заказов пока нет</h2>
+            <p className="mt-2 text-sm text-slate-500">Оформите заказ из каталога, и он появится на этой странице.</p>
+            <button
+              type="button"
+              onClick={() => onNavigate('catalog')}
+              className="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-500"
+            >
+              Перейти в каталог
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-sm">
+            <div className="hidden grid-cols-[1fr_160px_130px_260px] gap-4 border-b border-slate-100 bg-slate-50/80 px-6 py-3.5 text-[10px] font-black uppercase tracking-wider text-slate-400 md:grid">
+              <span>Заказ</span>
+              <span>Статус</span>
+              <span>Сумма</span>
+              <span className="text-right">Действие</span>
+            </div>
+            {orders.map((order) => {
+              const statusMeta = getStatusMeta(order.status);
+              const StatusIcon = statusMeta.icon;
+
+              return (
+                <article key={order.id} className="grid gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-outfit text-lg font-black text-slate-950">Заказ №{order.id}</h2>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        {order._count?.items ?? order.items?.length ?? 0} поз.
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-slate-400">Оформлен: {formatDateTime(order.createdAt)}</p>
+                    <p className="mt-1 truncate text-xs font-medium text-slate-500" title={order.clientAddress}>{order.clientAddress}</p>
+                  </div>
+
+                  <div>
+                    <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-wider ${statusMeta.color}`}>
+                      <StatusIcon className="h-4 w-4" />
+                      {statusMeta.text}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs font-semibold text-slate-400">Оформлен: {formatDateTime(order.createdAt)}</p>
-                  <p className="mt-1 truncate text-xs font-medium text-slate-500" title={order.clientAddress}>{order.clientAddress}</p>
-                </div>
 
-                <div>
-                  <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-wider ${statusMeta.color}`}>
-                    <StatusIcon className="h-4 w-4" />
-                    {statusMeta.text}
-                  </span>
-                </div>
+                  <div className="font-outfit text-lg font-black text-blue-600 md:text-base">
+                    {formatPrice(order.totalAmount)}
+                  </div>
 
-                <div className="font-outfit text-lg font-black text-blue-600 md:text-base">
-                  {formatPrice(order.totalAmount)}
-                </div>
-
-                <div className="flex justify-start md:justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleRepeatOrder(order)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition-colors"
-                  >
-                    <Repeat className="h-4 w-4 text-slate-500" />
-                    Повторить
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('order-detail', order.id)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600"
-                  >
-                    Подробнее
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-          {hasMore && (
-            <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 text-center">
-              <button
-                type="button"
-                onClick={onLoadMore}
-                disabled={loading}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Показать еще
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+                  <div className="flex justify-start md:justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRepeatOrder(order)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition-colors cursor-pointer"
+                    >
+                      <Repeat className="h-4 w-4 text-slate-500" />
+                      Повторить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('order-detail', order.id)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600 cursor-pointer"
+                    >
+                      Подробнее
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+            {hasMore && (
+              <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 text-center">
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  Показать еще
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
