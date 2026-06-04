@@ -2,6 +2,13 @@ import prisma from '../config/db.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
 import { sendTelegramNotification } from '../utils/telegram.js';
+import {
+  getAvailableBalance,
+  createBonusEarned,
+  createBonusSpent,
+  activatePendingBonuses,
+  cancelBonusesForOrder,
+} from './bonusController.js';
 
 function getSupplierId(user) {
   const parsed = Number.parseInt(user?.supplierId, 10);
@@ -75,7 +82,7 @@ function buildStatusHistory(existingOrder, nextStatus) {
 }
 
 export const createOrder = async (req, res) => {
-  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses } = req.body;
+  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses, deliveryDate, deliveryTime, comment } = req.body;
 
   if (!clientName || !clientPhone || !clientAddress || !paymentMethod || !items || !items.length) {
     return res.status(400).json({ error: 'Все поля заказа и товары обязательны' });
@@ -165,23 +172,16 @@ export const createOrder = async (req, res) => {
         finalTotalAmount = reservedEvaluation.totalAmount;
       }
 
-      // Apply loyalty bonuses if requested
       let bonusDiscount = 0;
       if (useBonuses) {
-        const completedOrders = await tx.order.findMany({
-          where: { userId: parseInt(userId), status: 'completed' }
-        });
-        const totalEarned = completedOrders.reduce((sum, o) => sum + Math.round(o.totalAmount * 0.03), 0);
-
-        const spentOrders = await tx.order.findMany({
-          where: { userId: parseInt(userId), status: { not: 'cancelled' } }
-        });
-        const totalSpent = spentOrders.reduce((sum, o) => sum + (o.usedBonusPoints || 0), 0);
-
-        const availableBonusPoints = Math.max(0, totalEarned - totalSpent);
-
-        if (availableBonusPoints > 0) {
-          bonusDiscount = Math.min(availableBonusPoints, finalTotalAmount);
+        const availableBalance = await getAvailableBalance(parseInt(userId), tx);
+        if (availableBalance > 0) {
+          let maxBonusToUse = availableBalance;
+          const numericUseBonuses = typeof useBonuses === 'number' ? useBonuses : parseInt(useBonuses);
+          if (!isNaN(numericUseBonuses) && numericUseBonuses > 0) {
+            maxBonusToUse = Math.min(availableBalance, numericUseBonuses);
+          }
+          bonusDiscount = Math.min(maxBonusToUse, finalTotalAmount);
           finalTotalAmount -= bonusDiscount;
           discountAmount += bonusDiscount;
         }
@@ -203,6 +203,9 @@ export const createOrder = async (req, res) => {
           promotionSnapshot: buildPromotionSnapshot(reservedPromotion, reservedEvaluation),
           statusHistory: [createStatusHistoryEntry('pending')],
           userId: parseInt(userId),
+          deliveryDate: deliveryDate || null,
+          deliveryTime: deliveryTime || null,
+          managerNotes: comment || null,
           items: {
             create: normalizedItems.map((item) => ({
               productId: item.productId,
@@ -219,6 +222,15 @@ export const createOrder = async (req, res) => {
           }
         }
       });
+
+      // Записываем бонусные транзакции
+      if (bonusDiscount > 0) {
+        await createBonusSpent(parseInt(userId), order.id, bonusDiscount, tx);
+      }
+
+      // Начисляем кешбек 3% (pending — станет available после выполнения заказа)
+      const earnedAmount = Math.round(finalTotalAmount * 0.03);
+      await createBonusEarned(parseInt(userId), order.id, earnedAmount, null, tx);
 
       if (reservedPromotion) {
         await tx.promotion.update({
@@ -404,6 +416,13 @@ export const updateOrderStatus = async (req, res) => {
       include: buildOrderItemsInclude(req.user)
     });
 
+    // Обновляем бонусы при смене статуса
+    if (status === 'completed') {
+      await activatePendingBonuses(orderId);
+    } else if (status === 'cancelled') {
+      await cancelBonusesForOrder(orderId, existing.userId);
+    }
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
@@ -576,32 +595,21 @@ export const updateOrder = async (req, res) => {
       return updatedOrder;
     });
 
+    // Обновляем бонусы при смене статуса (вне транзакции, т.к. order уже обновлён)
+    if (status === 'completed') {
+      await activatePendingBonuses(orderId);
+    } else if (status === 'cancelled') {
+      const orderForCancel = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+      if (orderForCancel?.userId) {
+        await cancelBonusesForOrder(orderId, orderForCancel.userId);
+      }
+    }
+
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: 'Ошибка обновления заказа: ' + error.message });
   }
 };
 
-export const getUserBonuses = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Пользователь не авторизован' });
-    }
-
-    const completedOrders = await prisma.order.findMany({
-      where: { userId: parseInt(userId), status: 'completed' }
-    });
-    const totalEarned = completedOrders.reduce((sum, o) => sum + Math.round(o.totalAmount * 0.03), 0);
-
-    const spentOrders = await prisma.order.findMany({
-      where: { userId: parseInt(userId), status: { not: 'cancelled' } }
-    });
-    const totalSpent = spentOrders.reduce((sum, o) => sum + (o.usedBonusPoints || 0), 0);
-
-    const availableBonusPoints = Math.max(0, totalEarned - totalSpent);
-    res.json({ availableBonusPoints });
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения бонусов: ' + error.message });
-  }
-};
+// getUserBonuses перенесён в bonusController.js
+// Используйте GET /api/bonuses/summary

@@ -17,14 +17,14 @@ tormag.kz, www.tormag.kz {
     }
 }
 
-admin.tormag.kz {
+cabinet.tormag.kz {
     # Automatic HTTPS for admin subdomain
     reverse_proxy 127.0.0.1:8080
 
     encode gzip zstd
 
     log {
-        output file /var/log/caddy/admin_access.log
+        output file /var/log/caddy/cabinet_access.log
     }
 }
 

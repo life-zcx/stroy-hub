@@ -86,7 +86,17 @@ export const createOrder = async (orderData) => {
 };
 
 export const getUserBonuses = async () => {
-  const response = await api.get('/orders/bonuses');
+  const response = await api.get('/bonuses/summary');
+  return response.data;
+};
+
+export const getBonusSummary = async () => {
+  const response = await api.get('/bonuses/summary');
+  return response.data;
+};
+
+export const getBonusHistory = async (params = {}) => {
+  const response = await api.get('/bonuses/history', { params });
   return response.data;
 };
 

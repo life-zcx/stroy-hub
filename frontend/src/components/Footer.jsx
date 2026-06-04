@@ -22,7 +22,7 @@ export default function Footer({
   const adminUrl = typeof window !== 'undefined' && 
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:3001'
-    : 'https://admin.tormag.kz';
+    : 'https://cabinet.tormag.kz';
 
   return (
     <footer className="bg-slate-900 text-slate-300 mt-12 pt-12 pb-6 border-t border-slate-800/80">

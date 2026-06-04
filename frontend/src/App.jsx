@@ -19,6 +19,7 @@ import Promotions from './pages/Promotions';
 import MyOrders from './pages/MyOrders';
 import MyOrderDetails from './pages/MyOrderDetails';
 import MyPromotions from './pages/MyPromotions';
+import CashbackPage from './pages/CashbackPage';
 import CartPage from './pages/CartPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -34,6 +35,7 @@ import useCustomerAuth from './hooks/useCustomerAuth';
 import useOrders from './hooks/useOrders';
 import useRegion from './hooks/useRegion';
 import useFavorites from './hooks/useFavorites'
+import useBonuses from './hooks/useBonuses';
 import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
 
 export default function App() {
@@ -51,6 +53,7 @@ export default function App() {
   const orders = useOrders(auth.customer, showToast);
   const region = useRegion(showToast);
   const favorites = useFavorites(showToast);
+  const bonuses = useBonuses(auth.customer);
 
   // Sync category from URL to catalog state
   useEffect(() => {
@@ -90,6 +93,7 @@ export default function App() {
       favorites: "TORMAG - Избранные товары",
       orders: "TORMAG - Мои заказы",
       'my-promotions': "TORMAG - Мои промокоды",
+      cashback: "TORMAG - Мой кешбэк",
       requisites: "TORMAG - Реквизиты компании",
       faq: "TORMAG - Вопрос-ответ",
       legal: "TORMAG - Юридическая информация",
@@ -272,6 +276,7 @@ export default function App() {
             onNavigate={setCurrentPage}
             onAddToCart={cart.handleAddToCart}
             showToast={showToast}
+            bonuses={bonuses}
           />
         )}
         {currentPage === 'my-promotions' && (
@@ -280,6 +285,14 @@ export default function App() {
             onOpenAuth={auth.openLoginModal}
             onNavigate={setCurrentPage}
             showToast={showToast}
+          />
+        )}
+        {currentPage === 'cashback' && (
+          <CashbackPage
+            customer={auth.customer}
+            bonuses={bonuses}
+            onNavigate={setCurrentPage}
+            onOpenAuth={auth.openLoginModal}
           />
         )}
         {currentPage === 'order-detail' && (
@@ -330,6 +343,8 @@ export default function App() {
             customer={auth.customer}
             onOpenAuth={() => auth.setAuthModalOpen(true)}
             onNavigate={setCurrentPage}
+            bonuses={bonuses}
+            onAddToCart={cart.handleAddToCart}
           />
         )}
       </main>

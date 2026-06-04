@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Clock, RefreshCw, ShoppingBag, Truck, User, Mail, Phone, MapPin, Gift, Repeat } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -74,6 +74,8 @@ export function StatusTimeline({ order }) {
   );
 }
 
+import { getOrderById } from '../services/api';
+
 export default function MyOrders({
   customer,
   orders = [],
@@ -86,14 +88,26 @@ export default function MyOrders({
   onNavigate,
   onAddToCart,
   showToast,
+  bonuses,
 }) {
-  const handleRepeatOrder = (order) => {
+  const handleRepeatOrder = async (order) => {
+    let orderWithItems = order;
     if (!order.items || order.items.length === 0) {
+      try {
+        orderWithItems = await getOrderById(order.id);
+      } catch (e) {
+        console.error(e);
+        showToast('⚠️ Не удалось загрузить состав заказа.');
+        return;
+      }
+    }
+
+    if (!orderWithItems.items || orderWithItems.items.length === 0) {
       showToast('⚠️ В заказе нет позиций для копирования.');
       return;
     }
 
-    order.items.forEach(item => {
+    orderWithItems.items.forEach(item => {
       if (item.product) {
         for (let i = 0; i < item.quantity; i++) {
           onAddToCart(item.product);
@@ -102,7 +116,7 @@ export default function MyOrders({
     });
 
     showToast(`🛒 Заказ №${order.id} успешно добавлен в корзину!`);
-    onNavigate('catalog');
+    onNavigate('cart');
   };
 
   if (!customer) {
@@ -126,79 +140,106 @@ export default function MyOrders({
     );
   }
 
-  const completedOrdersTotal = orders
-    .filter(o => o.status === 'completed')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
-  const bonusPoints = Math.round(completedOrdersTotal * 0.03);
+  const [showBonusHistory, setShowBonusHistory] = useState(false);
+
+  // Загружаем summary и историю при открытии страницы
+  useEffect(() => {
+    if (customer && bonuses) {
+      bonuses.fetchSummary();
+    }
+  }, [customer]);
+
+  const handleToggleBonusHistory = () => {
+    if (!showBonusHistory && bonuses?.history?.length === 0) {
+      bonuses.fetchHistory();
+    }
+    setShowBonusHistory((v) => !v);
+  };
+
+  // Используем реальные данные из bonuses-хука
+  const availableBalance = bonuses?.availableBalance ?? 0;
+  const pendingBalance = bonuses?.pendingBalance ?? 0;
 
   return (
     <section className="space-y-8">
-      {/* Premium Dashboard Header & Profile Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-        
-        {/* Left Side: Profile Card */}
-        <div className="lg:col-span-2 rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between gap-6">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Личный кабинет</span>
-            <h2 className="text-3xl font-black font-outfit text-slate-950 mt-1">
-              Юрий
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-5 text-sm font-semibold text-slate-600">
-            <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-slate-400 shrink-0" />
-              <div className="min-w-0">
-                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Электронная почта</span>
-                <span className="block text-slate-900 truncate">{customer.email}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-slate-400 shrink-0" />
-              <div className="min-w-0">
-                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Телефон связи</span>
-                <span className="block text-slate-900">{customer.phone || 'Не указан'}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 sm:col-span-2">
-              <MapPin className="h-5 w-5 text-slate-400 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Основной адрес доставки</span>
-                <span className="block text-slate-900 truncate" title={customer.address}>
-                  {customer.address || 'Адрес доставки не указан'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: High-End Golden Card */}
-        <div className="rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 border border-slate-800 p-6 sm:p-8 shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden text-white">
-          <div className="absolute -right-16 -top-16 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute -left-16 -bottom-16 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
+      {/* Premium Dashboard Header & Profile Row (Unified & Clean, No Gold) */}
+      <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          <div className="flex justify-between items-start relative z-10">
+          {/* Column 1 & 2: Profile Info */}
+          <div className="md:col-span-2 space-y-6 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400/80">Бонусная программа</span>
-              <h4 className="text-3xl font-black font-outfit text-white mt-1.5">
-                {bonusPoints.toLocaleString('ru-RU')} ₸
-              </h4>
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Личный кабинет</span>
+              <h2 className="text-3xl font-black font-outfit text-slate-950 mt-1">
+                Юрий
+              </h2>
             </div>
-            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-2xl shadow-lg">
-              <Gift className="h-6 w-6 stroke-[2]" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-5 text-sm font-semibold text-slate-600">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-slate-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Электронная почта</span>
+                  <span className="block text-slate-900 truncate">{customer.email}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-slate-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Телефон связи</span>
+                  <span className="block text-slate-900">{customer.phone || 'Не указан'}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 sm:col-span-2">
+                <MapPin className="h-5 w-5 text-slate-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Основной адрес доставки</span>
+                  <span className="block text-slate-900 truncate" title={customer.address}>
+                    {customer.address || 'Адрес доставки не указан'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-1 relative z-10">
-            <p className="text-[11px] font-bold text-slate-350 leading-relaxed">
-              Накапливайте бонусы! Мы возвращаем 3% от суммы каждого выполненного заказа. 
-            </p>
-            <p className="text-[9px] font-semibold text-amber-400/70">
-              *Бонусы становятся активными после смены статуса на «Выполнен»
-            </p>
+          {/* Column 3: Cashback Info */}
+          <div className="bg-emerald-50/50 border border-emerald-100/70 rounded-2xl p-6 flex flex-col justify-between gap-4">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Накопленный кешбэк</span>
+                <h4 className="text-3xl font-black font-outfit text-slate-950 mt-1">
+                  {formatPrice(availableBalance)}
+                </h4>
+                {pendingBalance > 0 && (
+                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                    ⏳ +{formatPrice(pendingBalance)} ждут выполнения
+                  </p>
+                )}
+              </div>
+              <div className="p-3 bg-emerald-100/50 border border-emerald-200 text-emerald-600 rounded-xl">
+                <Gift className="h-5 w-5 stroke-[2.5]" />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-3 border-t border-emerald-100">
+              <p className="text-[11px] font-bold text-slate-500 leading-relaxed">
+                Кешбэк 3% начисляется с каждого выполненного заказа и доступен для списания при следующих покупках.
+              </p>
+              
+              <button
+                type="button"
+                onClick={() => onNavigate?.('cashback')}
+                className="flex items-center gap-1 text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-wider mt-1.5"
+              >
+                История транзакций
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
+          
         </div>
       </div>
+
 
       {/* Orders Grid */}
       <div className="space-y-4">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ShoppingCart, Search, Menu, X, Hammer, ShieldCheck, Phone,
-  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag,
+  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag, Gift,
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
@@ -410,11 +410,9 @@ export default function Header({
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
                   >
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-emerald-400 to-emerald-600 text-white flex items-center justify-center text-[10px] font-extrabold uppercase mb-0.5">
-                      {customer.name ? customer.name[0] : 'U'}
-                    </div>
+                    <User className="h-5 w-5 mb-0.5" />
                     <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-                      {customer.name ? customer.name.split(' ')[0] : 'Профиль'}
+                      Профиль
                     </span>
                   </button>
 
@@ -425,7 +423,7 @@ export default function Header({
                         <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
                       </div>
                       <div className="space-y-1">
-                        <button
+                      <button
                           type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
@@ -435,6 +433,17 @@ export default function Header({
                         >
                           <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
                           <span>Мои заказы</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('cashback');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Gift className="h-4.5 w-4.5 text-amber-500" />
+                          <span>Мой кешбэк</span>
                         </button>
                         <button
                           type="button"
@@ -512,6 +521,81 @@ export default function Header({
 
             {/* Mobile Actions and Hamburger */}
             <div className="flex lg:hidden items-center gap-3">
+              {/* User/Profile Button */}
+              {customer ? (
+                <div className="relative user-menu-container">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
+                  >
+                    <User className="h-5 w-5" />
+                  </button>
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 animate-fade-in-up">
+                      <div className="px-3 py-2 border-b border-gray-100 mb-2">
+                        <p className="text-xs font-bold text-slate-900 truncate">{customer.name || 'Покупатель'}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenOrders();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
+                          <span>Мои заказы</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('cashback');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Gift className="h-4.5 w-4.5 text-amber-500" />
+                          <span>Мой кешбэк</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('my-promotions');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Tag className="h-4.5 w-4.5 text-emerald-600" />
+                          <span>Мои промокоды</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="h-4.5 w-4.5" />
+                          <span>Выйти</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenAuthLogin}
+                  className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onOpenCart}
@@ -681,19 +765,34 @@ export default function Header({
                   </button>
                 ))}
                 {customer && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenOrders();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
-                      ? 'bg-emerald-600/10 text-emerald-700'
-                      : 'text-slate-500 hover:bg-slate-50'
-                      }`}
-                  >
-                    Мои заказы
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenOrders();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
+                        ? 'bg-emerald-600/10 text-emerald-700'
+                        : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                    >
+                      Мои заказы
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onNavigate('cashback');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
+                        ? 'bg-amber-500/10 text-amber-700'
+                        : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                    >
+                      💰 Мой кешбэк
+                    </button>
+                  </>
                 )}
               </div>
             </div>

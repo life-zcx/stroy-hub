@@ -51,6 +51,23 @@ export default function ProductPage({
             category: data.category,
           },
         });
+        try {
+          const viewed = JSON.parse(localStorage.getItem('tormag_recently_viewed') || '[]');
+          const filtered = viewed.filter(p => p.id !== data.id);
+          filtered.unshift({
+            id: data.id,
+            name: data.name,
+            price: data.price,
+            oldPrice: data.oldPrice,
+            image: data.image,
+            category: data.category,
+            supplier: data.supplier,
+            isHit: data.isHit
+          });
+          localStorage.setItem('tormag_recently_viewed', JSON.stringify(filtered.slice(0, 10)));
+        } catch (e) {
+          console.error('Error saving recently viewed product:', e);
+        }
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.error || 'Товар не найден');

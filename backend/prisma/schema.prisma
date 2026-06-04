@@ -46,6 +46,7 @@ model User {
   analyticsEvents AnalyticsEvent[]
   reviews    Review[]
   promotions Promotion[]
+  bonusTransactions BonusTransaction[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 }
@@ -128,9 +129,12 @@ model Order {
   cancellationReason String?
   managerNotes       String?
   usedBonusPoints    Float      @default(0)
+  deliveryDate       String?
+  deliveryTime       String?
   createdAt       DateTime   @default(now())
   items           OrderItem[]
   analyticsEvents AnalyticsEvent[]
+  bonusTransactions BonusTransaction[]
 }
 
 model OrderItem {
@@ -271,3 +275,23 @@ model Review {
   @@unique([userId, productId]) // Один отзыв на один товар от одного пользователя
 }
 
+model BonusTransaction {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId     Int?
+  order       Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  type        String    // "earned" | "spent" | "manual" | "cancelled"
+  status      String    // "pending" | "available" | "used" | "cancelled"
+  amount      Float     // сумма бонусов (всегда положительная)
+  description String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
+  @@index([type])
+  @@index([userId, status])
+}
