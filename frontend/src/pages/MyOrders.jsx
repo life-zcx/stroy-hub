@@ -57,7 +57,7 @@ export function StatusTimeline({ order }) {
                     {meta.text}
                   </span>
                   {isCurrent && (
-                    <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                    <span className="rounded-full bg-slate-950 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
                       текущий
                     </span>
                   )}
@@ -130,7 +130,6 @@ export default function MyOrders({
     .filter(o => o.status === 'completed')
     .reduce((sum, o) => sum + o.totalAmount, 0);
   const bonusPoints = Math.round(completedOrdersTotal * 0.03);
-  const userInitials = (customer.name || 'Покупатель').charAt(0).toUpperCase();
 
   return (
     <section className="space-y-8">
@@ -139,16 +138,11 @@ export default function MyOrders({
         
         {/* Left Side: Profile Card */}
         <div className="lg:col-span-2 rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-2xl font-outfit flex items-center justify-center shadow-md shadow-blue-500/10">
-              {userInitials}
-            </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Личный кабинет</span>
-              <h2 className="text-2xl font-black font-outfit text-slate-950 mt-0.5">
-                {customer.name || 'Покупатель'}
-              </h2>
-            </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Личный кабинет</span>
+            <h2 className="text-3xl font-black font-outfit text-slate-950 mt-1">
+              Юрий
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-5 text-sm font-semibold text-slate-600">
