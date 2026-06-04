@@ -16,6 +16,7 @@ import promotionRoutes from './routes/promotionRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
+import logger from './utils/logger.js';
 
 dotenv.config();
 
@@ -70,12 +71,19 @@ app.use((req, res, next) => {
 
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
-    const logLevel = res.statusCode >= 500 ? 'ERROR' : res.statusCode >= 400 ? 'WARN' : 'INFO';
-    const userId = req.user?.id ? ` user=${req.user.id}` : '';
     const ip = req.ip || req.socket?.remoteAddress || '-';
-    console.log(
-      `[${new Date().toISOString()}] ${logLevel} ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms ip=${ip}${userId}`
-    );
+    const userId = req.user?.id || null;
+    const message = `${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`;
+    
+    const meta = { ip, userId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs };
+
+    if (res.statusCode >= 500) {
+      logger.error(message, meta);
+    } else if (res.statusCode >= 400) {
+      logger.warn(message, meta);
+    } else {
+      logger.info(message, meta);
+    }
   });
 
   next();
@@ -100,7 +108,7 @@ app.get('/api/geo', async (req, res) => {
   // If Cloudflare is active and has determined the city, leverage it instantly (zero API delay!)
   const cfCity = req.headers['cf-ipcity'];
   if (cfCity) {
-    console.log(`[GEO IP] Cloudflare header detected city: ${cfCity}`);
+    logger.info(`[GEO IP] Cloudflare header detected city: ${cfCity}`);
     return res.json({ city: cfCity });
   }
 
@@ -146,14 +154,15 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: err.message });
   }
 
-  console.error(`[${new Date().toISOString()}] ERROR ${req.method} ${req.originalUrl}`, {
-    message: err.message,
+  logger.error(`Error handling request ${req.method} ${req.originalUrl}: ${err.message}`, {
     stack: err.stack,
     userId: req.user?.id || null,
+    method: req.method,
+    url: req.originalUrl,
   });
   res.status(500).json({ error: 'Внутренняя ошибка сервера: ' + err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Сервер Tormag запущен на порту ${PORT}`);
+  logger.info(`Сервер Tormag запущен на порту ${PORT}`);
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Clock, RefreshCw, ShoppingBag, Truck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Clock, RefreshCw, ShoppingBag, Truck, User, Mail, Phone, MapPin, Gift, Repeat } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
 const STATUS_META = {
@@ -84,7 +84,27 @@ export default function MyOrders({
   onLoadMore,
   onOpenAuth,
   onNavigate,
+  onAddToCart,
+  showToast,
 }) {
+  const handleRepeatOrder = (order) => {
+    if (!order.items || order.items.length === 0) {
+      showToast('⚠️ В заказе нет позиций для копирования.');
+      return;
+    }
+
+    order.items.forEach(item => {
+      if (item.product) {
+        for (let i = 0; i < item.quantity; i++) {
+          onAddToCart(item.product);
+        }
+      }
+    });
+
+    showToast(`🛒 Заказ №${order.id} успешно добавлен в корзину!`);
+    onNavigate('catalog');
+  };
+
   if (!customer) {
     return (
       <section className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-12">
@@ -106,14 +126,19 @@ export default function MyOrders({
     );
   }
 
+  const completedOrdersTotal = orders
+    .filter(o => o.status === 'completed')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+  const bonusPoints = Math.round(completedOrdersTotal * 0.03);
+
   return (
     <section className="space-y-7">
       <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Личный кабинет</p>
-          <h1 className="mt-1 font-outfit text-3xl font-black text-slate-950">Мои заказы</h1>
+          <h1 className="mt-1 font-outfit text-3xl font-black text-slate-950">Мой профиль</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            История покупок и текущий статус доставки.
+            История покупок, бонусы и персональные настройки.
           </p>
         </div>
         <button
@@ -125,6 +150,48 @@ export default function MyOrders({
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Обновить
         </button>
+      </div>
+
+      {/* Profile Card */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm">
+        <div className="md:col-span-2 space-y-4">
+          <h3 className="text-lg font-black font-outfit text-slate-950 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <User className="h-5 w-5 text-blue-600" />
+            Личные данные покупателя
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-semibold text-slate-600">
+            <div className="flex items-center gap-2.5">
+              <User className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+              <span>{customer.name || 'Имя не указано'}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Mail className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+              <span>{customer.email}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Phone className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+              <span>{customer.phone || 'Телефон не указан'}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <MapPin className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+              <span className="truncate" title={customer.address}>{customer.address || 'Адрес доставки не указан'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 p-5 rounded-2xl flex flex-col justify-between gap-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Бонусная программа</span>
+              <h4 className="text-2xl font-black font-outfit text-slate-950 mt-1">{bonusPoints.toLocaleString('ru-RU')} ₸</h4>
+            </div>
+            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md shadow-amber-500/10">
+              <Gift className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-[11px] font-bold text-amber-800 leading-normal">
+            Накапливайте бонусы! Мы возвращаем 3% от суммы каждого выполненного заказа на ваш бонусный счет.
+          </p>
+        </div>
       </div>
 
       {loading && orders.length === 0 ? (
@@ -146,7 +213,7 @@ export default function MyOrders({
         </div>
       ) : (
         <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm">
-          <div className="hidden grid-cols-[1fr_160px_150px_170px] gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 md:grid">
+          <div className="hidden grid-cols-[1fr_160px_130px_260px] gap-4 border-b border-slate-100 bg-slate-50/80 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 md:grid">
             <span>Заказ</span>
             <span>Статус</span>
             <span>Сумма</span>
@@ -157,7 +224,7 @@ export default function MyOrders({
             const StatusIcon = statusMeta.icon;
 
             return (
-              <article key={order.id} className="grid gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-[1fr_160px_150px_170px] md:items-center">
+              <article key={order.id} className="grid gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-outfit text-lg font-black text-slate-950">Заказ №{order.id}</h2>
@@ -180,7 +247,15 @@ export default function MyOrders({
                   {formatPrice(order.totalAmount)}
                 </div>
 
-                <div className="flex justify-start md:justify-end">
+                <div className="flex justify-start md:justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRepeatOrder(order)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition-colors"
+                  >
+                    <Repeat className="h-4 w-4 text-slate-500" />
+                    Повторить
+                  </button>
                   <button
                     type="button"
                     onClick={() => onNavigate('order-detail', order.id)}

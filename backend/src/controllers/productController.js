@@ -3,6 +3,21 @@ import xlsx from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import redisClient from '../config/redis.js';
+import logger from '../utils/logger.js';
+
+// Helper to clear products cache
+const clearProductsCache = async () => {
+  try {
+    const keys = await redisClient.keys('products:*');
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      logger.info(`Cleared products cache: ${keys.length} keys`);
+    }
+  } catch (err) {
+    logger.error('Error clearing products cache:', err);
+  }
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,7 +201,15 @@ export const getAllProducts = async (req, res) => {
     }
   })();
 
+  const cacheKey = `products:all:${JSON.stringify(req.query)}`;
+
   try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      logger.info(`Products cache hit: ${cacheKey}`);
+      return res.json(JSON.parse(cached));
+    }
+
     if (category && category !== 'all') {
       const { slugs, ids } = await getDescendantCategorySlugsAndIds(category);
       where.OR = [
@@ -224,14 +247,17 @@ export const getAllProducts = async (req, res) => {
       };
     });
 
-    res.json({
+    const result = {
       data:       mappedProducts,
       total,
       page:       pageNum,
       limit:      limitNum,
       totalPages: Math.ceil(total / limitNum),
       hasMore:    pageNum * limitNum < total,
-    });
+    };
+
+    await redisClient.set(cacheKey, JSON.stringify(result), { EX: 1800 });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения товаров: ' + error.message });
   }
@@ -239,7 +265,15 @@ export const getAllProducts = async (req, res) => {
 
 export const getProductById = async (req, res) => {
   const { id } = req.params;
+  const cacheKey = `products:id:${id}`;
+
   try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      logger.info(`Product details cache hit: ${cacheKey}`);
+      return res.json(JSON.parse(cached));
+    }
+
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id) },
       include: { 
@@ -267,6 +301,7 @@ export const getProductById = async (req, res) => {
       oldPrice: product.oldPrice ? product.oldPrice + product.oldPrice * (activeMarkup / 100) : null
     };
 
+    await redisClient.set(cacheKey, JSON.stringify(mappedProduct), { EX: 1800 });
     res.json(mappedProduct);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения товара: ' + error.message });
@@ -335,6 +370,7 @@ export const createProduct = async (req, res) => {
       }
     });
 
+    await clearProductsCache();
     res.status(201).json(newProduct);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка создания товара: ' + error.message });
@@ -415,6 +451,7 @@ export const updateProduct = async (req, res) => {
       include: { supplier: true }
     });
 
+    await clearProductsCache();
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления товара: ' + error.message });
@@ -447,6 +484,7 @@ export const deleteProduct = async (req, res) => {
       where: { id: parseInt(id) }
     });
     
+    await clearProductsCache();
     res.json({ message: 'Товар успешно удален' });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка удаления товара: ' + error.message });
@@ -631,6 +669,7 @@ export const importProductsXlsx = async (req, res) => {
       }
     });
 
+    await clearProductsCache();
     res.json({
       success: true,
       message: 'Импорт успешно завершен',

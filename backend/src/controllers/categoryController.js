@@ -1,14 +1,39 @@
 import prisma from '../config/db.js';
+import redisClient from '../config/redis.js';
+import logger from '../utils/logger.js';
+
+// Helper to clear categories cache
+const clearCategoriesCache = async () => {
+  try {
+    const keys = await redisClient.keys('categories:*');
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      logger.info(`Cleared categories cache: ${keys.length} keys`);
+    }
+  } catch (err) {
+    logger.error('Error clearing categories cache:', err);
+  }
+};
 
 // Get all categories (flat list with children)
 export const getAllCategories = async (req, res) => {
+  const cacheKey = 'categories:all';
   try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      logger.info('Categories cache hit');
+      return res.json(JSON.parse(cached));
+    }
+    
+    logger.info('Categories cache miss, fetching from DB');
     const categories = await prisma.category.findMany({
       include: {
         children: true
       },
       orderBy: { name: 'asc' }
     });
+    
+    await redisClient.set(cacheKey, JSON.stringify(categories), { EX: 3600 });
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения категорий: ' + error.message });
@@ -104,6 +129,7 @@ export const createCategory = async (req, res) => {
         parentId: parentId ? parseInt(parentId) : null
       }
     });
+    await clearCategoriesCache();
     res.status(201).json(newCategory);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка создания категории: ' + error.message });
@@ -148,6 +174,7 @@ export const updateCategory = async (req, res) => {
       where: { id: parseInt(id) },
       data
     });
+    await clearCategoriesCache();
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления категории: ' + error.message });
@@ -171,6 +198,7 @@ export const deleteCategory = async (req, res) => {
       where: { id: categoryId }
     });
 
+    await clearCategoriesCache();
     res.json({ message: 'Категория успешно удалена' });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка удаления категории: ' + error.message });

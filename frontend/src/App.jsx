@@ -268,6 +268,8 @@ export default function App() {
             onLoadMore={orders.loadMoreOrders}
             onOpenAuth={auth.openLoginModal}
             onNavigate={setCurrentPage}
+            onAddToCart={cart.handleAddToCart}
+            showToast={showToast}
           />
         )}
         {currentPage === 'order-detail' && (

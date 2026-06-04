@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\.61479a8f4b168cbc0ff7d2fbc49e95c06bef8207-audit.json",
+    "files": [
+        {
+            "date": 1780549281343,
+            "name": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\error-2026-06-04.log",
+            "hash": "060aa4088f6b5ab057e83ac04240c665e32d000a845c4afccffcb8280a37b210"
+        }
+    ],
+    "hashType": "sha256"
+}

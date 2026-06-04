@@ -16,6 +16,32 @@ services:
       timeout: 5s
       retries: 5
 
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:15
+    restart: unless-stopped
+    user: "postgres:postgres"
+    volumes:
+      - db_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=5432
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=14
+      - BACKUP_KEEP_WEEKS=8
+      - BACKUP_KEEP_MONTHS=12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+
   backend:
     build:
       context: ./backend
@@ -35,9 +61,12 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       TELEGRAM_API_BASE: ${TELEGRAM_API_BASE}
+      REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - backend_uploads:/app/uploads
     healthcheck:
@@ -60,3 +89,4 @@ services:
 volumes:
   postgres_data:
   backend_uploads:
+  db_backups:
