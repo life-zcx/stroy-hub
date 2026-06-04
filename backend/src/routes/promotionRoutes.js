@@ -7,6 +7,7 @@ import {
   getPublicPromotions,
   updatePromotion,
   validatePromotionCode,
+  getMyPromotions,
 } from '../controllers/promotionController.js';
 import { requireRoles, verifyToken } from '../middleware/auth.js';
 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.get('/public', getPublicPromotions);
 router.get('/home', getHomePromotions);
+router.get('/my', verifyToken, getMyPromotions);
 router.post('/validate', validatePromotionCode);
 
 router.get('/', verifyToken, requireRoles(['ADMIN']), getAllPromotions);

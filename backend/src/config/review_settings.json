@@ -1,0 +1,6 @@
+{
+  "discountValue": 10.0,
+  "discountType": "PERCENT",
+  "validDays": 30,
+  "minOrderAmount": 0.0
+}

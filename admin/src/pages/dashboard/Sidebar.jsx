@@ -8,6 +8,7 @@ import {
   TicketPercent as TicketPercentIcon,
   ShieldAlert as ShieldAlertIcon,
   UserCheck as UserCheckIcon,
+  MessageSquare,
   Handshake,
   Hammer,
   RefreshCw,
@@ -16,7 +17,8 @@ import {
   TrendingUp,
   Truck,
   BarChart3,
-  Globe2
+  Globe2,
+  Gift
 } from 'lucide-react';
 
 const tabIcons = {
@@ -27,7 +29,9 @@ const tabIcons = {
   analytics: BarChart3,
   'site-analytics': Globe2,
   promotions: TicketPercentIcon,
+  'review-promos': Gift,
   brands: Handshake,
+  reviews: MessageSquare,
   callbacks: PhoneCallIcon,
   partners: ShieldAlertIcon,
   categories: LayersIcon,
@@ -44,7 +48,9 @@ const tabLabels = {
   'site-analytics': 'Посещаемость сайта',
   callbacks: 'Обратные звонки',
   promotions: 'Акции и скидки',
+  'review-promos': 'Промокоды за отзывы',
   brands: 'Бренды-партнеры',
+  reviews: 'Отзывы',
   partners: 'Партнеры',
   categories: 'Категории',
   suppliers: 'Дистрибьюторы',

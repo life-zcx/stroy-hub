@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ShoppingCart, Search, Menu, X, Hammer, ShieldCheck, Phone,
-  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare,
+  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag,
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
@@ -435,6 +435,17 @@ export default function Header({
                         >
                           <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
                           <span>Мои заказы</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('my-promotions');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Tag className="h-4.5 w-4.5 text-emerald-600" />
+                          <span>Мои промокоды</span>
                         </button>
                         <button
                           type="button"

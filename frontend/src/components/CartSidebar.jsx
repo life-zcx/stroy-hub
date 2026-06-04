@@ -10,8 +10,9 @@ import {
   ShoppingCart,
   ShieldCheck,
   X,
+  Gift,
 } from 'lucide-react';
-import { createOrder, validatePromotionCode } from '../services/api';
+import { createOrder, validatePromotionCode, getUserBonuses } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
@@ -77,6 +78,8 @@ export default function CartSidebar({
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromotion, setAppliedPromotion] = useState(null);
   const [promoPreview, setPromoPreview] = useState({ valid: false, discountAmount: 0, totalAmount: 0 });
+  const [availableBonusPoints, setAvailableBonusPoints] = useState(0);
+  const [useBonuses, setUseBonuses] = useState(false);
 
   useEffect(() => {
     if (customer) {
@@ -98,7 +101,28 @@ export default function CartSidebar({
     price: item.price,
   })), [cart]);
 
-  const finalTotal = promoPreview.valid ? promoPreview.totalAmount : cartTotal;
+  // Fetch available loyalty bonuses
+  useEffect(() => {
+    const fetchBonuses = async () => {
+      if (isOpen && customer) {
+        try {
+          const data = await getUserBonuses();
+          setAvailableBonusPoints(data.availableBonusPoints || 0);
+        } catch (error) {
+          console.error('Error fetching user bonuses:', error);
+        }
+      } else {
+        setAvailableBonusPoints(0);
+        setUseBonuses(false);
+      }
+    };
+    fetchBonuses();
+  }, [isOpen, customer]);
+
+  const finalTotalBeforeBonuses = promoPreview.valid ? promoPreview.totalAmount : cartTotal;
+  const bonusDiscount = useBonuses ? Math.min(availableBonusPoints, finalTotalBeforeBonuses) : 0;
+  const finalTotal = finalTotalBeforeBonuses - bonusDiscount;
+  const estimatedEarnedBonuses = Math.round(finalTotal * 0.03);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -181,6 +205,7 @@ export default function CartSidebar({
         clientAddress: formData.clientAddress,
         paymentMethod: formData.paymentMethod,
         promoCode: promoPreview.valid ? appliedPromotion?.promoCode : null,
+        useBonuses,
         items: cart.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
@@ -403,6 +428,12 @@ export default function CartSidebar({
                       <span>- {formatPrice(promoPreview.discountAmount)}</span>
                     </div>
                   )}
+                  {bonusDiscount > 0 && (
+                    <div className="flex justify-between text-blue-600 font-semibold">
+                      <span>Списание бонусов</span>
+                      <span>- {formatPrice(bonusDiscount)}</span>
+                    </div>
+                  )}
                   <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-end">
                     <span className="font-bold text-slate-900">К оплате</span>
                     <span className="text-xl font-extrabold text-emerald-600">{formatPrice(finalTotal)}</span>
@@ -550,6 +581,59 @@ export default function CartSidebar({
                 )}
               </div>
 
+              {/* Loyalty program bonuses section */}
+              {customer ? (
+                <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 sm:p-5 text-white mb-5 shadow-md relative overflow-hidden">
+                  <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+                  
+                  <div className="flex justify-between items-start relative z-10">
+                    <div>
+                      <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase">Бонусная программа</span>
+                      <div className="text-3xl font-black text-white mt-1.5 font-outfit">
+                        {formatPrice(availableBonusPoints)}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white/5 border border-amber-400/30 rounded-2xl text-amber-400">
+                      <Gift className="h-6 w-6" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-xs relative z-10">
+                    <div className="text-slate-400 font-medium">
+                      Вернем 3% за заказ: <span className="text-emerald-400 font-bold">+{formatPrice(estimatedEarnedBonuses)}</span>
+                    </div>
+                    
+                    {availableBonusPoints > 0 && (
+                      <label className="flex items-center gap-2 cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 px-3 py-1.5 rounded-xl transition-all border border-white/5 select-none">
+                        <input
+                          type="checkbox"
+                          checked={useBonuses}
+                          onChange={(e) => setUseBonuses(e.target.checked)}
+                          className="w-4 h-4 rounded text-emerald-600 bg-white border-slate-350 focus:ring-emerald-500 focus:ring-2 transition-all cursor-pointer"
+                        />
+                        <span className="font-bold text-white text-[11px]">Списать</span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 p-4 text-white mb-5 shadow-sm relative overflow-hidden">
+                  <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+                  <div className="flex justify-between items-center gap-4 relative z-10">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase">Бонусная программа</span>
+                      <p className="text-[11px] text-slate-300 leading-normal">Войдите, чтобы копить бонусы 3% и оплачивать ими покупки.</p>
+                    </div>
+                    <button 
+                      onClick={onOpenAuth}
+                      className="px-3.5 py-2 bg-white/15 hover:bg-white/25 border border-white/10 text-white rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 font-outfit animate-pulse"
+                    >
+                      Войти
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm text-slate-500">
                   <span>Товары ({cartItemsCount})</span>
@@ -561,6 +645,12 @@ export default function CartSidebar({
                     <span>- {formatPrice(promoPreview.discountAmount)}</span>
                   </div>
                 )}
+                {bonusDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-blue-600 font-semibold">
+                    <span>Списание бонусов</span>
+                    <span>- {formatPrice(bonusDiscount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm text-slate-500">
                   <span>Доставка</span>
                   <span className={cartTotal >= FREE_DELIVERY_THRESHOLD ? 'text-green-600 font-bold' : ''}>
@@ -570,7 +660,7 @@ export default function CartSidebar({
                 <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between items-end">
                   <span className="text-base font-semibold text-slate-900">Итого:</span>
                   <div className="text-right">
-                    {promoPreview.valid && (
+                    {(promoPreview.valid || bonusDiscount > 0) && (
                       <span className="block text-xs text-slate-400 line-through">{formatPrice(cartTotal)}</span>
                     )}
                     <span className="text-2xl font-extrabold text-emerald-600">{formatPrice(finalTotal)}</span>

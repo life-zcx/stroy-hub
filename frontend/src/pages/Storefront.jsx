@@ -40,6 +40,7 @@ export default function Storefront({
   onOpenProduct,
   onToggleFavorite,
   isFavorite,
+  onNavigate,
 }) {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -285,26 +286,29 @@ export default function Storefront({
         {/* Mobile Header / Breadcrumbs */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            {currentCategoryDetail && currentCategoryDetail.breadcrumbs && (
-              <div className="flex items-center flex-wrap gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
-                <button onClick={() => setSelectedCategory('all')} className="hover:text-emerald-600 transition-colors uppercase">Каталог</button>
+            {currentCategoryDetail && currentCategoryDetail.breadcrumbs ? (
+              <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
+                <button onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</button>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
+                <button onClick={() => setSelectedCategory('all')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Каталог</button>
                 {currentCategoryDetail.breadcrumbs.map((b, i) => (
                   <React.Fragment key={b.id}>
-                    <ChevronRight className="h-2.5 w-2.5" />
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
                     <button 
                       onClick={() => setSelectedCategory(b.slug)} 
-                      className={`hover:text-emerald-600 transition-colors uppercase ${i === currentCategoryDetail.breadcrumbs.length - 1 ? 'text-slate-900 border-b-2 border-emerald-500 pb-0.5' : ''}`}
+                      className={`hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold ${i === currentCategoryDetail.breadcrumbs.length - 1 ? 'text-slate-900 font-extrabold' : 'text-slate-500'}`}
                     >
                       {b.name}
                     </button>
                   </React.Fragment>
                 ))}
-              </div>
-            )}
-            {!currentCategoryDetail && (
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Все товары
-              </div>
+              </nav>
+            ) : (
+              <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
+                <button onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</button>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
+                <span className="text-slate-900 font-extrabold">Каталог</span>
+              </nav>
             )}
 
             {/* Mobile Filter Toggle */}

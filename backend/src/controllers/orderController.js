@@ -75,7 +75,7 @@ function buildStatusHistory(existingOrder, nextStatus) {
 }
 
 export const createOrder = async (req, res) => {
-  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode } = req.body;
+  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses } = req.body;
 
   if (!clientName || !clientPhone || !clientAddress || !paymentMethod || !items || !items.length) {
     return res.status(400).json({ error: 'Все поля заказа и товары обязательны' });
@@ -165,6 +165,28 @@ export const createOrder = async (req, res) => {
         finalTotalAmount = reservedEvaluation.totalAmount;
       }
 
+      // Apply loyalty bonuses if requested
+      let bonusDiscount = 0;
+      if (useBonuses) {
+        const completedOrders = await tx.order.findMany({
+          where: { userId: parseInt(userId), status: 'completed' }
+        });
+        const totalEarned = completedOrders.reduce((sum, o) => sum + Math.round(o.totalAmount * 0.03), 0);
+
+        const spentOrders = await tx.order.findMany({
+          where: { userId: parseInt(userId), status: { not: 'cancelled' } }
+        });
+        const totalSpent = spentOrders.reduce((sum, o) => sum + (o.usedBonusPoints || 0), 0);
+
+        const availableBonusPoints = Math.max(0, totalEarned - totalSpent);
+
+        if (availableBonusPoints > 0) {
+          bonusDiscount = Math.min(availableBonusPoints, finalTotalAmount);
+          finalTotalAmount -= bonusDiscount;
+          discountAmount += bonusDiscount;
+        }
+      }
+
       const order = await tx.order.create({
         data: {
           clientName,
@@ -174,6 +196,7 @@ export const createOrder = async (req, res) => {
           subtotalAmount,
           discountAmount,
           totalAmount: finalTotalAmount,
+          usedBonusPoints: bonusDiscount,
           promoCode: reservedPromotion?.promoCode || null,
           promotionTitle: reservedPromotion?.title || null,
           promotionId: reservedPromotion?.id || null,
@@ -304,6 +327,23 @@ export const getOrderById = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({ error: 'Заказ не найден' });
+    }
+
+    if (user.role === 'CUSTOMER' && order.items) {
+      const productIds = order.items.map(item => item.productId);
+      const reviews = await prisma.review.findMany({
+        where: {
+          userId: user.id,
+          productId: { in: productIds }
+        },
+        select: { productId: true }
+      });
+      const reviewedProductIds = new Set(reviews.map(r => r.productId));
+
+      order.items = order.items.map(item => ({
+        ...item,
+        isReviewed: reviewedProductIds.has(item.productId)
+      }));
     }
 
     res.json(order);
@@ -539,5 +579,29 @@ export const updateOrder = async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: 'Ошибка обновления заказа: ' + error.message });
+  }
+};
+
+export const getUserBonuses = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Пользователь не авторизован' });
+    }
+
+    const completedOrders = await prisma.order.findMany({
+      where: { userId: parseInt(userId), status: 'completed' }
+    });
+    const totalEarned = completedOrders.reduce((sum, o) => sum + Math.round(o.totalAmount * 0.03), 0);
+
+    const spentOrders = await prisma.order.findMany({
+      where: { userId: parseInt(userId), status: { not: 'cancelled' } }
+    });
+    const totalSpent = spentOrders.reduce((sum, o) => sum + (o.usedBonusPoints || 0), 0);
+
+    const availableBonusPoints = Math.max(0, totalEarned - totalSpent);
+    res.json({ availableBonusPoints });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения бонусов: ' + error.message });
   }
 };

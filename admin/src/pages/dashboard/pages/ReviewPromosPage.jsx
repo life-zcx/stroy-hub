@@ -3,16 +3,12 @@ import {
   Edit3 as EditIcon,
   Eye as EyeIcon,
   EyeOff as EyeOffIcon,
-  Plus as PlusIcon,
   TicketPercent as TicketPercentIcon,
   Trash2 as Trash2Icon,
 } from 'lucide-react';
 import {
   formatPromotionBenefit,
-  formatPromotionTargets,
-  formatPromotionTiers,
   getPromotionThemeGradient,
-  getPromotionScopeLabel,
   getPromotionTypeLabel,
 } from '../promotionOptions';
 
@@ -34,41 +30,28 @@ function getPromotionState(promotion) {
   return 'Активна';
 }
 
-export default function PromotionsPage({
-  promotions,
-  onCreatePromotion,
-  onEditPromotion,
-  onDeletePromotion,
-  formatPrice,
-}) {
-  // Filter for manual promotions only
-  const manualPromotions = promotions.filter(p => !p.userId && !p.promoCode?.startsWith('REV-'));
+export default function ReviewPromosPage({ promotions, onEditPromotion, onDeletePromotion, formatPrice }) {
+  // Filter for review-based promotions
+  const reviewPromotions = promotions.filter(p => p.userId !== null || p.promoCode?.startsWith('REV-'));
 
   return (
     <div className="space-y-4 animate-fade-in font-sans">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h2 className="text-lg font-black text-slate-900 font-outfit uppercase tracking-tight">Промоакции и промокоды</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Управляйте рекламными кампаниями и ручными промокодами</p>
+          <h2 className="text-lg font-black text-slate-900 font-outfit uppercase tracking-tight">Промокоды за отзывы</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Автоматически начисленные промокоды за оценки товаров</p>
         </div>
-        <button
-          onClick={onCreatePromotion}
-          className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md transform hover:-translate-y-0.5"
-        >
-          <PlusIcon className="h-3.5 w-3.5" />
-          Новая акция
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {manualPromotions.length === 0 ? (
+        {reviewPromotions.length === 0 ? (
           <div className="lg:col-span-3 bg-white p-16 rounded-[2rem] border border-slate-200 shadow-sm text-center">
             <TicketPercentIcon className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-            <p className="font-black text-slate-900 uppercase tracking-widest text-xs">Пока не создано ни одной ручной акции.</p>
-            <p className="text-xs text-slate-500 mt-1">Добавьте промокод или рекламную кампанию, чтобы заполнить список предложений.</p>
+            <p className="font-black text-slate-900 uppercase tracking-widest text-xs">Промокодов за отзывы пока нет.</p>
+            <p className="text-xs text-slate-500 mt-1">Они появятся автоматически после отправки отзывов покупателями.</p>
           </div>
         ) : (
-          manualPromotions.map((promotion) => (
+          reviewPromotions.map((promotion) => (
             <article key={promotion.id} className="bg-white rounded-2xl border border-slate-150 shadow-sm overflow-hidden flex flex-col justify-between">
               {/* Compact header */}
               <div className={`bg-gradient-to-r ${getPromotionThemeGradient(promotion.theme)} text-white p-3.5 flex items-start justify-between gap-3`}>
@@ -99,7 +82,7 @@ export default function PromotionsPage({
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-bold uppercase text-[9px]">Промокод:</span>
                     <span className="font-mono font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-xs tracking-wider uppercase">
-                      {promotion.promoCode || 'Без кода'}
+                      {promotion.promoCode}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -115,25 +98,11 @@ export default function PromotionsPage({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400 font-bold uppercase text-[9px]">Область / Цели:</span>
-                    <span className="font-bold text-slate-700 truncate max-w-[150px]" title={`${getPromotionScopeLabel(promotion.scope)}: ${formatPromotionTargets(promotion)}`}>
-                      {getPromotionScopeLabel(promotion.scope)} ({formatPromotionTargets(promotion)})
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-bold uppercase text-[9px]">Период:</span>
                     <span className="font-bold text-slate-700">
                       {formatDateRange(promotion)}
                     </span>
                   </div>
-                  {promotion.quantityTiers && promotion.quantityTiers.length > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400 font-bold uppercase text-[9px]">Каскадность:</span>
-                      <span className="font-bold text-slate-700 truncate max-w-[150px]" title={formatPromotionTiers(promotion, formatPrice)}>
-                        {formatPromotionTiers(promotion, formatPrice)}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -149,7 +118,7 @@ export default function PromotionsPage({
                 <button
                   onClick={() => onDeletePromotion(promotion.id)}
                   className="p-1.5 text-slate-400 hover:text-red-650 hover:bg-red-50 rounded-lg transition-all"
-                  title="Удалить акцию"
+                  title="Удалить промокод"
                 >
                   <Trash2Icon className="h-4 w-4" />
                 </button>

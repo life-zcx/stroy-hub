@@ -44,6 +44,8 @@ model User {
   orders     Order[]
   pageViews  PageView[]
   analyticsEvents AnalyticsEvent[]
+  reviews    Review[]
+  promotions Promotion[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 }
@@ -90,6 +92,7 @@ model Product {
   analyticsEvents AnalyticsEvent[]
   categoryId     Int?
   categoryRelation Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reviewsList    Review[]
 }
 
 model Category {
@@ -124,6 +127,7 @@ model Order {
   user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   cancellationReason String?
   managerNotes       String?
+  usedBonusPoints    Float      @default(0)
   createdAt       DateTime   @default(now())
   items           OrderItem[]
   analyticsEvents AnalyticsEvent[]
@@ -188,6 +192,8 @@ model Promotion {
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   orders        Order[]
+  userId        Int?
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model PageView {
@@ -249,5 +255,19 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  rating     Int      // Оценка от 1 до 5
+  comment    String?  @db.Text
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, productId]) // Один отзыв на один товар от одного пользователя
 }
 

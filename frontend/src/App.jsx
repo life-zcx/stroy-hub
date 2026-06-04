@@ -18,7 +18,8 @@ import Partners from './pages/Partners';
 import Promotions from './pages/Promotions';
 import MyOrders from './pages/MyOrders';
 import MyOrderDetails from './pages/MyOrderDetails';
-import CartSidebar from './components/CartSidebar';
+import MyPromotions from './pages/MyPromotions';
+import CartPage from './pages/CartPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -88,6 +89,7 @@ export default function App() {
       promotions: "TORMAG - Акции и скидки",
       favorites: "TORMAG - Избранные товары",
       orders: "TORMAG - Мои заказы",
+      'my-promotions': "TORMAG - Мои промокоды",
       requisites: "TORMAG - Реквизиты компании",
       faq: "TORMAG - Вопрос-ответ",
       legal: "TORMAG - Юридическая информация",
@@ -137,7 +139,7 @@ export default function App() {
   }, [isUserMenuOpen]);
 
   useEffect(() => {
-    if (auth.authModalOpen || cart.isCartOpen || region.regionModalOpen || isCallbackModalOpen) {
+    if (auth.authModalOpen || region.regionModalOpen || isCallbackModalOpen) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
     } else {
@@ -149,7 +151,7 @@ export default function App() {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, [auth.authModalOpen, cart.isCartOpen, region.regionModalOpen, isCallbackModalOpen]);
+  }, [auth.authModalOpen, region.regionModalOpen, isCallbackModalOpen]);
 
   useEffect(() => {
     if (currentPage === 'orders' && auth.customer) {
@@ -177,7 +179,7 @@ export default function App() {
         onNavigate={setCurrentPage}
         setSelectedCategory={handleSetCategory}
         cartItemsCount={cart.cartItemsCount}
-        onOpenCart={() => cart.setIsCartOpen(true)}
+        onOpenCart={() => setCurrentPage('cart')}
         onOpenAuthLogin={auth.openLoginModal}
         onOpenCallback={() => setIsCallbackModalOpen(true)}
         onOpenFavorites={() => setCurrentPage('favorites')}
@@ -272,6 +274,14 @@ export default function App() {
             showToast={showToast}
           />
         )}
+        {currentPage === 'my-promotions' && (
+          <MyPromotions
+            customer={auth.customer}
+            onOpenAuth={auth.openLoginModal}
+            onNavigate={setCurrentPage}
+            showToast={showToast}
+          />
+        )}
         {currentPage === 'order-detail' && (
           <MyOrderDetails
             customer={auth.customer}
@@ -283,6 +293,7 @@ export default function App() {
             onLoadOrder={orders.fetchOrderDetails}
             onOpenAuth={auth.openLoginModal}
             onNavigate={setCurrentPage}
+            showToast={showToast}
           />
         )}
         {currentPage === 'product' && (
@@ -308,6 +319,19 @@ export default function App() {
             onClearAll={favorites.clearFavorites}
           />
         )}
+
+        {currentPage === 'cart' && (
+          <CartPage
+            cart={cart.cart}
+            onUpdateQuantity={cart.handleUpdateQuantity}
+            onRemoveFromCart={cart.handleRemoveFromCart}
+            onClearCart={cart.handleClearCart}
+            showToast={showToast}
+            customer={auth.customer}
+            onOpenAuth={() => auth.setAuthModalOpen(true)}
+            onNavigate={setCurrentPage}
+          />
+        )}
       </main>
 
       <Footer
@@ -318,20 +342,7 @@ export default function App() {
         setLegalTab={setLegalTab}
       />
 
-      <CartSidebar
-        cart={cart.cart}
-        isOpen={cart.isCartOpen}
-        onClose={() => cart.setIsCartOpen(false)}
-        onUpdateQuantity={cart.handleUpdateQuantity}
-        onRemoveFromCart={cart.handleRemoveFromCart}
-        onClearCart={cart.handleClearCart}
-        showToast={showToast}
-        customer={auth.customer}
-        onOpenAuth={() => {
-          cart.setIsCartOpen(false);
-          auth.setAuthModalOpen(true);
-        }}
-      />
+      {/* Cart is now a dedicated page: CartPage */}
 
       <AuthModal
         isOpen={auth.authModalOpen}

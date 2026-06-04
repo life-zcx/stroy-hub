@@ -11,6 +11,7 @@ import CategoriesPage from './dashboard/pages/CategoriesPage';
 import OrdersPage from './dashboard/pages/OrdersPage';
 import PartnerRequestsPage from './dashboard/pages/PartnerRequestsPage';
 import PromotionsPage from './dashboard/pages/PromotionsPage';
+import ReviewPromosPage from './dashboard/pages/ReviewPromosPage';
 import ProductsPage from './dashboard/pages/ProductsPage';
 import SuppliersPage from './dashboard/pages/SuppliersPage';
 import UsersPage from './dashboard/pages/UsersPage';
@@ -18,6 +19,7 @@ import PricingPage from './dashboard/pages/PricingPage';
 import LogisticsPage from './dashboard/pages/LogisticsPage';
 import AnalyticsPage from './dashboard/pages/AnalyticsPage';
 import SiteAnalyticsPage from './dashboard/pages/SiteAnalyticsPage';
+import ReviewsPage from './dashboard/pages/ReviewsPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
@@ -30,7 +32,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'site-analytics', 'promotions', 'brands', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
+const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'site-analytics', 'promotions', 'review-promos', 'brands', 'reviews', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -41,7 +43,9 @@ const pageTitles = {
   analytics: 'Аналитика и Отчеты',
   'site-analytics': 'Посещаемость сайта',
   promotions: 'Акции и скидки',
+  'review-promos': 'Промокоды за отзывы',
   brands: 'Бренды-партнеры',
+  reviews: 'Модерация отзывов',
   callbacks: 'Обратные звонки',
   partners: 'Партнерские заявки',
   categories: 'Разделы каталога',
@@ -135,7 +139,10 @@ export default function Dashboard({ user, onLogout, showToast }) {
     handleUpdateUser,
     handleUpdateUserPassword,
     handleToggleUserBlock,
+    handleApproveReview,
+    handleDeleteReview,
     getCategoryPath,
+    reviews,
   } = useDashboardData({ user, showToast });
 
   const allowedPages = useMemo(
@@ -189,11 +196,13 @@ export default function Dashboard({ user, onLogout, showToast }) {
     analytics: 0,
     callbacks: callbacks.filter((callback) => callback.status === 'pending').length,
     partners: partnerRequests.filter((request) => request.status === 'pending').length,
-    promotions: promotions.filter((promotion) => promotion.isCurrentlyActive).length,
+    promotions: promotions.filter((promotion) => promotion.isCurrentlyActive && !promotion.userId && !promotion.promoCode?.startsWith('REV-')).length,
+    'review-promos': promotions.filter((promotion) => promotion.userId !== null || promotion.promoCode?.startsWith('REV-')).length,
     brands: brands.filter((brand) => brand.isActive).length,
     categories: categories.length,
     suppliers: suppliers.length,
     users: users.length,
+    reviews: reviews.filter((r) => !r.isApproved).length,
   };
 
   const renderPage = () => {
@@ -239,6 +248,15 @@ export default function Dashboard({ user, onLogout, showToast }) {
             formatPrice={formatPrice}
           />
         );
+      case 'review-promos':
+        return isSupplier ? null : (
+          <ReviewPromosPage
+            promotions={promotions}
+            onEditPromotion={startEditPromotion}
+            onDeletePromotion={handleDeletePromotion}
+            formatPrice={formatPrice}
+          />
+        );
       case 'brands':
         return isSupplier ? null : (
           <BrandsPage
@@ -246,6 +264,14 @@ export default function Dashboard({ user, onLogout, showToast }) {
             onCreateBrand={startCreateBrand}
             onEditBrand={startEditBrand}
             onDeleteBrand={handleDeleteBrand}
+          />
+        );
+      case 'reviews':
+        return isSupplier ? null : (
+          <ReviewsPage
+            reviews={reviews}
+            onApprove={handleApproveReview}
+            onDelete={handleDeleteReview}
           />
         );
       case 'categories':

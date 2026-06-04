@@ -85,6 +85,11 @@ export const createOrder = async (orderData) => {
   return response.data;
 };
 
+export const getUserBonuses = async () => {
+  const response = await api.get('/orders/bonuses');
+  return response.data;
+};
+
 export const getPublicPromotions = async () => {
   const response = await api.get('/promotions/public');
   return response.data;
@@ -92,6 +97,11 @@ export const getPublicPromotions = async () => {
 
 export const getHomePromotions = async () => {
   const response = await api.get('/promotions/home');
+  return response.data;
+};
+
+export const getMyPromotions = async () => {
+  const response = await api.get('/promotions/my');
   return response.data;
 };
 
@@ -144,6 +154,17 @@ export const matchEstimate = async (file) => {
       'Content-Type': 'multipart/form-data'
     }
   });
+  return response.data;
+};
+
+// Reviews API
+export const getProductReviews = async (productId) => {
+  const response = await api.get(`/reviews/product/${productId}`);
+  return response.data;
+};
+
+export const createProductReview = async (productId, rating, comment) => {
+  const response = await api.post(`/reviews/product/${productId}`, { rating, comment });
   return response.data;
 };
 

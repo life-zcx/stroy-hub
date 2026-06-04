@@ -258,4 +258,20 @@ export const getSiteAnalytics = async (range = 'week') => {
   return response.data;
 };
 
+// Reviews API
+export const getReviews = async () => {
+  const response = await api.get('/reviews');
+  return response.data;
+};
+
+export const approveReview = async (id) => {
+  const response = await api.patch(`/reviews/${id}/approve`);
+  return response.data;
+};
+
+export const deleteReview = async (id) => {
+  const response = await api.delete(`/reviews/${id}`);
+  return response.data;
+};
+
 export default api;

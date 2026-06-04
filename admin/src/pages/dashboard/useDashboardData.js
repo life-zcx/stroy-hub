@@ -33,6 +33,9 @@ import {
   updateUser,
   updateUserBlockStatus,
   updateUserPassword,
+  getReviews,
+  approveReview,
+  deleteReview,
 } from '../../services/api';
 import { buildHierarchicalCategories, getCategoryPath } from './utils';
 
@@ -145,6 +148,7 @@ export function useDashboardData({ user, showToast }) {
   const [promotions, setPromotions] = useState([]);
   const [brands, setBrands] = useState([]);
   const [users, setUsers] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -228,10 +232,14 @@ export function useDashboardData({ user, showToast }) {
 
         const loadedBrands = await getBrands();
         setBrands(loadedBrands);
+
+        const loadedReviews = await getReviews();
+        setReviews(loadedReviews);
       } else {
         setCallbacks([]);
         setPromotions([]);
         setBrands([]);
+        setReviews([]);
       }
     } catch (error) {
       console.error(error);
@@ -862,6 +870,31 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const handleApproveReview = async (reviewId) => {
+    try {
+      await approveReview(reviewId);
+      showToast('✅ Отзыв успешно одобрен!');
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка при одобрении отзыва: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm('Вы уверены, что хотите удалить этот отзыв?')) {
+      return;
+    }
+    try {
+      await deleteReview(reviewId);
+      showToast('🗑️ Отзыв удален');
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка при удалении отзыва: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   return {
     isSupplier,
     loading,
@@ -942,6 +975,8 @@ export function useDashboardData({ user, showToast }) {
     handleUpdateUser,
     handleUpdateUserPassword,
     handleToggleUserBlock,
+    handleApproveReview,
+    handleDeleteReview,
     getCategoryPath: (categoryId) => getCategoryPath(categories, categoryId),
     resetProductForm,
     resetSupplierForm,
@@ -949,5 +984,6 @@ export function useDashboardData({ user, showToast }) {
     resetPromotionForm,
     resetBrandForm,
     user,
+    reviews,
   };
 }

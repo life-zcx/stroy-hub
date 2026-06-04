@@ -280,6 +280,26 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
         </div>
       </section>
 
+      {/* 🎁 PROMO FOR REVIEWS BANNER */}
+      <section className="bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 border border-slate-800 rounded-[2.5rem] p-8 md:p-12 text-left flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden text-white shadow-xl">
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="space-y-4 max-w-2xl relative z-10">
+          <h3 className="text-3xl md:text-4xl font-black text-white font-outfit leading-tight">Получите скидку 10% за ваш отзыв!</h3>
+          <p className="text-slate-350 text-xs md:text-sm leading-relaxed font-semibold">
+            Помогите другим покупателям сделать правильный выбор! Оставьте оценку и честный отзыв к любому купленному товару в вашем личном кабинете, и мы мгновенно вышлем вам персональный промокод на скидку 10% для следующего заказа.
+          </p>
+        </div>
+        <button
+          onClick={() => onNavigate('orders')}
+          className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-extrabold rounded-2xl shadow-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5 shrink-0 z-10 cursor-pointer text-xs uppercase tracking-wider font-outfit"
+        >
+          Оценить покупки
+          <Award className="h-4.5 w-4.5 text-blue-600" />
+        </button>
+      </section>
+
       {/* 📂 QUICK CATEGORIES PREVIEW */}
       <section className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

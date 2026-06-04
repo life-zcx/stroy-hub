@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, ShoppingBag, Trash2, ArrowLeft, Zap, ShieldCheck, Clock, MapPin } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowLeft, Zap, ShieldCheck, Clock, MapPin, ChevronRight } from 'lucide-react';
 import { getProductImage, FALLBACK_PRODUCT_IMAGE } from '../utils/productImage';
 
 const formatPrice = (price) => {
@@ -17,16 +17,16 @@ export default function FavoritesPage({
   return (
     <div className="space-y-8 animate-fade-in-up font-sans text-slate-800 text-left">
       {/* ═══ BREADCRUMBS ═══ */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-2">
+      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
         <button 
           onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-400"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
         >
           Главная
         </button>
-        <span className="text-slate-300">/</span>
-        <span className="text-slate-500 font-semibold">Избранное</span>
-      </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
+        <span className="text-slate-900 font-extrabold">Избранное</span>
+      </nav>
 
       {/* ═══ HEADER ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-100 pb-6">

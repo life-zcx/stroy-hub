@@ -469,4 +469,18 @@ export const deletePromotion = async (req, res) => {
   }
 };
 
+export const getMyPromotions = async (req, res) => {
+  try {
+    const promotions = await prisma.promotion.findMany({
+      where: {
+        userId: req.user.id,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(await enrichPromotions(promotions));
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения личных промокодов: ' + error.message });
+  }
+};
+
 export { buildEvaluationContext, enrichPromotions, serializePromotion, buildPromotionSnapshot };

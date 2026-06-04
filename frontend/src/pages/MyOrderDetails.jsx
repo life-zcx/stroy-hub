@@ -1,11 +1,15 @@
-import React, { useEffect } from 'react';
-import { ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, ChevronRight } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { formatDateTime, getStatusMeta, StatusTimeline } from './MyOrders';
+import ReviewModal from '../components/ReviewModal';
 
-export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate }) {
+export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate, showToast }) {
   const order = orders.find((item) => String(item.id) === String(orderId));
   const hasFullDetails = Boolean(order && Array.isArray(order.items));
+
+  const [selectedProductForReview, setSelectedProductForReview] = useState(null);
+  const [reviewedProductIds, setReviewedProductIds] = useState([]);
 
   useEffect(() => {
     if (customer && orderId && !hasFullDetails && !loading && !error) {
@@ -64,27 +68,24 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
 
   return (
     <section className="space-y-6">
-      {/* Sleek Breadcrumb & Action Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => onNavigate('orders')}
-          className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500 transition-colors hover:text-blue-600 cursor-pointer"
+      {/* Sleek Breadcrumbs */}
+      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
+        <button 
+          onClick={() => onNavigate?.('home')} 
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Назад к списку заказов
+          Главная
         </button>
-
-        <button
-          type="button"
-          onClick={() => onRefresh(orderId)}
-          disabled={loading}
-          className="w-fit inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-655 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200/85 py-2 px-4 rounded-xl transition-colors cursor-pointer"
+        <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
+        <button 
+          onClick={() => onNavigate?.('orders')} 
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Обновить детали
+          Мои заказы
         </button>
-      </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
+        <span className="text-slate-900 font-extrabold">Заказ №{order.id}</span>
+      </nav>
 
       {/* Main Order Info Header */}
       <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
@@ -98,7 +99,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                 {statusMeta.text}
               </span>
             </div>
-            <p className="text-xs font-semibold text-slate-550 pt-1">Оформлен: {formatDateTime(order.createdAt)}</p>
+            <p className="text-xs font-semibold text-slate-555 pt-1">Оформлен: {formatDateTime(order.createdAt)}</p>
           </div>
         </div>
       </div>
@@ -114,21 +115,50 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
             <div className="space-y-3">
               {order.items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-slate-50/50 hover:bg-slate-50 border border-slate-100 p-4 transition-colors">
-                  <div className="w-14 h-14 bg-white border border-slate-150 rounded-xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => item.product && onNavigate('product', item.productId)}
+                    className="w-14 h-14 bg-white border border-slate-150 rounded-xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors"
+                  >
                     <img 
                       src={item.product?.image || 'https://placehold.co/100x100/f8fafc/475569?text=Tormag'} 
                       className="w-full h-full object-contain" 
                       alt={item.product?.name} 
                     />
-                  </div>
+                  </button>
                   <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-left">
-                      <p className="text-sm font-black text-slate-900 leading-tight">{item.product?.name || 'Товар удален'}</p>
+                      <button
+                        type="button"
+                        onClick={() => item.product && onNavigate('product', item.productId)}
+                        className="text-sm font-black text-slate-900 leading-tight hover:text-blue-600 transition-colors cursor-pointer text-left block focus:outline-none"
+                      >
+                        {item.product?.name || 'Товар удален'}
+                      </button>
                       <p className="mt-1 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
                     </div>
-                    <span className="font-outfit text-base font-black text-slate-950 shrink-0 text-left sm:text-right">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
+                    <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end">
+                      <span className="font-outfit text-base font-black text-slate-950 shrink-0 text-left sm:text-right">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
+                      {order.status === 'completed' && item.product && (
+                        <div className="shrink-0 pl-2">
+                          {item.isReviewed || reviewedProductIds.includes(item.productId) ? (
+                            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-55/30 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1">
+                              ✓ Отзыв оставлен
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProductForReview(item.product)}
+                              className="px-3.5 py-2 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+                            >
+                              Оценить товар
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -184,6 +214,19 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
           <StatusTimeline order={order} />
         </aside>
       </div>
+
+      {selectedProductForReview && (
+        <ReviewModal
+          isOpen={!!selectedProductForReview}
+          onClose={() => setSelectedProductForReview(null)}
+          productId={selectedProductForReview.id}
+          productName={selectedProductForReview.name}
+          showToast={showToast}
+          onSubmitSuccess={(prodId) => {
+            setReviewedProductIds((prev) => [...prev, prodId]);
+          }}
+        />
+      )}
     </section>
   );
 }
