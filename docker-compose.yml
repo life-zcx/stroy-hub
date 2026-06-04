@@ -18,12 +18,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
   db-backup:
     image: prodrigestivill/postgres-backup-local:15
     container_name: tormag_postgres_backup
     restart: always
-    user: "postgres:postgres"
     volumes:
       - db_backups:/backups
     depends_on:

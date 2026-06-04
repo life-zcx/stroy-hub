@@ -19,7 +19,6 @@ services:
   db-backup:
     image: prodrigestivill/postgres-backup-local:15
     restart: unless-stopped
-    user: "postgres:postgres"
     volumes:
       - db_backups:/backups
     depends_on:
