@@ -15,6 +15,7 @@ export default function AuthModal({
   setAuthName,
   authPhone,
   setAuthPhone,
+  handlePhoneChange,
   authAddress,
   setAuthAddress,
   authResetCode,
@@ -48,6 +49,7 @@ export default function AuthModal({
           <p className="text-slate-500 text-xs mt-1">
             {authTab === 'forgot' ? 'Восстановление доступа к аккаунту' : 
              authTab === 'reset' ? 'Установите новый пароль' : 
+             authTab === 'register-confirm' ? 'Подтверждение почты' : 
              'Авторизуйтесь для оформления заказов и отслеживания доставки'}
           </p>
         </div>
@@ -78,7 +80,7 @@ export default function AuthModal({
 
         <form onSubmit={handleAuthSubmit} className="space-y-4">
           
-          {/* Email input - shown in login, register, forgot, reset */}
+          {/* Email input - shown in login, register, forgot, reset, register-confirm */}
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Электронная почта *</label>
             <input
@@ -86,16 +88,18 @@ export default function AuthModal({
               value={authEmail}
               onChange={(e) => setAuthEmail(e.target.value)}
               required
-              disabled={authTab === 'reset'} // Lock email during reset step
+              disabled={authTab === 'reset' || authTab === 'register-confirm'} // Lock email during reset/confirm steps
               placeholder="alex@test.com"
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 disabled:opacity-60"
             />
           </div>
 
-          {/* Verification Code input - only shown in 'reset' */}
-          {authTab === 'reset' && (
+          {/* Verification Code input - shown in 'reset' or 'register-confirm' */}
+          {(authTab === 'reset' || authTab === 'register-confirm') && (
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Код из письма *</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
+                {authTab === 'register-confirm' ? 'Код подтверждения из письма *' : 'Код из письма *'}
+              </label>
               <input
                 type="text"
                 value={authResetCode}
@@ -172,7 +176,7 @@ export default function AuthModal({
                 <input
                   type="tel"
                   value={authPhone}
-                  onChange={(e) => setAuthPhone(e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
                   required
                   placeholder="+7 (707) 123-45-67"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
@@ -228,13 +232,15 @@ export default function AuthModal({
               'Зарегистрироваться'
             ) : authTab === 'forgot' ? (
               'Получить код восстановления'
+            ) : authTab === 'register-confirm' ? (
+              'Подтвердить и завершить регистрацию'
             ) : (
               'Сбросить пароль'
             )}
           </button>
 
           {/* Go Back buttons for recovery flows */}
-          {(authTab === 'forgot' || authTab === 'reset') && (
+          {(authTab === 'forgot' || authTab === 'reset' || authTab === 'register-confirm') && (
             <div className="text-center pt-2">
               <button
                 type="button"

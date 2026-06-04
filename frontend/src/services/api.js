@@ -29,6 +29,11 @@ export const register = async (userData) => {
   return response.data;
 };
 
+export const sendRegisterCode = async (userData) => {
+  const response = await api.post('/auth/send-register-code', userData);
+  return response.data;
+};
+
 export const getProfile = async () => {
   const response = await api.get('/auth/me');
   return response.data;

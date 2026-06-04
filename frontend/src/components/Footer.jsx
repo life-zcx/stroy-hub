@@ -19,11 +19,6 @@ export default function Footer({
     onNavigate('legal');
   };
 
-  const adminUrl = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:3001'
-    : 'https://cabinet.tormag.kz';
-
   return (
     <footer className="bg-slate-900 text-slate-300 mt-12 pt-12 pb-6 border-t border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,17 +49,6 @@ export default function Footer({
               <li><button onClick={() => customer ? onNavigate('orders') : onOpenAuth()} className="hover:text-emerald-600 transition-colors">Мои заказы</button></li>
               <li><button onClick={() => onNavigate('about')} className="hover:text-emerald-600 transition-colors">О компании</button></li>
               <li><button onClick={() => onNavigate('delivery')} className="hover:text-emerald-600 transition-colors">Доставка и оплата</button></li>
-              <li>
-                <a
-                  href={adminUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-emerald-600 transition-colors mt-1"
-                >
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  <span>Вход для дистрибьюторов</span>
-                </a>
-              </li>
             </ul>
           </div>
 

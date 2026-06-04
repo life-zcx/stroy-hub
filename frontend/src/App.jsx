@@ -175,6 +175,7 @@ export default function App() {
         currentRegion={region.currentRegion}
         onOpenRegion={() => region.setRegionModalOpen(true)}
         customer={auth.customer}
+        isAuthChecking={auth.isAuthChecking}
         isUserMenuOpen={isUserMenuOpen}
         setIsUserMenuOpen={setIsUserMenuOpen}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -372,6 +373,7 @@ export default function App() {
         setAuthName={auth.setAuthName}
         authPhone={auth.authPhone}
         setAuthPhone={auth.setAuthPhone}
+        handlePhoneChange={auth.handlePhoneChange}
         authAddress={auth.authAddress}
         setAuthAddress={auth.setAuthAddress}
         authResetCode={auth.authResetCode}
