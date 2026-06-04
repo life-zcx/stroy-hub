@@ -3901,3 +3901,27 @@
 {"durationMs":59,"ip":"172.20.0.6","level":"info","message":"POST /api/auth/send-register-code 200 59ms","method":"POST","status":200,"timestamp":"2026-06-04T11:36:29.999Z","url":"/api/auth/send-register-code","userId":null}
 {"level":"info","message":"Сервер Tormag запущен на порту 5000","timestamp":"2026-06-04T11:44:27.306Z"}
 {"level":"info","message":"Успешно подключено к Redis","timestamp":"2026-06-04T11:44:27.323Z"}
+{"level":"info","message":"Сервер Tormag запущен на порту 5000","timestamp":"2026-06-04T11:44:32.140Z"}
+{"level":"info","message":"Успешно подключено к Redis","timestamp":"2026-06-04T11:44:32.144Z"}
+{"level":"info","message":"Products cache hit: products:all:{\"page\":\"1\",\"limit\":\"24\",\"sort\":\"popular\"}","timestamp":"2026-06-04T11:47:25.169Z"}
+{"durationMs":43,"ip":"172.20.0.6","level":"info","message":"GET /api/products?page=1&limit=24&sort=popular 304 43ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.186Z","url":"/api/products?page=1&limit=24&sort=popular","userId":null}
+{"level":"info","message":"Categories cache hit","timestamp":"2026-06-04T11:47:25.246Z"}
+{"durationMs":99,"ip":"172.20.0.6","level":"info","message":"GET /api/categories 304 99ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.256Z","url":"/api/categories","userId":null}
+{"level":"info","message":"Products cache hit: products:all:{\"page\":\"1\",\"limit\":\"24\",\"sort\":\"popular\"}","timestamp":"2026-06-04T11:47:25.282Z"}
+{"level":"info","message":"Categories cache hit","timestamp":"2026-06-04T11:47:25.285Z"}
+{"durationMs":16,"ip":"172.20.0.6","level":"info","message":"GET /api/products?page=1&limit=24&sort=popular 304 16ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.292Z","url":"/api/products?page=1&limit=24&sort=popular","userId":null}
+{"durationMs":24,"ip":"172.20.0.6","level":"info","message":"GET /api/categories 304 24ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.304Z","url":"/api/categories","userId":null}
+{"durationMs":212,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 212ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.319Z","url":"/api/brands/public","userId":null}
+{"durationMs":203,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 203ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.326Z","url":"/api/promotions/home","userId":null}
+{"durationMs":91,"ip":"172.20.0.6","level":"info","message":"POST /api/analytics/page-view 201 91ms","method":"POST","status":201,"timestamp":"2026-06-04T11:47:25.329Z","url":"/api/analytics/page-view","userId":null}
+{"durationMs":4,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 4ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.339Z","url":"/api/promotions/home","userId":null}
+{"durationMs":7,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 7ms","method":"GET","status":304,"timestamp":"2026-06-04T11:47:25.340Z","url":"/api/brands/public","userId":null}
+{"durationMs":6,"ip":"172.20.0.6","level":"info","message":"GET /api/brands/public 304 6ms","method":"GET","status":304,"timestamp":"2026-06-04T11:48:10.877Z","url":"/api/brands/public","userId":null}
+{"level":"info","message":"Categories cache hit","timestamp":"2026-06-04T11:48:10.881Z"}
+{"durationMs":3,"ip":"172.20.0.6","level":"info","message":"GET /api/categories 304 3ms","method":"GET","status":304,"timestamp":"2026-06-04T11:48:10.882Z","url":"/api/categories","userId":null}
+{"durationMs":20,"ip":"172.20.0.6","level":"info","message":"GET /api/promotions/home 304 20ms","method":"GET","status":304,"timestamp":"2026-06-04T11:48:10.891Z","url":"/api/promotions/home","userId":null}
+{"level":"info","message":"Products cache hit: products:all:{\"page\":\"1\",\"limit\":\"24\",\"sort\":\"popular\"}","timestamp":"2026-06-04T11:48:10.899Z"}
+{"durationMs":8,"ip":"172.20.0.6","level":"info","message":"GET /api/products?page=1&limit=24&sort=popular 304 8ms","method":"GET","status":304,"timestamp":"2026-06-04T11:48:10.903Z","url":"/api/products?page=1&limit=24&sort=popular","userId":null}
+{"durationMs":26,"ip":"172.20.0.6","level":"info","message":"POST /api/analytics/page-view 201 26ms","method":"POST","status":201,"timestamp":"2026-06-04T11:48:10.916Z","url":"/api/analytics/page-view","userId":null}
+{"level":"info","message":"Сервер Tormag запущен на порту 5000","timestamp":"2026-06-04T11:53:03.534Z"}
+{"level":"info","message":"Успешно подключено к Redis","timestamp":"2026-06-04T11:53:03.542Z"}

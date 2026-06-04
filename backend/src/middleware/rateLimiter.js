@@ -42,3 +42,60 @@ export const registerRateLimiter = async (req, res, next) => {
     next();
   }
 };
+
+export const loginRateLimiter = async (req, res, next) => {
+  let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (Array.isArray(ip)) {
+    ip = ip[0];
+  } else if (typeof ip === 'string') {
+    ip = ip.split(',')[0].trim();
+  }
+
+  try {
+    const key = `rate-limit:login-attempts:${ip}`;
+    
+    const count = await redisClient.incr(key);
+    
+    if (count === 1) {
+      await redisClient.expire(key, 60);
+    }
+
+    if (count > 10) {
+      return res.status(429).json({
+        error: 'Слишком много попыток входа с вашего IP. Пожалуйста, попробуйте войти через минуту.'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('[Login Rate Limiter Error]', error);
+    next();
+  }
+};
+
+export const emailSpamRateLimiter = async (req, res, next) => {
+  const { email } = req.body;
+  if (!email) {
+    return next();
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const key = `rate-limit:email-otp:${cleanEmail}`;
+    
+    const exists = await redisClient.exists(key);
+    if (exists) {
+      return res.status(429).json({
+        error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.'
+      });
+    }
+
+    await redisClient.set(key, '1', { EX: 60 });
+
+    next();
+  } catch (error) {
+    console.error('[Email Spam Rate Limiter Error]', error);
+    next();
+  }
+};
