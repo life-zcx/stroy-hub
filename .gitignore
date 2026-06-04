@@ -18,7 +18,7 @@ yarn-error.log*
 .DS_Store
 
 # Prisma & DB
-/backend/prisma/migrations/
+# /backend/prisma/migrations/ (removed so migrations are version controlled)
 .env
 /backend/uploads/*
 !/backend/uploads/.gitkeep
