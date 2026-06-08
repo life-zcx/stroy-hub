@@ -108,7 +108,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                   Прямые поставки строительных материалов <span className="text-blue-600 font-extrabold">от ведущих дистрибьюторов Казахстана</span>
                 </p>
                 
-                <p className="text-slate-500 text-sm md:text-base leading-relaxed font-normal max-w-xl">
+                <p className="text-slate-700 text-sm md:text-base leading-relaxed font-normal max-w-xl">
                   Комплексное снабжение строительных объектов, гарантированное качество и прозрачные оптовые условия для вашего бизнеса.
                 </p>
               </div>
@@ -136,40 +136,40 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
             {/* Right Column: Sleek Minimalist Glass Tiles */}
             <div className="relative lg:col-span-5 space-y-3.5 z-10">
               {/* Tile 1 */}
-              <div className="group bg-white/60 hover:bg-white/90 border border-slate-200/50 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
+              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
                 <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
                   <Building2 className="h-5 w-5" strokeWidth={2} />
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Цены заводов</h4>
-                  <p className="text-slate-400 group-hover:text-slate-500 text-[11px] transition-colors leading-normal">
+                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
                     Прямые поставки от производителей без посредников и наценок
                   </p>
                 </div>
               </div>
 
               {/* Tile 2 */}
-              <div className="group bg-white/60 hover:bg-white/90 border border-slate-200/50 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
+              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
                 <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
                   <ShieldCheck className="h-5 w-5" strokeWidth={2} />
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Сертификаты качества</h4>
-                  <p className="text-slate-400 group-hover:text-slate-500 text-[11px] transition-colors leading-normal">
+                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
                     Полный комплект паспортов качества и соответствия на каждую партию
                   </p>
                 </div>
               </div>
 
               {/* Tile 3 */}
-              <div className="group bg-white/60 hover:bg-white/90 border border-slate-200/50 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
+              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
                 <div className="p-2.5 rounded-xl bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
                   <Truck className="h-5 w-5" strokeWidth={2} />
                 </div>
                 <div className="space-y-0.5">
                   <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Региональные поставки</h4>
-                  <p className="text-slate-400 group-hover:text-slate-500 text-[11px] transition-colors leading-normal">
-                    Быстрая и надежная доставка со складов в Алматы и Астане
+                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
+                    Быстрая и надежная доставка со складов in Алматы и Астане
                   </p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                       {promotion.badge || 'Акция'}
                     </span>
                     <h3 className="text-lg font-black text-slate-950 font-outfit leading-tight">{promotion.title}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{promotion.description}</p>
+                    <p className="text-xs text-slate-700 font-semibold leading-relaxed line-clamp-3">{promotion.description}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="block text-[10px] uppercase font-black tracking-[0.18em] text-emerald-700">Промокод</span>
@@ -237,42 +237,42 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          <div className="bg-white border border-slate-200/60 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
             <div className="glossy-icon-shell glossy-icon-emerald">
               <Award className="h-6 w-6" strokeWidth={2.5} />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-base">Цены дистрибьюторов</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">
+            <h3 className="font-extrabold text-slate-950 text-base">Цены дистрибьюторов</h3>
+            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
               Вы заказываете товары напрямую с официальных региональных складов брендов, исключая наценки розничных магазинов.
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200/60 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
             <div className="glossy-icon-shell glossy-icon-blue">
               <ShieldCheck className="h-6 w-6" strokeWidth={2.5} />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-base">100% Гарантия бренда</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">
+            <h3 className="font-extrabold text-slate-950 text-base">100% Гарантия бренда</h3>
+            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
               Все поставщики проходят жесткую модерацию. Предоставляем сертификаты соответствия на каждую партию товара.
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200/60 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
             <div className="glossy-icon-shell glossy-icon-violet">
               <Truck className="h-6 w-6" strokeWidth={2.5} />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-base">Быстрая доставка</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">
+            <h3 className="font-extrabold text-slate-950 text-base">Быстрая доставка</h3>
+            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
               Собственная курьерская сеть и грузовой транспорт гарантируют доставку в течение 24 часов с момента подтверждения.
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200/60 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
             <div className="glossy-icon-shell glossy-icon-green">
               <Building2 className="h-6 w-6" strokeWidth={2.5} />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-base">Удобно для бизнеса</h3>
-            <p className="text-slate-500 text-xs leading-relaxed">
+            <h3 className="font-extrabold text-slate-950 text-base">Удобно для бизнеса</h3>
+            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
               Полный пакет закрывающих документов для ТОО и ИП. Работаем с НДС, предоставляем отсрочку платежа постоянным клиентам.
             </p>
           </div>
@@ -287,7 +287,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
         
         <div className="space-y-4 max-w-2xl relative z-10">
           <h3 className="text-3xl md:text-4xl font-black text-white font-outfit leading-tight">Получите скидку 10% за ваш отзыв!</h3>
-          <p className="text-slate-350 text-xs md:text-sm leading-relaxed font-semibold">
+          <p className="text-slate-200 text-xs md:text-sm leading-relaxed font-semibold">
             Помогите другим покупателям сделать правильный выбор! Оставьте оценку и честный отзыв к любому купленному товару в вашем личном кабинете, и мы мгновенно вышлем вам персональный промокод на скидку 10% для следующего заказа.
           </p>
         </div>
@@ -369,13 +369,13 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
           {brandLogos.map((brand, i) => (
             <div
               key={brand.id || i}
-              className="bg-white border border-slate-200/50 p-6 rounded-2xl flex flex-col items-center justify-center text-center hover:border-emerald-600/40 hover:shadow-sm transition-all group"
+              className="bg-white border border-slate-350 p-6 rounded-2xl flex flex-col items-center justify-center text-center hover:border-emerald-650 hover:shadow-md transition-all group"
             >
               {brand.logo ? (
                 <img src={brand.logo} alt={brand.name} className="h-12 max-w-[120px] object-contain mb-3 grayscale group-hover:grayscale-0 transition-all" />
               ) : null}
-              <span className="font-black text-slate-400 group-hover:text-slate-800 text-lg transition-colors tracking-tight font-outfit">{brand.name}</span>
-              <span className="text-[9px] text-slate-400 mt-1 block">{brand.desc}</span>
+              <span className="font-black text-slate-800 group-hover:text-slate-950 text-lg transition-colors tracking-tight font-outfit">{brand.name}</span>
+              <span className="text-[10px] text-slate-600 font-semibold mt-1 block">{brand.desc}</span>
             </div>
           ))}
         </div>

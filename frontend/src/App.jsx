@@ -143,7 +143,7 @@ export default function App() {
   }, [isUserMenuOpen]);
 
   useEffect(() => {
-    if (auth.authModalOpen || region.regionModalOpen || isCallbackModalOpen) {
+    if (auth.authModalOpen || region.regionModalOpen || isCallbackModalOpen || isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
     } else {
@@ -155,7 +155,7 @@ export default function App() {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, [auth.authModalOpen, region.regionModalOpen, isCallbackModalOpen]);
+  }, [auth.authModalOpen, region.regionModalOpen, isCallbackModalOpen, isMobileMenuOpen]);
 
   useEffect(() => {
     if (currentPage === 'orders' && auth.customer) {

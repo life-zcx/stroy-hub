@@ -407,3 +407,82 @@ html {
     padding: 1rem;
   }
 }
+
+/* ==========================================================================
+   Accessibility Styles (Версия для слабовидящих)
+   ========================================================================== */
+
+/* Font sizes */
+html.accessibility-font-md {
+  font-size: 118% !important;
+}
+html.accessibility-font-lg {
+  font-size: 135% !important;
+}
+
+/* Readable Font Family & spacing */
+html.accessibility-dyslexic,
+html.accessibility-dyslexic * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  letter-spacing: 0.07em !important;
+  word-spacing: 0.15em !important;
+  line-height: 1.65 !important;
+}
+
+/* Hide decorative backgrounds & images option */
+html.accessibility-no-images img,
+html.accessibility-no-images iframe,
+html.accessibility-no-images [style*="background-image"],
+html.accessibility-no-images .hero-blueprint-field,
+html.accessibility-no-images .warehouse-scene {
+  display: none !important;
+  background-image: none !important;
+}
+
+/* High Contrast: Black and White */
+html.accessibility-theme-bw,
+html.accessibility-theme-bw * {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background-image: none !important;
+}
+html.accessibility-theme-bw a,
+html.accessibility-theme-bw button {
+  text-decoration: underline !important;
+  font-weight: 800 !important;
+}
+html.accessibility-theme-bw input,
+html.accessibility-theme-bw select,
+html.accessibility-theme-bw textarea {
+  border: 2px solid #000000 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* High Contrast: Yellow and Black */
+html.accessibility-theme-yb,
+html.accessibility-theme-yb * {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+  border-color: #ffff00 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background-image: none !important;
+}
+html.accessibility-theme-yb a,
+html.accessibility-theme-yb button {
+  text-decoration: underline !important;
+  font-weight: 800 !important;
+  color: #ffff00 !important;
+}
+html.accessibility-theme-yb input,
+html.accessibility-theme-yb select,
+html.accessibility-theme-yb textarea {
+  border: 2px solid #ffff00 !important;
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+

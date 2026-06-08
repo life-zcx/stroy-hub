@@ -73,29 +73,4 @@ export const loginRateLimiter = async (req, res, next) => {
   }
 };
 
-export const emailSpamRateLimiter = async (req, res, next) => {
-  const { email } = req.body;
-  if (!email) {
-    return next();
-  }
 
-  const cleanEmail = email.trim().toLowerCase();
-
-  try {
-    const key = `rate-limit:email-otp:${cleanEmail}`;
-    
-    const exists = await redisClient.exists(key);
-    if (exists) {
-      return res.status(429).json({
-        error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.'
-      });
-    }
-
-    await redisClient.set(key, '1', { EX: 60 });
-
-    next();
-  } catch (error) {
-    console.error('[Email Spam Rate Limiter Error]', error);
-    next();
-  }
-};

@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ShoppingCart, Search, Menu, X, Hammer, ShieldCheck, Phone,
-  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag, Gift,
+  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag, Gift, Eye,
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
 
 const MOBILE_NAV_ITEMS = [
-  { id: 'home', name: 'Главная' },
   { id: 'catalog', name: 'Каталог' },
   { id: 'services', name: 'Услуги' },
   { id: 'payment-terms', name: 'Условия оплаты' },
@@ -19,7 +18,7 @@ const MOBILE_NAV_ITEMS = [
   { id: 'requisites', name: 'Реквизиты' },
   { id: 'partners', name: 'Партнеры' },
   { id: 'promotions', name: 'Акции' },
-  { id: 'estimate', name: 'Заказ по смете 📄' },
+  { id: 'estimate', name: 'Заказ по смете' },
   { id: 'advisor', name: 'Умный подбор' },
 ];
 
@@ -59,6 +58,306 @@ export default function Header({
   const [localSearchQuery, setLocalSearchQuery] = useState(globalSearchQuery || '');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const megaMenuRef = useRef(null);
+
+  const [accessibilityActive, setAccessibilityActive] = useState(() => {
+    return localStorage.getItem('tormag_accessibility_active') === 'true';
+  });
+  const [fontSize, setFontSize] = useState(() => {
+    return localStorage.getItem('tormag_accessibility_font_size') || 'sm';
+  });
+  const [accessibilityTheme, setAccessibilityTheme] = useState(() => {
+    return localStorage.getItem('tormag_accessibility_theme') || 'default';
+  });
+  const [fontType, setFontType] = useState(() => {
+    return localStorage.getItem('tormag_accessibility_font_type') || 'default';
+  });
+  const [hideImages, setHideImages] = useState(() => {
+    return localStorage.getItem('tormag_accessibility_hide_images') === 'true';
+  });
+  const [isAccessibilityModalOpen, setIsAccessibilityModalOpen] = useState(false);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    
+    html.classList.remove(
+      'accessibility-active',
+      'accessibility-font-md',
+      'accessibility-font-lg',
+      'accessibility-theme-bw',
+      'accessibility-theme-yb',
+      'accessibility-dyslexic',
+      'accessibility-no-images'
+    );
+
+    if (accessibilityActive) {
+      html.classList.add('accessibility-active');
+      
+      if (fontSize === 'md') html.classList.add('accessibility-font-md');
+      if (fontSize === 'lg') html.classList.add('accessibility-font-lg');
+      
+      if (accessibilityTheme === 'bw') html.classList.add('accessibility-theme-bw');
+      if (accessibilityTheme === 'yb') html.classList.add('accessibility-theme-yb');
+      
+      if (fontType === 'dyslexic') html.classList.add('accessibility-dyslexic');
+      if (hideImages) html.classList.add('accessibility-no-images');
+    }
+
+    localStorage.setItem('tormag_accessibility_active', accessibilityActive);
+    localStorage.setItem('tormag_accessibility_font_size', fontSize);
+    localStorage.setItem('tormag_accessibility_theme', accessibilityTheme);
+    localStorage.setItem('tormag_accessibility_font_type', fontType);
+    localStorage.setItem('tormag_accessibility_hide_images', hideImages);
+  }, [accessibilityActive, fontSize, accessibilityTheme, fontType, hideImages]);
+
+  useEffect(() => {
+    if (isAccessibilityModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isAccessibilityModalOpen]);
+
+  const renderAccessibilityModal = () => {
+    if (!isAccessibilityModalOpen) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in cursor-pointer"
+        onClick={() => setIsAccessibilityModalOpen(false)}
+      >
+        <div 
+          className="w-full max-w-md bg-white rounded-[24px] shadow-2xl p-8 relative animate-fade-in-up cursor-default text-slate-800"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={() => setIsAccessibilityModalOpen(false)}
+            className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Title and Icon Header */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shrink-0">
+              <Eye className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 font-outfit leading-snug">
+                Панель настроек доступности
+              </h3>
+              <p className="text-slate-500 text-xs mt-1">
+                Адаптируйте интерфейс сайта под ваше зрение.
+              </p>
+            </div>
+          </div>
+
+          {/* Options */}
+          <div className="space-y-5 mb-8">
+            {/* Font Size */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Размер шрифта</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setFontSize('sm');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    fontSize === 'sm'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Стандарт (А)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setFontSize('md');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    fontSize === 'md'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Средний (А+)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setFontSize('lg');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    fontSize === 'lg'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Крупный (А++)
+                </button>
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Цветовая схема</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setAccessibilityTheme('default');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    accessibilityTheme === 'default'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Обычная
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setAccessibilityTheme('bw');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    accessibilityTheme === 'bw'
+                      ? 'bg-black border-black text-white shadow-sm font-black'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Ч/Б контраст
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setAccessibilityTheme('yb');
+                  }}
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
+                    accessibilityTheme === 'yb'
+                      ? 'bg-yellow-300 border-black text-black shadow-sm font-black'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Желто-черная
+                </button>
+              </div>
+            </div>
+
+            {/* Font Type */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Шрифт</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setFontType('default');
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
+                    fontType === 'default'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Стандартный
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setFontType('dyslexic');
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
+                    fontType === 'dyslexic'
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Без засечек (Arial)
+                </button>
+              </div>
+            </div>
+
+            {/* Images */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Изображения</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setHideImages(false);
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
+                    !hideImages
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Показывать
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessibilityActive(true);
+                    setHideImages(true);
+                  }}
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
+                    hideImages
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  Скрыть
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer buttons */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAccessibilityActive(false);
+                setFontSize('sm');
+                setAccessibilityTheme('default');
+                setFontType('default');
+                setHideImages(false);
+                setIsAccessibilityModalOpen(false);
+              }}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-xs text-center"
+            >
+              Сбросить
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAccessibilityModalOpen(false)}
+              className="flex-1 bg-[#525252] hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-xs text-center"
+            >
+              Готово
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const navigateTo = (page) => {
     onNavigate(page);
@@ -115,6 +414,143 @@ export default function Header({
 
   return (
     <>
+      {renderAccessibilityModal()}
+      
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-white z-[120] lg:hidden animate-fade-in space-y-4 p-4 overflow-y-auto flex flex-col text-slate-800">
+          {/* Header row */}
+          <div className="flex justify-between items-center h-12 border-b border-slate-100 pb-2">
+            <div
+              onClick={() => {
+                onNavigate('home');
+                setIsMobileMenuOpen(false);
+                setIsMegaMenuOpen(false);
+              }}
+              className="flex items-center cursor-pointer group shrink-0"
+            >
+              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="56" className="h-14 w-auto object-contain" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 hover:bg-gray-100 h-[40px] w-[40px] flex items-center justify-center"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Mobile Search wrapped inside a form with Autocomplete */}
+          <form onSubmit={handleSearchSubmit} className="relative w-full search-form-container">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Поиск товаров..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => setIsSearchFocused(true)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600 text-sm"
+              />
+              <button type="submit" className="absolute left-3 top-3.5 text-gray-400 hover:text-emerald-600 transition-colors">
+                <Search className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mobile Autocomplete Dropdown List */}
+            {isSearchFocused && matchedProducts.length > 0 && (
+              <div className="absolute left-3 right-3 top-full mt-2 bg-white rounded-2xl border border-slate-200/85 shadow-2xl z-50 py-2.5 max-h-[300px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
+                <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
+                {matchedProducts.map(p => (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      onNavigate('product', p.id);
+                      setSearchQuery('');
+                      setIsSearchFocused(false);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                        <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
+                        <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
+                      {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </form>
+          
+          <div className="flex flex-col gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccessibilityModalOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider text-slate-700 bg-slate-100 flex items-center gap-2 border border-slate-300 mb-2"
+            >
+              <Eye className="h-4 w-4 text-emerald-600" />
+              <span>Версия для слабовидящих</span>
+            </button>
+            {MOBILE_NAV_ITEMS.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  navigateTo(tab.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
+                  ? 'bg-emerald-600/10 text-emerald-700'
+                  : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+              >
+                {tab.name}
+              </button>
+            ))}
+            {customer && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenOrders();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
+                    ? 'bg-emerald-600/10 text-emerald-700'
+                    : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                >
+                  Мои заказы
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigate('cashback');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
+                    ? 'bg-amber-500/10 text-amber-700'
+                    : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                >
+                  Мой кешбэк
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Dimmed backdrop when Mega Menu is open */}
       {isMegaMenuOpen && (
         <div
@@ -137,12 +573,6 @@ export default function Header({
 
           {/* Links shifted from main header here */}
           <div className="flex items-center gap-6 font-semibold">
-            <button
-              onClick={() => navigateTo('home')}
-              className={`hover:text-white transition-colors ${currentPage === 'home' ? 'text-white font-bold' : ''}`}
-            >
-              Главная
-            </button>
             <button
               onClick={() => navigateTo('services')}
               className={`hover:text-white transition-colors ${currentPage === 'services' ? 'text-white font-bold' : ''}`}
@@ -249,6 +679,14 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setIsAccessibilityModalOpen(true)}
+              className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors font-semibold text-xs mr-2"
+            >
+              <Eye className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Слабовидящим</span>
+            </button>
             <div className="relative group/phone">
               <a
                 href="tel:77077111653"
@@ -325,7 +763,7 @@ export default function Header({
       </div>
 
       {/* Row 2: Premium Main Navigation Header */}
-      <header className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
+      <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} ${isScrolled
         ? 'bg-white/97 backdrop-blur-md shadow-md border-b border-gray-200/50 py-2'
         : 'bg-white border-b border-gray-100 py-3.5'
         }`}
@@ -730,107 +1168,7 @@ export default function Header({
             </div>
           )}
 
-          {/* Mobile Navigation Dropdown */}
-          {isMobileMenuOpen && (
-            <div className="pt-4 pb-3 lg:hidden animate-fade-in-up space-y-4 border-t border-gray-100 mt-3 max-h-[80vh] overflow-y-auto">
-              {/* Mobile Search wrapped inside a form with Autocomplete */}
-              <form onSubmit={handleSearchSubmit} className="relative w-full search-form-container px-3">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Поиск товаров..."
-                    value={localSearchQuery}
-                    onChange={handleSearchChange}
-                    onFocus={() => setIsSearchFocused(true)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600 text-sm"
-                  />
-                  <button type="submit" className="absolute left-3 top-3.5 text-gray-400 hover:text-emerald-600 transition-colors">
-                    <Search className="h-5 w-5" />
-                  </button>
-                </div>
 
-                {/* Mobile Autocomplete Dropdown List */}
-                {isSearchFocused && matchedProducts.length > 0 && (
-                  <div className="absolute left-3 right-3 top-full mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xl z-50 py-2.5 max-h-[300px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
-                    <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
-                    {matchedProducts.map(p => (
-                      <div
-                        key={p.id}
-                        onClick={() => {
-                          onNavigate('product', p.id);
-                          setSearchQuery('');
-                          setIsSearchFocused(false);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer transition-all group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                            <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
-                          </div>
-                          <div className="text-left min-w-0">
-                            <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
-                            <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
-                          </div>
-                        </div>
-                        <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
-                          {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </form>
-              <div className="flex flex-col gap-1.5 pt-1">
-                {MOBILE_NAV_ITEMS.map(tab => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      navigateTo(tab.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
-                      ? 'bg-emerald-600/10 text-emerald-700'
-                      : 'text-slate-500 hover:bg-slate-50'
-                      }`}
-                  >
-                    {tab.name}
-                  </button>
-                ))}
-                {customer && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenOrders();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
-                        ? 'bg-emerald-600/10 text-emerald-700'
-                        : 'text-slate-500 hover:bg-slate-50'
-                        }`}
-                    >
-                      Мои заказы
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onNavigate('cashback');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
-                        ? 'bg-amber-500/10 text-amber-700'
-                        : 'text-slate-500 hover:bg-slate-50'
-                        }`}
-                    >
-                      💰 Мой кешбэк
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </header>
     </>

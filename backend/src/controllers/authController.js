@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
+import redisClient from '../config/redis.js';
 
 
 const buildUserPayload = (user) => ({
@@ -73,6 +74,14 @@ export const sendRegisterCode = async (req, res) => {
       return res.status(400).json({ error: 'Пользователь с таким номером телефона уже зарегистрирован' });
     }
 
+    // Check email spam lock in Redis
+    const cleanEmail = email.trim().toLowerCase();
+    const spamKey = `rate-limit:email-otp:${cleanEmail}`;
+    const isSpam = await redisClient.exists(spamKey);
+    if (isSpam) {
+      return res.status(429).json({ error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.' });
+    }
+
     // Generate 6-digit verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -104,6 +113,9 @@ export const sendRegisterCode = async (req, res) => {
       subject: 'Код подтверждения регистрации - TORMAG.KZ',
       html,
     });
+
+    // Set lock in Redis only after email was sent successfully
+    await redisClient.set(spamKey, '1', { EX: 60 });
 
     res.json({ message: 'Код подтверждения регистрации успешно отправлен на вашу почту.' });
   } catch (error) {
@@ -270,6 +282,14 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ error: 'Пользователь с таким email не найден' });
     }
 
+    // Check email spam lock in Redis
+    const cleanEmail = email.trim().toLowerCase();
+    const spamKey = `rate-limit:email-otp:${cleanEmail}`;
+    const isSpam = await redisClient.exists(spamKey);
+    if (isSpam) {
+      return res.status(429).json({ error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.' });
+    }
+
     // Generate 6-digit verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
@@ -301,6 +321,9 @@ export const forgotPassword = async (req, res) => {
       subject: 'Код для восстановления пароля - TORMAG.KZ',
       html,
     });
+
+    // Set lock in Redis only after email was sent successfully
+    await redisClient.set(spamKey, '1', { EX: 60 });
 
     res.json({ message: 'Код подтверждения успешно отправлен на вашу почту.' });
   } catch (error) {
