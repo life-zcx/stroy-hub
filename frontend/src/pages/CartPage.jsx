@@ -428,10 +428,8 @@ export default function CartPage({
         </nav>
 
         {/* Empty Alert (Clean & Borderless design) */}
-        <div className="text-center py-6 space-y-4">
-          <div className="bg-white p-4.5 rounded-full inline-block shadow-sm border border-slate-100">
-            <ShoppingCart className="h-10 w-10 text-slate-300 animate-pulse" />
-          </div>
+        <div className="text-center py-6 space-y-4 flex flex-col items-center justify-center">
+          <ShoppingCart className="h-16 w-16 text-slate-350" />
           <h1 className="text-2xl font-black text-slate-950 font-outfit">В корзине пока пусто</h1>
           <p className="text-slate-550 text-sm max-w-md mx-auto leading-relaxed">
             Выберите качественные стройматериалы на главной витрине или воспользуйтесь каталогом, чтобы добавить товары в корзину.
@@ -455,7 +453,7 @@ export default function CartPage({
               
               {/* Manual Nav controls */}
               {displayItems.length > 4 && (
-                <div className="flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-2">
                   <button 
                     onClick={handlePrev}
                     className="p-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
@@ -473,16 +471,16 @@ export default function CartPage({
             </div>
 
             {/* Sliding Carousel Zone */}
-            <div className="relative overflow-hidden w-full py-4">
+            <div className="relative overflow-x-auto md:overflow-hidden w-full py-4 hide-scrollbar snap-x snap-mandatory scroll-smooth">
               <div 
-                className="flex transition-transform duration-500 ease-out" 
-                style={{ transform: `translateX(-${carouselIndex * 276}px)`, gap: '20px' }}
+                className="flex transition-transform duration-500 ease-out gap-5 max-md:!transform-none" 
+                style={{ transform: `translateX(-${carouselIndex * 276}px)` }}
               >
                 {displayItems.map((prod) => (
                   <div 
                     key={prod.id} 
                     onClick={() => onNavigate('product', prod.id)}
-                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col cursor-pointer hover:border-emerald-500/30"
+                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col cursor-pointer hover:border-emerald-500/30 snap-start snap-always"
                   >
                     <div className="h-32 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative mb-3">
                       {prod.isHit && (
