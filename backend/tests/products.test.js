@@ -1,5 +1,13 @@
 import { jest } from '@jest/globals';
 
+// Мокируем fs, чтобы настройки ценообразования всегда сбрасывались к дефолтным в тестах
+jest.unstable_mockModule('fs', () => ({
+  default: {
+    existsSync: jest.fn().mockReturnValue(false),
+    readFileSync: jest.fn(),
+  }
+}));
+
 // Мокируем Prisma Client и Redis Client
 jest.unstable_mockModule('../src/config/db.js', () => ({
   default: {
@@ -23,11 +31,19 @@ jest.unstable_mockModule('../src/config/db.js', () => ({
     },
     category: {
       findUnique: jest.fn().mockResolvedValue({
-        id: 1,
+        id: 999,
         name: 'Смеси',
         slug: 'mixes',
         children: []
-      })
+      }),
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 999,
+          name: 'Смеси',
+          slug: 'mixes',
+          parentId: null
+        }
+      ])
     }
   }
 }));
@@ -64,8 +80,15 @@ describe('Product API Controllers', () => {
     expect(res.json).toHaveBeenCalled();
     const payload = res.json.mock.calls[0][0];
     expect(payload.total).toBe(1);
-    expect(payload.data[0].wholesalePrice).toBe(2000);
-    // Дефолтная наценка для mixes 15%, значит цена 2000 + 15% = 2300
-    expect(payload.data[0].price).toBe(2300);
+    // Дефолтная наценка (прибыль) для mixes 15%. По новой методологии:
+    // Себестоимость = 2000
+    // Логистика (5%) = +100
+    // Эквайринг (2%) = +40
+    // Кешбек (3%) = +60
+    // Промо (30% x 10%) = +60
+    // Точка безубыточности = 2260
+    // Желаемая прибыль (15%) = +339
+    // Итоговая розница = 2260 + 339 = 2599
+    expect(payload.data[0].price).toBe(2599);
   });
 });

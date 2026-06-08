@@ -424,11 +424,14 @@ export default function ProductsPage({
                             onError={(e) => { e.target.src = 'https://placehold.co/50x50'; }}
                           />
                         </div>
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex flex-col min-w-0 text-left">
                           <span className="truncate font-bold text-slate-900">{product.name}</span>
-                          {product.isHit && (
-                            <span className="text-[8px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded w-fit mt-0.5">ХИТ 🔥</span>
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] text-slate-400 font-bold">ID: {product.id}</span>
+                            {product.isHit && (
+                              <span className="text-[8px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded w-fit">ХИТ 🔥</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

@@ -1,10 +1,17 @@
 {
   "markups": {
-    "mixes": 15,
+    "1": 21,
+    "mixes": 26,
     "lumber": 12,
-    "tools": 20,
+    "tools": 0,
     "paints": 18,
     "hardware": 34
   },
-  "overrides": {}
+  "overrides": {},
+  "logisticsPercent": 5,
+  "acquiringPercent": 2,
+  "cashbackPercent": 3,
+  "promoCoveragePercent": 10,
+  "promoDiscountPercent": 10,
+  "taxPercent": 12
 }

@@ -34,14 +34,26 @@ const DEFAULT_PRICING_SETTINGS = {
     paints: 18,
     hardware: 25
   },
-  overrides: {}
+  overrides: {},
+  logisticsPercent: 5,
+  acquiringPercent: 2,
+  cashbackPercent: 3,
+  promoCoveragePercent: 30,
+  promoDiscountPercent: 10,
+  taxPercent: 0
 };
 
 function readPricingSettings() {
   try {
     if (fs.existsSync(pricingSettingsPath)) {
       const data = fs.readFileSync(pricingSettingsPath, 'utf8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return {
+        ...DEFAULT_PRICING_SETTINGS,
+        ...parsed,
+        markups: { ...DEFAULT_PRICING_SETTINGS.markups, ...(parsed.markups || {}) },
+        overrides: { ...DEFAULT_PRICING_SETTINGS.overrides, ...(parsed.overrides || {}) }
+      };
     }
   } catch (error) {
     console.error('Error reading pricing settings:', error);
@@ -73,13 +85,32 @@ export const getPricingSettings = async (req, res) => {
 };
 
 export const savePricingSettings = async (req, res) => {
-  const { markups, overrides } = req.body;
+  const {
+    markups,
+    overrides,
+    logisticsPercent,
+    acquiringPercent,
+    cashbackPercent,
+    promoCoveragePercent,
+    promoDiscountPercent,
+    taxPercent
+  } = req.body;
   if (!markups || !overrides) {
     return res.status(400).json({ error: 'Необходимо передать markups и overrides' });
   }
   try {
-    const success = writePricingSettings({ markups, overrides });
+    const success = writePricingSettings({
+      markups,
+      overrides,
+      logisticsPercent: logisticsPercent !== undefined ? parseFloat(logisticsPercent) : 5,
+      acquiringPercent: acquiringPercent !== undefined ? parseFloat(acquiringPercent) : 2,
+      cashbackPercent: cashbackPercent !== undefined ? parseFloat(cashbackPercent) : 3,
+      promoCoveragePercent: promoCoveragePercent !== undefined ? parseFloat(promoCoveragePercent) : 30,
+      promoDiscountPercent: promoDiscountPercent !== undefined ? parseFloat(promoDiscountPercent) : 10,
+      taxPercent: taxPercent !== undefined ? parseFloat(taxPercent) : 3
+    });
     if (success) {
+      await clearProductsCache();
       res.json({ message: 'Настройки ценообразования успешно сохранены' });
     } else {
       res.status(500).json({ error: 'Не удалось записать файл настроек' });
@@ -88,6 +119,27 @@ export const savePricingSettings = async (req, res) => {
     res.status(500).json({ error: 'Ошибка сохранения настроек ценообразования: ' + error.message });
   }
 };
+
+export function calculatePriceBottomUp(wholesalePrice, activeMarkup, settings) {
+  const logisticsPercent = settings.logisticsPercent !== undefined ? settings.logisticsPercent : 5;
+  const acquiringPercent = settings.acquiringPercent !== undefined ? settings.acquiringPercent : 2;
+  const cashbackPercent = settings.cashbackPercent !== undefined ? settings.cashbackPercent : 3;
+  const promoCoveragePercent = settings.promoCoveragePercent !== undefined ? settings.promoCoveragePercent : 30;
+  const promoDiscountPercent = settings.promoDiscountPercent !== undefined ? settings.promoDiscountPercent : 10;
+  const taxPercent = settings.taxPercent !== undefined ? settings.taxPercent : 3;
+
+  const logisticsAmount = wholesalePrice * (logisticsPercent / 100);
+  const acquiringAmount = wholesalePrice * (acquiringPercent / 100);
+  const cashbackAmount = wholesalePrice * (cashbackPercent / 100);
+  const promoAmount = wholesalePrice * (promoCoveragePercent / 100) * (promoDiscountPercent / 100);
+  const taxAmount = wholesalePrice * (taxPercent / 100);
+
+  const breakEven = wholesalePrice + logisticsAmount + acquiringAmount + cashbackAmount + promoAmount + taxAmount;
+  const profitAmount = breakEven * (activeMarkup / 100);
+  const retailPrice = breakEven + profitAmount;
+
+  return Math.round(retailPrice);
+}
 
 function parseId(value) {
   const parsed = Number.parseInt(value, 10);
@@ -141,6 +193,29 @@ async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
   }
 
   return { slugs, ids };
+}
+
+export function resolveCategoryMarkup(product, markups, categoryMap, categorySlugMap) {
+  let cat = null;
+  if (product.categoryId) {
+    cat = categoryMap.get(product.categoryId);
+  } else if (product.category) {
+    cat = categorySlugMap.get(product.category);
+  }
+
+  while (cat) {
+    // Check by ID
+    if (markups[cat.id] !== undefined) {
+      return markups[cat.id];
+    }
+    // Check by Slug (backwards compatibility)
+    if (markups[cat.slug] !== undefined) {
+      return markups[cat.slug];
+    }
+    // Traverse up to parent
+    cat = cat.parentId ? categoryMap.get(cat.parentId) : null;
+  }
+  return 15; // default markup
 }
 
 export const getAllProducts = async (req, res) => {
@@ -232,12 +307,16 @@ export const getAllProducts = async (req, res) => {
     const settings = readPricingSettings();
     const { markups, overrides } = settings;
 
+    // Fetch all categories to build fast in-memory maps for hierarchical inheritance resolution
+    const allCats = await prisma.category.findMany();
+    const categoryMap = new Map(allCats.map(c => [c.id, c]));
+    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+
     const mappedProducts = products.map(p => {
       const wholesalePrice  = p.price;
-      const categoryMarkup  = markups[p.category] !== undefined ? markups[p.category] : 15;
+      const categoryMarkup  = resolveCategoryMarkup(p, markups, categoryMap, categorySlugMap);
       const activeMarkup    = overrides[p.id]     !== undefined ? overrides[p.id]     : categoryMarkup;
-      const markupValue     = wholesalePrice * (activeMarkup / 100);
-      const retailPrice     = wholesalePrice + markupValue;
+      const retailPrice     = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
 
       const effectiveCashback = p.cashbackPercent ?? p.categoryRelation?.cashbackPercent ?? 3;
 
@@ -245,7 +324,7 @@ export const getAllProducts = async (req, res) => {
         ...p,
         wholesalePrice,
         price:    retailPrice,
-        oldPrice: p.oldPrice ? p.oldPrice + p.oldPrice * (activeMarkup / 100) : null,
+        oldPrice: p.oldPrice ? calculatePriceBottomUp(p.oldPrice, activeMarkup, settings) : null,
         cashbackPercent: effectiveCashback,
       };
     });
@@ -291,11 +370,14 @@ export const getProductById = async (req, res) => {
     const settings = readPricingSettings();
     const { markups, overrides } = settings;
 
+    const allCats = await prisma.category.findMany();
+    const categoryMap = new Map(allCats.map(c => [c.id, c]));
+    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+
     const wholesalePrice = product.price;
-    const categoryMarkup = markups[product.category] !== undefined ? markups[product.category] : 15;
+    const categoryMarkup = resolveCategoryMarkup(product, markups, categoryMap, categorySlugMap);
     const activeMarkup = overrides[product.id] !== undefined ? overrides[product.id] : categoryMarkup;
-    const markupValue = wholesalePrice * (activeMarkup / 100);
-    const retailPrice = wholesalePrice + markupValue;
+    const retailPrice = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
 
     const effectiveCashback = product.cashbackPercent ?? product.categoryRelation?.cashbackPercent ?? 3;
 
@@ -303,7 +385,7 @@ export const getProductById = async (req, res) => {
       ...product,
       wholesalePrice,
       price: retailPrice,
-      oldPrice: product.oldPrice ? product.oldPrice + product.oldPrice * (activeMarkup / 100) : null,
+      oldPrice: product.oldPrice ? calculatePriceBottomUp(product.oldPrice, activeMarkup, settings) : null,
       cashbackPercent: effectiveCashback
     };
 

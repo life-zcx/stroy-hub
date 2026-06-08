@@ -111,11 +111,6 @@ export default function ProductCard({
                 +{formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100))}
               </span>
             </div>
-            {product.bulkDiscount && (
-              <div className="text-[10px] text-emerald-700 font-semibold mt-1 bg-emerald-50 inline-block px-1.5 py-0.5 rounded">
-                {product.bulkDiscount}
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-[1fr_auto] gap-2">

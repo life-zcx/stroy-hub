@@ -280,12 +280,6 @@ export default function ProductPage({
               <div className="flex flex-wrap items-end gap-2 mb-4">
                 <span className="text-4xl font-black text-slate-950 font-outfit">{formatPrice(product.price)}</span>
                 <span className="text-sm text-slate-400 pb-1">/ шт</span>
-                {product.bulkDiscount && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full mb-1">
-                    <Tag className="h-3 w-3" />
-                    {product.bulkDiscount}
-                  </span>
-                )}
               </div>
               <button
                 type="button"

@@ -137,12 +137,6 @@ export default function ProductModal({ product, onClose, onAddToCart, onOpenDeta
                   Склад: <strong className="text-slate-700 ml-1">Алматы</strong>
                   <span className="text-emerald-600 font-bold ml-1">· РК ✓</span>
                 </div>
-                {product.bulkDiscount && (
-                  <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-xl px-2.5 py-1.5 border border-emerald-100">
-                    <Tag className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="font-semibold">{product.bulkDiscount}</span>
-                  </div>
-                )}
               </div>
 
               {/* Price */}

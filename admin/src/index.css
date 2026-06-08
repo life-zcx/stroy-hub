@@ -54,3 +54,91 @@
 .animate-fade-in-up {
   animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Custom Range Sliders */
+input[type="range"].custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="range"].custom-slider::-webkit-slider-runnable-track {
+  background: #e2e8f0;
+  height: 6px;
+  border-radius: 999px;
+}
+
+input[type="range"].custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  background-color: #0f172a;
+  height: 16px;
+  width: 16px;
+  border-radius: 999px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+input[type="range"].custom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background-color: #000;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+input[type="range"].custom-slider.slider-emerald::-webkit-slider-runnable-track {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+input[type="range"].custom-slider.slider-emerald::-webkit-slider-thumb {
+  background-color: #059669;
+}
+
+input[type="range"].custom-slider.slider-emerald::-webkit-slider-thumb:hover {
+  background-color: #047857;
+}
+
+/* Tooltips */
+.has-tooltip {
+  position: relative;
+}
+
+.tooltip-box {
+  visibility: hidden;
+  position: absolute;
+  z-index: 50;
+  bottom: 110%;
+  right: 0;
+  width: 240px;
+  background-color: #0f172a;
+  color: #cbd5e1;
+  text-align: left;
+  border-radius: 14px;
+  padding: 12px 14px;
+  opacity: 0;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  transform: translateY(4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+  pointer-events: none;
+}
+
+.has-tooltip:hover .tooltip-box {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+
