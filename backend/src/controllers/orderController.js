@@ -109,7 +109,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const normalizedItems = [];
+    let normalizedItems = [];
 
     for (const item of items) {
       const productId = Number.parseInt(item.productId, 10);
@@ -132,6 +132,11 @@ export const createOrder = async (req, res) => {
     }
 
     const evaluationContext = await buildEvaluationContext(normalizedItems);
+    normalizedItems = evaluationContext.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+    }));
     const subtotalAmount = evaluationContext.subtotalAmount;
 
     const normalizedPromoCode = normalizePromoCode(promoCode);
@@ -558,7 +563,7 @@ export const updateOrder = async (req, res) => {
           throw new Error('Некоторые товары не найдены в базе данных.');
         }
 
-        const normalizedItems = items.map((item) => {
+        let normalizedItems = items.map((item) => {
           const product = existingProducts.find((p) => p.id === parseInt(item.productId, 10));
           return {
             productId: product.id,
@@ -569,6 +574,11 @@ export const updateOrder = async (req, res) => {
 
         // Recalculate price details
         const evaluationContext = await buildEvaluationContext(normalizedItems);
+        normalizedItems = evaluationContext.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        }));
         const subtotalAmount = evaluationContext.subtotalAmount;
 
         let finalDiscount = 0;

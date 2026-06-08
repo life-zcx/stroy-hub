@@ -275,7 +275,7 @@ export default function ProductsPage({
                   ) : (
                     <div>
                       <p className="text-xs font-bold text-slate-700">Нажмите для выбора файла</p>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Поддерживаются XLSX, XLS, CSV</p>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Поддерживаются XLSX и CSV</p>
                     </div>
                   )}
                 </div>
@@ -283,7 +283,7 @@ export default function ProductsPage({
                   type="file"
                   ref={fileInputRef}
                   onChange={(e) => setSelectedFile(e.target.files[0])}
-                  accept=".xlsx, .xls, .csv"
+                  accept=".xlsx, .csv"
                   className="hidden"
                 />
               </div>

@@ -1,9 +1,14 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seed is disabled in production because it clears data and creates demo accounts.');
+  }
+
   console.log('Посев данных (seeding)...');
 
   // Очистка БД
@@ -36,10 +41,15 @@ async function main() {
   // Создаем пользователей
   console.log('Создание тестовых учетных записей...');
 
-  const adminPassword = await bcrypt.hash('123', 10);
-  const boschPassword = await bcrypt.hash('123', 10);
-  const knaufPassword = await bcrypt.hash('123', 10);
-  const customerPassword = await bcrypt.hash('123', 10);
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'dev-password-change-me';
+  if (!process.env.SEED_DEFAULT_PASSWORD) {
+    console.warn('SEED_DEFAULT_PASSWORD не задан. Используется dev-only пароль для локальной разработки.');
+  }
+
+  const adminPassword = await bcrypt.hash(seedPassword, 10);
+  const boschPassword = await bcrypt.hash(seedPassword, 10);
+  const knaufPassword = await bcrypt.hash(seedPassword, 10);
+  const customerPassword = await bcrypt.hash(seedPassword, 10);
 
   // 1. Администратор платформы
   await prisma.user.create({

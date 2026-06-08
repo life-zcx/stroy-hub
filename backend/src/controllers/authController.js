@@ -4,6 +4,7 @@ import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
+import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 
 
 const buildUserPayload = (user) => ({
@@ -190,15 +191,14 @@ export const register = async (req, res) => {
     // Delete token
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role, supplierId: newUser.supplierId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    setAuthCookie(res, token);
 
     res.status(201).json({
-      token,
       user: buildUserPayload(newUser),
     });
   } catch (error) {
@@ -233,20 +233,24 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, supplierId: user.supplierId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    setAuthCookie(res, token);
 
     res.json({
-      token,
       user: buildUserPayload(user),
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка входа: ' + error.message });
   }
+};
+
+export const logout = async (req, res) => {
+  clearAuthCookie(res);
+  res.json({ message: 'Вы успешно вышли из системы.' });
 };
 
 export const getProfile = async (req, res) => {

@@ -33,8 +33,9 @@ const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .filter(Boolean);
 
 const corsOptions = {
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
   origin(origin, callback) {
     if (!origin) {
       callback(null, true);
@@ -65,6 +66,20 @@ app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+
+  res.json = (body) => {
+    if (isProduction && res.statusCode >= 500 && body && typeof body === 'object' && 'error' in body) {
+      return originalJson({ error: 'Внутренняя ошибка сервера.' });
+    }
+
+    return originalJson(body);
+  };
+
+  next();
+});
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -166,7 +181,7 @@ app.use((err, req, res, next) => {
     method: req.method,
     url: req.originalUrl,
   });
-  res.status(500).json({ error: 'Внутренняя ошибка сервера: ' + err.message });
+  res.status(500).json({ error: isProduction ? 'Внутренняя ошибка сервера.' : 'Внутренняя ошибка сервера: ' + err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

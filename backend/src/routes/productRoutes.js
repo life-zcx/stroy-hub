@@ -4,6 +4,7 @@ import {
   getPricingSettings, savePricingSettings, importProductsXlsx, matchEstimateXlsx
 } from '../controllers/productController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
+import { estimateUploadRateLimiter } from '../middleware/rateLimiter.js';
 import { imageUpload, excelUpload } from '../config/upload.js';
 
 const router = express.Router();
@@ -14,7 +15,7 @@ router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePrici
 
 // Public endpoints
 router.get('/', getAllProducts);
-router.post('/match-estimate', excelUpload.single('file'), matchEstimateXlsx);
+router.post('/match-estimate', verifyToken, estimateUploadRateLimiter, excelUpload.single('file'), matchEstimateXlsx);
 router.get('/:id', getProductById);
 
 // Bulk product imports

@@ -10,6 +10,7 @@ import {
   PROMOTION_SCOPES,
   PROMOTION_THEMES,
 } from '../utils/promotionUtils.js';
+import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
 
 function parseFloatOrNull(value) {
   if (value === '' || value === null || value === undefined) {
@@ -135,10 +136,16 @@ async function buildEvaluationContext(items, subtotalAmount) {
       price: true,
       categoryId: true,
       category: true,
+      cashbackPercent: true,
     },
   });
 
-  const productsMap = new Map(products.map((product) => [product.id, product]));
+  const settings = readPricingSettings();
+  const categories = await prisma.category.findMany();
+  const categoryMap = new Map(categories.map((category) => [category.id, category]));
+  const categorySlugMap = new Map(categories.map((category) => [category.slug, category]));
+  const pricedProducts = products.map((product) => applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap));
+  const productsMap = new Map(pricedProducts.map((product) => [product.id, product]));
   const evaluationItems = [];
   let computedSubtotalAmount = 0;
 

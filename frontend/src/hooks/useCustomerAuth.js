@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getProfile, login, register, forgotPassword, resetPassword, sendRegisterCode } from '../services/api';
+import { getProfile, login, logout, register, forgotPassword, resetPassword, sendRegisterCode } from '../services/api';
 
 export default function useCustomerAuth(showToast) {
   const [customer, setCustomer] = useState(null);
@@ -14,7 +14,7 @@ export default function useCustomerAuth(showToast) {
   const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [isAuthChecking, setIsAuthChecking] = useState(!!localStorage.getItem('tormag_customer_token'));
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   useEffect(() => {
     let interval;
@@ -93,18 +93,12 @@ export default function useCustomerAuth(showToast) {
 
   useEffect(() => {
     const checkCustomerAuth = async () => {
-      const token = localStorage.getItem('tormag_customer_token');
-      if (token) {
-        try {
-          const profile = await getProfile();
-          setCustomer(profile);
-        } catch (error) {
-          console.error('Invalid customer token:', error);
-          localStorage.removeItem('tormag_customer_token');
-        } finally {
-          setIsAuthChecking(false);
-        }
-      } else {
+      try {
+        const profile = await getProfile();
+        setCustomer(profile);
+      } catch (error) {
+        setCustomer(null);
+      } finally {
         setIsAuthChecking(false);
       }
     };
@@ -130,7 +124,6 @@ export default function useCustomerAuth(showToast) {
     try {
       if (authTab === 'login') {
         const data = await login(authEmail, authPassword);
-        localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.(`👋 Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
         setAuthModalOpen(false);
@@ -180,7 +173,6 @@ export default function useCustomerAuth(showToast) {
           code: authResetCode,
         };
         const data = await register(payload);
-        localStorage.setItem('tormag_customer_token', data.token);
         setCustomer(data.user);
         showToast?.('🎉 Регистрация успешно завершена!');
         setAuthModalOpen(false);
@@ -206,7 +198,7 @@ export default function useCustomerAuth(showToast) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('tormag_customer_token');
+    logout().catch(() => {});
     setCustomer(null);
     showToast?.('🚪 Вы успешно вышли из профиля.');
   };

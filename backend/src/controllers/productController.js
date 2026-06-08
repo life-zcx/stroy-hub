@@ -1,5 +1,5 @@
 import prisma from '../config/db.js';
-import xlsx from 'xlsx';
+import readXlsxFile from 'read-excel-file/node';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -25,6 +25,96 @@ const __dirname = path.dirname(__filename);
 // Helper path to store pricing settings
 const pricingSettingsPath = path.join(__dirname, '..', 'config', 'pricing_settings.json');
 
+function normalizeSpreadsheetCell(value) {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value !== 'object') return value;
+  if ('result' in value) return normalizeSpreadsheetCell(value.result);
+  if ('text' in value) return value.text;
+  if ('richText' in value && Array.isArray(value.richText)) {
+    return value.richText.map((part) => part.text || '').join('');
+  }
+  if ('hyperlink' in value && 'text' in value) return value.text;
+  return String(value);
+}
+
+function detectCsvDelimiter(text) {
+  const firstLine = text.split(/\r?\n/, 1)[0] || '';
+  const candidates = [',', ';', '\t'];
+  return candidates
+    .map((delimiter) => ({ delimiter, count: firstLine.split(delimiter).length }))
+    .sort((a, b) => b.count - a.count)[0].delimiter;
+}
+
+function parseCsvRows(buffer) {
+  const text = buffer.toString('utf8').replace(/^\uFEFF/, '');
+  const delimiter = detectCsvDelimiter(text);
+  const rows = [];
+  let row = [];
+  let value = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    const nextChar = text[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        value += '"';
+        index++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      row.push(value.trim());
+      value = '';
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && nextChar === '\n') index++;
+      row.push(value.trim());
+      if (row.some((cell) => cell !== '')) rows.push(row);
+      row = [];
+      value = '';
+      continue;
+    }
+
+    value += char;
+  }
+
+  row.push(value.trim());
+  if (row.some((cell) => cell !== '')) rows.push(row);
+
+  return rows;
+}
+
+async function readSpreadsheetRows(file) {
+  const extension = path.extname(file.originalname || '').toLowerCase();
+
+  if (extension === '.csv') {
+    return parseCsvRows(file.buffer);
+  }
+
+  const rows = await readXlsxFile(file.buffer);
+  return rows
+    .map((row) => row.map(normalizeSpreadsheetCell))
+    .filter((row) => row.some((value) => value !== null && String(value).trim() !== ''));
+}
+
+function rowsToObjects(rows) {
+  if (rows.length < 2) return [];
+
+  const headers = rows[0].map((value) => String(value || '').trim());
+  return rows.slice(1).map((row) => headers.reduce((entry, header, index) => {
+    if (header) entry[header] = row[index] ?? null;
+    return entry;
+  }, {}));
+}
+
 // Default pricing settings
 const DEFAULT_PRICING_SETTINGS = {
   markups: {
@@ -43,7 +133,7 @@ const DEFAULT_PRICING_SETTINGS = {
   taxPercent: 0
 };
 
-function readPricingSettings() {
+export function readPricingSettings() {
   try {
     if (fs.existsSync(pricingSettingsPath)) {
       const data = fs.readFileSync(pricingSettingsPath, 'utf8');
@@ -218,6 +308,23 @@ export function resolveCategoryMarkup(product, markups, categoryMap, categorySlu
   return 15; // default markup
 }
 
+export function applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap) {
+  const { markups, overrides } = settings;
+  const wholesalePrice = product.price;
+  const categoryMarkup = resolveCategoryMarkup(product, markups, categoryMap, categorySlugMap);
+  const activeMarkup = overrides[product.id] !== undefined ? overrides[product.id] : categoryMarkup;
+  const retailPrice = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
+  const effectiveCashback = product.cashbackPercent ?? product.categoryRelation?.cashbackPercent ?? 3;
+
+  return {
+    ...product,
+    wholesalePrice,
+    price: retailPrice,
+    oldPrice: product.oldPrice ? calculatePriceBottomUp(product.oldPrice, activeMarkup, settings) : null,
+    cashbackPercent: effectiveCashback,
+  };
+}
+
 export const getAllProducts = async (req, res) => {
   const {
     category,
@@ -305,29 +412,12 @@ export const getAllProducts = async (req, res) => {
     ]);
 
     const settings = readPricingSettings();
-    const { markups, overrides } = settings;
-
     // Fetch all categories to build fast in-memory maps for hierarchical inheritance resolution
     const allCats = await prisma.category.findMany();
     const categoryMap = new Map(allCats.map(c => [c.id, c]));
     const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
 
-    const mappedProducts = products.map(p => {
-      const wholesalePrice  = p.price;
-      const categoryMarkup  = resolveCategoryMarkup(p, markups, categoryMap, categorySlugMap);
-      const activeMarkup    = overrides[p.id]     !== undefined ? overrides[p.id]     : categoryMarkup;
-      const retailPrice     = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
-
-      const effectiveCashback = p.cashbackPercent ?? p.categoryRelation?.cashbackPercent ?? 3;
-
-      return {
-        ...p,
-        wholesalePrice,
-        price:    retailPrice,
-        oldPrice: p.oldPrice ? calculatePriceBottomUp(p.oldPrice, activeMarkup, settings) : null,
-        cashbackPercent: effectiveCashback,
-      };
-    });
+    const mappedProducts = products.map((product) => applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap));
 
     const result = {
       data:       mappedProducts,
@@ -368,26 +458,11 @@ export const getProductById = async (req, res) => {
     }
 
     const settings = readPricingSettings();
-    const { markups, overrides } = settings;
-
     const allCats = await prisma.category.findMany();
     const categoryMap = new Map(allCats.map(c => [c.id, c]));
     const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
 
-    const wholesalePrice = product.price;
-    const categoryMarkup = resolveCategoryMarkup(product, markups, categoryMap, categorySlugMap);
-    const activeMarkup = overrides[product.id] !== undefined ? overrides[product.id] : categoryMarkup;
-    const retailPrice = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
-
-    const effectiveCashback = product.cashbackPercent ?? product.categoryRelation?.cashbackPercent ?? 3;
-
-    const mappedProduct = {
-      ...product,
-      wholesalePrice,
-      price: retailPrice,
-      oldPrice: product.oldPrice ? calculatePriceBottomUp(product.oldPrice, activeMarkup, settings) : null,
-      cashbackPercent: effectiveCashback
-    };
+    const mappedProduct = applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap);
 
     await redisClient.set(cacheKey, JSON.stringify(mappedProduct), { EX: 1800 });
     res.json(mappedProduct);
@@ -585,7 +660,7 @@ export const deleteProduct = async (req, res) => {
 
 export const importProductsXlsx = async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'Пожалуйста, загрузите файл Excel (.xlsx, .xls) или .csv' });
+    return res.status(400).json({ error: 'Пожалуйста, загрузите файл Excel (.xlsx) или .csv' });
   }
 
   const requesterSupplierId = getRequesterSupplierId(req);
@@ -597,10 +672,8 @@ export const importProductsXlsx = async (req, res) => {
   }
 
   try {
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = xlsx.utils.sheet_to_json(sheet);
+    const spreadsheetRows = await readSpreadsheetRows(req.file);
+    const rows = rowsToObjects(spreadsheetRows);
 
     if (rows.length === 0) {
       return res.status(400).json({ error: 'Файл пуст или содержит некорректные данные' });
@@ -782,10 +855,7 @@ export const matchEstimateXlsx = async (req, res) => {
       return res.status(400).json({ error: 'Файл не загружен' });
     }
 
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const rows = await readSpreadsheetRows(req.file);
 
     if (!rows || rows.length === 0) {
       return res.status(400).json({ error: 'Файл пустой' });
@@ -841,10 +911,18 @@ export const matchEstimateXlsx = async (req, res) => {
         oldPrice: true,
         image: true,
         category: true,
+        categoryId: true,
+        cashbackPercent: true,
         isHit: true,
         rating: true
       }
     });
+
+    const settings = readPricingSettings();
+    const allCats = await prisma.category.findMany();
+    const categoryMap = new Map(allCats.map(c => [c.id, c]));
+    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+    const pricedProducts = allProducts.map((product) => applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap));
 
     const cleanName = (str) => {
       if (!str) return '';
@@ -898,7 +976,7 @@ export const matchEstimateXlsx = async (req, res) => {
       }
 
       // Score all products
-      const scoredProducts = allProducts.map(p => {
+      const scoredProducts = pricedProducts.map(p => {
         const productTokens = tokenize(p.name);
         
         let matchedTokensCount = 0;

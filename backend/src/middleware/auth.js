@@ -1,16 +1,12 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
+import { getTokenFromRequest } from '../utils/authCookie.js';
 
 export const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Доступ запрещен. Отсутствует авторизационный токен.' });
-  }
-
-  const token = authHeader.split(' ')[1];
+  const token = getTokenFromRequest(req);
   if (!token) {
-    return res.status(401).json({ error: 'Неверный формат токена. Используйте Bearer <token>' });
+    return res.status(401).json({ error: 'Доступ запрещен. Отсутствует авторизационный токен.' });
   }
 
   try {

@@ -2,38 +2,20 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Auto-inject JWT Customer token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('tormag_customer_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Auto-logout if token is expired (401 Unauthorized)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      const token = localStorage.getItem('tormag_customer_token');
-      if (token) {
-        localStorage.removeItem('tormag_customer_token');
-        window.location.reload();
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
 // Auth API
 export const login = async (email, password) => {
   const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+export const logout = async () => {
+  const response = await api.post('/auth/logout');
   return response.data;
 };
 

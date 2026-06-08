@@ -252,6 +252,8 @@ export default function App() {
             onAddToCart={cart.handleAddToCart}
             onNavigate={setCurrentPage}
             showToast={showToast}
+            customer={auth.customer}
+            onRequireAuth={auth.openLoginModal}
           />
         )}
         {currentPage === 'delivery' && <Delivery />}

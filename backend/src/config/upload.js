@@ -44,15 +44,16 @@ export const imageUpload = multer({
 
 const allowedExcelMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
   'text/csv',
-  'application/octet-stream', // sometimes windows returns this for csv/xlsx
+  'application/csv',
+  'application/octet-stream', // some clients send this for csv/xlsx; extension is still checked below
 ]);
 
 function excelFileFilter(req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (!allowedExcelMimeTypes.has(file.mimetype) && ext !== '.xlsx' && ext !== '.xls' && ext !== '.csv') {
-    cb(new Error('Недопустимый формат файла. Разрешены только XLSX, XLS и CSV.'));
+  const allowedExtension = ext === '.xlsx' || ext === '.csv';
+  if (!allowedExtension || !allowedExcelMimeTypes.has(file.mimetype)) {
+    cb(new Error('Недопустимый формат файла. Разрешены только XLSX и CSV.'));
     return;
   }
   cb(null, true);

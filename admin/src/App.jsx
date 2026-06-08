@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
-import { getProfile } from './services/api';
+import { getProfile, logout as logoutApi } from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
@@ -10,24 +10,13 @@ export default function App() {
   const [toast, setToast] = useState(null);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('tormag_admin_token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const profile = await getProfile();
       if (profile.role === 'ADMIN' || profile.role === 'SUPPLIER') {
         setUser(profile);
-      } else {
-        localStorage.removeItem('tormag_admin_token');
-        localStorage.removeItem('tormag_admin_user');
       }
     } catch (error) {
-      console.error('Ошибка проверки токена:', error);
-      localStorage.removeItem('tormag_admin_token');
-      localStorage.removeItem('tormag_admin_user');
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -43,8 +32,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('tormag_admin_token');
-    localStorage.removeItem('tormag_admin_user');
+    logoutApi().catch(() => {});
     setUser(null);
     showToast('🚪 Вы успешно вышли из панели управления.');
   };

@@ -6,7 +6,7 @@ import {
 import { matchEstimate } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 
-export default function EstimatePage({ onAddToCart, onNavigate, showToast }) {
+export default function EstimatePage({ onAddToCart, onNavigate, showToast, customer, onRequireAuth }) {
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,10 +34,10 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast }) {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const ext = droppedFile.name.split('.').pop().toLowerCase();
-      if (['xlsx', 'xls', 'csv'].includes(ext)) {
+      if (['xlsx', 'csv'].includes(ext)) {
         await processFile(droppedFile);
       } else {
-        showToast({ title: 'Ошибка', message: 'Пожалуйста, загрузите файл Excel (.xlsx, .xls) или .csv', type: 'error' });
+        showToast({ title: 'Ошибка', message: 'Пожалуйста, загрузите файл Excel (.xlsx) или .csv', type: 'error' });
       }
     }
   };
@@ -49,6 +49,12 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast }) {
   };
 
   const processFile = async (selectedFile) => {
+    if (!customer) {
+      showToast({ title: 'Требуется вход', message: 'Войдите в профиль, чтобы загрузить и обработать смету.', type: 'warning' });
+      onRequireAuth?.();
+      return;
+    }
+
     setFile(selectedFile);
     setLoading(true);
     setError(null);
@@ -201,7 +207,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast }) {
               ref={fileInputRef}
               type="file" 
               className="hidden" 
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.csv"
               onChange={handleFileChange}
             />
 
@@ -211,7 +217,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast }) {
               </div>
               <div>
                 <p className="text-base font-bold text-slate-800">Перетащите файл сюда или выберите на компьютере</p>
-                <p className="mt-1.5 text-xs text-slate-400 font-semibold">Поддерживаются форматы Excel (.xlsx, .xls) и CSV до 10 МБ</p>
+                <p className="mt-1.5 text-xs text-slate-400 font-semibold">Поддерживаются форматы Excel (.xlsx) и CSV до 10 МБ</p>
               </div>
             </div>
 

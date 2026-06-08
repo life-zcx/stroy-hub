@@ -4,8 +4,8 @@ import { login } from '../services/api';
 import logoImg from '../tormag.png';
 
 export default function Login({ onAuthSuccess }) {
-  const [email, setEmail] = useState('admin@tormag.kz');
-  const [password, setPassword] = useState('123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -25,9 +25,6 @@ export default function Login({ onAuthSuccess }) {
         throw new Error('Доступ запрещен. У вас нет прав администратора или дистрибьютора.');
       }
 
-      localStorage.setItem('tormag_admin_token', data.token);
-      localStorage.setItem('tormag_admin_user', JSON.stringify(data.user));
-      
       onAuthSuccess(data.user);
     } catch (err) {
       console.error(err);

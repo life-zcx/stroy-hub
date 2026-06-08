@@ -1,18 +1,23 @@
 import redisClient from '../config/redis.js';
 
-export const registerRateLimiter = async (req, res, next) => {
-  const { email } = req.body;
-  if (!email) {
-    return next();
-  }
-
-  // Get client IP address (taking proxy headers into account)
+function getClientIp(req) {
   let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   if (Array.isArray(ip)) {
     ip = ip[0];
   } else if (typeof ip === 'string') {
     ip = ip.split(',')[0].trim();
   }
+
+  return ip || 'unknown';
+}
+
+export const registerRateLimiter = async (req, res, next) => {
+  const { email } = req.body;
+  if (!email) {
+    return next();
+  }
+
+  const ip = getClientIp(req);
 
   try {
     const key = `rate-limit:register-emails:${ip}`;
@@ -44,12 +49,7 @@ export const registerRateLimiter = async (req, res, next) => {
 };
 
 export const loginRateLimiter = async (req, res, next) => {
-  let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  if (Array.isArray(ip)) {
-    ip = ip[0];
-  } else if (typeof ip === 'string') {
-    ip = ip.split(',')[0].trim();
-  }
+  const ip = getClientIp(req);
 
   try {
     const key = `rate-limit:login-attempts:${ip}`;
@@ -70,6 +70,30 @@ export const loginRateLimiter = async (req, res, next) => {
   } catch (error) {
     console.error('[Login Rate Limiter Error]', error);
     next();
+  }
+};
+
+export const estimateUploadRateLimiter = async (req, res, next) => {
+  const actor = req.user?.id ? `user:${req.user.id}` : `ip:${getClientIp(req)}`;
+
+  try {
+    const key = `rate-limit:estimate-upload:${actor}`;
+    const count = await redisClient.incr(key);
+
+    if (count === 1) {
+      await redisClient.expire(key, 10 * 60);
+    }
+
+    if (count > 5) {
+      return res.status(429).json({
+        error: 'Слишком много загрузок смет. Пожалуйста, попробуйте снова через 10 минут.',
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('[Estimate Rate Limiter Error]', error);
+    res.status(503).json({ error: 'Сервис временно недоступен. Попробуйте позже.' });
   }
 };
 

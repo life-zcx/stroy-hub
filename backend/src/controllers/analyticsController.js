@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
+import { getTokenFromRequest } from '../utils/authCookie.js';
 
 const MAX_PATH_LENGTH = 500;
 const MAX_TITLE_LENGTH = 200;
@@ -25,8 +26,7 @@ function getClientIp(req) {
 }
 
 function getUserIdFromToken(req) {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = getTokenFromRequest(req);
   if (!token) return null;
 
   try {
