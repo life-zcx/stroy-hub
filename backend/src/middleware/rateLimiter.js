@@ -84,7 +84,7 @@ export const estimateUploadRateLimiter = async (req, res, next) => {
       await redisClient.expire(key, 10 * 60);
     }
 
-    if (count > 5) {
+    if (count > 30) {
       return res.status(429).json({
         error: 'Слишком много загрузок смет. Пожалуйста, попробуйте снова через 10 минут.',
       });
