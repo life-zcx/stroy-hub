@@ -58,7 +58,7 @@ jest.unstable_mockModule('../src/config/redis.js', () => ({
 }));
 
 // Импортируем тестируемый контроллер
-const { getAllProducts } = await import('../src/controllers/productController.js');
+const { getAllProducts, matchEstimateXlsx } = await import('../src/controllers/productController.js');
 
 describe('Product API Controllers', () => {
   it('should fetch and map products with default markup', async () => {
@@ -90,5 +90,31 @@ describe('Product API Controllers', () => {
     // Желаемая прибыль (15%) = +339
     // Итоговая розница = 2260 + 339 = 2599
     expect(payload.data[0].price).toBe(2599);
+  });
+
+  it('should match estimate rows from csv upload', async () => {
+    const req = {
+      user: { id: 1 },
+      file: {
+        originalname: 'estimate.csv',
+        mimetype: 'text/csv',
+        buffer: Buffer.from('Наименование;Количество\nТестовый цемент;2', 'utf8'),
+      },
+    };
+
+    const res = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis()
+    };
+
+    await matchEstimateXlsx(req, res);
+
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalled();
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.success).toBe(true);
+    expect(payload.summary.totalRows).toBe(1);
+    expect(payload.items[0].matchedProduct.name).toBe('Тестовый цемент');
+    expect(payload.items[0].matchedProduct.price).toBe(2599);
   });
 });

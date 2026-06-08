@@ -1,5 +1,5 @@
 import prisma from '../config/db.js';
-import readXlsxFile from 'read-excel-file/node';
+import XlsxPopulate from 'xlsx-populate';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -99,7 +99,10 @@ async function readSpreadsheetRows(file) {
     return parseCsvRows(file.buffer);
   }
 
-  const rows = await readXlsxFile(file.buffer);
+  const workbook = await XlsxPopulate.fromDataAsync(file.buffer);
+  const sheet = workbook.sheets()[0];
+  const range = sheet?.usedRange();
+  const rows = range ? range.value() : [];
   return rows
     .map((row) => row.map(normalizeSpreadsheetCell))
     .filter((row) => row.some((value) => value !== null && String(value).trim() !== ''));
@@ -1045,6 +1048,13 @@ export const matchEstimateXlsx = async (req, res) => {
     });
 
   } catch (error) {
+    logger.error('Estimate matching failed', {
+      error: error.message,
+      stack: error.stack,
+      fileName: req.file?.originalname || null,
+      fileMimeType: req.file?.mimetype || null,
+      userId: req.user?.id || null,
+    });
     res.status(500).json({ error: 'Ошибка сопоставления сметы: ' + error.message });
   }
 };
