@@ -12,13 +12,16 @@ export default function useCart(showToast) {
     localStorage.setItem('tormag_cart', JSON.stringify(cart));
   }, [cart]);
 
-  const handleAddToCart = (product) => {
+  const handleAddToCart = (product, quantity = 1) => {
+    const quantityToAdd = Math.max(1, Number.parseInt(quantity, 10) || 1);
+
     trackEvent('add_to_cart', {
       productId: product.id,
-      value: product.price,
+      value: product.price * quantityToAdd,
       metadata: {
         name: product.name,
         category: product.category,
+        quantity: quantityToAdd,
       },
     });
 
@@ -26,12 +29,12 @@ export default function useCart(showToast) {
       const exists = prev.find(item => item.id === product.id);
       if (exists) {
         return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: quantityToAdd }];
     });
-    showToast?.(`🛒 «${product.name}» добавлен в корзину`);
+    showToast?.(`🛒 «${product.name}» добавлен в корзину (${quantityToAdd} шт)`);
   };
 
   const handleUpdateQuantity = (id, delta) => {

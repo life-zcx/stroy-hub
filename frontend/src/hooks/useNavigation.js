@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 const KNOWN_PAGES = [
-  'catalog', 'advisor', 'delivery', 'about', 'legal', 'favorites',
+  'catalog', 'advisor', 'estimate', 'delivery', 'about', 'legal', 'favorites',
   'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions', 'my-promotions', 'cart', 'cashback'
 ];
 
