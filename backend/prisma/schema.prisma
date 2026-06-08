@@ -94,6 +94,8 @@ model Product {
   categoryId     Int?
   categoryRelation Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   reviewsList    Review[]
+  cashbackPercent Int?
+  article        String?
 }
 
 model Category {
@@ -106,6 +108,7 @@ model Category {
   children  Category[] @relation("CategoryHierarchy")
   products  Product[]
   createdAt DateTime   @default(now())
+  cashbackPercent Int?
 }
 
 model Order {

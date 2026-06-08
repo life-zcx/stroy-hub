@@ -16,10 +16,9 @@ import ProductsPage from './dashboard/pages/ProductsPage';
 import SuppliersPage from './dashboard/pages/SuppliersPage';
 import UsersPage from './dashboard/pages/UsersPage';
 import PricingPage from './dashboard/pages/PricingPage';
-import LogisticsPage from './dashboard/pages/LogisticsPage';
 import AnalyticsPage from './dashboard/pages/AnalyticsPage';
-import SiteAnalyticsPage from './dashboard/pages/SiteAnalyticsPage';
 import ReviewsPage from './dashboard/pages/ReviewsPage';
+import CashbackSettingsPage from './dashboard/pages/CashbackSettingsPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
@@ -32,18 +31,16 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['products', 'orders', 'pricing', 'logistics', 'analytics', 'site-analytics', 'promotions', 'review-promos', 'brands', 'reviews', 'callbacks', 'partners', 'categories', 'suppliers', 'users'];
+const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
   products: 'Управление товарами',
   orders: 'Заказы и продажи',
   pricing: 'Ценообразование и Маржа',
-  logistics: 'Оптимизация сборной доставки',
   analytics: 'Аналитика и Отчеты',
-  'site-analytics': 'Посещаемость сайта',
   promotions: 'Акции и скидки',
-  'review-promos': 'Промокоды за отзывы',
+  'review-promos': 'Промокоды',
   brands: 'Бренды-партнеры',
   reviews: 'Модерация отзывов',
   callbacks: 'Обратные звонки',
@@ -51,10 +48,12 @@ const pageTitles = {
   categories: 'Разделы каталога',
   suppliers: 'Дистрибьюторы',
   users: 'Пользователи системы',
+  cashback: 'Управление кешбэком',
 };
 
 function getPageFromHash(hash, allowedPages) {
-  const page = hash.replace('#', '');
+  const cleanHash = hash.replace('#', '');
+  const page = cleanHash.split('/')[0];
   return allowedPages.includes(page) ? page : allowedPages[0];
 }
 
@@ -209,12 +208,8 @@ export default function Dashboard({ user, onLogout, showToast }) {
     switch (activePage) {
       case 'pricing':
         return <PricingPage showToast={showToast} />;
-      case 'logistics':
-        return <LogisticsPage showToast={showToast} />;
       case 'analytics':
         return <AnalyticsPage showToast={showToast} />;
-      case 'site-analytics':
-        return <SiteAnalyticsPage showToast={showToast} />;
       case 'orders':
         return (
           <OrdersPage
@@ -226,6 +221,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
             getStatusText={getOrderStatusText}
             getStatusClass={getOrderStatusClass}
             userRole={user.role}
+            showToast={showToast}
           />
         );
       case 'callbacks':
@@ -302,6 +298,10 @@ export default function Dashboard({ user, onLogout, showToast }) {
             onEditSupplier={startEditSupplier}
             onDeleteSupplier={handleDeleteSupplier}
           />
+        );
+      case 'cashback':
+        return isSupplier ? null : (
+          <CashbackSettingsPage showToast={showToast} />
         );
       case 'users':
         return isSupplier ? null : (

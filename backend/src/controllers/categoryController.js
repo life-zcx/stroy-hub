@@ -100,7 +100,7 @@ export const getCategoryById = async (req, res) => {
 
 // Create a new category
 export const createCategory = async (req, res) => {
-  const { name, slug, image, parentId } = req.body;
+  const { name, slug, image, parentId, cashbackPercent } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Название категории обязательно' });
   }
@@ -126,7 +126,8 @@ export const createCategory = async (req, res) => {
         name,
         slug: categorySlug,
         image: finalImage,
-        parentId: parentId ? parseInt(parentId) : null
+        parentId: parentId ? parseInt(parentId) : null,
+        cashbackPercent: cashbackPercent !== undefined && cashbackPercent !== '' ? parseInt(cashbackPercent) : null
       }
     });
     await clearCategoriesCache();
@@ -139,7 +140,7 @@ export const createCategory = async (req, res) => {
 // Update an existing category
 export const updateCategory = async (req, res) => {
   const { id } = req.params;
-  const { name, slug, image, parentId } = req.body;
+  const { name, slug, image, parentId, cashbackPercent } = req.body;
 
   try {
     const existing = await prisma.category.findUnique({
@@ -168,6 +169,9 @@ export const updateCategory = async (req, res) => {
         return res.status(400).json({ error: 'Категория не может быть своим собственным родителем' });
       }
       data.parentId = parentId ? parseInt(parentId) : null;
+    }
+    if (cashbackPercent !== undefined) {
+      data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
     }
 
     const updated = await prisma.category.update({

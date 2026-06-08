@@ -25,9 +25,7 @@ const tabIcons = {
   products: PackageIcon,
   orders: BadgeCheckIcon,
   pricing: TrendingUp,
-  logistics: Truck,
   analytics: BarChart3,
-  'site-analytics': Globe2,
   promotions: TicketPercentIcon,
   'review-promos': Gift,
   brands: Handshake,
@@ -37,24 +35,24 @@ const tabIcons = {
   categories: LayersIcon,
   suppliers: UserCheckIcon,
   users: UserCheckIcon,
+  cashback: Gift,
 };
 
 const tabLabels = {
   products: 'Товары',
   orders: 'Заказы',
   pricing: 'Ценообразование и Маржа',
-  logistics: 'Логистика и Маршруты',
   analytics: 'Аналитика и Отчеты',
-  'site-analytics': 'Посещаемость сайта',
   callbacks: 'Обратные звонки',
   promotions: 'Акции и скидки',
-  'review-promos': 'Промокоды за отзывы',
+  'review-promos': 'Промокоды',
   brands: 'Бренды-партнеры',
   reviews: 'Отзывы',
   partners: 'Партнеры',
   categories: 'Категории',
   suppliers: 'Дистрибьюторы',
   users: 'Пользователи',
+  cashback: 'Кешбэк',
 };
 
 export default function Sidebar({ activePage, onPageChange, pages, counts, user, onLogout, onReload, loading }) {
@@ -104,12 +102,6 @@ export default function Sidebar({ activePage, onPageChange, pages, counts, user,
         })}
       </nav>
 
-      {/* Sidebar Bottom: Compact Copyright */}
-      <div className="p-6 mt-auto border-t border-slate-800/60 text-center shrink-0">
-        <span className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest">
-          © 2026 TORMAG.KZ
-        </span>
-      </div>
 
     </aside>
   );

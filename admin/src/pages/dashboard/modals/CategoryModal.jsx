@@ -59,23 +59,38 @@ export default function CategoryModal({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Родительский раздел</label>
-            <select
-              name="parentId"
-              value={categoryForm.parentId}
-              onChange={onFormChange}
-              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm cursor-pointer"
-            >
-              <option value="">— Корневая категория —</option>
-              {hierarchicalCategories
-                .filter((category) => !editingCategory || category.id !== editingCategory.id)
-                .map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {'\u00A0\u00A0'.repeat(category.depth)}{category.depth > 0 ? '└─ ' : ''}{category.name}
-                  </option>
-                ))}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Родительский раздел</label>
+              <select
+                name="parentId"
+                value={categoryForm.parentId}
+                onChange={onFormChange}
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm cursor-pointer"
+              >
+                <option value="">— Корневая категория —</option>
+                {hierarchicalCategories
+                  .filter((category) => !editingCategory || category.id !== editingCategory.id)
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {'\u00A0\u00A0'.repeat(category.depth)}{category.depth > 0 ? '└─ ' : ''}{category.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Кешбэк (%)</label>
+              <input
+                type="number"
+                name="cashbackPercent"
+                value={categoryForm.cashbackPercent}
+                onChange={onFormChange}
+                placeholder="Наследуется или 3%"
+                min="0"
+                max="100"
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm"
+              />
+            </div>
           </div>
 
           <div className="border border-dashed border-slate-200 p-4 rounded-xl space-y-3">

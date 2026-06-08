@@ -102,9 +102,14 @@ export default function ProductCard({
             {product.oldPrice && (
               <div className="text-xs text-slate-400 line-through mb-0.5">{formatPrice(product.oldPrice)}</div>
             )}
-            <div className="text-xl font-extrabold text-slate-900 flex items-baseline gap-1">
-              {formatPrice(product.price)}
-              <span className="text-xs font-normal text-slate-400">/ шт</span>
+            <div className="text-xl font-extrabold text-slate-900 flex items-center gap-2 flex-wrap">
+              <div className="flex items-baseline gap-1">
+                {formatPrice(product.price)}
+                <span className="text-xs font-normal text-slate-400">/ шт</span>
+              </div>
+              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-emerald-100/50" title="Бонусы за покупку">
+                +{formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100))}
+              </span>
             </div>
             {product.bulkDiscount && (
               <div className="text-[10px] text-emerald-700 font-semibold mt-1 bg-emerald-50 inline-block px-1.5 py-0.5 rounded">

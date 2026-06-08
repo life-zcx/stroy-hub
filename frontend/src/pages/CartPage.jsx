@@ -136,6 +136,118 @@ export default function CartPage({
     }
   }, [customer]);
 
+  // Интеграция Яндекс.Карт для выбора адреса
+  useEffect(() => {
+    if (step !== 'checkout') return undefined;
+
+    let mapInstance = null;
+    let placemarkInstance = null;
+
+    const initMap = () => {
+      const container = document.getElementById('checkout-map');
+      if (!container || mapInstance) return;
+
+      const ymaps = window.ymaps;
+      
+      mapInstance = new ymaps.Map('checkout-map', {
+        center: [43.238949, 76.889709], // Алматы
+        zoom: 12,
+        controls: ['zoomControl', 'searchControl']
+      });
+
+      const updateMarker = (coords, address) => {
+        if (placemarkInstance) {
+          placemarkInstance.geometry.setCoordinates(coords);
+          placemarkInstance.properties.set('iconCaption', address);
+        } else {
+          placemarkInstance = new ymaps.Placemark(coords, {
+            iconCaption: address
+          }, {
+            preset: 'islands#emeraldDotIconWithCaption',
+            draggable: true
+          });
+          mapInstance.geoObjects.add(placemarkInstance);
+          
+          placemarkInstance.events.add('dragend', () => {
+            getAddress(placemarkInstance.geometry.getCoordinates());
+          });
+        }
+      };
+
+      const getAddress = (coords) => {
+        ymaps.geocode(coords).then((res) => {
+          const firstGeoObject = res.geoObjects.get(0);
+          if (firstGeoObject) {
+            const address = firstGeoObject.getAddressLine();
+            setFormData(prev => ({ ...prev, clientAddress: address }));
+            updateMarker(coords, address);
+          } else {
+            throw new Error("No geo object found");
+          }
+        }).catch((err) => {
+          console.warn("Yandex geocoding failed, trying OpenStreetMap Nominatim...", err);
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords[0]}&lon=${coords[1]}&accept-language=ru`)
+            .then(res => {
+              if (!res.ok) throw new Error("OSM Nominatim response error");
+              return res.json();
+            })
+            .then(data => {
+              if (data && data.display_name) {
+                const address = data.display_name;
+                setFormData(prev => ({ ...prev, clientAddress: address }));
+                updateMarker(coords, address);
+              } else {
+                throw new Error("No address returned from OSM Nominatim");
+              }
+            })
+            .catch(osmErr => {
+              console.error("OSM Nominatim geocoding failed:", osmErr);
+              const fallback = `Координаты: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+              setFormData(prev => ({ ...prev, clientAddress: fallback }));
+              updateMarker(coords, fallback);
+            });
+        });
+      };
+
+      mapInstance.events.add('click', (e) => {
+        const coords = e.get('coords');
+        getAddress(coords);
+      });
+
+      const searchControl = mapInstance.controls.get('searchControl');
+      searchControl.events.add('resultselect', (e) => {
+        const index = e.get('index');
+        searchControl.getResult(index).then((res) => {
+          const address = res.properties.get('text') || res.properties.get('displayName');
+          const coords = res.geometry.getCoordinates();
+          setFormData(prev => ({ ...prev, clientAddress: address }));
+          updateMarker(coords, address);
+        }).catch((err) => {
+          console.error("Yandex search result extraction failed:", err);
+        });
+      });
+    };
+
+    if (window.ymaps) {
+      window.ymaps.ready(initMap);
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
+      script.type = 'text/javascript';
+      script.onload = () => {
+        window.ymaps.ready(initMap);
+      };
+      document.body.appendChild(script);
+    }
+
+    return () => {
+      if (mapInstance) {
+        mapInstance.destroy();
+        mapInstance = null;
+      }
+    };
+  }, [step]);
+
   // Загружаем summary при открытии корзины
   useEffect(() => {
     if (customer) {
@@ -780,6 +892,12 @@ export default function CartPage({
                       placeholder="Город Алматы, улица Абая, дом 10, кв 15"
                       className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none resize-none font-semibold text-slate-900"
                     />
+                    
+                    {/* Yandex Map for Address Selection */}
+                    <div className="mt-3">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Или укажите адрес на карте (кликните или введите адрес в поиск карт):</span>
+                      <div id="checkout-map" className="w-full h-64 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative z-10" />
+                    </div>
                   </div>
 
                   <div>

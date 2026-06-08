@@ -682,10 +682,10 @@ export default function Header({
             <button
               type="button"
               onClick={() => setIsAccessibilityModalOpen(true)}
-              className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors font-semibold text-xs mr-2"
+              title="Версия для слабовидящих"
+              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all mr-1"
             >
-              <Eye className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Слабовидящим</span>
+              <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
             <div className="relative group/phone">
               <a

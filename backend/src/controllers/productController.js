@@ -239,11 +239,14 @@ export const getAllProducts = async (req, res) => {
       const markupValue     = wholesalePrice * (activeMarkup / 100);
       const retailPrice     = wholesalePrice + markupValue;
 
+      const effectiveCashback = p.cashbackPercent ?? p.categoryRelation?.cashbackPercent ?? 3;
+
       return {
         ...p,
         wholesalePrice,
         price:    retailPrice,
         oldPrice: p.oldPrice ? p.oldPrice + p.oldPrice * (activeMarkup / 100) : null,
+        cashbackPercent: effectiveCashback,
       };
     });
 
@@ -294,11 +297,14 @@ export const getProductById = async (req, res) => {
     const markupValue = wholesalePrice * (activeMarkup / 100);
     const retailPrice = wholesalePrice + markupValue;
 
+    const effectiveCashback = product.cashbackPercent ?? product.categoryRelation?.cashbackPercent ?? 3;
+
     const mappedProduct = {
       ...product,
       wholesalePrice,
       price: retailPrice,
-      oldPrice: product.oldPrice ? product.oldPrice + product.oldPrice * (activeMarkup / 100) : null
+      oldPrice: product.oldPrice ? product.oldPrice + product.oldPrice * (activeMarkup / 100) : null,
+      cashbackPercent: effectiveCashback
     };
 
     await redisClient.set(cacheKey, JSON.stringify(mappedProduct), { EX: 1800 });
@@ -311,7 +317,7 @@ export const getProductById = async (req, res) => {
 export const createProduct = async (req, res) => {
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId, cashbackPercent, article
   } = req.body;
   const requestedSupplierId = parseId(supplierId);
   const requesterSupplierId = getRequesterSupplierId(req);
@@ -363,7 +369,9 @@ export const createProduct = async (req, res) => {
         reviews: reviews ? parseInt(reviews) : 0,
         isHit: isHit === 'true' || isHit === true,
         bulkDiscount: bulkDiscount || null,
-        supplierId: effectiveSupplierId
+        supplierId: effectiveSupplierId,
+        cashbackPercent: cashbackPercent !== undefined && cashbackPercent !== '' ? parseInt(cashbackPercent) : null,
+        article: article || null
       },
       include: {
         supplier: true
@@ -381,7 +389,7 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId, cashbackPercent, article
   } = req.body;
   const requesterSupplierId = getRequesterSupplierId(req);
   const requestedSupplierId = supplierId === undefined ? undefined : parseId(supplierId);
@@ -426,6 +434,8 @@ export const updateProduct = async (req, res) => {
     if (reviews) data.reviews = parseInt(reviews);
     if (isHit !== undefined) data.isHit = isHit === 'true' || isHit === true;
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
+    if (cashbackPercent !== undefined) data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
+    if (article !== undefined) data.article = article || null;
 
     if (requestedSupplierId !== undefined) {
       if (requestedSupplierId === null) {
@@ -551,6 +561,7 @@ export const importProductsXlsx = async (req, res) => {
       const priceVal = getVal(row, ['цена', 'цена (тенге)', 'цена(тенге)', 'стоимость', 'price']);
       const categoryName = getVal(row, ['категория', 'category']);
       const brandName = getVal(row, ['бренд', 'brand']);
+      const articleVal = getVal(row, ['артикул', 'код', 'article', 'sku', 'code']);
 
       const description = getVal(row, ['описание', 'description']) || null;
       const details = getVal(row, ['детали', 'details']) || null;
@@ -621,7 +632,8 @@ export const importProductsXlsx = async (req, res) => {
         isHit,
         bulkDiscount: bulkDiscount ? bulkDiscount.toString().trim() : null,
         supplierId: effectiveSupplierId,
-        image: 'https://placehold.co/400x300/f8fafc/475569?text=Tormag'
+        image: 'https://placehold.co/400x300/f8fafc/475569?text=Tormag',
+        article: articleVal ? articleVal.toString().trim() : null
       });
     });
 
@@ -658,7 +670,8 @@ export const importProductsXlsx = async (req, res) => {
               price: data.price,
               oldPrice: data.oldPrice,
               isHit: data.isHit,
-              bulkDiscount: data.bulkDiscount
+              bulkDiscount: data.bulkDiscount,
+              article: data.article
             }
           });
           updatedCount++;

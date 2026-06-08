@@ -166,8 +166,8 @@ export const deleteSupplier = async (id) => {
 };
 
 // Orders API
-export const getOrders = async () => {
-  const response = await api.get('/orders');
+export const getOrders = async (params = {}) => {
+  const response = await api.get('/orders', { params });
   return response.data;
 };
 
@@ -178,6 +178,11 @@ export const updateOrderStatus = async (id, status) => {
 
 export const updateOrder = async (id, orderData) => {
   const response = await api.put(`/orders/${id}`, orderData);
+  return response.data;
+};
+
+export const getOrderById = async (id) => {
+  const response = await api.get(`/orders/${id}`);
   return response.data;
 };
 

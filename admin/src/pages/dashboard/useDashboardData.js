@@ -51,9 +51,11 @@ function createEmptyProductForm({ categories, suppliers, isSupplier, user }) {
     price: '',
     oldPrice: '',
     bulkDiscount: '',
+    cashbackPercent: '',
     isHit: false,
     supplierId: isSupplier ? user.supplierId : (suppliers[0]?.id || ''),
     imageUrl: '',
+    article: '',
   };
 }
 
@@ -72,6 +74,7 @@ function createEmptyCategoryForm() {
     slug: '',
     image: '',
     parentId: '',
+    cashbackPercent: '',
   };
 }
 
@@ -343,6 +346,8 @@ export function useDashboardData({ user, showToast }) {
 
     if (productForm.oldPrice) formData.append('oldPrice', productForm.oldPrice);
     if (productForm.bulkDiscount) formData.append('bulkDiscount', productForm.bulkDiscount);
+    if (productForm.cashbackPercent) formData.append('cashbackPercent', productForm.cashbackPercent);
+    if (productForm.article) formData.append('article', productForm.article);
     formData.append('isHit', productForm.isHit);
 
     if (imageFile) {
@@ -387,9 +392,11 @@ export function useDashboardData({ user, showToast }) {
       price: product.wholesalePrice || product.price || '',
       oldPrice: product.oldPrice || '',
       bulkDiscount: product.bulkDiscount || '',
+      cashbackPercent: product.cashbackPercent || '',
       isHit: product.isHit || false,
       supplierId: product.supplierId || '',
       imageUrl: product.image || '',
+      article: product.article || '',
     });
     setImageFile(null);
     setIsProductModalOpen(true);
@@ -703,6 +710,7 @@ export function useDashboardData({ user, showToast }) {
     formData.append('name', categoryForm.name);
     if (categoryForm.slug) formData.append('slug', categoryForm.slug);
     if (categoryForm.parentId) formData.append('parentId', categoryForm.parentId);
+    if (categoryForm.cashbackPercent) formData.append('cashbackPercent', categoryForm.cashbackPercent);
 
     if (categoryImageFile) {
       formData.append('imageFile', categoryImageFile);
@@ -740,6 +748,7 @@ export function useDashboardData({ user, showToast }) {
       slug: category.slug || '',
       image: category.image || '',
       parentId: category.parentId || '',
+      cashbackPercent: category.cashbackPercent || '',
     });
     setCategoryImageFile(null);
     setIsCategoryModalOpen(true);

@@ -372,7 +372,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               className="bg-white border border-slate-350 p-6 rounded-2xl flex flex-col items-center justify-center text-center hover:border-emerald-650 hover:shadow-md transition-all group"
             >
               {brand.logo ? (
-                <img src={brand.logo} alt={brand.name} className="h-12 max-w-[120px] object-contain mb-3 grayscale group-hover:grayscale-0 transition-all" />
+                <img src={brand.logo} alt={brand.name} className="h-12 max-w-[120px] object-contain mb-3 transition-all" />
               ) : null}
               <span className="font-black text-slate-800 group-hover:text-slate-950 text-lg transition-colors tracking-tight font-outfit">{brand.name}</span>
               <span className="text-[10px] text-slate-600 font-semibold mt-1 block">{brand.desc}</span>

@@ -88,8 +88,8 @@ export default function ProductsPage({
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ['Название', 'Цена', 'Категория', 'Бренд', 'Описание', 'Характеристики', 'Старая цена', 'Хит'];
-    const exampleRow = ['Ротбанд Кнауф 30 кг', '3450', 'Сухие смеси', 'Knauf', 'Штукатурка универсальная гипсовая', 'Вес: 30 кг', '3800', 'да'];
+    const headers = ['Название', 'Цена', 'Категория', 'Бренд', 'Описание', 'Характеристики', 'Старая цена', 'Хит', 'Артикул'];
+    const exampleRow = ['Ротбанд Кнауф 30 кг', '3450', 'Сухие смеси', 'Knauf', 'Штукатурка универсальная гипсовая', 'Вес: 30 кг', '3800', 'да', 'KN-ROT-30'];
     
     // Join with semicolons (Cyrillic standard for Russian/Kazakhstan Excel environments)
     const csvContent = '\uFEFF' + [
@@ -405,6 +405,7 @@ export default function ProductsPage({
               <thead>
                 <tr className="border-b border-gray-150 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pr-2">Товар</th>
+                  <th className="pb-3 px-2">Артикул</th>
                   <th className="pb-3 px-2">Категория</th>
                   <th className="pb-3 px-2">Дистрибьютор</th>
                   <th className="pb-3 px-2">Цена</th>
@@ -430,6 +431,9 @@ export default function ProductsPage({
                           )}
                         </div>
                       </div>
+                    </td>
+                    <td className="py-3.5 px-2 text-slate-500 text-xs font-mono">
+                      {product.article || '—'}
                     </td>
                     <td className="py-3.5 px-2 text-slate-500 text-xs font-semibold">
                       {product.categoryRelation

@@ -272,7 +272,37 @@ export const getAllOrders = async (req, res) => {
   }
 
   try {
+    const { status, search, sort } = req.query;
     const where = buildOrderWhere(user);
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (search) {
+      const q = search.toLowerCase().trim();
+      const OR = [
+        { clientName: { contains: q, mode: 'insensitive' } },
+        { clientPhone: { contains: q, mode: 'insensitive' } },
+        { clientAddress: { contains: q, mode: 'insensitive' } }
+      ];
+      
+      const parsedId = parseInt(q, 10);
+      if (!isNaN(parsedId)) {
+        OR.push({ id: parsedId });
+      }
+      
+      where.AND = [
+        ...(where.AND || []),
+        { OR }
+      ];
+    }
+
+    let orderBy = { createdAt: 'desc' };
+    if (sort === 'date_asc') orderBy = { createdAt: 'asc' };
+    else if (sort === 'amount_desc') orderBy = { totalAmount: 'desc' };
+    else if (sort === 'amount_asc') orderBy = { totalAmount: 'asc' };
+
     const page = Number.parseInt(req.query.page, 10);
     const limit = Math.min(Number.parseInt(req.query.limit, 10) || 20, 50);
     const usePagination = Number.isFinite(page) && page > 0;
@@ -283,7 +313,7 @@ export const getAllOrders = async (req, res) => {
         prisma.order.findMany({
           where,
           ...(summaryOnly ? { include: { _count: { select: { items: true } } } } : { include: buildOrderItemsInclude(user) }),
-          orderBy: { createdAt: 'desc' },
+          orderBy,
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -303,7 +333,7 @@ export const getAllOrders = async (req, res) => {
     const orders = await prisma.order.findMany({
       where,
       include: buildOrderItemsInclude(user),
-      orderBy: { createdAt: 'desc' }
+      orderBy
     });
     res.json(orders);
   } catch (error) {
@@ -439,6 +469,7 @@ export const updateOrder = async (req, res) => {
     clientPhone,
     clientAddress,
     items,
+    discountAmount,
   } = req.body;
   const supplierId = getSupplierId(req.user);
 
@@ -499,6 +530,12 @@ export const updateOrder = async (req, res) => {
     if (clientPhone !== undefined) updateData.clientPhone = clientPhone;
     if (clientAddress !== undefined) updateData.clientAddress = clientAddress;
 
+    if (discountAmount !== undefined && items === undefined) {
+      const manualDiscount = parseFloat(discountAmount) || 0;
+      updateData.discountAmount = manualDiscount;
+      updateData.totalAmount = Math.max(0, existingOrder.subtotalAmount - manualDiscount);
+    }
+
     // Perform inside a transaction if we are editing items
     const result = await prisma.$transaction(async (tx) => {
       if (items !== undefined && Array.isArray(items)) {
@@ -534,14 +571,15 @@ export const updateOrder = async (req, res) => {
         const evaluationContext = await buildEvaluationContext(normalizedItems);
         const subtotalAmount = evaluationContext.subtotalAmount;
 
-        let discountAmount = 0;
-        let finalTotalAmount = subtotalAmount;
+        let finalDiscount = 0;
         let promoCodeToUse = existingOrder.promoCode;
         let promotionIdToUse = existingOrder.promotionId;
         let promotionTitleToUse = existingOrder.promotionTitle;
         let promotionSnapshotToUse = existingOrder.promotionSnapshot;
 
-        if (promoCodeToUse) {
+        if (discountAmount !== undefined) {
+          finalDiscount = parseFloat(discountAmount) || 0;
+        } else if (promoCodeToUse) {
           const promo = await tx.promotion.findUnique({
             where: { promoCode: promoCodeToUse },
           });
@@ -549,8 +587,7 @@ export const updateOrder = async (req, res) => {
           if (promo) {
             const evaluation = evaluatePromotion(promo, evaluationContext);
             if (evaluation.valid) {
-              discountAmount = evaluation.discountAmount;
-              finalTotalAmount = evaluation.totalAmount;
+              finalDiscount = evaluation.discountAmount;
               promotionSnapshotToUse = buildPromotionSnapshot(promo, evaluation);
             } else {
               promoCodeToUse = null;
@@ -562,8 +599,8 @@ export const updateOrder = async (req, res) => {
         }
 
         updateData.subtotalAmount = subtotalAmount;
-        updateData.discountAmount = discountAmount;
-        updateData.totalAmount = finalTotalAmount;
+        updateData.discountAmount = finalDiscount;
+        updateData.totalAmount = Math.max(0, subtotalAmount - finalDiscount);
         updateData.promoCode = promoCodeToUse;
         updateData.promotionId = promotionIdToUse;
         updateData.promotionTitle = promotionTitleToUse;
@@ -595,7 +632,11 @@ export const updateOrder = async (req, res) => {
       return updatedOrder;
     });
 
-    // Обновляем бонусы при смене статуса (вне транзакции, т.к. order уже обновлён)
+    // Notify the client about order updates (simulated)
+    const phone = clientPhone || existingOrder.clientPhone;
+    console.log(`[CLIENT NOTIFICATION] Sent SMS/Whatsapp notification about order #${orderId} updates to ${phone}`);
+
+    //    Also update bonuses if status changed
     if (status === 'completed') {
       await activatePendingBonuses(orderId);
     } else if (status === 'cancelled') {
