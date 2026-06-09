@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
     user: SMTP_USER,
     pass: SMTP_PASS,
   },
+  connectionTimeout: 10000, // 10 секунд лимит на подключение
+  greetingTimeout: 10000,   // 10 секунд лимит на приветствие сервера
+  socketTimeout: 15000,     // 15 секунд общий таймаут сокета
 });
 
 export const sendEmail = async ({ to, subject, html }) => {
