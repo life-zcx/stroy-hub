@@ -213,9 +213,9 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               >
                 {/* Visual Area */}
                 <div className="aspect-[16/10] w-full overflow-hidden relative bg-slate-50 border-b border-slate-100 shrink-0">
-                  {promotion.image ? (
+                  {promotion.imageCard || promotion.image ? (
                     <img
-                      src={promotion.image}
+                      src={promotion.imageCard || promotion.image}
                       alt={promotion.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -231,7 +231,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                   )}
 
                   {/* Promo Badge / Discount Badge overlay for image layouts */}
-                  {promotion.image && promotion.discountValue > 0 && (
+                  {(promotion.imageCard || promotion.image) && promotion.discountValue > 0 && (
                     <span className="absolute bottom-4 left-4 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
                       -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
                     </span>

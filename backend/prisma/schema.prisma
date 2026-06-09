@@ -202,6 +202,8 @@ model Promotion {
   userId        Int?
   user          User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   image         String?
+  imageCard     String?
+  imageDetail   String?
 }
 
 model PageView {

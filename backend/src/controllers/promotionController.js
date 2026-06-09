@@ -182,7 +182,7 @@ async function buildEvaluationContext(items, subtotalAmount) {
   };
 }
 
-function buildPromotionData(body, imagePath = null) {
+function buildPromotionData(body, imagePath = null, imageCardPath = null, imageDetailPath = null) {
   const title = String(body.title || '').trim();
   const description = String(body.description || '').trim();
   const badge = String(body.badge || '').trim() || null;
@@ -291,6 +291,8 @@ function buildPromotionData(body, imagePath = null) {
       targetCategoryIds,
       quantityTiers: quantityTiers.length ? quantityTiers : null,
       image: imagePath,
+      imageCard: imageCardPath,
+      imageDetail: imageDetailPath,
     },
   };
 }
@@ -385,21 +387,24 @@ export const getAllPromotions = async (req, res) => {
     res.status(500).json({ error: 'Ошибка получения списка акций: ' + error.message });
   }
 };
-
-function buildImagePath(req, existingImage = null) {
-  if (req.file) {
-    return `/uploads/${req.file.filename}`;
+function extractImagePath(req, fieldName, bodyValue, existingImage = null) {
+  if (req.files && req.files[fieldName] && req.files[fieldName][0]) {
+    return `/uploads/${req.files[fieldName][0].filename}`;
   }
 
-  if (req.body.image !== undefined) {
-    return req.body.image || null;
+  if (bodyValue !== undefined) {
+    return bodyValue || null;
   }
 
   return existingImage;
 }
 
 export const createPromotion = async (req, res) => {
-  const { data, error } = buildPromotionData(req.body, buildImagePath(req));
+  const imageCard = extractImagePath(req, 'imageCardFile', req.body.imageCard);
+  const imageDetail = extractImagePath(req, 'imageDetailFile', req.body.imageDetail);
+  const image = imageCard || imageDetail || null;
+
+  const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
 
   if (error) {
     return res.status(400).json({ error });
@@ -435,7 +440,11 @@ export const updatePromotion = async (req, res) => {
       return res.status(404).json({ error: 'Акция не найдена.' });
     }
 
-    const { data, error } = buildPromotionData(req.body, buildImagePath(req, existingPromotion.image));
+    const imageCard = extractImagePath(req, 'imageCardFile', req.body.imageCard, existingPromotion.imageCard);
+    const imageDetail = extractImagePath(req, 'imageDetailFile', req.body.imageDetail, existingPromotion.imageDetail);
+    const image = imageCard || imageDetail || null;
+
+    const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
 
     if (error) {
       return res.status(400).json({ error });

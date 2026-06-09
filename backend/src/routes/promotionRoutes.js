@@ -19,9 +19,14 @@ router.get('/home', getHomePromotions);
 router.get('/my', verifyToken, getMyPromotions);
 router.post('/validate', validatePromotionCode);
 
+const uploadFields = imageUpload.fields([
+  { name: 'imageCardFile', maxCount: 1 },
+  { name: 'imageDetailFile', maxCount: 1 }
+]);
+
 router.get('/', verifyToken, requireRoles(['ADMIN']), getAllPromotions);
-router.post('/', verifyToken, requireRoles(['ADMIN']), imageUpload.single('imageFile'), createPromotion);
-router.put('/:id', verifyToken, requireRoles(['ADMIN']), imageUpload.single('imageFile'), updatePromotion);
+router.post('/', verifyToken, requireRoles(['ADMIN']), uploadFields, createPromotion);
+router.put('/:id', verifyToken, requireRoles(['ADMIN']), uploadFields, updatePromotion);
 router.delete('/:id', verifyToken, requireRoles(['ADMIN']), deletePromotion);
 
 export default router;

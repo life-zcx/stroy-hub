@@ -148,9 +148,9 @@ export default function Promotions({
 
         {/* Big Banner Image */}
         <div className="aspect-[21/9] w-full overflow-hidden rounded-[2.5rem] border border-slate-200/80 shadow-sm relative bg-slate-100">
-          {selectedPromo.image ? (
+          {selectedPromo.imageDetail || selectedPromo.image ? (
             <img 
-              src={selectedPromo.image} 
+              src={selectedPromo.imageDetail || selectedPromo.image} 
               alt={selectedPromo.title} 
               className="w-full h-full object-cover"
             />
@@ -282,9 +282,9 @@ export default function Promotions({
               className="group cursor-pointer space-y-4 text-left"
             >
               <div className="aspect-[16/9] w-full overflow-hidden rounded-[2rem] border border-slate-200/80 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-emerald-500/20 relative bg-slate-50">
-                {promotion.image ? (
+                {promotion.imageCard || promotion.image ? (
                   <img
-                    src={promotion.image}
+                    src={promotion.imageCard || promotion.image}
                     alt={promotion.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -298,7 +298,7 @@ export default function Promotions({
                     </span>
                   </div>
                 )}
-                {promotion.discountValue > 0 && promotion.image && (
+                {promotion.discountValue > 0 && (promotion.imageCard || promotion.image) && (
                   <span className="absolute bottom-4 left-4 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
                     -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
                   </span>

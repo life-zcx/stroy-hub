@@ -64,9 +64,12 @@ export default function PromotionModal({
   onRemoveTier,
   products,
   categories,
-  onFileChange,
-  imageFile,
-  onClearImage,
+  onCardFileChange,
+  onDetailFileChange,
+  imageCardFile,
+  imageDetailFile,
+  onClearImageCard,
+  onClearImageDetail,
 }) {
   if (!open) {
     return null;
@@ -104,37 +107,43 @@ export default function PromotionModal({
             <textarea name="description" value={promotionForm.description} onChange={onFormChange} required rows="3" placeholder="Расскажите, кто и на каких условиях может использовать акцию" className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200" />
           </div>
 
+          {/* Banner 1: Card / Preview Image */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Изображение акции (баннер)</label>
+              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
+                Баннер для карточки (Превью)
+              </label>
+              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">
+                Рекомендуемый размер: 800х500 px (16:10 или 16:9)
+              </span>
               <div className="flex items-center gap-3">
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={onFileChange}
+                  onChange={onCardFileChange}
                   className="hidden"
-                  id="promo-image-upload"
+                  id="promo-card-upload"
                 />
                 <label
-                  htmlFor="promo-image-upload"
+                  htmlFor="promo-card-upload"
                   className="flex-1 px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-sm font-bold text-slate-600 cursor-pointer text-center transition-all duration-200 border-dashed truncate"
                 >
-                  {imageFile ? imageFile.name : 'Выбрать файл...'}
+                  {imageCardFile ? imageCardFile.name : 'Выбрать файл...'}
                 </label>
-                {(imageFile || promotionForm.imageUrl) && (
+                {(imageCardFile || promotionForm.imageCard) && (
                   <div className="relative group shrink-0">
                     <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
                       <img
-                        src={imageFile ? URL.createObjectURL(imageFile) : promotionForm.imageUrl}
-                        alt="Превью"
+                        src={imageCardFile ? URL.createObjectURL(imageCardFile) : promotionForm.imageCard}
+                        alt="Превью карточки"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <button
                       type="button"
-                      onClick={onClearImage}
+                      onClick={onClearImageCard}
                       className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
-                      title="Удалить изображение"
+                      title="Удалить превью"
                     >
                       <XIcon className="h-3 w-3" />
                     </button>
@@ -143,11 +152,74 @@ export default function PromotionModal({
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Или прямая ссылка на картинку</label>
+              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
+                Или ссылка на баннер карточки
+              </label>
+              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">&nbsp;</span>
               <input
                 type="text"
-                name="imageUrl"
-                value={promotionForm.imageUrl || ''}
+                name="imageCard"
+                value={promotionForm.imageCard || ''}
+                onChange={onFormChange}
+                placeholder="https://images.unsplash.com/photo-..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Banner 2: Detail Page Image */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
+                Баннер для страницы акции (Шапка)
+              </label>
+              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">
+                Рекомендуемый размер: 1200х510 px (21:9)
+              </span>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onDetailFileChange}
+                  className="hidden"
+                  id="promo-detail-upload"
+                />
+                <label
+                  htmlFor="promo-detail-upload"
+                  className="flex-1 px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-sm font-bold text-slate-600 cursor-pointer text-center transition-all duration-200 border-dashed truncate"
+                >
+                  {imageDetailFile ? imageDetailFile.name : 'Выбрать файл...'}
+                </label>
+                {(imageDetailFile || promotionForm.imageDetail) && (
+                  <div className="relative group shrink-0">
+                    <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
+                      <img
+                        src={imageDetailFile ? URL.createObjectURL(imageDetailFile) : promotionForm.imageDetail}
+                        alt="Превью шапки"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onClearImageDetail}
+                      className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
+                      title="Удалить шапку"
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
+                Или ссылка на детальный баннер
+              </label>
+              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">&nbsp;</span>
+              <input
+                type="text"
+                name="imageDetail"
+                value={promotionForm.imageDetail || ''}
                 onChange={onFormChange}
                 placeholder="https://images.unsplash.com/photo-..."
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200"

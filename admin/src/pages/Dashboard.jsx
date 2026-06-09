@@ -108,9 +108,12 @@ export default function Dashboard({ user, onLogout, showToast }) {
     startEditSupplier,
     handleDeleteSupplier,
     handlePromotionChange,
-    handlePromotionFileChange,
-    clearPromotionImage,
-    promotionImageFile,
+    handlePromotionCardFileChange,
+    handlePromotionDetailFileChange,
+    clearPromotionImageCard,
+    clearPromotionImageDetail,
+    promotionImageCardFile,
+    promotionImageDetailFile,
     handlePromotionTargetToggle,
     handlePromotionTierChange,
     handleAddPromotionTier,
@@ -487,9 +490,12 @@ export default function Dashboard({ user, onLogout, showToast }) {
         onRemoveTier={handleRemovePromotionTier}
         products={products}
         categories={hierarchicalCategories}
-        onFileChange={handlePromotionFileChange}
-        imageFile={promotionImageFile}
-        onClearImage={clearPromotionImage}
+        onCardFileChange={handlePromotionCardFileChange}
+        onDetailFileChange={handlePromotionDetailFileChange}
+        imageCardFile={promotionImageCardFile}
+        imageDetailFile={promotionImageDetailFile}
+        onClearImageCard={clearPromotionImageCard}
+        onClearImageDetail={clearPromotionImageDetail}
       />
 
       <BrandModal
