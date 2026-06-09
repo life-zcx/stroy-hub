@@ -484,6 +484,11 @@ export function useDashboardData({ user, showToast }) {
     setPromotionImageFile(event.target.files[0] || null);
   };
 
+  const clearPromotionImage = () => {
+    setPromotionImageFile(null);
+    setPromotionForm((prev) => ({ ...prev, imageUrl: '' }));
+  };
+
   const handlePromotionSubmit = async (event) => {
     event.preventDefault();
 
@@ -514,8 +519,8 @@ export function useDashboardData({ user, showToast }) {
 
     if (promotionImageFile) {
       formData.append('imageFile', promotionImageFile);
-    } else if (promotionForm.imageUrl) {
-      formData.append('image', promotionForm.imageUrl);
+    } else {
+      formData.append('image', promotionForm.imageUrl || '');
     }
 
     try {
@@ -985,6 +990,7 @@ export function useDashboardData({ user, showToast }) {
     handleDeleteSupplier,
     handlePromotionChange,
     handlePromotionFileChange,
+    clearPromotionImage,
     promotionImageFile,
     handlePromotionTargetToggle,
     handlePromotionTierChange,

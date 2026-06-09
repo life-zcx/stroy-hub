@@ -66,6 +66,7 @@ export default function PromotionModal({
   categories,
   onFileChange,
   imageFile,
+  onClearImage,
 }) {
   if (!open) {
     return null;
@@ -121,12 +122,22 @@ export default function PromotionModal({
                   {imageFile ? imageFile.name : 'Выбрать файл...'}
                 </label>
                 {(imageFile || promotionForm.imageUrl) && (
-                  <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden shrink-0 bg-slate-100">
-                    <img
-                      src={imageFile ? URL.createObjectURL(imageFile) : promotionForm.imageUrl}
-                      alt="Превью"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="relative group shrink-0">
+                    <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
+                      <img
+                        src={imageFile ? URL.createObjectURL(imageFile) : promotionForm.imageUrl}
+                        alt="Превью"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onClearImage}
+                      className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
+                      title="Удалить изображение"
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </button>
                   </div>
                 )}
               </div>
