@@ -179,6 +179,7 @@ export function useDashboardData({ user, showToast }) {
   const [imageFile, setImageFile] = useState(null);
   const [categoryImageFile, setCategoryImageFile] = useState(null);
   const [brandLogoFile, setBrandLogoFile] = useState(null);
+  const [promotionImageFile, setPromotionImageFile] = useState(null);
   const [previewCategoryImage, setPreviewCategoryImage] = useState('');
 
   const hierarchicalCategories = useMemo(
@@ -288,6 +289,7 @@ export function useDashboardData({ user, showToast }) {
   const resetPromotionForm = () => {
     setEditingPromotion(null);
     setPromotionForm(createEmptyPromotionForm());
+    setPromotionImageFile(null);
   };
 
   const resetBrandForm = () => {
@@ -478,24 +480,50 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const handlePromotionFileChange = (event) => {
+    setPromotionImageFile(event.target.files[0] || null);
+  };
+
   const handlePromotionSubmit = async (event) => {
     event.preventDefault();
 
-    const payload = {
-      ...promotionForm,
-      targetProductIds: promotionForm.targetProductIds,
-      targetCategoryIds: promotionForm.targetCategoryIds,
-      quantityTiers: promotionForm.quantityTiers.filter((tier) => tier.minQuantity && tier.discountValue),
-      startsAt: toIsoOrNull(promotionForm.startsAt),
-      endsAt: toIsoOrNull(promotionForm.endsAt),
-    };
+    const formData = new FormData();
+    formData.append('title', promotionForm.title);
+    formData.append('description', promotionForm.description);
+    if (promotionForm.badge) formData.append('badge', promotionForm.badge);
+    if (promotionForm.promoCode) formData.append('promoCode', promotionForm.promoCode);
+    formData.append('scope', promotionForm.scope);
+    formData.append('discountType', promotionForm.discountType);
+    formData.append('discountValue', promotionForm.discountValue);
+    if (promotionForm.minOrderAmount) formData.append('minOrderAmount', promotionForm.minOrderAmount);
+    if (promotionForm.minQuantity) formData.append('minQuantity', promotionForm.minQuantity);
+    formData.append('theme', promotionForm.theme);
+    if (promotionForm.usageLimit) formData.append('usageLimit', promotionForm.usageLimit);
+    formData.append('isActive', String(promotionForm.isActive));
+    formData.append('showOnSite', String(promotionForm.showOnSite));
+    formData.append('showOnHome', String(promotionForm.showOnHome));
+
+    promotionForm.targetProductIds.forEach((id) => formData.append('targetProductIds', id));
+    promotionForm.targetCategoryIds.forEach((id) => formData.append('targetCategoryIds', id));
+
+    const activeTiers = promotionForm.quantityTiers.filter((tier) => tier.minQuantity && tier.discountValue);
+    formData.append('quantityTiers', JSON.stringify(activeTiers));
+
+    if (promotionForm.startsAt) formData.append('startsAt', toIsoOrNull(promotionForm.startsAt));
+    if (promotionForm.endsAt) formData.append('endsAt', toIsoOrNull(promotionForm.endsAt));
+
+    if (promotionImageFile) {
+      formData.append('imageFile', promotionImageFile);
+    } else if (promotionForm.imageUrl) {
+      formData.append('image', promotionForm.imageUrl);
+    }
 
     try {
       if (editingPromotion) {
-        await updatePromotion(editingPromotion.id, payload);
+        await updatePromotion(editingPromotion.id, formData);
         showToast('✅ Акция обновлена!');
       } else {
-        await createPromotion(payload);
+        await createPromotion(formData);
         showToast('🎯 Новая акция опубликована!');
       }
 
@@ -542,7 +570,9 @@ export function useDashboardData({ user, showToast }) {
       isActive: promotion.isActive ?? true,
       showOnSite: promotion.showOnSite ?? true,
       showOnHome: promotion.showOnHome ?? false,
+      imageUrl: promotion.image || '',
     });
+    setPromotionImageFile(null);
     setIsPromotionModalOpen(true);
   };
 
@@ -954,6 +984,8 @@ export function useDashboardData({ user, showToast }) {
     startEditSupplier,
     handleDeleteSupplier,
     handlePromotionChange,
+    handlePromotionFileChange,
+    promotionImageFile,
     handlePromotionTargetToggle,
     handlePromotionTierChange,
     handleAddPromotionTier,

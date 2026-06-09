@@ -28,8 +28,8 @@ export default function Faq() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left">
-      <div className="space-y-3">
+    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
+      <div className="space-y-2">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Вопрос — Ответ</h1>
         <p className="text-slate-500 text-sm">Часто задаваемые вопросы о покупках, логистике и документообороте на Tormag</p>
       </div>
@@ -38,12 +38,12 @@ export default function Faq() {
         {faqs.map((faq, idx) => {
           const isOpen = openIdx === idx;
           return (
-            <div key={idx} className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm transition-all">
+            <div key={idx} className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm transition-all">
               <button
                 onClick={() => setOpenIdx(isOpen ? null : idx)}
-                className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-950 hover:bg-slate-50 transition-colors gap-4"
+                className="w-full flex items-center justify-between p-6 text-left font-bold text-slate-950 hover:bg-slate-50 transition-colors gap-4"
               >
-                <span className="flex items-center gap-3 font-outfit text-sm">
+                <span className="flex items-center gap-3 font-outfit text-sm text-slate-900">
                   <HelpCircle className="h-5 w-5 text-emerald-600 shrink-0" />
                   {faq.q}
                 </span>
@@ -51,7 +51,7 @@ export default function Faq() {
               </button>
 
               {isOpen && (
-                <div className="px-5 pb-5 pt-1 text-slate-500 text-xs leading-relaxed border-t border-slate-50 animate-fade-in">
+                <div className="px-6 pb-6 pt-1 text-slate-550 text-xs sm:text-sm leading-relaxed border-t border-slate-50 animate-fade-in font-semibold">
                   {faq.a}
                 </div>
               )}

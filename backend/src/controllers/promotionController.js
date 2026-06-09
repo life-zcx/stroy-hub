@@ -182,7 +182,7 @@ async function buildEvaluationContext(items, subtotalAmount) {
   };
 }
 
-function buildPromotionData(body) {
+function buildPromotionData(body, imagePath = null) {
   const title = String(body.title || '').trim();
   const description = String(body.description || '').trim();
   const badge = String(body.badge || '').trim() || null;
@@ -290,6 +290,7 @@ function buildPromotionData(body) {
       targetProductIds,
       targetCategoryIds,
       quantityTiers: quantityTiers.length ? quantityTiers : null,
+      image: imagePath,
     },
   };
 }
@@ -385,8 +386,20 @@ export const getAllPromotions = async (req, res) => {
   }
 };
 
+function buildImagePath(req, existingImage = null) {
+  if (req.file) {
+    return `/uploads/${req.file.filename}`;
+  }
+
+  if (req.body.image !== undefined) {
+    return req.body.image || null;
+  }
+
+  return existingImage;
+}
+
 export const createPromotion = async (req, res) => {
-  const { data, error } = buildPromotionData(req.body);
+  const { data, error } = buildPromotionData(req.body, buildImagePath(req));
 
   if (error) {
     return res.status(400).json({ error });
@@ -408,14 +421,9 @@ export const createPromotion = async (req, res) => {
 
 export const updatePromotion = async (req, res) => {
   const promotionId = Number.parseInt(req.params.id, 10);
-  const { data, error } = buildPromotionData(req.body);
 
   if (!Number.isFinite(promotionId)) {
     return res.status(400).json({ error: 'Некорректный идентификатор акции.' });
-  }
-
-  if (error) {
-    return res.status(400).json({ error });
   }
 
   try {
@@ -425,6 +433,12 @@ export const updatePromotion = async (req, res) => {
 
     if (!existingPromotion) {
       return res.status(404).json({ error: 'Акция не найдена.' });
+    }
+
+    const { data, error } = buildPromotionData(req.body, buildImagePath(req, existingPromotion.image));
+
+    if (error) {
+      return res.status(400).json({ error });
     }
 
     const updatedPromotion = await prisma.promotion.update({

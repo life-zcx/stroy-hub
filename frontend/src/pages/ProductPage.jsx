@@ -7,6 +7,7 @@ import { getProductById, getProductReviews } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 const CATEGORY_LABELS = {
   mixes: 'Сухие смеси',
@@ -70,7 +71,7 @@ export default function ProductPage({
         }
       } catch (err) {
         console.error(err);
-        setError(err.response?.data?.error || 'Товар не найден');
+        setError(getFriendlyErrorMessage(err));
       } finally {
         setLoading(false);
       }

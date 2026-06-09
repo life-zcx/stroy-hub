@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, Copy, Check, Clock } from 'lucide-react';
 import { createProductReview } from '../services/api';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 export default function ReviewModal({ isOpen, onClose, productId, productName, showToast, onSubmitSuccess }) {
   const [rating, setRating] = useState(5);
@@ -46,7 +47,7 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, s
         onSubmitSuccess(productId, rating);
       }
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Ошибка при отправке отзыва');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }

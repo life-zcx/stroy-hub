@@ -201,6 +201,7 @@ model Promotion {
   orders        Order[]
   userId        Int?
   user          User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  image         String?
 }
 
 model PageView {

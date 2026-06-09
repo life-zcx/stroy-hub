@@ -187,13 +187,21 @@ export const getPromotions = async () => {
   return response.data;
 };
 
-export const createPromotion = async (payload) => {
-  const response = await api.post('/promotions', payload);
+export const createPromotion = async (formData) => {
+  const response = await api.post('/promotions', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
   return response.data;
 };
 
-export const updatePromotion = async (id, payload) => {
-  const response = await api.put(`/promotions/${id}`, payload);
+export const updatePromotion = async (id, formData) => {
+  const response = await api.put(`/promotions/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
   return response.data;
 };
 

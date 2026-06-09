@@ -3,10 +3,10 @@ import { Truck, CreditCard, ShieldCheck, MapPin, Receipt, Compass } from 'lucide
 
 export default function Delivery() {
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left">
+    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
       
       {/* Page Header */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Доставка и оплата</h1>
         <p className="text-slate-500 text-sm">Условия доставки заказов по Алматы, Алматинской области и другим регионам Казахстана</p>
       </div>
@@ -15,12 +15,12 @@ export default function Delivery() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         
         {/* Delivery Block */}
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-8 md:p-10 shadow-sm space-y-6">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-            <div className="bg-emerald-50 rounded-xl p-2 text-emerald-700">
+            <div className="bg-slate-100 rounded-xl p-2.5 text-slate-700">
               <Truck className="h-5 w-5" />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-lg">Условия доставки</h3>
+            <h3 className="font-extrabold text-slate-950 text-lg font-outfit">Условия доставки</h3>
           </div>
 
           <div className="space-y-5 text-sm">
@@ -48,12 +48,12 @@ export default function Delivery() {
         </div>
 
         {/* Payment Block */}
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-8 md:p-10 shadow-sm space-y-6">
           <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-            <div className="bg-blue-50 rounded-xl p-2 text-blue-600">
+            <div className="bg-slate-100 rounded-xl p-2.5 text-slate-700">
               <CreditCard className="h-5 w-5" />
             </div>
-            <h3 className="font-extrabold text-slate-900 text-lg">Способы оплаты</h3>
+            <h3 className="font-extrabold text-slate-950 text-lg font-outfit">Способы оплаты</h3>
           </div>
 
           <div className="space-y-5 text-sm">
@@ -79,7 +79,7 @@ export default function Delivery() {
 
             <div className="space-y-2">
               <span className="block font-bold text-slate-900 flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-green-500" />
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
                 Безопасность сделки
               </span>
               <p className="text-slate-500 text-xs leading-relaxed">

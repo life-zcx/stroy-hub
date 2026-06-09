@@ -182,6 +182,8 @@ export default function App() {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         currentPage={currentPage}
         onNavigate={setCurrentPage}
+        cart={cart.cart}
+        onRemoveFromCart={cart.handleRemoveFromCart}
         setSelectedCategory={handleSetCategory}
         cartItemsCount={cart.cartItemsCount}
         onOpenCart={() => setCurrentPage('cart')}
@@ -258,14 +260,23 @@ export default function App() {
         )}
         {currentPage === 'delivery' && <Delivery />}
         {currentPage === 'legal' && <Legal defaultTab={legalTab} onNavigate={setCurrentPage} />}
-        {currentPage === 'services' && <Services />}
+        {currentPage === 'services' && <Services onOpenCallback={() => setIsCallbackModalOpen(true)} />}
         {currentPage === 'payment-terms' && <PaymentTerms />}
         {currentPage === 'delivery-terms' && <DeliveryTerms />}
         {currentPage === 'warranty' && <Warranty />}
         {currentPage === 'faq' && <Faq />}
         {currentPage === 'requisites' && <Requisites />}
         {currentPage === 'partners' && <Partners showToast={showToast} />}
-        {currentPage === 'promotions' && <Promotions />}
+        {currentPage === 'promotions' && (
+          <Promotions
+            promotionId={currentProductId}
+            onNavigate={setCurrentPage}
+            onAddToCart={cart.handleAddToCart}
+            onToggleFavorite={favorites.toggleFavorite}
+            isFavorite={favorites.isFavorite}
+            onOpenCallback={() => setIsCallbackModalOpen(true)}
+          />
+        )}
         {currentPage === 'orders' && (
           <MyOrders
             customer={auth.customer}

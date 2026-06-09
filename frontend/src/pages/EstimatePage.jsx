@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { matchEstimate } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 export default function EstimatePage({ onAddToCart, onNavigate, showToast, customer, onRequireAuth }) {
   const [file, setFile] = useState(null);
@@ -83,7 +84,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
       }
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || 'Произошла ошибка при отправке файла на сервер. Попробуйте еще раз.');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }

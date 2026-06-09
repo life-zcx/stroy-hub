@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Copy, TicketPercent } from 'lucide-react';
-import { getPublicPromotions } from '../services/api';
+import { Calendar, ChevronRight, HardHat, RefreshCw, TicketPercent } from 'lucide-react';
+import { getPublicPromotions, getProducts } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
-import { formatPromotionBenefit, formatPromotionTargets, formatPromotionTiers, getPromotionScopeLabel, getPromotionTheme } from '../utils/promotions';
+import ProductCard from '../components/ProductCard';
+
+const THEME_GRADIENTS = {
+  emerald: 'from-emerald-500 to-teal-600',
+  ocean: 'from-sky-500 to-blue-600',
+  sunset: 'from-amber-500 to-orange-600',
+  royal: 'from-indigo-500 to-violet-600',
+  graphite: 'from-slate-700 to-slate-900',
+  rose: 'from-rose-500 to-pink-600',
+};
+
+function getThemeGradient(theme) {
+  return THEME_GRADIENTS[theme] || THEME_GRADIENTS.emerald;
+}
 
 function formatDateTime(value) {
   if (!value) {
@@ -13,50 +26,72 @@ function formatDateTime(value) {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
 function formatPromotionPeriod(promotion) {
   if (promotion.startsAt && promotion.endsAt) {
-    return `С ${formatDateTime(promotion.startsAt)} до ${formatDateTime(promotion.endsAt)}`;
+    return `до ${formatDateTime(promotion.endsAt)}`;
   }
 
   if (promotion.endsAt) {
-    return `До ${formatDateTime(promotion.endsAt)}`;
+    return `до ${formatDateTime(promotion.endsAt)}`;
   }
 
   if (promotion.startsAt) {
-    return `С ${formatDateTime(promotion.startsAt)}`;
+    return `с ${formatDateTime(promotion.startsAt)}`;
   }
 
-  return 'Без ограничения по сроку';
+  return 'Бессрочная акция';
 }
 
-function getPromotionLabel(promotion) {
-  return promotion.promoCode ? 'Промокод' : 'Акция без кода';
+function getPromotionImage(promotion) {
+  if (promotion.image) {
+    return promotion.image;
+  }
+  const title = promotion?.title?.toLowerCase() || '';
+  if (title.includes('дрел') || title.includes('сверл') || title.includes('инструмент')) {
+    return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=800&auto=format&fit=crop';
+  }
+  if (title.includes('первый') || title.includes('заказ') || title.includes('скидк')) {
+    return 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=800&auto=format&fit=crop';
+  }
+  if (title.includes('доставк') || title.includes('логистик')) {
+    return 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800&auto=format&fit=crop';
+  }
+  return 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?q=80&w=800&auto=format&fit=crop';
 }
 
-export default function Promotions() {
+export default function Promotions({
+  promotionId,
+  onNavigate,
+  onAddToCart,
+  onToggleFavorite,
+  isFavorite,
+  onOpenCallback
+}) {
   const [promotions, setPromotions] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copiedPromotionId, setCopiedPromotionId] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const activePromotionId = promotionId ? Number(promotionId) : null;
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadPromotions = async () => {
+    const loadData = async () => {
       try {
-        const data = await getPublicPromotions();
+        const [promoData, productData] = await Promise.all([
+          getPublicPromotions(),
+          getProducts({ limit: 100 })
+        ]);
         if (isMounted) {
-          setPromotions(data);
+          setPromotions(promoData);
+          setProducts(productData);
         }
       } catch (error) {
         console.error(error);
-        if (isMounted) {
-          setPromotions([]);
-        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -64,59 +99,172 @@ export default function Promotions() {
       }
     };
 
-    loadPromotions();
+    loadData();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const handleCopyPromoCode = async (promotion) => {
-    if (!promotion?.promoCode) {
-      return;
-    }
+  const selectedPromo = promotions.find(p => p.id === activePromotionId);
 
-    try {
-      await navigator.clipboard.writeText(promotion.promoCode);
-      setCopiedPromotionId(promotion.id);
-      window.setTimeout(() => {
-        setCopiedPromotionId((current) => (current === promotion.id ? null : current));
-      }, 2000);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // Render detail view
+  if (selectedPromo) {
+    // Filter products targeting this promotion
+    const promoProducts = products.filter(p => 
+      selectedPromo.targetProductIds?.includes(p.id) || 
+      selectedPromo.targetCategoryIds?.includes(p.categoryId)
+    );
 
-  return (
-    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-10 font-sans text-slate-800 text-left">
-      <div className="space-y-4">
-        <div className="space-y-3">
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции и скидки</h1>
-          <p className="text-slate-500 text-sm md:text-base max-w-3xl leading-relaxed">
-            Здесь появляются все запущенные через админку промо-кампании: сезонные скидки, спецпредложения для оптовых заказов и промокоды,
-            которые можно применить при оформлении покупки.
+    // Fallback hit products if general promo
+    const hitProducts = products.filter(p => p.isHit).slice(0, 3);
+    const displayProducts = promoProducts.length > 0 ? promoProducts : hitProducts;
+
+    return (
+      <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
+        {/* Breadcrumbs */}
+        <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed">
+          <button 
+            onClick={() => onNavigate?.('home')} 
+            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          >
+            Главная
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
+          <button 
+            onClick={() => onNavigate?.('promotions')} 
+            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          >
+            Акции
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
+          <span className="text-slate-900 font-extrabold truncate max-w-xs sm:max-w-md">{selectedPromo.title}</span>
+        </nav>
+
+        {/* Title */}
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-outfit leading-tight">
+          {selectedPromo.title}
+        </h1>
+
+        {/* Big Banner Image */}
+        <div className="aspect-[21/9] w-full overflow-hidden rounded-[2.5rem] border border-slate-200/80 shadow-sm relative bg-slate-100">
+          {selectedPromo.image ? (
+            <img 
+              src={selectedPromo.image} 
+              alt={selectedPromo.title} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(selectedPromo.theme)} flex flex-col items-center justify-center text-white p-6`}>
+              <span className="text-4xl sm:text-6xl font-black font-outfit uppercase tracking-tight drop-shadow-md select-none">
+                -{selectedPromo.discountValue}{selectedPromo.discountType === 'PERCENT' ? '%' : ' ₸'}
+              </span>
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-white/20 px-3.5 py-1.5 rounded-xl mt-3 backdrop-blur-md border border-white/10 select-none">
+                {selectedPromo.badge || (selectedPromo.promoCode ? 'По промокоду' : 'Спецпредложение')}
+              </span>
+            </div>
+          )}
+          {selectedPromo.promoCode && (
+            <div 
+              onClick={() => {
+                navigator.clipboard.writeText(selectedPromo.promoCode);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="absolute top-6 right-6 bg-slate-950/75 backdrop-blur-xl border border-white/10 text-white rounded-[1.5rem] p-4 flex flex-col items-center gap-1.5 shadow-2xl hover:bg-slate-950/85 transition-all duration-300 cursor-pointer select-none active:scale-95"
+              title="Нажмите, чтобы скопировать"
+            >
+              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-350">
+                <TicketPercent className="h-3.5 w-3.5 text-emerald-400" />
+                <span>{copied ? 'Скопировано!' : 'Промокод'}</span>
+              </div>
+              <span className={`font-mono text-sm font-black tracking-widest px-3.5 py-1.5 rounded-xl border transition-all duration-300 ${copied ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400 scale-102' : 'bg-white/10 border-white/5 text-yellow-300'}`}>
+                {selectedPromo.promoCode}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Form Callout */}
+        <div className="bg-slate-50 border border-slate-200/60 rounded-[2rem] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <p className="text-sm font-bold text-slate-700 leading-relaxed text-left max-w-xl">
+            Оформите заявку на сайте, мы свяжемся с вами в ближайшее время и ответим на все интересующие вопросы.
+          </p>
+          <button
+            onClick={onOpenCallback}
+            className="w-full md:w-auto px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md text-xs uppercase tracking-wider shrink-0 cursor-pointer"
+          >
+            Заказать услугу
+          </button>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-4">
+          <p className="text-base text-slate-800 leading-relaxed font-bold">
+            {selectedPromo.description}
+          </p>
+          <p className="text-slate-500 text-sm leading-relaxed font-semibold">
+            В рамках данной акции вы получаете уникальную возможность приобрести высококачественные материалы и инструменты с дополнительной скидкой или приятным подарком. Наша компания гарантирует оперативную доставку и высочайший уровень сервиса. Торопитесь, предложение ограничено!
           </p>
         </div>
+
+        {/* Promoted Products */}
+        <div className="space-y-6 pt-4 border-t border-slate-100">
+          <h3 className="text-xl font-extrabold text-slate-900 font-outfit">
+            {promoProducts.length > 0 ? 'Товары по акции' : 'Популярные товары'}
+          </h3>
+          {promoProducts.length === 0 && (
+            <p className="text-xs font-semibold text-slate-400 -mt-3">Эта акция распространяется на все товары в нашем каталоге. Ознакомьтесь с нашими хитами продаж:</p>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {displayProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={onAddToCart}
+                onOpenDetails={(id) => onNavigate('product', id)}
+                onToggleFavorite={onToggleFavorite}
+                isFavorite={isFavorite?.(product.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Additional info */}
+        <div className="space-y-3 pt-6 border-t border-slate-100 pb-12">
+          <h4 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider font-outfit">Условия проведения акций</h4>
+          <ul className="list-disc pl-4 text-xs text-slate-500 space-y-1.5 font-semibold leading-relaxed">
+            <li>Скидки по промокодам и акциям не суммируются между собой.</li>
+            <li>Акционные предложения и подарки действительны, пока товар есть в наличии.</li>
+            <li>Подробную консультацию по условиям и стоимости доставки акционных товаров вы можете получить у менеджера при подтверждении заказа.</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left px-4">
+      <div className="space-y-3">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции и скидки</h1>
+        <p className="text-slate-500 text-sm leading-relaxed max-w-3xl">
+          В разделе собраны сезонные спецпредложения, распродажи и промокоды Строй Хаба на строительные материалы и инструменты. Выбирайте товары со скидками и экономьте на покупках!
+        </p>
       </div>
 
       {loading ? (
-        <div className="grid gap-5">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row animate-pulse">
-              <div className="bg-slate-200 md:w-72 h-44 md:h-auto" />
-              <div className="p-8 flex-1 space-y-4">
-                <div className="h-4 w-28 rounded bg-slate-200" />
-                <div className="h-8 w-3/4 rounded bg-slate-200" />
-                <div className="space-y-2">
-                  <div className="h-3 rounded bg-slate-100" />
-                  <div className="h-3 rounded bg-slate-100 w-5/6" />
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[1, 2].map((item) => (
+            <div key={item} className="space-y-4 animate-pulse">
+              <div className="aspect-[16/9] w-full bg-slate-200 rounded-[2rem]" />
+              <div className="h-5 w-3/4 rounded bg-slate-200" />
+              <div className="h-3 w-1/4 rounded bg-slate-200" />
             </div>
           ))}
         </div>
       ) : promotions.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-[2rem] p-10 text-center shadow-sm">
+        <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-10 text-center shadow-sm">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-5">
             <TicketPercent className="h-8 w-8 text-slate-400" />
           </div>
@@ -126,83 +274,47 @@ export default function Promotions() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {promotions.map((promotion) => {
-            const theme = getPromotionTheme(promotion.theme);
-
-            return (
-              <div key={promotion.id} className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row">
-                <div className={`bg-gradient-to-br ${theme.gradient} text-white p-8 md:w-72 shrink-0 flex flex-col justify-between items-start gap-6`}>
-                  <div className="space-y-3 w-full">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-[10px] uppercase font-black bg-white/20 px-2.5 py-1 rounded-md tracking-wider">
-                        {promotion.badge || 'Предложение'}
-                      </span>
-                      <span className="text-[10px] uppercase font-black bg-slate-950/20 px-2.5 py-1 rounded-md tracking-wider border border-white/10">
-                        {getPromotionLabel(promotion)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-xs font-bold text-slate-100 uppercase">Выгода</span>
-                      <span className="block text-2xl font-black leading-tight mt-1">{promotion.discountType === 'PERCENT' ? `${promotion.discountValue}%` : formatPrice(promotion.discountValue)}</span>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {promotions.map((promotion) => (
+            <div
+              key={promotion.id}
+              onClick={() => onNavigate?.('promotions', promotion.id)}
+              className="group cursor-pointer space-y-4 text-left"
+            >
+              <div className="aspect-[16/9] w-full overflow-hidden rounded-[2rem] border border-slate-200/80 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-emerald-500/20 relative bg-slate-50">
+                {promotion.image ? (
+                  <img
+                    src={promotion.image}
+                    alt={promotion.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(promotion.theme)} flex flex-col items-center justify-center text-white p-4 group-hover:scale-105 transition-transform duration-500`}>
+                    <span className="text-3xl font-black font-outfit drop-shadow-sm select-none">
+                      -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-lg mt-2.5 backdrop-blur-md border border-white/10 select-none">
+                      {promotion.badge || (promotion.promoCode ? 'По промокоду' : 'Скидка')}
+                    </span>
                   </div>
-
-                  <div className="space-y-2 w-full">
-                    <span className="block text-xs font-bold text-slate-100 uppercase">Код для оформления</span>
-                    <div className="space-y-2">
-                      <span className="block font-black text-lg font-mono tracking-[0.2em] bg-slate-950/20 px-3 py-2 rounded-xl border border-white/10 break-all">
-                        {promotion.promoCode || 'БЕЗ КОДА'}
-                      </span>
-                      {promotion.promoCode && (
-                        <button
-                          type="button"
-                          onClick={() => handleCopyPromoCode(promotion)}
-                          className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] px-3 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-100 transition-colors"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                          {copiedPromotionId === promotion.id ? 'Скопировано' : 'Скопировать'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 sm:p-8 flex-grow flex flex-col justify-between gap-5">
-                  <div className="space-y-3">
-                    <h3 className="font-extrabold text-slate-950 text-xl font-outfit leading-snug">{promotion.title}</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">{promotion.description}</p>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className={`rounded-2xl border p-4 ${theme.soft}`}>
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Условия</span>
-                      <p className="text-sm font-semibold text-slate-900 mt-2">{formatPromotionBenefit(promotion)}</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-100 p-4 bg-slate-50/70">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Срок действия</span>
-                      <div className="flex items-center gap-2 mt-2 text-sm font-semibold text-slate-900">
-                        <Calendar className={`h-4 w-4 ${theme.accent}`} />
-                        <span>{formatPromotionPeriod(promotion)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-slate-100 p-4 bg-white/70">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Где действует</span>
-                      <p className="text-sm font-semibold text-slate-900 mt-2">{getPromotionScopeLabel(promotion.scope)}</p>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{formatPromotionTargets(promotion)}</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-100 p-4 bg-white/70">
-                      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Каскадные уровни</span>
-                      <p className="text-sm font-semibold text-slate-900 mt-2">{formatPromotionTiers(promotion) || 'Без дополнительных уровней'}</p>
-                    </div>
-                  </div>
-                </div>
+                )}
+                {promotion.discountValue > 0 && promotion.image && (
+                  <span className="absolute bottom-4 left-4 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                    -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
+                  </span>
+                )}
               </div>
-            );
-          })}
+              <div className="space-y-1 pl-1">
+                <h3 className="font-extrabold text-slate-900 text-base leading-snug group-hover:text-emerald-600 transition-colors">
+                  {promotion.title}
+                </h3>
+                <p className="text-slate-400 text-xs font-semibold flex items-center gap-1 mt-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatPromotionPeriod(promotion)}</span>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

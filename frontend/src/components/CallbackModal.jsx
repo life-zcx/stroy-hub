@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Phone, Clock } from 'lucide-react';
 import { createCallbackRequest } from '../services/api';
 import { formatKazakhPhone, normalizeInput, validateName, validatePhone } from '../utils/formValidation';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 export default function CallbackModal({ isOpen, onClose, onNavigate, showToast }) {
   const [name, setName] = useState('');
@@ -44,7 +45,7 @@ export default function CallbackModal({ isOpen, onClose, onNavigate, showToast }
       setName('');
       setPhone('');
     } catch (error) {
-      showToast?.('❌ Ошибка при отправке заявки: ' + (error.response?.data?.error || error.message));
+      showToast?.('❌ Ошибка при отправке заявки: ' + getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
     }

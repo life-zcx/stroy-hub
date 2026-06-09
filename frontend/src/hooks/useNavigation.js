@@ -14,6 +14,12 @@ const getInitialPage = () => {
     return { page: 'product', productId: productMatch[1], categorySlug: null };
   }
 
+  // Promotions detail route check
+  const promotionMatch = path.match(/^promotions\/(\d+)$/);
+  if (promotionMatch) {
+    return { page: 'promotions', productId: promotionMatch[1], categorySlug: null, orderId: null };
+  }
+
   // Catalog with category check
   const catalogMatch = path.match(/^catalog\/(.+)$/);
   if (catalogMatch) {
@@ -37,13 +43,20 @@ export default function useNavigation() {
 
   const setCurrentPage = (page, productId = null, categorySlug = null) => {
     const orderId = page === 'order-detail' ? productId : null;
-    setNavigation({ page, productId: page === 'product' ? productId : null, categorySlug, orderId });
+    setNavigation({ 
+      page, 
+      productId: (page === 'product' || page === 'promotions') ? productId : null, 
+      categorySlug, 
+      orderId 
+    });
     
     let path = '/';
     if (page === 'product') {
       path = `/product/${productId}`;
     } else if (page === 'order-detail') {
       path = `/orders/${productId}`;
+    } else if (page === 'promotions' && productId) {
+      path = `/promotions/${productId}`;
     } else if (page === 'catalog') {
       path = categorySlug && categorySlug !== 'all' ? `/catalog/${categorySlug}` : '/catalog';
     } else if (page !== 'home') {

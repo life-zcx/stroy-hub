@@ -23,6 +23,7 @@ import { createOrder, validatePromotionCode, getProducts } from '../services/api
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
@@ -284,7 +285,7 @@ export default function CartPage({
         setPromoPreview({ valid: true, ...data.preview });
         setPromoError('');
       } catch (error) {
-        setPromoPreview({ valid: false, discountAmount: 0, totalAmount: cartTotal, error: error.response?.data?.error || 'Промокод больше не подходит к текущему заказу.' });
+        setPromoPreview({ valid: false, discountAmount: 0, totalAmount: cartTotal, error: getFriendlyErrorMessage(error) });
       }
     };
 
@@ -315,7 +316,7 @@ export default function CartPage({
       console.error(error);
       setAppliedPromotion(null);
       setPromoPreview({ valid: false, discountAmount: 0, totalAmount: cartTotal });
-      setPromoError(error.response?.data?.error || 'Не удалось применить промокод.');
+      setPromoError(getFriendlyErrorMessage(error));
     } finally {
       setPromoLoading(false);
     }
@@ -390,7 +391,7 @@ export default function CartPage({
       setSuccessOrder(createdOrder);
     } catch (error) {
       console.error(error);
-      alert('Ошибка при оформлении заказа: ' + (error.response?.data?.error || error.message));
+      alert('Ошибка при оформлении заказа: ' + getFriendlyErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

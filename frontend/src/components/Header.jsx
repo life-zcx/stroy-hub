@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
+import { formatPrice } from '../utils/formatPrice';
 
 const MOBILE_NAV_ITEMS = [
   { id: 'catalog', name: 'Каталог' },
@@ -35,6 +36,8 @@ export default function Header({
   currentPage,
   onNavigate,
   setSelectedCategory,
+  cart = [],
+  onRemoveFromCart,
   cartItemsCount,
   onOpenCart,
   onOpenAuthLogin,
@@ -411,6 +414,7 @@ export default function Header({
   const rootCategories = categories.filter(c => !c.parentId);
 
   const matchedProducts = localSearchQuery.trim() === '' ? [] : products.slice(0, 6);
+  const cartTotal = cart?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0;
 
   return (
     <>
@@ -958,21 +962,96 @@ export default function Header({
               </button>
 
               {/* Cart */}
-              <button
-                type="button"
-                onClick={onOpenCart}
-                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
-              >
-                <div className="relative">
-                  <ShoppingCart className="h-5 w-5 mb-0.5" />
-                  {cartItemsCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
-                      {cartItemsCount}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wide">Корзина</span>
-              </button>
+              <div className="relative group/cart py-1">
+                <button
+                  type="button"
+                  onClick={onOpenCart}
+                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
+                >
+                  <div className="relative">
+                    <ShoppingCart className="h-5 w-5 mb-0.5" />
+                    {cartItemsCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
+                        {cartItemsCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide">Корзина</span>
+                </button>
+
+                {/* Premium Cart Popover Dropdown */}
+                {cartItemsCount > 0 && cart && cart.length > 0 && (
+                  <div className="absolute right-0 top-full pt-3 hidden group-hover/cart:block z-50 w-[340px] animate-fade-in pointer-events-auto">
+                    <div className="bg-white border border-slate-200/80 rounded-3xl shadow-2xl overflow-hidden p-5 flex flex-col gap-4 text-left">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-900">Товары в корзине</span>
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{cartItemsCount} шт</span>
+                      </div>
+
+                      {/* Items List */}
+                      <div className="flex flex-col gap-3 max-h-56 overflow-y-auto pr-1 divide-y divide-slate-100">
+                        {cart.map((item) => (
+                          <div key={item.id} className="flex gap-3 pt-3 first:pt-0 items-center justify-between group/item">
+                            <div
+                              onClick={() => onNavigate?.('product', item.id)}
+                              className="flex gap-2.5 items-center min-w-0 cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-4/5 h-4/5 object-contain"
+                                  onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }}
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-bold text-slate-800 truncate leading-snug w-[150px] group-hover/item:text-blue-600 transition-colors" title={item.name}>
+                                  {item.name}
+                                </h4>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                  {item.quantity} шт × {formatPrice(item.price)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs font-black text-slate-900">{formatPrice(item.price * item.quantity)}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRemoveFromCart?.(item.id);
+                                }}
+                                className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1 rounded-full transition-colors cursor-pointer border-0 bg-transparent"
+                                title="Удалить"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer summary */}
+                      <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
+                        <div className="flex justify-between items-end">
+                          <span className="text-xs font-bold text-slate-550">Итого к оплате:</span>
+                          <span className="text-base font-extrabold text-emerald-600 font-outfit">{formatPrice(cartTotal)}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onNavigate('cart');
+                          }}
+                          className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-wider rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 group cursor-pointer"
+                        >
+                          <span>Перейти в корзину</span>
+                          <ShoppingCart className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile Actions and Hamburger */}

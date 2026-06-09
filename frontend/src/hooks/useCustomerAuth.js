@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getProfile, login, logout, register, forgotPassword, resetPassword, sendRegisterCode } from '../services/api';
+import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 export default function useCustomerAuth(showToast) {
   const [customer, setCustomer] = useState(null);
@@ -85,7 +86,7 @@ export default function useCustomerAuth(showToast) {
         setResendCooldown(60);
       }
     } catch (err) {
-      setAuthError(err.response?.data?.error || err.message || 'Ошибка при повторной отправке');
+      setAuthError(getFriendlyErrorMessage(err));
     } finally {
       setAuthLoading(false);
     }
@@ -191,7 +192,7 @@ export default function useCustomerAuth(showToast) {
       }
     } catch (err) {
       console.error(err);
-      setAuthError(err.response?.data?.error || err.message || 'Ошибка');
+      setAuthError(getFriendlyErrorMessage(err));
     } finally {
       setAuthLoading(false);
     }

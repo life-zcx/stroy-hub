@@ -6,6 +6,19 @@ import {
 import { getBrands, getHomePromotions } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 
+const THEME_GRADIENTS = {
+  emerald: 'from-emerald-500 to-teal-600',
+  ocean: 'from-sky-500 to-blue-600',
+  sunset: 'from-amber-500 to-orange-600',
+  royal: 'from-indigo-500 to-violet-600',
+  graphite: 'from-slate-700 to-slate-900',
+  rose: 'from-rose-500 to-pink-600',
+};
+
+function getThemeGradient(theme) {
+  return THEME_GRADIENTS[theme] || THEME_GRADIENTS.emerald;
+}
+
 export default function Home({ onNavigate, setSelectedCategory, categories = [] }) {
   const [brands, setBrands] = useState([]);
   const [homePromotions, setHomePromotions] = useState([]);
@@ -113,63 +126,63 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-6 sm:gap-8 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => onNavigate('catalog')}
-                  className="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider"
+                  className="w-full sm:w-auto justify-center px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                 >
-                  Перейти в каталог
+                  <span>Перейти в каталог</span>
                   <ArrowRight className="h-4.5 w-4.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onNavigate('estimate')}
-                  className="inline-flex items-center gap-2 text-slate-700 hover:text-blue-600 font-extrabold transition-all text-xs uppercase tracking-wider py-3.5 group"
+                  className="w-full sm:w-auto justify-center px-8 py-4 bg-white border border-slate-200 hover:border-slate-350 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl transition-all shadow-sm flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                 >
-                  Заказ по смете
-                  <ArrowRight className="h-4.5 w-4.5 text-blue-600 transition-transform group-hover:translate-x-1" />
+                  <span>Заказ по смете</span>
+                  <ArrowRight className="h-4.5 w-4.5 text-slate-400 group-hover:text-slate-600" />
                 </button>
               </div>
             </div>
 
             {/* Right Column: Sleek Minimalist Glass Tiles */}
-            <div className="relative lg:col-span-5 space-y-3.5 z-10">
+            <div className="relative lg:col-span-5 space-y-4 z-10">
               {/* Tile 1 */}
-              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
-                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
-                  <Building2 className="h-5 w-5" strokeWidth={2} />
+              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+                  <Building2 className="h-6 w-6" strokeWidth={2} />
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Цены заводов</h4>
-                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Цены заводов</h4>
+                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
                     Прямые поставки от производителей без посредников и наценок
                   </p>
                 </div>
               </div>
 
               {/* Tile 2 */}
-              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
-                <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
-                  <ShieldCheck className="h-5 w-5" strokeWidth={2} />
+              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+                  <ShieldCheck className="h-6 w-6" strokeWidth={2} />
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Сертификаты качества</h4>
-                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Сертификаты качества</h4>
+                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
                     Полный комплект паспортов качества и соответствия на каждую партию
                   </p>
                 </div>
               </div>
 
               {/* Tile 3 */}
-              <div className="group bg-white hover:bg-slate-50 border border-slate-350 p-4 rounded-2xl shadow-sm text-left flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md backdrop-blur-[2px]">
-                <div className="p-2.5 rounded-xl bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-all duration-300 shrink-0 shadow-sm">
-                  <Truck className="h-5 w-5" strokeWidth={2} />
+              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+                  <Truck className="h-6 w-6" strokeWidth={2} />
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Региональные поставки</h4>
-                  <p className="text-slate-600 group-hover:text-slate-800 text-[11px] transition-colors leading-normal font-semibold">
-                    Быстрая и надежная доставка со складов in Алматы и Астане
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Региональные поставки</h4>
+                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                    Быстрая и надежная доставка со складов в Алматы и Астане
                   </p>
                 </div>
               </div>
@@ -180,49 +193,83 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
       </div>
 
       {homePromotions.length > 0 && (
-        <section className="space-y-5">
+        <section className="space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div className="text-left space-y-1">
-              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции на главной</h2>
-              <p className="text-slate-500 text-sm">Показываем только те предложения, которые менеджер отметил для главной страницы</p>
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции и спецпредложения</h2>
+              <p className="text-slate-500 text-sm">Актуальные сезонные предложения, промокоды и распродажи</p>
             </div>
-            <button onClick={() => onNavigate('promotions')} className="text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors">
-              Все акции
+            <button onClick={() => onNavigate('promotions')} className="text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors flex items-center gap-1">
+              Все акции <ArrowRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {homePromotions.map((promotion) => (
-              <button
+              <div
                 key={promotion.id}
-                type="button"
-                onClick={() => onNavigate('promotions')}
-                className="text-left rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/70 to-emerald-50/40 p-5 shadow-sm hover:shadow-md transition-all"
+                onClick={() => onNavigate('promotions', promotion.id)}
+                className="group cursor-pointer bg-white rounded-[2rem] border border-slate-200/80 hover:shadow-xl hover:border-emerald-500/20 transition-all duration-500 overflow-hidden flex flex-col h-full"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-emerald-600 text-white">
-                      <TicketPercent className="h-3.5 w-3.5" />
-                      {promotion.badge || 'Акция'}
+                {/* Visual Area */}
+                <div className="aspect-[16/10] w-full overflow-hidden relative bg-slate-50 border-b border-slate-100 shrink-0">
+                  {promotion.image ? (
+                    <img
+                      src={promotion.image}
+                      alt={promotion.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(promotion.theme)} flex flex-col items-center justify-center text-white p-4 group-hover:scale-105 transition-transform duration-500`}>
+                      <span className="text-3xl font-black font-outfit drop-shadow-sm select-none">
+                        -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
+                      </span>
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-lg mt-2.5 backdrop-blur-md border border-white/10 select-none">
+                        {promotion.badge || (promotion.promoCode ? 'По промокоду' : 'Скидка')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Promo Badge / Discount Badge overlay for image layouts */}
+                  {promotion.image && promotion.discountValue > 0 && (
+                    <span className="absolute bottom-4 left-4 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                      -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
                     </span>
-                    <h3 className="text-lg font-black text-slate-950 font-outfit leading-tight">{promotion.title}</h3>
-                    <p className="text-xs text-slate-700 font-semibold leading-relaxed line-clamp-3">{promotion.description}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="block text-[10px] uppercase font-black tracking-[0.18em] text-emerald-700">Промокод</span>
-                    <span className="block mt-1 px-3 py-2 rounded-xl bg-slate-900 text-white font-black tracking-[0.2em] text-sm">
-                      {promotion.promoCode || 'AUTO'}
+                  )}
+
+                  {/* Promo Code indicator overlay */}
+                  {promotion.promoCode && (
+                    <span className="absolute top-4 right-4 bg-slate-950/75 backdrop-blur-md border border-white/10 text-white rounded-xl px-2.5 py-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider shadow-md">
+                      <TicketPercent className="h-3 w-3 text-emerald-400" />
+                      <span>{promotion.promoCode}</span>
                     </span>
-                  </div>
+                  )}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-emerald-100 flex items-center justify-between gap-3 text-xs">
-                  <span className="font-semibold text-slate-600">
-                    {promotion.discountType === 'PERCENT' ? `Скидка ${promotion.discountValue}%` : `Скидка ${formatPrice(promotion.discountValue)}`}
-                  </span>
-                  <span className="font-bold text-emerald-700">Открыть акцию</span>
+                {/* Content Area */}
+                <div className="p-6 flex flex-col justify-between flex-grow text-left">
+                  <div className="space-y-2">
+                    <span className="inline-block text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">
+                      {promotion.badge || 'Акция'}
+                    </span>
+                    <h3 className="text-base font-extrabold text-slate-900 font-outfit leading-snug group-hover:text-emerald-600 transition-colors line-clamp-2">
+                      {promotion.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed line-clamp-3">
+                      {promotion.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="font-extrabold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg text-[10px]">
+                      {promotion.discountType === 'PERCENT' ? `Скидка ${promotion.discountValue}%` : `Скидка ${formatPrice(promotion.discountValue)}`}
+                    </span>
+                    <span className="font-bold text-emerald-700 group-hover:text-emerald-600 transition-colors flex items-center gap-1">
+                      Открыть акцию <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
