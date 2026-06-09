@@ -1,34 +1,36 @@
-import { RESEND_API_KEY } from '../config/env.js';
+import nodemailer from 'nodemailer';
+import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } from '../config/env.js';
+
+// Create a transporter object using SMTP transport
+const transporter = nodemailer.createTransport({
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465, // true for 465, false for other ports (like 587)
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
+});
 
 export const sendEmail = async ({ to, subject, html }) => {
-  if (!RESEND_API_KEY) {
-    console.warn(`[EMAIL BYPASS] RESEND_API_KEY not set. Would send email to: ${to} with subject: ${subject}`);
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.warn(`[EMAIL BYPASS] SMTP credentials not set. Would send email to: ${to} with subject: ${subject}`);
     console.log(`[EMAIL BODY]:\n`, html);
     return { id: 'mock-id-bypass' };
   }
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'Tormag.kz <noreply@tormag.kz>',
-        to,
-        subject,
-        html
-      })
+    const info = await transporter.sendMail({
+      from: `"Tormag.kz" <${SMTP_USER}>`, // sender address
+      to, // list of receivers
+      subject, // Subject line
+      html, // html body
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || JSON.stringify(data));
-    }
-    return data;
+    return { id: info.messageId };
   } catch (error) {
-    console.error('[EMAIL ERROR] Failed to send email via Resend API:', error.message);
+    console.error('[EMAIL ERROR] Failed to send email via SMTP:', error.message);
     throw error;
   }
 };
+
