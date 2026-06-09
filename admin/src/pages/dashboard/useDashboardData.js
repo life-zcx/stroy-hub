@@ -785,8 +785,9 @@ export function useDashboardData({ user, showToast }) {
 
     if (categoryImageFile) {
       formData.append('imageFile', categoryImageFile);
-    } else if (categoryForm.image) {
-      formData.append('image', categoryForm.image);
+    } else {
+      // Always send the image field — empty string tells backend to clear it
+      formData.append('image', categoryForm.image || '');
     }
 
     try {
@@ -822,6 +823,7 @@ export function useDashboardData({ user, showToast }) {
       cashbackPercent: category.cashbackPercent || '',
     });
     setCategoryImageFile(null);
+    setPreviewCategoryImage(category.image || '');
     setIsCategoryModalOpen(true);
   };
 
