@@ -79,8 +79,8 @@ export default function PromotionModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto animate-slide-up z-10 p-6 sm:p-8 flex flex-col border border-slate-100" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+      <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden pointer-events-auto animate-slide-up z-10 flex flex-col border border-slate-100" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4 p-6 sm:p-8 sm:pb-4 shrink-0">
           <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2.5 font-outfit">
             <SparklesIcon className={`h-6 w-6 ${editingPromotion ? 'text-emerald-500' : 'text-emerald-600'}`} />
             {editingPromotion ? 'Редактировать акцию' : 'Новая акция или промокод'}
@@ -90,7 +90,7 @@ export default function PromotionModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6 flex-grow text-left">
+        <form onSubmit={onSubmit} className="space-y-6 flex-grow overflow-y-auto admin-main-scroll p-6 sm:p-8 text-left">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Название акции *</label>
@@ -107,8 +107,9 @@ export default function PromotionModal({
             <textarea name="description" value={promotionForm.description} onChange={onFormChange} required rows="3" placeholder="Расскажите, кто и на каких условиях может использовать акцию" className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200" />
           </div>
 
-          {/* Banner 1: Card / Preview Image */}
-          <div className="grid md:grid-cols-2 gap-4">
+          {/* Promotion Banners (Card and Detail) */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Banner 1: Card / Preview Image */}
             <div>
               <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
                 Баннер для карточки (Превью)
@@ -151,24 +152,8 @@ export default function PromotionModal({
                 )}
               </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
-                Или ссылка на баннер карточки
-              </label>
-              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">&nbsp;</span>
-              <input
-                type="text"
-                name="imageCard"
-                value={promotionForm.imageCard || ''}
-                onChange={onFormChange}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200"
-              />
-            </div>
-          </div>
 
-          {/* Banner 2: Detail Page Image */}
-          <div className="grid md:grid-cols-2 gap-4">
+            {/* Banner 2: Detail Page Image */}
             <div>
               <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
                 Баннер для страницы акции (Шапка)
@@ -210,20 +195,6 @@ export default function PromotionModal({
                   </div>
                 )}
               </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
-                Или ссылка на детальный баннер
-              </label>
-              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">&nbsp;</span>
-              <input
-                type="text"
-                name="imageDetail"
-                value={promotionForm.imageDetail || ''}
-                onChange={onFormChange}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200"
-              />
             </div>
           </div>
 
