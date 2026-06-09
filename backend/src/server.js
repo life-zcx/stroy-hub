@@ -86,6 +86,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Request logging middleware. Full records are available through docker logs.
 app.use((req, res, next) => {
+  // Skip health check — Docker pings it every 15s, no need to pollute logs
+  if (req.path === '/health') {
+    return next();
+  }
+
   const startedAt = Date.now();
 
   res.on('finish', () => {
