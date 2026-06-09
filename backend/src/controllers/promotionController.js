@@ -193,6 +193,8 @@ function buildPromotionData(body, imagePath = null, imageCardPath = null, imageD
   const minOrderAmount = parseFloatOrNull(body.minOrderAmount);
   const minQuantity = parseIntOrNull(body.minQuantity);
   const usageLimit = parseIntOrNull(body.usageLimit);
+  const maxUsagePerUser = parseIntOrNull(body.maxUsagePerUser);
+  const isFirstOrderOnly = parseBoolean(body.isFirstOrderOnly, false);
   const theme = String(body.theme || 'emerald').trim();
   const startsAt = body.startsAt ? parseDateOrNull(body.startsAt) : null;
   const endsAt = body.endsAt ? parseDateOrNull(body.endsAt) : null;
@@ -238,6 +240,10 @@ function buildPromotionData(body, imagePath = null, imageCardPath = null, imageD
     return { error: 'Лимит использований должен быть больше нуля.' };
   }
 
+  if (maxUsagePerUser !== null && maxUsagePerUser <= 0) {
+    return { error: 'Лимит использований на пользователя должен быть больше нуля.' };
+  }
+
   if (!PROMOTION_THEMES.includes(theme)) {
     return { error: 'Указана неподдерживаемая тема оформления.' };
   }
@@ -281,6 +287,8 @@ function buildPromotionData(body, imagePath = null, imageCardPath = null, imageD
       minOrderAmount,
       minQuantity,
       usageLimit,
+      maxUsagePerUser,
+      isFirstOrderOnly,
       theme,
       startsAt,
       endsAt,

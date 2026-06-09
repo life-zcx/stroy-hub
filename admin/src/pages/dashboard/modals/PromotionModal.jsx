@@ -289,7 +289,7 @@ export default function PromotionModal({
             )}
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-4 gap-4">
             <div>
               <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Дата старта</label>
               <input type="datetime-local" name="startsAt" value={promotionForm.startsAt} onChange={onFormChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-bold transition-all duration-200" />
@@ -301,6 +301,10 @@ export default function PromotionModal({
             <div>
               <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Лимит использований</label>
               <input type="number" min="1" name="usageLimit" value={promotionForm.usageLimit} onChange={onFormChange} placeholder="Без лимита" className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-bold transition-all duration-200" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-2 pl-1">Макс. раз на клиента</label>
+              <input type="number" min="1" name="maxUsagePerUser" value={promotionForm.maxUsagePerUser} onChange={onFormChange} placeholder="Без ограничений" className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-bold transition-all duration-200" />
             </div>
           </div>
 
@@ -317,6 +321,25 @@ export default function PromotionModal({
               <input type="checkbox" name="showOnHome" checked={promotionForm.showOnHome} onChange={onFormChange} className="h-4.5 w-4.5 rounded-lg border-slate-350 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-2 transition-all cursor-pointer" />
               Показывать на главной странице в компактном баннере
             </label>
+            <div className="sm:col-span-2 border-t border-slate-200 pt-4 mt-1">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  name="isFirstOrderOnly"
+                  checked={!!promotionForm.isFirstOrderOnly}
+                  onChange={onFormChange}
+                  className="mt-0.5 h-4.5 w-4.5 rounded-lg border-slate-350 text-amber-500 focus:ring-amber-400 focus:ring-offset-2 transition-all cursor-pointer shrink-0"
+                />
+                <div>
+                  <span className="block text-sm font-bold text-slate-700 group-hover:text-amber-600 transition-colors">
+                    Только для первого заказа
+                  </span>
+                  <span className="block text-[11px] font-semibold text-slate-400 mt-0.5">
+                    Промокод сработает только у тех клиентов, у которых ещё нет ни одного оформленного заказа
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div className="flex gap-4 border-t border-slate-100 pt-5 mt-4">

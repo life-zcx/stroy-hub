@@ -91,6 +91,8 @@ function createEmptyPromotionForm() {
     minQuantity: '',
     theme: 'emerald',
     usageLimit: '',
+    maxUsagePerUser: '',
+    isFirstOrderOnly: false,
     targetProductIds: [],
     targetCategoryIds: [],
     quantityTiers: [],
@@ -517,6 +519,8 @@ export function useDashboardData({ user, showToast }) {
     if (promotionForm.minQuantity) formData.append('minQuantity', promotionForm.minQuantity);
     formData.append('theme', promotionForm.theme);
     if (promotionForm.usageLimit) formData.append('usageLimit', promotionForm.usageLimit);
+    if (promotionForm.maxUsagePerUser) formData.append('maxUsagePerUser', promotionForm.maxUsagePerUser);
+    formData.append('isFirstOrderOnly', String(!!promotionForm.isFirstOrderOnly));
     formData.append('isActive', String(promotionForm.isActive));
     formData.append('showOnSite', String(promotionForm.showOnSite));
     formData.append('showOnHome', String(promotionForm.showOnHome));
@@ -583,6 +587,8 @@ export function useDashboardData({ user, showToast }) {
       minQuantity: promotion.minQuantity ? String(promotion.minQuantity) : '',
       theme: promotion.theme || 'emerald',
       usageLimit: promotion.usageLimit ? String(promotion.usageLimit) : '',
+      maxUsagePerUser: promotion.maxUsagePerUser ? String(promotion.maxUsagePerUser) : '',
+      isFirstOrderOnly: promotion.isFirstOrderOnly ?? false,
       targetProductIds: (promotion.targetProductIds || []).map(String),
       targetCategoryIds: (promotion.targetCategoryIds || []).map(String),
       quantityTiers: (promotion.quantityTiers || []).map((tier) => ({

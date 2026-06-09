@@ -149,6 +149,33 @@ export const createOrder = async (req, res) => {
         where: { promoCode: normalizedPromoCode },
       });
 
+      // Проверка: промокод только для первого заказа
+      if (appliedPromotion?.isFirstOrderOnly) {
+        const existingOrdersCount = await prisma.order.count({
+          where: {
+            userId: parseInt(userId),
+            status: { not: 'cancelled' },
+          },
+        });
+        if (existingOrdersCount > 0) {
+          return res.status(400).json({ error: 'Этот промокод действует только на первый заказ.' });
+        }
+      }
+
+      // Проверка: максимальное кол-во использований на одного пользователя
+      if (appliedPromotion?.maxUsagePerUser != null) {
+        const userPromoUsageCount = await prisma.order.count({
+          where: {
+            userId: parseInt(userId),
+            promotionId: appliedPromotion.id,
+            status: { not: 'cancelled' },
+          },
+        });
+        if (userPromoUsageCount >= appliedPromotion.maxUsagePerUser) {
+          return res.status(400).json({ error: 'Вы уже использовали этот промокод максимальное количество раз.' });
+        }
+      }
+
       const evaluation = evaluatePromotion(appliedPromotion, evaluationContext);
       if (!evaluation.valid) {
         return res.status(400).json({ error: evaluation.error });

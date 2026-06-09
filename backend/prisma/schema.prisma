@@ -192,8 +192,10 @@ model Promotion {
   isActive      Boolean                @default(true)
   showOnSite    Boolean                @default(true)
   showOnHome    Boolean                @default(false)
-  usageLimit    Int?
-  usageCount    Int                    @default(0)
+  usageLimit        Int?
+  usageCount        Int                    @default(0)
+  maxUsagePerUser   Int?
+  isFirstOrderOnly  Boolean                @default(false)
   startsAt      DateTime?
   endsAt        DateTime?
   createdAt     DateTime               @default(now())
