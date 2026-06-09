@@ -130,6 +130,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     handleDeleteBrand,
     handleCategoryChange,
     handleCategoryFileChange,
+    handleClearCategoryImage,
     handleCategorySubmit,
     startCreateCategory,
     startEditCategory,
@@ -466,6 +467,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
         previewCategoryImage={previewCategoryImage}
         onFormChange={handleCategoryChange}
         onFileChange={handleCategoryFileChange}
+        onClearImage={handleClearCategoryImage}
       />
 
       <SupplierModal

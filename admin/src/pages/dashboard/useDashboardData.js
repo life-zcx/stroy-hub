@@ -698,6 +698,15 @@ export function useDashboardData({ user, showToast }) {
     setCategoryImageFile(event.target.files[0]);
   };
 
+  const handleClearCategoryImage = () => {
+    setCategoryImageFile(null);
+    setPreviewCategoryImage('');
+    setCategoryForm((prev) => ({ ...prev, image: '' }));
+    // Reset the file input element if it exists
+    const fileInput = document.getElementById('categoryFileInput');
+    if (fileInput) fileInput.value = '';
+  };
+
   const handlePromotionChange = (event) => {
     const { name, value, type, checked } = event.target;
     setPromotionForm((prev) => ({
@@ -1038,6 +1047,7 @@ export function useDashboardData({ user, showToast }) {
     handleDeleteBrand,
     handleCategoryChange,
     handleCategoryFileChange,
+    handleClearCategoryImage,
     handleCategorySubmit,
     startCreateCategory,
     startEditCategory,
