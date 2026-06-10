@@ -59,7 +59,6 @@ export default function Footer({
                 <Phone className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <a href="tel:77077111653" className="text-white font-bold hover:text-emerald-600 transition-colors block">8 (707) 711-16-53</a>
-                  <span className="text-slate-500 text-[10px]">Звонок по Казахстану бесплатный</span>
                 </div>
               </li>
               <li className="flex flex-col gap-1">

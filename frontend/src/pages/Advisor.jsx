@@ -183,19 +183,46 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-2 sm:px-4">
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-2 sm:px-4 pt-6 pb-8">
       
-      {/* Premium Minimalist Header */}
-      <div className="relative p-6 sm:p-10 rounded-[2rem] bg-white border border-slate-200 shadow-sm">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-3xl">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-outfit text-slate-950">
-              Умный калькулятор материалов
-            </h1>
-            <p className="text-slate-500 text-sm sm:text-base leading-relaxed font-semibold">
-              Выберите тип строительных или отделочных работ, укажите размеры конструкции и задайте бюджетный уровень. Система автоматически рассчитает точный объём и спецификацию материалов по строительным нормам СНиП РК.
-            </p>
-          </div>
+      {/* Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        {/* SVG Advisor Math Blueprint Background */}
+        <svg 
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
+          viewBox="0 0 120 80" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="0.8"
+        >
+          {/* Compass / Math angles */}
+          <circle cx="60" cy="40" r="25" strokeDasharray="3,3" />
+          <line x1="60" y1="5" x2="60" y2="75" strokeDasharray="1,2" />
+          <line x1="25" y1="40" x2="95" y2="40" strokeDasharray="1,2" />
+          
+          {/* Math curves */}
+          <path d="M30 60 Q 60 20 90 60" strokeWidth="1.2" />
+
+          {/* Calculator symbol */}
+          <rect x="85" y="15" width="20" height="28" rx="2" fill="currentColor" fillOpacity="0.05" />
+          <rect x="89" y="19" width="12" height="6" fill="currentColor" fillOpacity="0.2" />
+          <circle cx="91" cy="31" r="1" fill="currentColor" />
+          <circle cx="95" cy="31" r="1" fill="currentColor" />
+          <circle cx="99" cy="31" r="1" fill="currentColor" />
+          <circle cx="91" cy="37" r="1" fill="currentColor" />
+          <circle cx="95" cy="37" r="1" fill="currentColor" />
+          <circle cx="99" cy="37" r="1" fill="currentColor" />
+        </svg>
+
+        <div className="relative z-10 space-y-3 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Калькулятор материалов
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Выберите тип строительных работ, укажите размеры и задайте бюджет. Система автоматически рассчитает точную спецификацию материалов по нормам СНиП РК.
+          </p>
         </div>
       </div>
 

@@ -12,10 +12,10 @@ import {
   Tag,
   ArrowRight,
   Hammer,
-  ChevronRight
+  ChevronRight,
+  ShoppingCart
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import ProductModal from '../components/ProductModal';
 
 export default function Storefront({
   products,
@@ -43,8 +43,16 @@ export default function Storefront({
   onNavigate,
 }) {
   const [viewMode, setViewMode] = useState('grid');
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [quantities, setQuantities] = useState({});
+
+  const getQuantity = (id) => quantities[id] || 1;
+  const changeQuantity = (id, delta) => {
+    setQuantities(prev => ({
+      ...prev,
+      [id]: Math.max(1, (prev[id] || 1) + delta)
+    }));
+  };
 
   // Helper for category info
   const currentCategoryDetail = useMemo(() => {
@@ -265,15 +273,7 @@ export default function Storefront({
 
   return (
     <div className="flex flex-col lg:flex-row gap-10 animate-fade-in-up font-sans text-slate-800 min-h-screen">
-      {/* Product Modal */}
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onAddToCart={onAddToCart}
-          onOpenDetails={onOpenProduct}
-        />
-      )}
+
 
       {/* ═══ SIDEBAR (Desktop) ═══ */}
       <aside className="hidden lg:block w-64 shrink-0 space-y-6 sticky top-24 self-start bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm">
@@ -399,7 +399,6 @@ export default function Storefront({
                   key={product.id}
                   product={product}
                   onAddToCart={onAddToCart}
-                  onOpenModal={setSelectedProduct}
                   onOpenDetails={onOpenProduct}
                   onToggleFavorite={onToggleFavorite}
                   isFavorite={isFavorite?.(product.id)}
@@ -430,7 +429,7 @@ export default function Storefront({
                     <Zap className="h-3 w-3 fill-current" /> Хит
                   </span>
                 )}
-                <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+                <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
                   <img 
                     src={product.image} 
                     alt={product.name} 
@@ -456,18 +455,32 @@ export default function Storefront({
                     )}
                   </div>
                 </div>
-                <div className="flex sm:flex-col items-center gap-3 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-slate-100">
+                <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl h-11 p-0.5 w-full sm:w-28 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(product.id, -1)}
+                      className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+                    >
+                      -
+                    </button>
+                    <span className="flex-grow text-center text-xs font-black text-slate-850">
+                      {getQuantity(product.id)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(product.id, 1)}
+                      className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+                    >
+                      +
+                    </button>
+                  </div>
                   <button 
-                    onClick={() => onAddToCart(product)}
-                    className="flex-grow sm:w-16 h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl flex items-center justify-center transition-all shadow-md transform hover:-translate-y-0.5 active:scale-95"
+                    onClick={() => onAddToCart(product, getQuantity(product.id))}
+                    className="flex-grow w-full sm:w-28 h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
                   >
-                    <Zap className="h-5 w-5" />
-                  </button>
-                  <button 
-                    onClick={() => onOpenProduct(product.id)}
-                    className="flex-grow sm:w-16 h-12 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl flex items-center justify-center transition-all active:scale-95"
-                  >
-                    <ArrowRight className="h-5 w-5" />
+                    <ShoppingCart className="h-4 w-4" />
+                    <span className="text-xs font-bold">В корзину</span>
                   </button>
                 </div>
                 </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin, ArrowRight, Heart } from 'lucide-react';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 
@@ -13,12 +13,13 @@ export default function ProductCard({
   onToggleFavorite,
   isFavorite = false
 }) {
+  const [quantity, setQuantity] = useState(1);
   const imageSrc = getProductImage(product);
 
   return (
     <div
       className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col relative overflow-hidden cursor-pointer"
-      onClick={() => onOpenModal && onOpenModal(product)}
+      onClick={() => onOpenDetails && onOpenDetails(product.id)}
     >
 
       {/* ── Badges ── */}
@@ -55,7 +56,7 @@ export default function ProductCard({
         <img
           src={imageSrc}
           alt={product.name}
-          className="w-3/4 h-3/4 object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+          className="w-3/4 h-3/4 object-contain mix-blend-multiply"
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = FALLBACK_PRODUCT_IMAGE;
@@ -113,20 +114,32 @@ export default function ProductCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-[1fr_auto] gap-2">
+          <div className="grid grid-cols-[100px_1fr] gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-xl h-[42px] p-0.5 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+              >
+                -
+              </button>
+              <span className="flex-grow text-center text-xs font-black text-slate-850">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuantity(q => q + 1)}
+                className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+              >
+                +
+              </button>
+            </div>
             <button
-              onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+              onClick={() => onAddToCart(product, quantity)}
               className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-md"
             >
               <ShoppingCart className="h-4 w-4" />
               <span className="text-sm">В корзину</span>
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onOpenDetails?.(product.id); }}
-              className="px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all flex items-center justify-center"
-              title="Открыть страницу товара"
-            >
-              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>

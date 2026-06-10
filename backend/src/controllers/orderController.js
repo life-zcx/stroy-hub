@@ -82,7 +82,7 @@ function buildStatusHistory(existingOrder, nextStatus) {
 }
 
 export const createOrder = async (req, res) => {
-  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses, deliveryDate, deliveryTime, comment } = req.body;
+  const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses, deliveryDate, deliveryTime, comment, companyName, companyBin } = req.body;
 
   if (!clientName || !clientPhone || !clientAddress || !paymentMethod || !items || !items.length) {
     return res.status(400).json({ error: 'Все поля заказа и товары обязательны' });
@@ -225,6 +225,8 @@ export const createOrder = async (req, res) => {
           clientPhone,
           clientAddress,
           paymentMethod,
+          companyName: companyName || null,
+          companyBin: companyBin || null,
           subtotalAmount,
           discountAmount,
           totalAmount: finalTotalAmount,
@@ -237,7 +239,8 @@ export const createOrder = async (req, res) => {
           userId: parseInt(userId),
           deliveryDate: deliveryDate || null,
           deliveryTime: deliveryTime || null,
-          managerNotes: comment || null,
+          managerNotes: null,
+          clientComment: comment || null,
           items: {
             create: normalizedItems.map((item) => ({
               productId: item.productId,
@@ -497,11 +500,14 @@ export const updateOrder = async (req, res) => {
     status,
     cancellationReason,
     managerNotes,
+    clientComment,
     clientName,
     clientPhone,
     clientAddress,
     items,
     discountAmount,
+    companyName,
+    companyBin,
   } = req.body;
   const supplierId = getSupplierId(req.user);
 
@@ -558,9 +564,12 @@ export const updateOrder = async (req, res) => {
     }
 
     if (managerNotes !== undefined) updateData.managerNotes = managerNotes;
+    if (clientComment !== undefined) updateData.clientComment = clientComment;
     if (clientName !== undefined) updateData.clientName = clientName;
     if (clientPhone !== undefined) updateData.clientPhone = clientPhone;
     if (clientAddress !== undefined) updateData.clientAddress = clientAddress;
+    if (companyName !== undefined) updateData.companyName = companyName;
+    if (companyBin !== undefined) updateData.companyBin = companyBin;
 
     if (discountAmount !== undefined && items === undefined) {
       const manualDiscount = parseFloat(discountAmount) || 0;

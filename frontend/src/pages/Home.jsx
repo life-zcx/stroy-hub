@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRight, ShieldCheck, Truck, SlidersHorizontal,
-  Award, Building2, TicketPercent, FileSpreadsheet
+  Award, Building2, TicketPercent, FileSpreadsheet,
+  Hammer, HardHat
 } from 'lucide-react';
 import { getBrands, getHomePromotions } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -151,12 +152,12 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               {/* Tile 1 */}
               <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
                 <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
-                  <Building2 className="h-6 w-6" strokeWidth={2} />
+                  <Hammer className="h-6 w-6" strokeWidth={2} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Цены заводов</h4>
-                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
-                    Прямые поставки от производителей без посредников и наценок
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Цены дистрибьюторов</h4>
+                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                    Прямые поставки от официальных дистрибьюторов без розничных наценок
                   </p>
                 </div>
               </div>
@@ -164,11 +165,11 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               {/* Tile 2 */}
               <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
                 <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
-                  <ShieldCheck className="h-6 w-6" strokeWidth={2} />
+                  <HardHat className="h-6 w-6" strokeWidth={2} />
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Сертификаты качества</h4>
-                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
                     Полный комплект паспортов качества и соответствия на каждую партию
                   </p>
                 </div>
@@ -181,8 +182,8 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Региональные поставки</h4>
-                  <p className="text-slate-550 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
-                    Быстрая и надежная доставка со складов в Алматы и Астане
+                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                    Быстрая и надежная доставка со складов по Алматы и области
                   </p>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
+  ChevronUp, ChevronDown,
 } from 'lucide-react';
 import { getProductById, getProductReviews } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -35,11 +36,18 @@ export default function ProductPage({
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [thumbnailOffset, setThumbnailOffset] = useState(0);
+  const THUMBS_VISIBLE = 5; // сколько миниатюр видно сразу
 
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
       setError(null);
+      setActiveImageIndex(0);
+      setThumbnailOffset(0);
+      setQuantity(1);
 
       try {
         const data = await getProductById(productId);
@@ -124,6 +132,21 @@ export default function ProductPage({
   const specs = useMemo(() => splitLines(product?.specifications), [product]);
   const usage = useMemo(() => splitLines(product?.usage), [product]);
 
+  const allImages = useMemo(() => {
+    const list = [];
+    if (product?.image) {
+      list.push(product.image);
+    }
+    if (Array.isArray(product?.images)) {
+      product.images.forEach(img => {
+        if (img && typeof img === 'string' && img.trim() !== '' && !list.includes(img)) {
+          list.push(img);
+        }
+      });
+    }
+    return list.length > 0 ? list : [FALLBACK_PRODUCT_IMAGE];
+  }, [product]);
+
   if (loading) {
     return (
       <div className="py-24 flex flex-col items-center text-center text-slate-400">
@@ -151,7 +174,7 @@ export default function ProductPage({
     );
   }
 
-  const imageSrc = getProductImage(product);
+  const activeImage = allImages[activeImageIndex] || allImages[0];
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : null;
 
   return (
@@ -208,8 +231,10 @@ export default function ProductPage({
 
       <section className="bg-white border border-slate-200/70 rounded-[2rem] shadow-sm overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-          <div className="relative min-h-[360px] bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center p-8 sm:p-12 border-b lg:border-b-0 lg:border-r border-slate-100">
-            <div className="absolute top-5 left-5 flex flex-wrap gap-2">
+          {/* ── Image column: vertical thumbs left + big photo right ── */}
+          <div className="relative bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col p-5 sm:p-8 min-h-[360px]">
+            {/* Badges */}
+            <div className="absolute top-5 left-5 flex flex-wrap gap-2 z-10">
               <span className="bg-white/90 border border-slate-200 text-slate-600 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                 {CATEGORY_LABELS[product.category] || product.category}
               </span>
@@ -224,15 +249,135 @@ export default function ProductPage({
                 </span>
               )}
             </div>
-            <img
-              src={imageSrc}
-              alt={product.name}
-              className="w-full max-w-md h-[280px] sm:h-[340px] object-contain drop-shadow-2xl"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = FALLBACK_PRODUCT_IMAGE;
-              }}
-            />
+
+            {allImages.length > 1 ? (
+              /* Layout with thumbnails */
+              <div className="flex flex-col sm:flex-row gap-4 flex-grow mt-10 sm:mt-6">
+
+                {/* ── Vertical thumbnail strip with arrow buttons (desktop) ── */}
+                <div className="hidden sm:flex flex-col items-center gap-1.5 shrink-0">
+                  {/* Up arrow */}
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailOffset(o => Math.max(0, o - 1))}
+                    disabled={thumbnailOffset === 0}
+                    className="w-8 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+
+                  {/* Visible thumbnails */}
+                  <div className="flex flex-col gap-2">
+                    {allImages.slice(thumbnailOffset, thumbnailOffset + THUMBS_VISIBLE).map((img, i) => {
+                      const idx = thumbnailOffset + i;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`w-[68px] h-[68px] rounded-xl border-2 overflow-hidden bg-transparent transition-all duration-200 shrink-0 hover:scale-110 hover:shadow-md ${
+                            activeImageIndex === idx
+                              ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md scale-105'
+                              : 'border-slate-200 hover:border-slate-400'
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Down arrow */}
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailOffset(o => Math.min(allImages.length - THUMBS_VISIBLE, o + 1))}
+                    disabled={thumbnailOffset + THUMBS_VISIBLE >= allImages.length}
+                    className="w-8 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {/* Dot indicator */}
+                  {allImages.length > THUMBS_VISIBLE && (
+                    <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                      {thumbnailOffset + 1}–{Math.min(thumbnailOffset + THUMBS_VISIBLE, allImages.length)}/{allImages.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Main image */}
+                <div className="flex-grow flex items-center justify-center">
+                  <img
+                    src={activeImage}
+                    alt={product.name}
+                    className="w-full max-w-xl h-[300px] sm:h-[380px] object-contain drop-shadow-xl transition-all duration-300"
+                    onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                  />
+                </div>
+
+                {/* ── Horizontal strip with arrows (mobile only) ── */}
+                <div className="flex sm:hidden items-center gap-1.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailOffset(o => Math.max(0, o - 1))}
+                    disabled={thumbnailOffset === 0}
+                    className="w-7 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all shrink-0"
+                  >
+                    <ChevronUp className="h-4 w-4 -rotate-90" />
+                  </button>
+
+                  <div className="flex gap-2 overflow-hidden">
+                    {allImages.slice(thumbnailOffset, thumbnailOffset + THUMBS_VISIBLE).map((img, i) => {
+                      const idx = thumbnailOffset + i;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-transparent transition-all duration-200 shrink-0 hover:scale-110 ${
+                            activeImageIndex === idx
+                              ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md scale-105'
+                              : 'border-slate-200 hover:border-slate-400'
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailOffset(o => Math.min(allImages.length - THUMBS_VISIBLE, o + 1))}
+                    disabled={thumbnailOffset + THUMBS_VISIBLE >= allImages.length}
+                    className="w-7 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all shrink-0"
+                  >
+                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                  </button>
+                </div>
+
+              </div>
+            ) : (
+              /* Single image — centered */
+              <div className="flex-grow flex items-center justify-center mt-10 sm:mt-6">
+                <img
+                  src={activeImage}
+                  alt={product.name}
+                  className="w-full max-w-xl h-[300px] sm:h-[420px] object-contain drop-shadow-2xl transition-all duration-300"
+                  onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="p-6 sm:p-8 lg:p-10 flex flex-col">
@@ -276,23 +421,48 @@ export default function ProductPage({
 
             <div className="mt-auto rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
               {product.oldPrice && (
-                <div className="text-sm text-slate-400 line-through mb-1">{formatPrice(product.oldPrice)}</div>
+                <div className="text-sm text-slate-400 line-through mb-1">{formatPrice(product.oldPrice * quantity)}</div>
               )}
-              <div className="flex flex-wrap items-end gap-2 mb-4">
-                <span className="text-4xl font-black text-slate-950 font-outfit">{formatPrice(product.price)}</span>
-                <span className="text-sm text-slate-400 pb-1">/ шт</span>
+              <div className="flex flex-wrap items-baseline gap-2 mb-4">
+                <span className="text-4xl font-black text-slate-950 font-outfit">{formatPrice(product.price * quantity)}</span>
+                <span className="text-sm text-slate-400 pb-1">{quantity > 1 ? `за ${quantity} шт` : '/ шт'}</span>
+                <span className="bg-emerald-50 text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1 border border-emerald-100/50 shadow-sm" title="Бонусы за покупку">
+                  + {formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100) * quantity)} бонусов
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onAddToCart(product);
-                  showToast?.(`🛒 «${product.name}» добавлен в корзину`);
-                }}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md transform hover:-translate-y-0.5"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                Добавить в корзину
-              </button>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex items-center bg-white border border-slate-200 rounded-2xl h-14 p-1 shadow-sm shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="w-12 h-full flex items-center justify-center text-slate-650 hover:bg-slate-100 font-bold rounded-xl transition-all"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center text-sm font-black text-slate-900 font-outfit">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => q + 1)}
+                    className="w-12 h-full flex items-center justify-center text-slate-650 hover:bg-slate-100 font-bold rounded-xl transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddToCart(product, quantity);
+                  }}
+                  className="flex-grow bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-14 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md transform hover:-translate-y-0.5"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  В корзину
+                </button>
+              </div>
             </div>
           </div>
         </div>

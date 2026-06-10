@@ -15,6 +15,11 @@ export default function ProductModal({
   imageFile,
   onFormChange,
   onFileChange,
+  additionalImageFiles = [],
+  onAdditionalFilesChange,
+  onRemoveAdditionalFile,
+  onRemoveSavedImage,
+  onClearMainImage,
 }) {
   if (!open) {
     return null;
@@ -210,17 +215,25 @@ export default function ProductModal({
 
             <div className="border border-dashed border-slate-200 p-4 rounded-xl space-y-3">
               <span className="block text-xs font-bold text-slate-600 uppercase">Фотография товара</span>
-              {productForm.imageUrl && !imageFile && (
+              {(productForm.imageUrl || imageFile) && (
                 <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit">
                   <img
-                    src={productForm.imageUrl}
+                    src={imageFile ? URL.createObjectURL(imageFile) : productForm.imageUrl}
                     alt="Текущее фото"
                     className="h-12 w-12 object-cover rounded-md border border-slate-200"
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
-                  <span className="text-xs text-slate-500 font-medium max-w-[200px] truncate">
-                    Используется текущее фото
+                  <span className="text-xs text-slate-500 font-medium max-w-[160px] truncate">
+                    {imageFile ? imageFile.name : 'Текущее фото'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={onClearMainImage}
+                    className="ml-1 p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors"
+                    title="Удалить главное фото"
+                  >
+                    <XIcon className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               )}
               <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -231,6 +244,75 @@ export default function ProductModal({
                   onChange={onFileChange}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
                 />
+              </div>
+            </div>
+
+            <div className="border border-dashed border-slate-200 p-4 rounded-xl space-y-4">
+              <span className="block text-xs font-bold text-slate-600 uppercase">Дополнительные фотографии</span>
+              
+              {/* Previews of already saved image URLs */}
+              {Array.isArray(productForm.images) && productForm.images.length > 0 && (
+                <div className="space-y-2">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Загруженные ранее фото:</span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {productForm.images.map((url, idx) => (
+                      <div key={idx} className="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 group flex items-center justify-center">
+                        <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://placehold.co/64x64?text=Error'; }} />
+                        <button
+                          type="button"
+                          onClick={() => onRemoveSavedImage?.(url)}
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 shadow-sm transition-all"
+                          title="Удалить"
+                        >
+                          <XIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Previews of newly selected files */}
+              {additionalImageFiles.length > 0 && (
+                <div className="space-y-2">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Новые выбранные фото:</span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {additionalImageFiles.map((file, idx) => {
+                      const objectUrl = URL.createObjectURL(file);
+                      return (
+                        <div key={idx} className="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+                          <img src={objectUrl} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onRemoveAdditionalFile?.(idx);
+                              URL.revokeObjectURL(objectUrl);
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-650 text-white rounded-full p-0.5 shadow-sm transition-all"
+                            title="Удалить"
+                          >
+                            <XIcon className="h-3 w-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Multiple file upload input */}
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  id="additionalImageFilesInput"
+                  accept="image/*"
+                  multiple
+                  onChange={onAdditionalFilesChange}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                />
+                <span className="text-[10px] text-slate-400 font-medium leading-normal">
+                  Вы можете выбрать один или несколько графических файлов одновременно (JPG, PNG, WEBP, GIF).
+                </span>
               </div>
             </div>
 

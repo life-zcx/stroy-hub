@@ -58,14 +58,46 @@ export default function Partners({ showToast }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
-      <div className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Сотрудничество и партнерство</h1>
-        <p className="text-slate-500 text-sm">Продавайте строительные материалы оптовым и розничным клиентам по всему Казахстану через платформу Tormag</p>
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
+      
+      {/* Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        {/* SVG Partnership Handshake Background */}
+        <svg 
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
+          viewBox="0 0 120 80" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="0.8"
+        >
+          {/* Handshake representation via intersecting arcs/lines */}
+          <path d="M40 45 C45 35, 55 35, 60 45" strokeWidth="1.5" />
+          <path d="M80 45 C75 35, 65 35, 60 45" strokeWidth="1.5" />
+          
+          {/* Shaking hands detail */}
+          <circle cx="60" cy="45" r="5" fill="currentColor" fillOpacity="0.2" />
+
+          {/* Network nodes */}
+          <line x1="20" y1="20" x2="40" y2="45" opacity="0.3" strokeDasharray="2,2" />
+          <line x1="100" y1="20" x2="80" y2="45" opacity="0.3" strokeDasharray="2,2" />
+          <circle cx="20" cy="20" r="3" fill="currentColor" />
+          <circle cx="100" cy="20" r="3" fill="currentColor" />
+        </svg>
+
+        <div className="relative z-10 space-y-3 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Сотрудничество
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Продавайте строительные материалы оптовым и розничным клиентам по всему Казахстану через платформу Tormag
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        <div className="flex flex-col justify-between gap-6">
           <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-8 md:p-10 shadow-sm space-y-4">
             <h3 className="font-extrabold text-slate-950 text-lg font-outfit">Преимущества для дистрибьюторов</h3>
             <ul className="space-y-3 text-slate-600 text-sm">

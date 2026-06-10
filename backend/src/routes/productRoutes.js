@@ -22,8 +22,8 @@ router.get('/:id', getProductById);
 router.post('/import-xlsx', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), excelUpload.single('file'), importProductsXlsx);
 
 // Protected endpoints for administrators and suppliers only
-router.post('/', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), imageUpload.single('imageFile'), createProduct);
-router.put('/:id', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), imageUpload.single('imageFile'), updateProduct);
+router.post('/', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), imageUpload.fields([{ name: 'imageFile', maxCount: 1 }, { name: 'additionalImageFiles', maxCount: 30 }]), createProduct);
+router.put('/:id', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), imageUpload.fields([{ name: 'imageFile', maxCount: 1 }, { name: 'additionalImageFiles', maxCount: 30 }]), updateProduct);
 router.delete('/:id', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), deleteProduct);
 
 export default router;

@@ -178,15 +178,50 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
   const selectedCount = Object.keys(selectedItems).length;
 
   return (
-    <div className="space-y-8">
-      {/* Hero Header Section */}
-      <div className="text-center max-w-3xl mx-auto space-y-3 py-4">
-        <h1 className="font-outfit text-4xl font-black text-slate-950 tracking-tight sm:text-5xl">
-          Быстрый заказ по Excel-смете
-        </h1>
-        <p className="text-base text-slate-500 leading-relaxed max-w-2xl mx-auto">
-          Загрузите смету, ведомость или спецификацию в формате Excel/CSV. Наш умный алгоритм мгновенно подберет нужные товары из каталога TORMAG, и вы сможете оформить весь заказ в один клик.
-        </p>
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 py-8">
+      
+      {/* Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800 mb-4">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        {/* SVG Estimate Spreadsheet Background */}
+        <svg 
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
+          viewBox="0 0 120 80" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="0.8"
+        >
+          {/* Spreadsheet Table grid */}
+          <rect x="20" y="15" width="80" height="50" rx="3" fill="currentColor" fillOpacity="0.05" strokeWidth="1" />
+          <line x1="20" y1="28" x2="100" y2="28" />
+          <line x1="20" y1="40" x2="100" y2="40" />
+          <line x1="20" y1="52" x2="100" y2="52" />
+          
+          <line x1="45" y1="15" x2="45" y2="65" />
+          <line x1="75" y1="15" x2="75" y2="65" />
+          
+          {/* Table cells content */}
+          <line x1="25" y1="21" x2="40" y2="21" strokeWidth="1.2" />
+          <line x1="25" y1="34" x2="40" y2="34" strokeWidth="1.2" />
+          <line x1="25" y1="46" x2="40" y2="46" strokeWidth="1.2" />
+          
+          <line x1="50" y1="21" x2="70" y2="21" strokeWidth="1" />
+          <line x1="50" y1="34" x2="70" y2="34" strokeWidth="1" />
+          
+          {/* Sparkles / Match indicator */}
+          <circle cx="87" cy="46" r="3" fill="currentColor" />
+          <path d="M87 38 l1 2 l2 1 l-2 1 l-1 2 l-1 -2 l-2 -1 l2 -1 z" fill="currentColor" fillOpacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 space-y-3 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Заказ по смете
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Загрузите смету или спецификацию в формате Excel/CSV. Наш умный алгоритм мгновенно подберет нужные товары из каталога Tormag.
+          </p>
+        </div>
       </div>
 
       {!results && !loading && (
@@ -232,7 +267,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
             <div className="space-y-1.5 font-medium text-slate-600">
               <p className="font-bold text-slate-900">Полезные советы по структуре файла:</p>
               <ul className="list-disc pl-4 space-y-1 text-slate-500 font-semibold">
-                <li>Файл может быть любого вида. Отлично подходит стандартная смета с колонками «Наименование» и «Количество».</li>
+                <li>Структура и шаблон таблицы могут быть любыми (в формате Excel/CSV). Отлично подходит стандартная смета с колонками «Наименование» и «Количество».</li>
                 <li>Система автоматически найдет нужные колонки с наименованиями и количеством, даже если в начале сметы есть шапка.</li>
                 <li>Итоговые строки сметы (например «Итого к оплате» или «Всего по разделу») будут пропущены автоматически.</li>
               </ul>

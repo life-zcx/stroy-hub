@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, CheckSquare, Cookie, ArrowLeft } from 'lucide-react';
 
 export default function Legal({ defaultTab = 'user-agreement', onNavigate }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [defaultTab]);
 
   const tabs = [
     { id: 'user-agreement', name: 'Пользовательское соглашение', icon: FileText },
@@ -11,33 +16,30 @@ export default function Legal({ defaultTab = 'user-agreement', onNavigate }) {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-fade-in-up font-sans text-slate-800 text-left">
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
 
-      {/* Back Button */}
-      {onNavigate && (
-        <button
-          onClick={() => onNavigate('home')}
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-wider"
-        >
-          <ArrowLeft className="h-4 w-4" /> Вернуться на главную
-        </button>
-      )}
-
-      {/* Title */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Юридическая информация</h1>
-        <p className="text-slate-500 text-sm">Правовые документы и соглашения в соответствии с законодательством Республики Казахстан (РК).</p>
+      {/* Title / Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div className="relative z-10 space-y-3 max-w-3xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Юридическая информация
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Правовые документы и соглашения в соответствии с законодательством Республики Казахстан (РК).
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-2xl border border-slate-200/50">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/50">
         {tabs.map(tab => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id
                 ? 'bg-slate-900 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                 }`}

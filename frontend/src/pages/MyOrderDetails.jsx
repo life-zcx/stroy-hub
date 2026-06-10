@@ -175,6 +175,13 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                   Адрес доставки
                 </div>
                 <p className="font-semibold text-sm leading-relaxed text-slate-800">{order.clientAddress}</p>
+                {order.deliveryDate && (
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs text-slate-650">
+                    <span className="font-bold block text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Желаемое время доставки</span>
+                    <div className="font-bold text-slate-800">{order.deliveryDate}</div>
+                    {order.deliveryTime && <div className="text-slate-600 mt-0.5">Интервал: {order.deliveryTime}</div>}
+                  </div>
+                )}
               </div>
               <div className="rounded-2xl bg-slate-50/80 border border-slate-100 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -182,10 +189,25 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                   Способ оплаты
                 </div>
                 <p className="font-semibold text-sm text-slate-800">
-                  {order.paymentMethod === 'cash' ? 'Наличные / Терминал' : order.paymentMethod === 'kaspi' ? 'Kaspi QR' : 'B2B Счет'}
+                  {order.paymentMethod === 'cash' ? 'Наличными при получении' : order.paymentMethod === 'kaspi' ? 'Kaspi QR / Kaspi Red' : 'Безналичный расчет (B2B)'}
                 </p>
+                {order.paymentMethod === 'invoice' && order.companyName && (
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs text-slate-650">
+                    <span className="font-bold block text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Реквизиты организации</span>
+                    <div className="font-bold text-slate-800">{order.companyName}</div>
+                    <div className="font-mono mt-0.5 text-slate-600">БИН/ИИН: {order.companyBin}</div>
+                  </div>
+                )}
               </div>
             </div>
+            {order.clientComment && (
+              <div className="mt-4 rounded-2xl bg-slate-50/80 border border-slate-100 p-4">
+                <div className="mb-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Комментарий к заказу
+                </div>
+                <p className="text-xs text-slate-700 font-semibold italic">«{order.clientComment}»</p>
+              </div>
+            )}
           </div>
         </div>
 

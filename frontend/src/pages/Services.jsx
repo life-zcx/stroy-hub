@@ -66,11 +66,48 @@ export default function Services({ onOpenCallback }) {
   const activeService = services[activeTab];
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Услуги</h1>
-        <p className="text-slate-500 text-sm">Профессиональные решения для застройщиков, прорабов и частных клиентов от Tormag</p>
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
+      
+      {/* Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        {/* SVG Services Tools Background */}
+        <svg 
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
+          viewBox="0 0 120 80" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="0.8"
+        >
+          {/* Ruler/Scale */}
+          <line x1="20" y1="65" x2="100" y2="65" strokeWidth="1.5" />
+          <line x1="25" y1="65" x2="25" y2="58" />
+          <line x1="35" y1="65" x2="35" y2="60" />
+          <line x1="45" y1="65" x2="45" y2="58" />
+          <line x1="55" y1="65" x2="55" y2="60" />
+          <line x1="65" y1="65" x2="65" y2="58" />
+          <line x1="75" y1="65" x2="75" y2="60" />
+          <line x1="85" y1="65" x2="85" y2="58" />
+          <line x1="95" y1="65" x2="95" y2="60" />
+
+          {/* Hard Hat outline */}
+          <path d="M50 45 C50 25 70 25 70 45 Z" fill="currentColor" fillOpacity="0.05" strokeWidth="1" />
+          <path d="M45 45 L75 45" strokeWidth="1.5" />
+
+          {/* Hammer Outline */}
+          <path d="M90 25 l5 -5 l8 8 l-5 5" fill="currentColor" fillOpacity="0.2" />
+          <line x1="94" y1="29" x2="105" y2="45" strokeWidth="1.5" />
+        </svg>
+
+        <div className="relative z-10 space-y-3 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Наши услуги
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Профессиональные решения для застройщиков, прорабов и частных клиентов от строительной платформы Tormag
+          </p>
+        </div>
       </div>
 
       {/* Premium Tab Selector Widget aligned with Tormag design */}

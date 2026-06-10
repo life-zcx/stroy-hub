@@ -62,6 +62,9 @@ export default function OrdersPage({
   const [managerNotes, setManagerNotes] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
   const [orderItems, setOrderItems] = useState([]); // Array of { productId, quantity, price, product }
+  const [companyName, setCompanyName] = useState('');
+  const [companyBin, setCompanyBin] = useState('');
+  const [clientComment, setClientComment] = useState('');
 
   // Cancellation Reason state
   const [cancellationReason, setCancellationReason] = useState('');
@@ -122,6 +125,7 @@ export default function OrdersPage({
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
+
   // Trigger load when page parameters change
   useEffect(() => {
     fetchOrders();
@@ -149,6 +153,9 @@ export default function OrdersPage({
         setManagerNotes(order.managerNotes || '');
         setDiscountAmount(order.discountAmount || 0);
         setCancellationReason(order.cancellationReason || '');
+        setCompanyName(order.companyName || '');
+        setCompanyBin(order.companyBin || '');
+        setClientComment(order.clientComment || '');
         setOrderItems(order.items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -272,6 +279,14 @@ export default function OrdersPage({
     const originalDiscount = parseFloat(selectedOrder.discountAmount) || 0;
     if (currentDiscount !== originalDiscount) return true;
 
+    const currentCompanyName = (companyName || '').trim();
+    const originalCompanyName = (selectedOrder.companyName || '').trim();
+    if (currentCompanyName !== originalCompanyName) return true;
+
+    const currentCompanyBin = (companyBin || '').trim();
+    const originalCompanyBin = (selectedOrder.companyBin || '').trim();
+    if (currentCompanyBin !== originalCompanyBin) return true;
+
     if (orderItems.length !== selectedOrder.items.length) return true;
     for (const item of orderItems) {
       const orig = selectedOrder.items.find(i => i.productId === item.productId);
@@ -282,6 +297,48 @@ export default function OrdersPage({
     return false;
   }, [selectedOrder, clientName, clientPhone, clientAddress, managerNotes, discountAmount, orderItems]);
 
+  // Intercept window/tab close (unload) when there are unsaved changes
+  useEffect(() => {
+    if (!hasChanges) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'У вас есть несохраненные изменения заказа!';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
+
+  // Intercept client-side routing hash changes when there are unsaved changes
+  useEffect(() => {
+    if (!selectedOrderId || !hasChanges) return;
+
+    const handleBeforeHashChange = (e) => {
+      const currentExpectedHash = `#orders/${selectedOrderId}`;
+      if (window.location.hash !== currentExpectedHash) {
+        const confirmLeave = window.confirm(
+          'У вас есть несохраненные изменения заказа! Вы уверены, что хотите выйти без сохранения?'
+        );
+        if (!confirmLeave) {
+          // Revert hash to keep the details page open
+          window.removeEventListener('hashchange', handleBeforeHashChange);
+          window.location.hash = currentExpectedHash;
+          setTimeout(() => {
+            window.addEventListener('hashchange', handleBeforeHashChange);
+          }, 0);
+        } else {
+          // User approved leaving
+          setSelectedOrderId(null);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleBeforeHashChange);
+    return () => window.removeEventListener('hashchange', handleBeforeHashChange);
+  }, [selectedOrderId, hasChanges]);
+
   // --- SAVE ORDER CHANGES ---
   const handleSaveChanges = async () => {
     const payload = {
@@ -289,6 +346,8 @@ export default function OrdersPage({
       clientPhone,
       clientAddress,
       managerNotes,
+      companyName: selectedOrder.paymentMethod === 'invoice' ? companyName : null,
+      companyBin: selectedOrder.paymentMethod === 'invoice' ? companyBin : null,
       discountAmount: parseFloat(discountAmount) || 0,
       items: orderItems.map(item => ({
         productId: item.productId,
@@ -433,6 +492,16 @@ export default function OrdersPage({
           <div class="details-box">
             <h3>ИНФОРМАЦИЯ О ПЛАТЕЖЕ</h3>
             <p><strong>Способ оплаты:</strong> ${order.paymentMethod === 'cash' ? 'Наличные' : order.paymentMethod === 'kaspi' ? 'Kaspi QR' : 'B2B Счет'}</p>
+            ${order.paymentMethod === 'invoice' && order.companyName ? `
+              <p><strong>Организация:</strong> ${order.companyName}</p>
+              <p><strong>БИН/ИИН:</strong> ${order.companyBin}</p>
+            ` : ''}
+            ${order.deliveryDate ? `
+              <p><strong>Дата доставки:</strong> ${order.deliveryDate} ${order.deliveryTime ? `(${order.deliveryTime})` : ''}</p>
+            ` : ''}
+            ${order.clientComment ? `
+              <p><strong>Комментарий покупателя:</strong> <em>«${order.clientComment}»</em></p>
+            ` : ''}
             <p><strong>Статус:</strong> ${getStatusText(order.status).toUpperCase()}</p>
           </div>
         </div>
@@ -514,33 +583,54 @@ export default function OrdersPage({
       <div className="space-y-6 font-sans text-left animate-fade-in pb-24">
 
 
-        {/* Back navigation */}
-        <button
-          onClick={() => {
-            setSelectedOrderId(null);
-            window.location.hash = '#orders';
-          }}
-          className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors bg-white px-4 py-2.5 rounded-xl border border-slate-200/60 shadow-sm w-fit"
-        >
-          <ArrowLeft className="h-4 w-4" /> Назад к списку заказов
-        </button>
-
-        {/* Header Block */}
-        <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-black font-outfit">Заказ №{selectedOrder.id}</h2>
-              <span className={`text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full ${getStatusClass(selectedOrder.status)}`}>
-                {getStatusText(selectedOrder.status)}
-              </span>
+      <div className="sticky -top-8 z-30 -mx-8 px-8 py-3 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm mb-6">
+        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                if (hasChanges && !window.confirm('У вас есть несохраненные изменения заказа! Вы уверены, что хотите выйти без сохранения?')) {
+                  return;
+                }
+                setSelectedOrderId(null);
+                window.location.hash = '#orders';
+              }}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors shrink-0"
+              title="Назад к списку"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-black font-outfit">Заказ №{selectedOrder.id}</h2>
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${getStatusClass(selectedOrder.status)}`}>
+                  {getStatusText(selectedOrder.status)}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
+                <Calendar className="h-3 w-3" />
+                Оформлен: {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1.5 flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Оформлен: {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
-            </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3.5 flex-wrap">
+            {/* Status Select */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Статус:</span>
+              <select
+                value={selectedOrder.status}
+                onChange={(e) => handleStatusChangeAction(selectedOrder.id, e.target.value)}
+                className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white cursor-pointer focus:ring-2 focus:ring-amber-500/20"
+              >
+                <option value="pending" className="bg-slate-900 text-white">⏳ В обработке</option>
+                <option value="processing" className="bg-slate-900 text-white">🔧 Сборка</option>
+                <option value="shipped" className="bg-slate-900 text-white">🚚 В доставке</option>
+                <option value="completed" className="bg-slate-900 text-white">✅ Выполнен</option>
+                <option value="cancelled" className="bg-slate-900 text-white">❌ Отменен</option>
+              </select>
+            </div>
+
+            {/* Print Invoice */}
             <button
               onClick={() => handlePrintInvoice(selectedOrder)}
               className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
@@ -548,8 +638,30 @@ export default function OrdersPage({
             >
               <Printer className="h-4.5 w-4.5" />
             </button>
+
+            {/* Unsaved changes control buttons */}
+            {hasChanges && (
+              <>
+                {/* Divider line */}
+                <div className="h-6 w-px bg-slate-800 shrink-0" />
+                <button
+                  onClick={() => fetchSelectedOrderDetails(selectedOrderId)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl border border-slate-700/60 transition-colors"
+                >
+                  Сбросить
+                </button>
+                <button
+                  onClick={handleSaveChanges}
+                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 font-black text-xs rounded-xl text-slate-950 shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="h-4 w-4 text-slate-950 animate-pulse" />
+                  Сохранить
+                </button>
+              </>
+            )}
           </div>
         </div>
+      </div>
 
         {/* Form Body layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -837,6 +949,28 @@ export default function OrdersPage({
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold resize-none focus:bg-white focus:ring-2 focus:ring-amber-500/20 transition-all"
                     />
                   </div>
+                  {selectedOrder.paymentMethod === 'invoice' && (
+                    <div className="pt-2 border-t border-slate-100 space-y-3">
+                      <div>
+                        <label className="text-[9px] font-bold uppercase text-slate-400 block mb-1">Название компании</label>
+                        <input
+                          type="text"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:ring-2 focus:ring-amber-500/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold uppercase text-slate-400 block mb-1">БИН / ИИН</label>
+                        <input
+                          type="text"
+                          value={companyBin}
+                          onChange={(e) => setCompanyBin(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:ring-2 focus:ring-amber-500/20 transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 text-xs">
@@ -853,6 +987,13 @@ export default function OrdersPage({
                       <span className="text-[8px] font-black uppercase text-slate-400">Адрес доставки:</span>
                       <p className="font-medium text-slate-700 leading-relaxed">{clientAddress}</p>
                     </div>
+                    {selectedOrder.paymentMethod === 'invoice' && selectedOrder.companyName && (
+                      <div className="pt-2 border-t border-slate-200/60">
+                        <span className="text-[8px] font-black uppercase text-slate-400">Реквизиты организации:</span>
+                        <p className="font-bold text-slate-800">{companyName}</p>
+                        <p className="font-mono text-slate-650 mt-0.5">БИН/ИИН: {companyBin}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -866,6 +1007,33 @@ export default function OrdersPage({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Delivery & Comments Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <Truck className="h-4.5 w-4.5 text-slate-400" />
+                Доставка и комментарии
+              </h3>
+
+              <div className="space-y-3 text-xs">
+                {selectedOrder.deliveryDate && (
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <span className="text-[8px] font-black uppercase text-slate-400 block mb-1">Желаемое время доставки:</span>
+                    <p className="font-bold text-slate-800">{selectedOrder.deliveryDate}</p>
+                    {selectedOrder.deliveryTime && (
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Интервал: {selectedOrder.deliveryTime}</p>
+                    )}
+                  </div>
+                )}
+
+                {clientComment && (
+                  <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
+                    <span className="text-[8px] font-black uppercase text-amber-800 block mb-1">Комментарий покупателя:</span>
+                    <p className="font-semibold text-slate-700 italic">«{clientComment}»</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Timeline lifecycle */}
@@ -952,63 +1120,6 @@ export default function OrdersPage({
           </div>
         </div>
 
-        {/* Change status actions bar */}
-        <div className="p-5 border border-slate-200/65 bg-slate-50 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase text-slate-400">Статус заказа:</span>
-            <select
-              value={selectedOrder.status}
-              onChange={(e) => handleStatusChangeAction(selectedOrder.id, e.target.value)}
-              className={`p-2 bg-white border border-slate-200 rounded-xl text-xs font-bold cursor-pointer focus:ring-2 focus:ring-amber-500/20 ${
-                selectedOrder.status === 'cancelled'
-                  ? 'text-rose-600 border-rose-200'
-                  : selectedOrder.status === 'completed'
-                  ? 'text-emerald-600 border-emerald-200'
-                  : 'text-slate-700'
-              }`}
-            >
-              <option value="pending">⏳ В обработке</option>
-              <option value="processing">🔧 Сборка</option>
-              <option value="shipped">🚚 В доставке</option>
-              <option value="completed">✅ Выполнен</option>
-              <option value="cancelled">❌ Отменен</option>
-            </select>
-          </div>
-
-          <button
-            onClick={() => {
-              setSelectedOrderId(null);
-              window.location.hash = '#orders';
-            }}
-            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all shadow-md"
-          >
-            Закрыть страницу
-          </button>
-        </div>
-
-        {/* Sticky floating panel for unsaved changes (Premium UX!) */}
-        {hasChanges && (
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between gap-6 border border-slate-800 animate-slide-up w-full max-w-2xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <AlertTriangle className="h-4.5 w-4.5 animate-pulse" />
-              Есть несохраненные изменения заказа!
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchSelectedOrderDetails(selectedOrderId)}
-                className="px-4 py-2 border border-slate-700 hover:bg-slate-800 font-bold text-xs rounded-xl text-slate-350 transition-colors"
-              >
-                Сбросить
-              </button>
-              <button
-                onClick={handleSaveChanges}
-                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 font-black text-xs rounded-xl text-slate-950 shadow-md transition-all"
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }

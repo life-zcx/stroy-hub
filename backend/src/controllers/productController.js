@@ -477,7 +477,7 @@ export const getProductById = async (req, res) => {
 export const createProduct = async (req, res) => {
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId, cashbackPercent, article
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article
   } = req.body;
   const requestedSupplierId = parseId(supplierId);
   const requesterSupplierId = getRequesterSupplierId(req);
@@ -507,11 +507,35 @@ export const createProduct = async (req, res) => {
 
     // Determine image path: uploaded file or external URL
     let finalImage = 'https://placehold.co/400x300/f8fafc/475569?text=Tormag';
-    if (req.file) {
+    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : null;
+    if (mainFile) {
+      finalImage = `/uploads/${mainFile.filename}`;
+    } else if (req.file) {
       finalImage = `/uploads/${req.file.filename}`;
     } else if (imageUrl) {
       finalImage = imageUrl;
     }
+
+    let finalImages = [];
+    if (Array.isArray(images)) {
+      finalImages = images.filter(img => typeof img === 'string' && img.trim() !== '');
+    } else if (typeof images === 'string' && images.trim() !== '') {
+      try {
+        const parsed = JSON.parse(images);
+        if (Array.isArray(parsed)) {
+          finalImages = parsed.filter(img => typeof img === 'string' && img.trim() !== '');
+        } else {
+          finalImages = [images];
+        }
+      } catch {
+        finalImages = [images];
+      }
+    }
+
+    const additionalFiles = req.files && req.files['additionalImageFiles'] ? req.files['additionalImageFiles'] : [];
+    additionalFiles.forEach(file => {
+      finalImages.push(`/uploads/${file.filename}`);
+    });
 
     const newProduct = await prisma.product.create({
       data: {
@@ -525,6 +549,7 @@ export const createProduct = async (req, res) => {
         price: parseFloat(price),
         oldPrice: oldPrice ? parseFloat(oldPrice) : null,
         image: finalImage,
+        images: finalImages,
         rating: rating ? parseFloat(rating) : 4.5,
         reviews: reviews ? parseInt(reviews) : 0,
         isHit: isHit === 'true' || isHit === true,
@@ -549,7 +574,7 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, categoryId, cashbackPercent, article
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article
   } = req.body;
   const requesterSupplierId = getRequesterSupplierId(req);
   const requestedSupplierId = supplierId === undefined ? undefined : parseId(supplierId);
@@ -573,7 +598,10 @@ export const updateProduct = async (req, res) => {
     }
 
     let finalImage = existing.image;
-    if (req.file) {
+    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : null;
+    if (mainFile) {
+      finalImage = `/uploads/${mainFile.filename}`;
+    } else if (req.file) {
       finalImage = `/uploads/${req.file.filename}`;
     } else if (imageUrl !== undefined) {
       finalImage = imageUrl;
@@ -596,6 +624,35 @@ export const updateProduct = async (req, res) => {
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
     if (cashbackPercent !== undefined) data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
     if (article !== undefined) data.article = article || null;
+
+    let finalImages = [];
+    if (images !== undefined) {
+      if (Array.isArray(images)) {
+        finalImages = images.filter(img => typeof img === 'string' && img.trim() !== '');
+      } else if (typeof images === 'string') {
+        try {
+          const parsed = JSON.parse(images);
+          if (Array.isArray(parsed)) {
+            finalImages = parsed.filter(img => typeof img === 'string' && img.trim() !== '');
+          } else if (images.trim() !== '') {
+            finalImages = [images];
+          }
+        } catch {
+          if (images.trim() !== '') {
+            finalImages = [images];
+          }
+        }
+      }
+    } else if (existing.images) {
+      finalImages = [...existing.images];
+    }
+
+    const additionalFiles = req.files && req.files['additionalImageFiles'] ? req.files['additionalImageFiles'] : [];
+    additionalFiles.forEach(file => {
+      finalImages.push(`/uploads/${file.filename}`);
+    });
+
+    data.images = { set: finalImages };
 
     if (requestedSupplierId !== undefined) {
       if (requestedSupplierId === null) {

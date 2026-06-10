@@ -20,40 +20,7 @@ import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
-const getPremiumImage = (productName) => {
-  const name = productName.toLowerCase();
-  if (name.includes('цемент')) {
-    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('rotband') || name.includes('штукатурка')) {
-    return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('доска')) {
-    return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('брус')) {
-    return 'https://images.unsplash.com/photo-1520156480391-11597d6db64d?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('перфоратор')) {
-    return 'https://images.unsplash.com/photo-1608613304899-ea8098577e38?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('шуруповерт')) {
-    return 'https://images.unsplash.com/photo-1534224039826-c7a0dea0e66a?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('tikkurila') || name.includes('краска интерьерная')) {
-    return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('эмаль') || name.includes('пф-115')) {
-    return 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('саморез')) {
-    return 'https://images.unsplash.com/photo-1590236166418-498c199859f8?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('анкер') || name.includes('болт')) {
-    return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=400&q=80';
-  }
-  return null;
-};
+
 
 export default function CartSidebar({
   cart,
@@ -72,6 +39,8 @@ export default function CartSidebar({
     clientPhone: '',
     clientAddress: '',
     paymentMethod: 'cash',
+    companyName: '',
+    companyBin: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -89,6 +58,8 @@ export default function CartSidebar({
         clientPhone: customer.phone || '',
         clientAddress: customer.address || '',
         paymentMethod: 'cash',
+        companyName: '',
+        companyBin: '',
       });
     }
   }, [customer, checkoutMode]);
@@ -198,6 +169,17 @@ export default function CartSidebar({
       return;
     }
 
+    if (formData.paymentMethod === 'invoice') {
+      if (!formData.companyName || !formData.companyBin) {
+        alert('Пожалуйста, заполните реквизиты организации (Название и БИН/ИИН)!');
+        return;
+      }
+      if (formData.companyBin.length !== 12 || !/^\d+$/.test(formData.companyBin)) {
+        alert('БИН/ИИН должен состоять ровно из 12 цифр!');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const orderPayload = {
@@ -205,8 +187,11 @@ export default function CartSidebar({
         clientPhone: formData.clientPhone,
         clientAddress: formData.clientAddress,
         paymentMethod: formData.paymentMethod,
+        companyName: formData.paymentMethod === 'invoice' ? formData.companyName : null,
+        companyBin: formData.paymentMethod === 'invoice' ? formData.companyBin : null,
         promoCode: promoPreview.valid ? appliedPromotion?.promoCode : null,
         useBonuses,
+        comment: '',
         items: cart.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
@@ -410,12 +395,47 @@ export default function CartSidebar({
                     name="paymentMethod"
                     value={formData.paymentMethod}
                     onChange={handleInputChange}
-                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-600/50 focus:border-emerald-600 transition-all text-sm"
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-600/50 focus:border-emerald-600 transition-all text-sm mb-3"
                   >
-                    <option value="cash">Наличными / Картой при получении</option>
-                    <option value="kaspi">Kaspi Transfer / QR</option>
-                    <option value="invoice">Счет на оплату (B2B юр. лица)</option>
+                    <option value="cash">Наличными при получении</option>
+                    <option value="kaspi">Kaspi QR / Kaspi Red (курьеру при получении)</option>
+                    <option value="invoice">Безналичный расчет (B2B юр. лица - ТОО/ИП)</option>
                   </select>
+
+                  {formData.paymentMethod === 'invoice' && (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3 animate-fade-in mt-1 mb-3">
+                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Реквизиты организации</span>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">Наименование компании (ТОО / ИП) *</label>
+                          <input
+                            type="text"
+                            name="companyName"
+                            value={formData.companyName || ''}
+                            onChange={handleInputChange}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="ТОО СтройСервис"
+                            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-600/50 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">БИН / ИИН (12 цифр) *</label>
+                          <input
+                            type="text"
+                            name="companyBin"
+                            value={formData.companyBin || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                              setFormData(prev => ({ ...prev, companyBin: val }));
+                            }}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="123456789012"
+                            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-600/50 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2 text-sm">
@@ -476,12 +496,12 @@ export default function CartSidebar({
 
                     <div className="w-20 h-20 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                       <img
-                        src={(item.image && !item.image.includes('placehold.co')) ? item.image : (getPremiumImage(item.name) || item.image)}
+                        src={item.image || '/tormag.png'}
                         alt={item.name}
                         className="w-3/4 h-3/4 object-contain mix-blend-multiply"
                         onError={(event) => {
                           event.target.onerror = null;
-                          event.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80';
+                          event.target.src = '/tormag.png';
                         }}
                       />
                     </div>

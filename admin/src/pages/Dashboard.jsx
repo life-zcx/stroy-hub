@@ -149,6 +149,11 @@ export default function Dashboard({ user, onLogout, showToast }) {
     handleDeleteReview,
     getCategoryPath,
     reviews,
+    additionalImageFiles,
+    handleAdditionalFilesChange,
+    removeAdditionalFile,
+    removeSavedImage,
+    clearMainImage,
   } = useDashboardData({ user, showToast });
 
   const allowedPages = useMemo(
@@ -454,6 +459,11 @@ export default function Dashboard({ user, onLogout, showToast }) {
         imageFile={imageFile}
         onFormChange={handleProductChange}
         onFileChange={handleFileChange}
+        additionalImageFiles={additionalImageFiles}
+        onAdditionalFilesChange={handleAdditionalFilesChange}
+        onRemoveAdditionalFile={removeAdditionalFile}
+        onRemoveSavedImage={removeSavedImage}
+        onClearMainImage={clearMainImage}
       />
 
       <CategoryModal

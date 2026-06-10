@@ -27,40 +27,7 @@ import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
-const getPremiumImage = (productName) => {
-  const name = productName.toLowerCase();
-  if (name.includes('цемент')) {
-    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('rotband') || name.includes('штукатурка')) {
-    return 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('доска')) {
-    return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('брус')) {
-    return 'https://images.unsplash.com/photo-1520156480391-11597d6db64d?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('перфоратор')) {
-    return 'https://images.unsplash.com/photo-1608613304899-ea8098577e38?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('шуруповерт')) {
-    return 'https://images.unsplash.com/photo-1534224039826-c7a0dea0e66a?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('tikkurila') || name.includes('краска интерьерная')) {
-    return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('эмаль') || name.includes('пф-115')) {
-    return 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('саморез')) {
-    return 'https://images.unsplash.com/photo-1590236166418-498c199859f8?auto=format&fit=crop&w=400&q=80';
-  }
-  if (name.includes('анкер') || name.includes('болт')) {
-    return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=400&q=80';
-  }
-  return null;
-};
+
 
 export default function CartPage({
   cart,
@@ -82,6 +49,8 @@ export default function CartPage({
     deliveryDate: 'today', // today, tomorrow, custom
     customDeliveryDate: '',
     deliveryTimeSlot: '14:00-18:00', // 09:00-13:00, 14:00-18:00, 19:00-22:00
+    companyName: '',
+    companyBin: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -346,6 +315,17 @@ export default function CartPage({
       return;
     }
 
+    if (formData.paymentMethod === 'invoice') {
+      if (!formData.companyName || !formData.companyBin) {
+        alert('Пожалуйста, заполните реквизиты организации (Название и БИН/ИИН)!');
+        return;
+      }
+      if (formData.companyBin.length !== 12 || !/^\d+$/.test(formData.companyBin)) {
+        alert('БИН/ИИН должен состоять ровно из 12 цифр!');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       let deliveryDateString = '';
@@ -357,16 +337,20 @@ export default function CartPage({
         deliveryDateString = formData.customDeliveryDate || 'Выбранная дата';
       }
 
+      let finalComment = formData.comment || '';
+
       const orderPayload = {
         clientName: formData.clientName,
         clientPhone: formData.clientPhone,
         clientAddress: formData.clientAddress,
         paymentMethod: formData.paymentMethod,
+        companyName: formData.paymentMethod === 'invoice' ? formData.companyName : null,
+        companyBin: formData.paymentMethod === 'invoice' ? formData.companyBin : null,
         promoCode: promoPreview.valid ? appliedPromotion?.promoCode : null,
         useBonuses: bonusDiscount > 0 ? bonusDiscount : false,
         deliveryDate: deliveryDateString,
         deliveryTime: formData.deliveryTimeSlot,
-        comment: formData.comment || '',
+        comment: finalComment,
         items: cart.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
@@ -479,7 +463,7 @@ export default function CartPage({
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Способ оплаты</span>
               <p className="font-bold text-slate-800 uppercase tracking-wider text-xs bg-slate-100 px-2.5 py-1 rounded-md inline-block mt-0.5">
-                {successOrder.paymentMethod === 'kaspi' ? 'Kaspi Transfer / QR' : successOrder.paymentMethod === 'invoice' ? 'Счет на оплату' : 'При получении'}
+                {successOrder.paymentMethod === 'kaspi' ? 'Kaspi QR / Kaspi Red' : successOrder.paymentMethod === 'invoice' ? 'Безналичный расчет (B2B)' : 'Наличными при получении'}
               </p>
             </div>
           </div>
@@ -711,12 +695,12 @@ export default function CartPage({
                 >
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                     <img
-                      src={(item.image && !item.image.includes('placehold.co')) ? item.image : (getPremiumImage(item.name) || item.image)}
+                      src={item.image || '/tormag.png'}
                       alt={item.name}
                       className="w-3/4 h-3/4 object-contain mix-blend-multiply"
                       onError={(event) => {
                         event.target.onerror = null;
-                        event.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80';
+                        event.target.src = '/tormag.png';
                       }}
                     />
                   </div>
@@ -967,10 +951,45 @@ export default function CartPage({
                     onChange={handleInputChange}
                     className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none font-semibold text-slate-900 cursor-pointer"
                   >
-                    <option value="cash">Наличными / Картой при получении</option>
-                    <option value="kaspi">Kaspi Transfer / QR</option>
-                    <option value="invoice">Счет на оплату (B2B юр. лица)</option>
+                    <option value="cash">Наличными при получении</option>
+                    <option value="kaspi">Kaspi QR / Kaspi Red (курьеру при получении)</option>
+                    <option value="invoice">Безналичный расчет (B2B юр. лица - ТОО/ИП)</option>
                   </select>
+
+                  {formData.paymentMethod === 'invoice' && (
+                    <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-4 animate-fade-in mt-3">
+                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Реквизиты организации для выставления счета</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">Наименование компании (ТОО / ИП) *</label>
+                          <input
+                            type="text"
+                            name="companyName"
+                            value={formData.companyName || ''}
+                            onChange={handleInputChange}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="ТОО СтройСервис"
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">БИН / ИИН (12 цифр) *</label>
+                          <input
+                            type="text"
+                            name="companyBin"
+                            value={formData.companyBin || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                              setFormData(prev => ({ ...prev, companyBin: val }));
+                            }}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="123456789012"
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Шаг 5: Скидки и Бонусы */}

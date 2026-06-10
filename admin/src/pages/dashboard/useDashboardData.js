@@ -55,6 +55,7 @@ function createEmptyProductForm({ categories, suppliers, isSupplier, user }) {
     isHit: false,
     supplierId: isSupplier ? user.supplierId : (suppliers[0]?.id || ''),
     imageUrl: '',
+    images: [],
     article: '',
   };
 }
@@ -181,6 +182,7 @@ export function useDashboardData({ user, showToast }) {
   const [brandForm, setBrandForm] = useState(createEmptyBrandForm);
 
   const [imageFile, setImageFile] = useState(null);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState([]);
   const [categoryImageFile, setCategoryImageFile] = useState(null);
   const [brandLogoFile, setBrandLogoFile] = useState(null);
   const [promotionImageCardFile, setPromotionImageCardFile] = useState(null);
@@ -278,6 +280,7 @@ export function useDashboardData({ user, showToast }) {
     setEditingProduct(null);
     setProductForm(createEmptyProductForm({ categories, suppliers, isSupplier, user }));
     setImageFile(null);
+    setAdditionalImageFiles([]);
   };
 
   const resetSupplierForm = () => {
@@ -358,6 +361,12 @@ export function useDashboardData({ user, showToast }) {
     if (productForm.article) formData.append('article', productForm.article);
     formData.append('isHit', productForm.isHit);
 
+    formData.append('images', JSON.stringify(productForm.images || []));
+
+    additionalImageFiles.forEach(file => {
+      formData.append('additionalImageFiles', file);
+    });
+
     if (imageFile) {
       formData.append('imageFile', imageFile);
     } else if (productForm.imageUrl) {
@@ -382,6 +391,30 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const handleAdditionalFilesChange = (event) => {
+    const files = Array.from(event.target.files);
+    setAdditionalImageFiles(prev => [...prev, ...files]);
+  };
+
+  const removeAdditionalFile = (index) => {
+    setAdditionalImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeSavedImage = (imageUrl) => {
+    setProductForm(prev => ({
+      ...prev,
+      images: prev.images.filter(img => img !== imageUrl)
+    }));
+  };
+
+  const clearMainImage = () => {
+    setImageFile(null);
+    setProductForm(prev => ({ ...prev, imageUrl: '' }));
+    // Reset the file input element if it exists
+    const input = document.getElementById('imageFileInput');
+    if (input) input.value = '';
+  };
+
   const startCreateProduct = () => {
     resetProductForm();
     setIsProductModalOpen(true);
@@ -404,9 +437,11 @@ export function useDashboardData({ user, showToast }) {
       isHit: product.isHit || false,
       supplierId: product.supplierId || '',
       imageUrl: product.image || '',
+      images: Array.isArray(product.images) ? product.images : [],
       article: product.article || '',
     });
     setImageFile(null);
+    setAdditionalImageFiles([]);
     setIsProductModalOpen(true);
   };
 
@@ -1074,5 +1109,10 @@ export function useDashboardData({ user, showToast }) {
     resetBrandForm,
     user,
     reviews,
+    additionalImageFiles,
+    handleAdditionalFilesChange,
+    removeAdditionalFile,
+    removeSavedImage,
+    clearMainImage,
   };
 }

@@ -83,6 +83,7 @@ model Product {
   price          Float
   oldPrice       Float?
   image          String
+  images         String[]    @default([])
   rating         Float       @default(4.5)
   reviews        Int         @default(0)
   isHit          Boolean     @default(false)
@@ -117,6 +118,8 @@ model Order {
   clientPhone     String
   clientAddress   String
   paymentMethod   String
+  companyName     String?
+  companyBin      String?
   status          String     @default("pending") // pending, processing, shipped, completed, cancelled
   subtotalAmount  Float      @default(0)
   discountAmount  Float      @default(0)
@@ -131,6 +134,7 @@ model Order {
   user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   cancellationReason String?
   managerNotes       String?
+  clientComment      String?
   usedBonusPoints    Float      @default(0)
   deliveryDate       String?
   deliveryTime       String?

@@ -121,7 +121,7 @@ export default function Promotions({
     const displayProducts = promoProducts.length > 0 ? promoProducts : hitProducts;
 
     return (
-      <div className="max-w-5xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4">
+      <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
         {/* Breadcrumbs */}
         <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed">
           <button 
@@ -245,12 +245,37 @@ export default function Promotions({
   }
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left px-4">
-      <div className="space-y-3">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции и скидки</h1>
-        <p className="text-slate-500 text-sm leading-relaxed max-w-3xl">
-          В разделе собраны сезонные спецпредложения, распродажи и промокоды Строй Хаба на строительные материалы и инструменты. Выбирайте товары со скидками и экономьте на покупках!
-        </p>
+    <div className="max-w-6xl mx-auto animate-fade-in-up space-y-12 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
+      
+      {/* Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        
+        {/* SVG Promotions Discount Background */}
+        <svg 
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
+          viewBox="0 0 120 80" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="0.8"
+        >
+          {/* Discount tags and stars */}
+          <path d="M40 20 L60 20 L80 40 L60 60 L40 60 Z" fill="currentColor" fillOpacity="0.05" />
+          <circle cx="50" cy="30" r="3" fill="currentColor" />
+
+          {/* Sparkles */}
+          <path d="M90 20 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 z" fill="currentColor" fillOpacity="0.2" />
+          <path d="M25 50 l1 2 l2 1 l-2 1 l-1 2 l-1 -2 l-2 -1 l2 -1 z" fill="currentColor" fillOpacity="0.2" />
+        </svg>
+
+        <div className="relative z-10 space-y-3 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+            Акции и скидки
+          </h1>
+          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+            Сезонные спецпредложения, распродажи и промокоды на строительные материалы и инструменты
+          </p>
+        </div>
       </div>
 
       {loading ? (
