@@ -122,13 +122,23 @@ export default function App() {
       legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG."
     };
 
-    const newTitle = pageTitles[currentPage] || "TORMAG — Всё для стройки и ремонта";
-    document.title = newTitle;
+    // Dynamic page title/description updates (skip product and catalog to let their subcomponents handle it when data loads)
+    if (currentPage !== 'product' && currentPage !== 'catalog') {
+      const newTitle = pageTitles[currentPage] || "TORMAG — Всё для стройки и ремонта";
+      document.title = newTitle;
 
-    const newDesc = pageDescriptions[currentPage] || "Строительная платформа TORMAG в Алматы. Огромный выбор строительных материалов от дистрибьюторов по выгодным ценам с доставкой.";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', newDesc);
+      const newDesc = pageDescriptions[currentPage] || "Строительная платформа TORMAG в Алматы. Огромный выбор строительных материалов от дистрибьюторов по выгодным ценам с доставкой.";
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', newDesc);
+      }
+    } else if (currentPage === 'catalog' && !currentCategorySlug) {
+      // If catalog root page without category, set the default
+      document.title = pageTitles.catalog;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', pageDescriptions.catalog);
+      }
     }
 
     // Dynamic Canonical Link

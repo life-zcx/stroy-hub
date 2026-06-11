@@ -42,30 +42,5 @@ const shouldSkipDuplicate = (key) => {
 };
 
 export const trackEvent = (type, payload = {}) => {
-  const dedupeKey = buildDedupeKey(type, payload);
-  if (shouldSkipDuplicate(dedupeKey)) return;
-
-  if (type === 'page_view') {
-    recordPageView({
-      path: payload.path || window.location.pathname,
-      title: payload.title,
-      referrer: payload.referrer,
-      sessionId: payload.sessionId || getAnalyticsSessionId(),
-      ...analyticsContext,
-      ...payload,
-    }).catch((error) => {
-      console.error('Analytics page view failed:', error);
-    });
-    return;
-  }
-
-  recordAnalyticsEvent({
-    type,
-    path: window.location.pathname,
-    sessionId: getAnalyticsSessionId(),
-    ...analyticsContext,
-    ...payload,
-  }).catch((error) => {
-    console.error('Analytics event failed:', error);
-  });
+  // Internal tracking is deactivated.
 };

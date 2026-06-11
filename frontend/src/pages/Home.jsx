@@ -88,6 +88,41 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
     };
   }, []);
 
+  useEffect(() => {
+    // Add Organization Schema JSON-LD
+    const oldScript = document.getElementById('jsonld-org-schema');
+    if (oldScript) {
+      oldScript.remove();
+    }
+
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "TORMAG",
+      "url": "https://tormag.kz",
+      "logo": "https://tormag.kz/src/favicon.png",
+      "description": "Строительная B2B-платформа TORMAG в Алматы. Прямые оптовые поставки строительных материалов от ведущих дистрибьюторов.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Алматы",
+        "addressCountry": "KZ"
+      }
+    };
+
+    const script = document.createElement('script');
+    script.id = 'jsonld-org-schema';
+    script.type = 'application/ld+json';
+    script.innerHTML = JSON.stringify(schemaData);
+    document.head.appendChild(script);
+
+    return () => {
+      const addedScript = document.getElementById('jsonld-org-schema');
+      if (addedScript) {
+        addedScript.remove();
+      }
+    };
+  }, []);
+
   const brandLogos = brands.length > 0
     ? brands.map((brand) => ({
       id: brand.id,

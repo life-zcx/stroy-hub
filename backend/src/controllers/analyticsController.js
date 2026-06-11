@@ -106,65 +106,25 @@ function getConversionPercent(nextValue, prevValue) {
 }
 
 export const createPageView = async (req, res) => {
-  const { path, title, referrer, sessionId, region, country, city } = req.body;
+  const { path } = req.body;
 
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'path обязателен' });
   }
 
-  try {
-    await prisma.pageView.create({
-      data: {
-        path: truncate(path, MAX_PATH_LENGTH),
-        title: truncate(title, MAX_TITLE_LENGTH),
-        referrer: truncate(referrer, MAX_REFERRER_LENGTH),
-        sessionId: truncate(sessionId, MAX_SESSION_ID_LENGTH),
-        region: truncate(region, MAX_LOCATION_LENGTH),
-        country: truncate(country, MAX_LOCATION_LENGTH),
-        city: truncate(city, MAX_LOCATION_LENGTH),
-        userAgent: truncate(req.headers['user-agent'], MAX_USER_AGENT_LENGTH),
-        ip: truncate(getClientIp(req), 100),
-        userId: getUserIdFromToken(req),
-      },
-    });
-
-    res.status(201).json({ ok: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка записи посещения: ' + error.message });
-  }
+  // Internal page view analytics writing is disabled.
+  return res.status(201).json({ ok: true });
 };
 
 export const createAnalyticsEvent = async (req, res) => {
-  const { type, path, sessionId, productId, orderId, searchQuery, value, metadata, region, country, city } = req.body;
+  const { type } = req.body;
 
   if (!type || typeof type !== 'string') {
     return res.status(400).json({ error: 'type обязателен' });
   }
 
-  try {
-    await prisma.analyticsEvent.create({
-      data: {
-        type: truncate(type, MAX_EVENT_TYPE_LENGTH),
-        path: truncate(path, MAX_PATH_LENGTH),
-        sessionId: truncate(sessionId, MAX_SESSION_ID_LENGTH),
-        productId: Number.isFinite(Number(productId)) ? Number(productId) : null,
-        orderId: Number.isFinite(Number(orderId)) ? Number(orderId) : null,
-        searchQuery: truncate(searchQuery, MAX_SEARCH_QUERY_LENGTH),
-        value: Number.isFinite(Number(value)) ? Number(value) : null,
-        metadata: metadata && typeof metadata === 'object' ? metadata : null,
-        region: truncate(region, MAX_LOCATION_LENGTH),
-        country: truncate(country, MAX_LOCATION_LENGTH),
-        city: truncate(city, MAX_LOCATION_LENGTH),
-        userAgent: truncate(req.headers['user-agent'], MAX_USER_AGENT_LENGTH),
-        ip: truncate(getClientIp(req), 100),
-        userId: getUserIdFromToken(req),
-      },
-    });
-
-    res.status(201).json({ ok: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка записи события: ' + error.message });
-  }
+  // Internal analytics event writing is disabled.
+  return res.status(201).json({ ok: true });
 };
 
 export const getAnalyticsSummary = async (req, res) => {
