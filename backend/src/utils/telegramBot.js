@@ -164,11 +164,15 @@ const sendMsg = async (chatId, text, replyMarkup = null) => {
     if (replyMarkup) {
       body.reply_markup = replyMarkup;
     }
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error(`[TELEGRAM BOT] Failed to send message to ${chatId}. Status ${res.status}: ${errText}`);
+    }
   } catch (err) {
     console.error('[TELEGRAM BOT] Failed to send message:', err);
   }
@@ -328,12 +332,12 @@ const handleCommand = async (chatId, text) => {
     const helpMsg = `🛠️ *Доступные команды Telegram-бота:*\n\n` +
       `🖥️ /status — Показать параметры VPS (CPU, RAM, диск, аптайм)\n` +
       `📊 /db — Статус СУБД Postgres и счетчики таблиц\n` +
-      `🧹 /db_optimize — Оптимизация БД (VACUUM ANALYZE)\n` +
-      `🧹 /redis_clear — Полная очистка кэша Redis\n` +
-      `📈 /redis_info — Статистика и память кэша Redis\n` +
-      `🔒 /ssl_check — Проверка срока действия SSL-сертификата\n` +
+      `🧹 \`/db_optimize\` — Оптимизация БД (VACUUM ANALYZE)\n` +
+      `🧹 \`/redis_clear\` — Полная очистка кэша Redis\n` +
+      `📈 \`/redis_info\` — Статистика и память кэша Redis\n` +
+      `🔒 \`/ssl_check\` — Проверка срока действия SSL-сертификата\n` +
       `📝 /logs — Вывести последние 50 строк общего лога бэкенда\n` +
-      `🚨 /logs_error — Вывести последние 30 строк лога ошибок\n` +
+      `🚨 \`/logs_error\` — Вывести последние 30 строк лога ошибок\n` +
       `💾 /backup — Резервное копирование базы данных на Яндекс.Диск\n` +
       `🔄 /restart — Безопасно перезапустить контейнер бэкенда`;
     await sendMsg(chatId, helpMsg);
