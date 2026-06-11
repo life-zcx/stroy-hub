@@ -26,6 +26,22 @@ const sendTelegramAlert = async (text) => {
   }
 };
 
+const getAllFilesRecursively = (dirPath, arrayOfFiles = []) => {
+  if (!fs.existsSync(dirPath)) return arrayOfFiles;
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    const filePath = path.join(dirPath, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      arrayOfFiles = getAllFilesRecursively(filePath, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(filePath);
+    }
+  });
+
+  return arrayOfFiles;
+};
+
 export const uploadLatestBackupToYandex = async () => {
   const user = process.env.YANDEX_DISK_USER?.trim();
   const pass = process.env.YANDEX_DISK_PASS?.trim();
@@ -43,10 +59,11 @@ export const uploadLatestBackupToYandex = async () => {
       return;
     }
 
-    const files = fs.readdirSync(BACKUP_DIR)
-      .filter(f => f.endsWith('.sql.gz') || f.endsWith('.gz') || f.endsWith('.sql'))
-      .map(name => {
-        const filePath = path.join(BACKUP_DIR, name);
+    const allFiles = getAllFilesRecursively(BACKUP_DIR);
+    const files = allFiles
+      .filter(filePath => filePath.endsWith('.sql.gz') || filePath.endsWith('.gz') || filePath.endsWith('.sql'))
+      .map(filePath => {
+        const name = path.basename(filePath);
         const stat = fs.statSync(filePath);
         return { name, filePath, mtime: stat.mtime };
       })
