@@ -319,6 +319,7 @@ const readLastLogLines = (filenamePattern, maxLines = 50) => {
 // Command handler logic
 const handleCommand = async (chatId, text) => {
   let cleanText = text.trim();
+  console.log(`[TELEGRAM BOT] Command received: "${text}" (parsed: "${cleanText}") in chat ${chatId}`);
   if (cleanText.includes('@')) {
     cleanText = cleanText.split('@')[0];
   }
@@ -566,18 +567,26 @@ const handleUpdate = async (update) => {
     TELEGRAM_CHAT_ID
   ].filter(Boolean).map(id => id.trim());
 
+  console.log(`[TELEGRAM BOT] Incoming update: ID=${update.update_id}, message=${!!update.message}, callback_query=${!!update.callback_query}`);
+
   if (update.message) {
     const chat = update.message.chat;
     const text = update.message.text;
 
+    console.log(`[TELEGRAM BOT] Message in chat ${chat.id} (${chat.title || chat.username || 'private'}): "${text}". Authorized chats: [${authorizedChats.join(', ')}]`);
+
     // Security check: only respond to commands from configured admin chats
-    if (!authorizedChats.includes(String(chat.id))) return;
+    if (!authorizedChats.includes(String(chat.id))) {
+      console.log(`[TELEGRAM BOT] Unauthorized chat ID: ${chat.id}`);
+      return;
+    }
 
     if (text && text.startsWith('/')) {
       await handleCommand(chat.id, text);
     }
   } else if (update.callback_query) {
     const chat = update.callback_query.message.chat;
+    console.log(`[TELEGRAM BOT] Callback query from chat ${chat.id}. Authorized: ${authorizedChats.includes(String(chat.id))}`);
 
     // Security check
     if (!authorizedChats.includes(String(chat.id))) return;
