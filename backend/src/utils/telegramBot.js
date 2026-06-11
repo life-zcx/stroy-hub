@@ -318,7 +318,10 @@ const readLastLogLines = (filenamePattern, maxLines = 50) => {
 
 // Command handler logic
 const handleCommand = async (chatId, text) => {
-  const cleanText = text.trim();
+  let cleanText = text.trim();
+  if (cleanText.includes('@')) {
+    cleanText = cleanText.split('@')[0];
+  }
 
   if (cleanText === '/help') {
     const helpMsg = `🛠️ *Доступные команды Telegram-бота:*\n\n` +
