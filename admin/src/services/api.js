@@ -267,8 +267,8 @@ export const getSiteAnalytics = async (range = 'week') => {
 };
 
 // Reviews API
-export const getReviews = async () => {
-  const response = await api.get('/reviews');
+export const getReviews = async (params = {}) => {
+  const response = await api.get('/reviews', { params });
   return response.data;
 };
 

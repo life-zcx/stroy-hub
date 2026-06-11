@@ -232,8 +232,8 @@ export function useDashboardData({ user, showToast }) {
         }));
       }
 
-      const loadedOrders = await getOrders();
-      setOrders(loadedOrders);
+      const ordersResult = await getOrders({ page: 1, limit: 50 });
+      setOrders(ordersResult.data || ordersResult || []);
 
       if (!isSupplier) {
         const loadedCallbacks = await getCallbacks();
@@ -251,8 +251,8 @@ export function useDashboardData({ user, showToast }) {
         const loadedBrands = await getBrands();
         setBrands(loadedBrands);
 
-        const loadedReviews = await getReviews();
-        setReviews(loadedReviews);
+        const reviewsResult = await getReviews({ page: 1, limit: 50 });
+        setReviews(reviewsResult.data || reviewsResult || []);
 
         const loadedReturns = await getReturns();
         setReturns(loadedReturns);
