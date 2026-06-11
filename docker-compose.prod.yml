@@ -42,9 +42,7 @@ services:
       - "127.0.0.1:6379:6379"
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/life-zcx/stroy-hub/backend:latest
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -76,9 +74,7 @@ services:
       retries: 5
 
   gateway:
-    build:
-      context: .
-      dockerfile: deploy/nginx/Dockerfile
+    image: ghcr.io/life-zcx/stroy-hub/gateway:latest
     restart: unless-stopped
     depends_on:
       backend:
