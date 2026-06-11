@@ -338,61 +338,48 @@ export const getAllOrders = async (req, res) => {
     else if (sort === 'amount_desc') orderBy = { totalAmount: 'desc' };
     else if (sort === 'amount_asc') orderBy = { totalAmount: 'asc' };
 
-    const page = Number.parseInt(req.query.page, 10);
-    const limit = Math.min(Number.parseInt(req.query.limit, 10) || 20, 50);
-    const usePagination = Number.isFinite(page) && page > 0;
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, Number.parseInt(req.query.limit, 10) || 20), 100);
     const summaryOnly = req.query.summary === 'true';
 
-    if (usePagination) {
-      const [orders, total] = await prisma.$transaction([
-        prisma.order.findMany({
-          where,
-          ...(summaryOnly
-            ? {
-                include: {
-                  _count: { select: { items: true } },
-                  returnRequests: {
-                    select: {
-                      id: true,
-                      status: true,
-                      quantity: true,
-                      productId: true,
-                    },
+    const [orders, total] = await prisma.$transaction([
+      prisma.order.findMany({
+        where,
+        ...(summaryOnly
+          ? {
+              include: {
+                _count: { select: { items: true } },
+                returnRequests: {
+                  select: {
+                    id: true,
+                    status: true,
+                    quantity: true,
+                    productId: true,
                   },
                 },
-              }
-            : {
-                include: {
-                  ...buildOrderItemsInclude(user),
-                  returnRequests: true,
-                },
-              }),
-          orderBy,
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        prisma.order.count({ where }),
-      ]);
+              },
+            }
+          : {
+              include: {
+                ...buildOrderItemsInclude(user),
+                returnRequests: true,
+              },
+            }),
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ]);
 
-      return res.json({
-        data: orders,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasMore: page * limit < total,
-      });
-    }
-
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        ...buildOrderItemsInclude(user),
-        returnRequests: true,
-      },
-      orderBy
+    res.json({
+      data: orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
     });
-    res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения списка заказов: ' + error.message });
   }
