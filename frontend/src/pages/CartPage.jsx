@@ -579,13 +579,15 @@ export default function CartPage({
                 style={{ transform: `translateX(-${carouselIndex * 276}px)` }}
               >
                 {displayItems.map((prod) => (
-                  <Link 
-                    key={prod.id} 
-                    href={getPageHref('product', prod.id)}
-                    onClick={() => onNavigate('product', prod.id)}
-                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col cursor-pointer hover:border-emerald-500/30 snap-start snap-always text-slate-800"
+                  <div
+                    key={prod.id}
+                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col snap-start snap-always text-slate-800"
                   >
-                    <div className="h-32 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative mb-3">
+                    <Link
+                      href={getPageHref('product', prod.id)}
+                      onClick={() => onNavigate('product', prod.id)}
+                      className="h-32 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative mb-3 block"
+                    >
                       {prod.isHit && (
                         <span className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider z-10">
                           Хит
@@ -597,15 +599,18 @@ export default function CartPage({
                         className="w-2/3 h-2/3 object-contain group-hover:scale-105 transition-transform" 
                         onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80'; }}
                       />
-                    </div>
-                    <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[2rem] leading-snug group-hover:text-emerald-600 transition-colors mb-2">
+                    </Link>
+                    <Link
+                      href={getPageHref('product', prod.id)}
+                      onClick={() => onNavigate('product', prod.id)}
+                      className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[2rem] leading-snug hover:text-emerald-600 transition-colors mb-2 block"
+                    >
                       {prod.name}
-                    </h3>
-                    <div className="mt-auto pt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                    </Link>
+                    <div className="mt-auto pt-2 flex items-center justify-between">
                       <span className="text-sm font-black text-slate-900 font-outfit">{formatPrice(prod.price)}</span>
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           if (onAddToCart) {
                             onAddToCart(prod);
                             showToast?.(`🛒 «${prod.name}» добавлен в корзину`);
@@ -618,8 +623,9 @@ export default function CartPage({
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
-                  </Link>
+                  </div>
                 ))}
+
               </div>
             </div>
           </div>
