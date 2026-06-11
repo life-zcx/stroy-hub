@@ -168,8 +168,8 @@ export const matchEstimate = async (file) => {
 };
 
 // Reviews API
-export const getProductReviews = async (productId) => {
-  const response = await api.get(`/reviews/product/${productId}`);
+export const getProductReviews = async (productId, params = {}) => {
+  const response = await api.get(`/reviews/product/${productId}`, { params });
   return response.data;
 };
 

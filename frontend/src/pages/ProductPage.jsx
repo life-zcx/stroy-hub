@@ -561,7 +561,7 @@ export default function ProductPage({
       <section className="bg-white border border-slate-200/70 rounded-[2rem] p-6 sm:p-8 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
           <div className="space-y-1">
-            <h2 className="text-2xl font-black text-slate-950 font-outfit">Отзывы покупателей ({reviews.length})</h2>
+            <h2 className="text-2xl font-black text-slate-950 font-outfit">Отзывы покупателей ({reviewsMeta.total})</h2>
             <p className="text-slate-400 text-xs font-semibold">На основе покупок этого товара</p>
           </div>
           <div className="flex items-center gap-3">
@@ -570,7 +570,7 @@ export default function ProductPage({
               <span className="ml-1.5 font-outfit text-xl font-bold text-slate-900">{product.rating || '4.5'}</span>
             </div>
             <span className="text-slate-200">|</span>
-            <span className="text-xs font-semibold text-slate-500">{product.reviews || '0'} оценок</span>
+            <span className="text-xs font-semibold text-slate-500">{reviewsMeta.total} оценок</span>
           </div>
         </div>
 
@@ -588,40 +588,62 @@ export default function ProductPage({
           </div>
         ) : (
           <div className="space-y-6">
-            {reviews.map((rev) => (
-              <div key={rev.id} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-800 text-sm font-outfit">{rev.user?.name}</span>
-                      <span className="text-slate-300 text-[10px]">·</span>
-                      <span className="text-slate-400 text-[11px] font-semibold">
-                        {new Date(rev.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <div className="space-y-6">
+              {reviews.map((rev) => (
+                <div key={rev.id} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800 text-sm font-outfit">{rev.user?.name}</span>
+                        <span className="text-slate-300 text-[10px]">·</span>
+                        <span className="text-slate-400 text-[11px] font-semibold">
+                          {new Date(rev.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </span>
+                      </div>
+                      {/* Stars */}
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-3 w-3 ${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {rev.user?.email && (
+                      <span className="text-[10px] text-slate-400 font-mono tracking-wider bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100/80">
+                        {rev.user.email}
                       </span>
-                    </div>
-                    {/* Stars */}
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          className={`h-3 w-3 ${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
-                        />
-                      ))}
-                    </div>
+                    )}
                   </div>
-                  {rev.user?.email && (
-                    <span className="text-[10px] text-slate-400 font-mono tracking-wider bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100/80">
-                      {rev.user.email}
-                    </span>
+                  {rev.comment && (
+                    <p className="text-sm text-slate-650 leading-relaxed mt-3 bg-slate-50/40 p-3.5 rounded-2xl border border-slate-100/60 font-medium">
+                      {rev.comment}
+                    </p>
                   )}
                 </div>
-                {rev.comment && (
-                  <p className="text-sm text-slate-650 leading-relaxed mt-3 bg-slate-50/40 p-3.5 rounded-2xl border border-slate-100/60 font-medium">
-                    {rev.comment}
-                  </p>
-                )}
+              ))}
+            </div>
+
+            {reviewsMeta.hasMore && (
+              <div className="pt-4 text-center">
+                <button
+                  type="button"
+                  onClick={loadMoreReviews}
+                  disabled={loadingMoreReviews}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-2xl text-xs tracking-wider uppercase transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {loadingMoreReviews ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
+                      Загрузка...
+                    </>
+                  ) : (
+                    'Показать еще отзывы'
+                  )}
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </section>
