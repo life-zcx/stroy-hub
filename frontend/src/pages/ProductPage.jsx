@@ -37,7 +37,9 @@ export default function ProductPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [reviewsMeta, setReviewsMeta] = useState({ page: 1, hasMore: false, total: 0 });
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [thumbnailOffset, setThumbnailOffset] = useState(0);
@@ -146,8 +148,18 @@ export default function ProductPage({
     const loadReviews = async () => {
       setLoadingReviews(true);
       try {
-        const data = await getProductReviews(productId);
-        setReviews(data);
+        const res = await getProductReviews(productId, { page: 1, limit: 10 });
+        if (res && res.data) {
+          setReviews(res.data);
+          setReviewsMeta({
+            page: res.page || 1,
+            hasMore: res.hasMore || false,
+            total: res.total || res.data.length
+          });
+        } else if (Array.isArray(res)) {
+          setReviews(res);
+          setReviewsMeta({ page: 1, hasMore: false, total: res.length });
+        }
       } catch (err) {
         console.error('Error loading product reviews:', err);
       } finally {
@@ -160,6 +172,27 @@ export default function ProductPage({
       loadReviews();
     }
   }, [productId]);
+
+  const loadMoreReviews = async () => {
+    if (loadingMoreReviews || !reviewsMeta.hasMore) return;
+    setLoadingMoreReviews(true);
+    try {
+      const nextPage = reviewsMeta.page + 1;
+      const res = await getProductReviews(productId, { page: nextPage, limit: 10 });
+      if (res && res.data) {
+        setReviews(prev => [...prev, ...res.data]);
+        setReviewsMeta({
+          page: res.page,
+          hasMore: res.hasMore,
+          total: res.total
+        });
+      }
+    } catch (err) {
+      console.error('Error loading more reviews:', err);
+    } finally {
+      setLoadingMoreReviews(false);
+    }
+  };
 
   const breadcrumbs = useMemo(() => {
     if (!product || !categories || categories.length === 0) return [];
