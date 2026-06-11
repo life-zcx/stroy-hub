@@ -616,6 +616,8 @@ export const startTelegramBotListener = () => {
       
       const res = await fetch(url);
       if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.error(`[TELEGRAM BOT] Polling HTTP error status ${res.status}: ${errText}`);
         setTimeout(poll, 10000);
         return;
       }
@@ -634,5 +636,19 @@ export const startTelegramBotListener = () => {
     }
   };
 
-  poll();
+  const initBot = async () => {
+    try {
+      const apiBase = TELEGRAM_API_BASE.replace(/\/+$/, '');
+      const url = `${apiBase}/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook?drop_pending_updates=true`;
+      console.log('[TELEGRAM BOT] Deleting active webhooks to enable long polling...');
+      const res = await fetch(url);
+      const data = await res.json();
+      console.log('[TELEGRAM BOT] Webhook deletion status:', JSON.stringify(data));
+    } catch (err) {
+      console.error('[TELEGRAM BOT] Failed to delete webhook:', err);
+    }
+    poll();
+  };
+
+  initBot();
 };
