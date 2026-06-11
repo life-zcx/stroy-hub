@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import { exec, execSync } from 'child_process';
 import prisma from '../config/db.js';
+import redisClient from '../config/redis.js';
 import { uploadLatestBackupToYandex } from './yandexBackup.js';
 import { recalculateProductRating } from '../controllers/reviewController.js';
 
@@ -156,9 +157,45 @@ const runManualBackup = () => {
   });
 };
 
+// Helper to read the last N lines of a daily log file
+const readLastLogLines = (filenamePattern, maxLines = 50) => {
+  const logDir = path.resolve('logs');
+  if (!fs.existsSync(logDir)) return 'Папка логов не найдена';
+
+  const dateStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const filename = filenamePattern.replace('%DATE%', dateStr);
+  const logPath = path.join(logDir, filename);
+
+  if (!fs.existsSync(logPath)) {
+    return `Файл логов за сегодня (${filename}) не найден.`;
+  }
+
+  try {
+    const data = fs.readFileSync(logPath, 'utf8');
+    const lines = data.trim().split('\n').filter(Boolean);
+    const lastLines = lines.slice(-maxLines);
+    return lastLines.join('\n');
+  } catch (err) {
+    return `Ошибка чтения логов: ${err.message}`;
+  }
+};
+
 // Command handler logic
 const handleCommand = async (chatId, text) => {
   const cleanText = text.trim();
+
+  if (cleanText === '/help') {
+    const helpMsg = `🛠️ *Доступные команды Telegram-бота:*\n\n` +
+      `🖥️ /status — Показать параметры VPS (CPU, RAM, диск, аптайм)\n` +
+      `📊 /db — Проверить статус СУБД Postgres и получить счетчики таблиц\n` +
+      `🧹 /redis_clear — Полная очистка кэша Redis\n` +
+      `📝 /logs — Вывести последние 50 строк общего лога бэкенда\n` +
+      `🚨 /logs_error — Вывести последние 30 строк лога ошибок\n` +
+      `💾 /backup — Запустить резервное копирование и отправить на Яндекс.Диск\n` +
+      `🔄 /restart — Безопасно перезапустить контейнер бэкенда`;
+    await sendMsg(chatId, helpMsg);
+    return;
+  }
 
   if (cleanText === '/status') {
     // 1. Calculate memory usage
@@ -193,6 +230,65 @@ const handleCommand = async (chatId, text) => {
       `🕒 *Uptime:* ${(os.uptime() / 3600).toFixed(1)} часов`;
 
     await sendMsg(chatId, statusMsg);
+    return;
+  }
+
+  if (cleanText === '/db') {
+    await sendMsg(chatId, `⏳ *Запрос статистики базы данных...*`);
+    try {
+      const [users, products, orders, reviews, callbacks, partners] = await Promise.all([
+        prisma.user.count(),
+        prisma.product.count(),
+        prisma.order.count(),
+        prisma.review.count(),
+        prisma.callbackRequest.count(),
+        prisma.partnerRequest.count()
+      ]);
+      const dbMsg = `📊 *Статус базы данных Postgres:*\n\n` +
+        `🟢 *Соединение:* Активно\n` +
+        `👥 *Пользователей:* ${users}\n` +
+        `📦 *Товаров:* ${products}\n` +
+        `🛒 *Заказов:* ${orders}\n` +
+        `📝 *Отзывов:* ${reviews}\n` +
+        `📞 *Звонков (Callback):* ${callbacks}\n` +
+        `🤝 *Партнерских заявок:* ${partners}`;
+      await sendMsg(chatId, dbMsg);
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Ошибка соединения с СУБД:* \`${err.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/redis_clear') {
+    await sendMsg(chatId, `🧹 *Очищаю кэш Redis...*`);
+    try {
+      await redisClient.flushAll();
+      await sendMsg(chatId, `🟢 *Кэш Redis успешно и полностью очищен!*`);
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Ошибка очистки Redis:* \`${err.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/logs') {
+    const logData = readLastLogLines('combined-%DATE%.log', 50);
+    const sliceData = logData.slice(-4000); // Telegram limit
+    await sendMsg(chatId, `📝 *Последние 50 логов бэкенда:*\n\n\`\`\`\n${sliceData}\n\`\`\``);
+    return;
+  }
+
+  if (cleanText === '/logs_error') {
+    const logData = readLastLogLines('error-%DATE%.log', 30);
+    const sliceData = logData.slice(-4000);
+    await sendMsg(chatId, `🚨 *Последние 30 ошибок бэкенда:*\n\n\`\`\`\n${sliceData}\n\`\`\``);
+    return;
+  }
+
+  if (cleanText === '/restart') {
+    await sendMsg(chatId, `🔄 *Перезапускаю бэкенд... Бот будет временно недоступен.*`);
+    setTimeout(() => {
+      process.exit(0);
+    }, 1000);
     return;
   }
 
