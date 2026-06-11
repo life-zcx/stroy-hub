@@ -1,4 +1,6 @@
 import prisma from '../config/db.js';
+import redisClient from '../config/redis.js';
+import logger from '../utils/logger.js';
 import {
   buildPromotionSnapshot,
   evaluatePromotion,
@@ -78,6 +80,18 @@ function serializePromotion(promotion, relations = {}) {
     isCurrentlyActive: isPromotionCurrentlyActive(promotion),
   };
 }
+
+const PROMOTIONS_CACHE_KEY_PUBLIC = 'promotions:public';
+const PROMOTIONS_CACHE_KEY_HOME = 'promotions:home';
+
+const clearPromotionsCache = async () => {
+  try {
+    await redisClient.del([PROMOTIONS_CACHE_KEY_PUBLIC, PROMOTIONS_CACHE_KEY_HOME]);
+    logger.info('Cleared promotions cache');
+  } catch (err) {
+    logger.error('Error clearing promotions cache:', err);
+  }
+};
 
 async function enrichPromotions(promotions) {
   if (!promotions.length) {
@@ -307,6 +321,12 @@ function buildPromotionData(body, imagePath = null, imageCardPath = null, imageD
 
 export const getPublicPromotions = async (req, res) => {
   try {
+    const cached = await redisClient.get(PROMOTIONS_CACHE_KEY_PUBLIC);
+    if (cached) {
+      logger.info('Promotions (public) cache hit');
+      return res.json(JSON.parse(cached));
+    }
+
     const promotions = await prisma.promotion.findMany({
       where: {
         showOnSite: true,
@@ -319,7 +339,10 @@ export const getPublicPromotions = async (req, res) => {
     });
 
     const activePromotions = promotions.filter((promotion) => isPromotionCurrentlyActive(promotion));
-    res.json(await enrichPromotions(activePromotions));
+    const result = await enrichPromotions(activePromotions);
+
+    await redisClient.set(PROMOTIONS_CACHE_KEY_PUBLIC, JSON.stringify(result), { EX: 120 });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения акций: ' + error.message });
   }
@@ -327,6 +350,12 @@ export const getPublicPromotions = async (req, res) => {
 
 export const getHomePromotions = async (req, res) => {
   try {
+    const cached = await redisClient.get(PROMOTIONS_CACHE_KEY_HOME);
+    if (cached) {
+      logger.info('Promotions (home) cache hit');
+      return res.json(JSON.parse(cached));
+    }
+
     const promotions = await prisma.promotion.findMany({
       where: {
         showOnSite: true,
@@ -341,7 +370,10 @@ export const getHomePromotions = async (req, res) => {
     });
 
     const activePromotions = promotions.filter((promotion) => isPromotionCurrentlyActive(promotion));
-    res.json(await enrichPromotions(activePromotions));
+    const result = await enrichPromotions(activePromotions);
+
+    await redisClient.set(PROMOTIONS_CACHE_KEY_HOME, JSON.stringify(result), { EX: 120 });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения акций для главной: ' + error.message });
   }
@@ -421,6 +453,7 @@ export const createPromotion = async (req, res) => {
   try {
     const createdPromotion = await prisma.promotion.create({ data });
     const [serializedPromotion] = await enrichPromotions([createdPromotion]);
+    await clearPromotionsCache();
     res.status(201).json(serializedPromotion);
   } catch (error) {
     const statusCode = error.code === 'P2002' ? 400 : 500;
@@ -464,6 +497,7 @@ export const updatePromotion = async (req, res) => {
     });
 
     const [serializedPromotion] = await enrichPromotions([updatedPromotion]);
+    await clearPromotionsCache();
     res.json(serializedPromotion);
   } catch (error) {
     const statusCode = error.code === 'P2002' ? 400 : 500;
@@ -501,6 +535,7 @@ export const deletePromotion = async (req, res) => {
     }
 
     await prisma.promotion.delete({ where: { id: promotionId } });
+    await clearPromotionsCache();
     res.json({ message: 'Акция удалена.' });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка удаления акции: ' + error.message });

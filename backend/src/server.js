@@ -24,6 +24,7 @@ import ogRoutes from './routes/ogRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import logger from './utils/logger.js';
+import { globalRateLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
@@ -119,6 +120,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.get('/sitemap.xml', getDynamicSitemap);
+app.use('/api', globalRateLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/products', productRoutes);

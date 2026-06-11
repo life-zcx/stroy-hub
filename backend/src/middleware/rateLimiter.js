@@ -1,4 +1,5 @@
 import redisClient from '../config/redis.js';
+import logger from '../utils/logger.js';
 
 function getClientIp(req) {
   let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -97,4 +98,32 @@ export const estimateUploadRateLimiter = async (req, res, next) => {
   }
 };
 
+
+// Global rate limiter: 200 requests per minute per IP
+// Applied to all API routes as a first line of defence against bots and abuse.
+export const globalRateLimiter = async (req, res, next) => {
+  const ip = getClientIp(req);
+
+  try {
+    const key = `rate-limit:global:${ip}`;
+    const count = await redisClient.incr(key);
+
+    if (count === 1) {
+      await redisClient.expire(key, 60);
+    }
+
+    if (count > 200) {
+      logger.warn(`[Global Rate Limit] IP ${ip} exceeded 200 req/min`);
+      return res.status(429).json({
+        error: 'Слишком много запросов. Пожалуйста, попробуйте через минуту.',
+      });
+    }
+
+    next();
+  } catch (error) {
+    // Fail-open: do not block users if Redis is temporarily unavailable
+    logger.error('[Global Rate Limiter Error]', error);
+    next();
+  }
+};
 
