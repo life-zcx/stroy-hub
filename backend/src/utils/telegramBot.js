@@ -95,7 +95,7 @@ export const sendPartnerRequestAlert = async (partner) => {
     `📧 *Email:* ${partner.email}\n` +
     (partner.comment ? `💬 *Комментарий:* "${partner.comment}"\n` : '') +
     `📅 *Дата:* ${new Date(partner.createdAt).toLocaleString('ru-RU')}`;
-  await sendMsg(getSystemChatId(), msg);
+  await sendMsg(TELEGRAM_CHAT_ID, msg);
 };
 
 // 3. Send Review Moderation alert with Inline buttons
@@ -115,7 +115,7 @@ export const sendReviewModerationAlert = async (review, product) => {
     ]
   };
 
-  await sendMsg(getSystemChatId(), msg, replyMarkup);
+  await sendMsg(TELEGRAM_CHAT_ID, msg, replyMarkup);
 };
 
 // 4. Run database backup locally inside the backend container
