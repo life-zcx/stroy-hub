@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { sendReviewModerationAlert } from '../utils/telegramBot.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -45,7 +46,7 @@ const clearProductsCache = async () => {
 };
 
 // Helper to recalculate average product rating from approved reviews only
-const recalculateProductRating = async (productId) => {
+export const recalculateProductRating = async (productId) => {
   try {
     const aggregation = await prisma.review.aggregate({
       where: { productId, isApproved: true },
@@ -222,6 +223,9 @@ export const createProductReview = async (req, res) => {
         },
       },
     });
+
+    // Send Telegram Notification asynchronously for moderation
+    sendReviewModerationAlert(newReview, product).catch(err => console.error('[TELEGRAM ALERT ERROR] Review Moderation:', err));
 
     // 5. Генерируем уникальный промокод в подарок по настройкам сразу при отправке отзыва
     const settings = readReviewSettings();

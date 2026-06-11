@@ -1,5 +1,6 @@
 import prisma from '../config/db.js';
 import { sanitizeOptionalText, sanitizePersonName, sanitizePhone } from '../utils/requestValidation.js';
+import { sendCallbackAlert } from '../utils/telegramBot.js';
 
 export const createCallback = async (req, res) => {
   const { userName, userPhone } = req.body;
@@ -19,6 +20,10 @@ export const createCallback = async (req, res) => {
         status: 'pending',
       },
     });
+
+    // Send Telegram Notification asynchronously
+    sendCallbackAlert(callback).catch(err => console.error('[TELEGRAM ALERT ERROR] Callback:', err));
+
     res.status(201).json(callback);
   } catch (error) {
     const statusCode = error.message.includes('Поле') ? 400 : 500;

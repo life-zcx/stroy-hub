@@ -6,6 +6,7 @@ import {
   sanitizePersonName,
   sanitizePhone,
 } from '../utils/requestValidation.js';
+import { sendPartnerRequestAlert } from '../utils/telegramBot.js';
 
 const validStatuses = ['pending', 'contacted', 'approved', 'rejected'];
 
@@ -26,6 +27,9 @@ export const createPartnerRequest = async (req, res) => {
         comment: sanitizeOptionalText(comment, 'Комментарий к заявке', 1200),
       },
     });
+
+    // Send Telegram Notification asynchronously
+    sendPartnerRequestAlert(partnerRequest).catch(err => console.error('[TELEGRAM ALERT ERROR] Partner:', err));
 
     res.status(201).json(partnerRequest);
   } catch (error) {

@@ -26,6 +26,7 @@ import { getDynamicSitemap } from './controllers/sitemapController.js';
 import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
 import { startCleanupScheduler } from './utils/cleanup.js';
+import { startTelegramBotListener } from './utils/telegramBot.js';
 
 dotenv.config();
 
@@ -203,4 +204,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   logger.info(`Сервер Tormag запущен на порту ${PORT}`);
   startCleanupScheduler();
+  startTelegramBotListener();
 });
