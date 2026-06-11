@@ -47,26 +47,28 @@ const clearProductsCache = async () => {
 // Helper to recalculate average product rating from approved reviews only
 const recalculateProductRating = async (productId) => {
   try {
-    const approvedReviews = await prisma.review.findMany({
+    const aggregation = await prisma.review.aggregate({
       where: { productId, isApproved: true },
+      _avg: { rating: true },
+      _count: { id: true }
     });
 
-    const totalRating = approvedReviews.reduce((sum, r) => sum + r.rating, 0);
-    const avgRating = approvedReviews.length > 0 
-      ? parseFloat((totalRating / approvedReviews.length).toFixed(1)) 
+    const avgRating = aggregation._avg.rating !== null
+      ? parseFloat(aggregation._avg.rating.toFixed(1))
       : 5.0; // Default fallback to 5.0
+    const reviewsCount = aggregation._count.id || 0;
 
     await prisma.product.update({
       where: { id: productId },
       data: {
         rating: avgRating,
-        reviews: approvedReviews.length,
+        reviews: reviewsCount,
       },
     });
 
     // Clear Redis cache for products
     await clearProductsCache();
-    logger.info(`[REVIEWS] Recalculated rating for product ${productId}: avg=${avgRating}, total=${approvedReviews.length}`);
+    logger.info(`[REVIEWS] Recalculated rating for product ${productId}: avg=${avgRating}, total=${reviewsCount}`);
   } catch (error) {
     logger.error(`[REVIEWS ERROR] Failed to recalculate rating for product ${productId}:`, error);
   }
@@ -82,18 +84,28 @@ export const getProductReviews = async (req, res) => {
       return res.status(400).json({ error: 'Неверный идентификатор товара.' });
     }
 
-    const reviews = await prisma.review.findMany({
-      where: { productId: parsedProductId, isApproved: true },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, Number.parseInt(req.query.limit, 10) || 10), 50);
+
+    const [reviews, total] = await prisma.$transaction([
+      prisma.review.findMany({
+        where: { productId: parsedProductId, isApproved: true },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.review.count({
+        where: { productId: parsedProductId, isApproved: true }
+      })
+    ]);
 
     // Mask emails for privacy, e.g., u***r@example.com
     const formattedReviews = reviews.map((r) => {
@@ -121,7 +133,14 @@ export const getProductReviews = async (req, res) => {
       };
     });
 
-    res.json(formattedReviews);
+    res.json({
+      data: formattedReviews,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total
+    });
   } catch (error) {
     logger.error('Error fetching product reviews:', error);
     res.status(500).json({ error: 'Ошибка при получении отзывов: ' + error.message });
@@ -261,26 +280,42 @@ export const createProductReview = async (req, res) => {
 // GET /api/reviews (Admin only: get all reviews)
 export const adminGetReviews = async (req, res) => {
   try {
-    const reviews = await prisma.review.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, Number.parseInt(req.query.limit, 10) || 20), 100);
+
+    const [reviews, total] = await prisma.$transaction([
+      prisma.review.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
           },
         },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.review.count()
+    ]);
+
+    res.json({
+      data: reviews,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
     });
-    res.json(reviews);
   } catch (error) {
     logger.error('Error fetching admin reviews:', error);
     res.status(500).json({ error: 'Ошибка при получении списка отзывов.' });
