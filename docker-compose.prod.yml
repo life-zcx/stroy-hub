@@ -41,15 +41,6 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
-  telegram-bot-api:
-    image: aiogram/telegram-bot-api:latest
-    container_name: tormag_telegram_api
-    restart: unless-stopped
-    env_file:
-      - .env.production
-    volumes:
-      - telegram_bot_api_data:/var/lib/telegram-bot-api
-
   backend:
     build:
       context: ./backend
@@ -69,14 +60,12 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
-      TELEGRAM_API_BASE: http://telegram-bot-api:8081
+      TELEGRAM_API_BASE: ${TELEGRAM_API_BASE:-https://api.telegram.org}
       REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-      telegram-bot-api:
         condition: service_started
     volumes:
       - backend_uploads:/app/uploads
@@ -101,4 +90,3 @@ volumes:
   postgres_data:
   backend_uploads:
   db_backups:
-  telegram_bot_api_data:
