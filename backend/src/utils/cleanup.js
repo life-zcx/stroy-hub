@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { uploadLatestBackupToYandex } from './yandexBackup.js';
 
 export const cleanExpiredTokens = async () => {
   try {
@@ -16,12 +17,21 @@ export const cleanExpiredTokens = async () => {
 };
 
 export const startCleanupScheduler = () => {
-  console.log('[CLEANUP] Starting token cleanup scheduler (Runs every 24 hours)...');
+  console.log('[CLEANUP] Starting cleanup & backup scheduler (Runs every 24 hours)...');
   
-  // Run once immediately on startup
+  // 1. Run expired tokens cleanup immediately
   cleanExpiredTokens();
 
-  // Run every 24 hours (24 * 60 * 60 * 1000 ms)
+  // 2. Run Yandex.Disk backup upload after a short delay on startup (e.g., 30s)
+  // to avoid overlapping with container initialization/db boot.
+  setTimeout(() => {
+    uploadLatestBackupToYandex();
+  }, 30000);
+
+  // 3. Schedule both tasks every 24 hours
   const INTERVAL_24H = 86400000;
-  setInterval(cleanExpiredTokens, INTERVAL_24H);
+  setInterval(() => {
+    cleanExpiredTokens();
+    uploadLatestBackupToYandex();
+  }, INTERVAL_24H);
 };
