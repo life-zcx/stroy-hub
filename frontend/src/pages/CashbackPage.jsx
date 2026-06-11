@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 import {
   ChevronRight,
   Gift,
@@ -165,12 +167,13 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
     <section className="space-y-6 animate-fade-in-up">
       {/* Breadcrumbs */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-        <button
+        <Link
+          href={getPageHref('home')}
           onClick={() => onNavigate?.('home')}
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Главная
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
         <span className="text-slate-900 font-extrabold">Мой кешбэк</span>
       </nav>
@@ -207,13 +210,13 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             <p className="text-[11px] text-slate-500 font-semibold leading-relaxed max-w-[200px] text-left sm:text-right">
               Кешбэк 3% начисляется с каждого выполненного заказа и списывается при оплате новых.
             </p>
-            <button
-              type="button"
+            <Link
+              href={getPageHref('cart')}
               onClick={() => onNavigate?.('cart')}
-              className="mt-1 self-start sm:self-end bg-slate-950 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-md"
+              className="mt-1 self-start sm:self-end bg-slate-955 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-md text-center inline-block"
             >
               Перейти в корзину
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -379,13 +382,13 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                         })}
                       </p>
                       {tx.orderId && (
-                        <button
-                          type="button"
+                        <Link
+                          href={getPageHref('order-detail', tx.orderId)}
                           onClick={() => onNavigate?.('order-detail', tx.orderId)}
                           className="text-[11px] font-black text-blue-500 hover:text-blue-700 transition-colors"
                         >
                           Заказ #{tx.orderId}
-                        </button>
+                        </Link>
                       )}
                       <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${meta.bgColor} ${meta.iconColor}`}>
                         {meta.label}
@@ -426,20 +429,20 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
           <p className="text-xs text-slate-500 mt-0.5">Чем больше заказов — тем выше накопленный баланс.</p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button
-            type="button"
+          <Link
+            href={getPageHref('orders')}
             onClick={() => onNavigate?.('orders')}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95 text-center inline-block"
           >
             Мои заказы
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => onNavigate?.('catalog')}
-            className="bg-slate-950 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+            className="bg-slate-950 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 text-center inline-block"
           >
             В каталог
-          </button>
+          </Link>
         </div>
       </div>
     </section>

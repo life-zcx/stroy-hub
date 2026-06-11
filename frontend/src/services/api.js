@@ -178,4 +178,55 @@ export const createProductReview = async (productId, rating, comment) => {
   return response.data;
 };
 
+// Returns API
+export const createReturnRequest = async (formData) => {
+  const response = await api.post('/returns', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};
+
+export const getMyReturnRequests = async () => {
+  const response = await api.get('/returns/my');
+  return response.data;
+};
+
+export const getWarrantyRules = async () => {
+  const response = await api.get('/warranty-rules');
+  return response.data;
+};
+
+// Cart API
+export const getCartApi = async () => {
+  const response = await api.get('/cart');
+  return response.data;
+};
+
+export const addToCartApi = async (productId, quantity) => {
+  const response = await api.post('/cart', { productId, quantity });
+  return response.data;
+};
+
+export const updateCartItemApi = async (productId, quantity) => {
+  const response = await api.put(`/cart/${productId}`, { quantity });
+  return response.data;
+};
+
+export const removeFromCartApi = async (productId) => {
+  const response = await api.delete(`/cart/${productId}`);
+  return response.data;
+};
+
+export const syncCartApi = async (items) => {
+  const response = await api.post('/cart/sync', { items });
+  return response.data;
+};
+
+export const clearCartApi = async () => {
+  const response = await api.delete('/cart');
+  return response.data;
+};
+
 export default api;

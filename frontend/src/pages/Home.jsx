@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { getBrands, getHomePromotions } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const THEME_GRADIENTS = {
   emerald: 'from-emerald-500 to-teal-600',
@@ -128,61 +130,61 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                <button
-                  type="button"
+                <Link
+                  href={getPageHref('catalog')}
                   onClick={() => onNavigate('catalog')}
                   className="w-full sm:w-auto justify-center px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                 >
                   <span>Перейти в каталог</span>
                   <ArrowRight className="h-4.5 w-4.5" />
-                </button>
-                <button
-                  type="button"
+                </Link>
+                <Link
+                  href={getPageHref('estimate')}
                   onClick={() => onNavigate('estimate')}
                   className="w-full sm:w-auto justify-center px-8 py-4 bg-white border border-slate-200 hover:border-slate-350 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl transition-all shadow-sm flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                 >
                   <span>Заказ по смете</span>
                   <ArrowRight className="h-4.5 w-4.5 text-slate-400 group-hover:text-slate-600" />
-                </button>
+                </Link>
               </div>
             </div>
 
             {/* Right Column: Sleek Minimalist Glass Tiles */}
             <div className="relative lg:col-span-5 space-y-4 z-10">
               {/* Tile 1 */}
-              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
-                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+              <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 shrink-0 shadow-sm">
                   <Hammer className="h-6 w-6" strokeWidth={2} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Цены дистрибьюторов</h4>
-                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit">Цены дистрибьюторов</h4>
+                  <p className="text-slate-555 text-xs leading-relaxed font-semibold">
                     Прямые поставки от официальных дистрибьюторов без розничных наценок
                   </p>
                 </div>
               </div>
 
               {/* Tile 2 */}
-              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
-                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+              <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 shrink-0 shadow-sm">
                   <HardHat className="h-6 w-6" strokeWidth={2} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Сертификаты качества</h4>
-                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit">Сертификаты качества</h4>
+                  <p className="text-slate-555 text-xs leading-relaxed font-semibold">
                     Полный комплект паспортов качества и соответствия на каждую партию
                   </p>
                 </div>
               </div>
 
               {/* Tile 3 */}
-              <div className="group bg-white hover:bg-slate-900 border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-[2px]">
-                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 transition-all duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm">
+              <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 shrink-0 shadow-sm">
                   <Truck className="h-6 w-6" strokeWidth={2} />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-slate-900 text-base font-outfit transition-colors duration-300 group-hover:text-white">Региональные поставки</h4>
-                  <p className="text-slate-555 group-hover:text-slate-300 text-xs transition-colors duration-300 leading-relaxed font-semibold">
+                  <h4 className="font-extrabold text-slate-900 text-base font-outfit">Региональные поставки</h4>
+                  <p className="text-slate-555 text-xs leading-relaxed font-semibold">
                     Быстрая и надежная доставка со складов по Алматы и области
                   </p>
                 </div>
@@ -200,17 +202,18 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Акции и спецпредложения</h2>
               <p className="text-slate-500 text-sm">Актуальные сезонные предложения, промокоды и распродажи</p>
             </div>
-            <button onClick={() => onNavigate('promotions')} className="text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors flex items-center gap-1">
+            <Link href={getPageHref('promotions')} onClick={() => onNavigate('promotions')} className="text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors flex items-center gap-1">
               Все акции <ArrowRight className="h-4 w-4" />
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {homePromotions.map((promotion) => (
-              <div
+              <Link
                 key={promotion.id}
+                href={getPageHref('promotions', promotion.id)}
                 onClick={() => onNavigate('promotions', promotion.id)}
-                className="group cursor-pointer bg-white rounded-[2rem] border border-slate-200/80 hover:shadow-xl hover:border-emerald-500/20 transition-all duration-500 overflow-hidden flex flex-col h-full"
+                className="group cursor-pointer bg-white rounded-[2rem] border border-slate-200/80 hover:shadow-xl hover:border-emerald-500/20 transition-all duration-500 overflow-hidden flex flex-col h-full text-slate-850"
               >
                 {/* Visual Area */}
                 <div className="aspect-[16/10] w-full overflow-hidden relative bg-slate-50 border-b border-slate-100 shrink-0">
@@ -270,7 +273,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -339,13 +342,14 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
             Помогите другим покупателям сделать правильный выбор! Оставьте оценку и честный отзыв к любому купленному товару в вашем личном кабинете, и мы мгновенно вышлем вам персональный промокод на скидку 10% для следующего заказа.
           </p>
         </div>
-        <button
+        <Link
+          href={getPageHref('orders')}
           onClick={() => onNavigate('orders')}
           className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-extrabold rounded-2xl shadow-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5 shrink-0 z-10 cursor-pointer text-xs uppercase tracking-wider font-outfit"
         >
           Оценить покупки
           <Award className="h-4.5 w-4.5 text-blue-600" />
-        </button>
+        </Link>
       </section>
 
       {/* 📂 QUICK CATEGORIES PREVIEW */}
@@ -355,19 +359,21 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные категории</h2>
             <p className="text-slate-500 text-sm">Самые востребованные строительные материалы этого сезона</p>
           </div>
-          <button
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => onNavigate('catalog')}
             className="flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors"
           >
             Смотреть весь каталог
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categoriesList.map(cat => (
-            <div
+            <Link
               key={cat.id}
+              href={getPageHref('catalog', null, cat.id)}
               onClick={() => {
                 setSelectedCategory(cat.id);
                 onNavigate('catalog');
@@ -384,7 +390,7 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
                 <h4 className="font-extrabold text-white text-lg">{cat.name}</h4>
                 <p className="text-slate-300 text-[10px] leading-relaxed">{cat.desc}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -397,13 +403,14 @@ export default function Home({ onNavigate, setSelectedCategory, categories = [] 
             Воспользуйтесь нашим интерактивным умным калькулятором. Укажите тип ваших строительных или отделочных работ, выберите подходящий бюджетный уровень — и система мгновенно сформирует идеальный комплект товаров со складов в Алматы.
           </p>
         </div>
-        <button
+        <Link
+          href={getPageHref('advisor')}
           onClick={() => onNavigate('advisor')}
           className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center gap-2 transform hover:-translate-y-0.5 shrink-0 z-10"
         >
           Рассчитать материалы
           <SlidersHorizontal className="h-4.5 w-4.5 text-emerald-600" />
-        </button>
+        </Link>
       </section>
 
       {/* 🏢 BRANDS GRID */}

@@ -3,6 +3,8 @@ import { X, Phone, Clock } from 'lucide-react';
 import { createCallbackRequest } from '../services/api';
 import { formatKazakhPhone, normalizeInput, validateName, validatePhone } from '../utils/formValidation';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
+import Link from './Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 export default function CallbackModal({ isOpen, onClose, onNavigate, showToast }) {
   const [name, setName] = useState('');
@@ -122,15 +124,16 @@ export default function CallbackModal({ isOpen, onClose, onNavigate, showToast }
 
           <p className="text-[10px] text-slate-400 leading-relaxed text-center">
             Продолжая, вы соглашаетесь с{' '}
-            <span 
+            <Link 
+              href={getPageHref('legal')}
               onClick={() => {
                 onNavigate?.('legal');
                 onClose();
               }}
-              className="underline underline-offset-2 cursor-pointer hover:text-emerald-600 transition-colors"
+              className="underline underline-offset-2 cursor-pointer hover:text-emerald-600 transition-colors inline"
             >
               политикой конфиденциальности
-            </span>
+            </Link>
           </p>
         </form>
       </div>

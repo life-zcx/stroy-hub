@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Clock, RefreshCw, ShoppingBag, Truck, User, Mail, Phone, MapPin, Gift, Repeat } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, ClipboardList, Clock, RefreshCw, ShoppingBag, Truck, User, Mail, Phone, MapPin, Gift } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const STATUS_META = {
   pending: { text: 'В обработке', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
@@ -226,14 +228,14 @@ export default function MyOrders({
                 Кешбэк 3% начисляется с каждого выполненного заказа и доступен для списания при следующих покупках.
               </p>
               
-              <button
-                type="button"
+              <Link
+                href={getPageHref('cashback')}
                 onClick={() => onNavigate?.('cashback')}
-                className="flex items-center gap-1 text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-wider mt-1.5"
+                className="flex items-center gap-1 text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-wider mt-1.5 inline-flex"
               >
                 История транзакций
                 <ChevronRight className="h-3.5 w-3.5" />
-              </button>
+              </Link>
             </div>
           </div>
           
@@ -267,13 +269,13 @@ export default function MyOrders({
             <ShoppingBag className="mx-auto mb-4 h-12 w-12 text-slate-300" />
             <h2 className="text-lg font-black text-slate-900">Заказов пока нет</h2>
             <p className="mt-2 text-sm text-slate-500">Оформите заказ из каталога, и он появится на этой странице.</p>
-            <button
-              type="button"
+            <Link
+              href={getPageHref('catalog')}
               onClick={() => onNavigate('catalog')}
-              className="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-500"
+              className="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-500 inline-flex items-center justify-center"
             >
               Перейти в каталог
-            </button>
+            </Link>
           </div>
         ) : (
           <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-sm">
@@ -288,7 +290,12 @@ export default function MyOrders({
               const StatusIcon = statusMeta.icon;
 
               return (
-                <article key={order.id} className="grid gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center">
+                <Link 
+                  key={order.id} 
+                  href={getPageHref('order-detail', order.id)}
+                  onClick={() => onNavigate('order-detail', order.id)}
+                  className="grid gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center cursor-pointer hover:bg-slate-50/40 transition-colors block text-slate-800"
+                >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-outfit text-lg font-black text-slate-950">Заказ №{order.id}</h2>
@@ -311,25 +318,32 @@ export default function MyOrders({
                     {formatPrice(order.totalAmount)}
                   </div>
 
-                  <div className="flex justify-start md:justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleRepeatOrder(order)}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition-colors cursor-pointer"
-                    >
-                      <Repeat className="h-4 w-4 text-slate-500" />
-                      Повторить
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate('order-detail', order.id)}
+                  <div className="flex justify-start md:justify-end gap-2 flex-wrap">
+                    {order.status === 'completed' && (!order.returnRequests || order.returnRequests.length === 0) && (
+                      <Link
+                        href={getPageHref('order-detail', order.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigate('order-detail', order.id);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-rose-700 transition-colors cursor-pointer"
+                      >
+                        Возврат
+                      </Link>
+                    )}
+                    <Link
+                      href={getPageHref('order-detail', order.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate('order-detail', order.id);
+                      }}
                       className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600 cursor-pointer"
                     >
                       Подробнее
                       <ChevronRight className="h-4 w-4" />
-                    </button>
+                    </Link>
                   </div>
-                </article>
+                </Link>
               );
             })}
             {hasMore && (

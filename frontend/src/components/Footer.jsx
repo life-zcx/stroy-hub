@@ -1,6 +1,8 @@
 import React from 'react';
 import { Hammer, ShieldCheck, Phone } from 'lucide-react';
 import logoImg from '../tormag.png';
+import Link from './Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 export default function Footer({
   customer,
@@ -25,7 +27,9 @@ export default function Footer({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center mb-4">
-              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="98" height="44" className="h-11 w-auto object-contain brightness-0 invert" />
+              <Link href={getPageHref('home')} onClick={() => onNavigate('home')}>
+                <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="98" height="44" className="h-11 w-auto object-contain brightness-0 invert" />
+              </Link>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs mb-6">
               TORMAG.KZ — крупнейший строительный маркетплейс Казахстана. Всё для качественного строительства, ремонта и благоустройства вашего дома напрямую от ведущих дистрибьюторов по лучшим ценам.
@@ -42,13 +46,56 @@ export default function Footer({
           <div>
             <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-xs font-outfit">Навигация</h4>
             <ul className="space-y-3 text-sm">
-              <li><button onClick={() => onNavigate('home')} className="hover:text-emerald-600 transition-colors">Главная</button></li>
-              <li><button onClick={() => { setSelectedCategory('all'); onNavigate('catalog'); }} className="hover:text-emerald-600 transition-colors">Каталог товаров</button></li>
-              <li><button onClick={() => onNavigate('services')} className="hover:text-emerald-600 transition-colors">Наши услуги</button></li>
-              <li><button onClick={() => onNavigate('promotions')} className="hover:text-emerald-600 transition-colors">Акции</button></li>
-              <li><button onClick={() => customer ? onNavigate('orders') : onOpenAuth()} className="hover:text-emerald-600 transition-colors">Мои заказы</button></li>
-              <li><button onClick={() => onNavigate('about')} className="hover:text-emerald-600 transition-colors">О компании</button></li>
-              <li><button onClick={() => onNavigate('delivery')} className="hover:text-emerald-600 transition-colors">Доставка и оплата</button></li>
+              <li>
+                <Link href={getPageHref('home')} onClick={() => onNavigate('home')} className="hover:text-emerald-600 transition-colors">
+                  Главная
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={getPageHref('catalog')}
+                  onClick={() => { setSelectedCategory('all'); onNavigate('catalog'); }}
+                  className="hover:text-emerald-600 transition-colors"
+                >
+                  Каталог товаров
+                </Link>
+              </li>
+              <li>
+                <Link href={getPageHref('services')} onClick={() => onNavigate('services')} className="hover:text-emerald-600 transition-colors">
+                  Наши услуги
+                </Link>
+              </li>
+              <li>
+                <Link href={getPageHref('promotions')} onClick={() => onNavigate('promotions')} className="hover:text-emerald-600 transition-colors">
+                  Акции
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={customer ? getPageHref('orders') : '#'}
+                  onClick={(e) => {
+                    if (!customer) {
+                      e.preventDefault();
+                      onOpenAuth();
+                    } else {
+                      onNavigate('orders');
+                    }
+                  }}
+                  className="hover:text-emerald-600 transition-colors"
+                >
+                  Мои заказы
+                </Link>
+              </li>
+              <li>
+                <Link href={getPageHref('about')} onClick={() => onNavigate('about')} className="hover:text-emerald-600 transition-colors">
+                  О компании
+                </Link>
+              </li>
+              <li>
+                <Link href={getPageHref('delivery')} onClick={() => onNavigate('delivery')} className="hover:text-emerald-600 transition-colors">
+                  Доставка и оплата
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -104,9 +151,15 @@ export default function Footer({
         <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <p>© 2026 TORMAG.KZ  Все права защищены.</p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
-            <button onClick={() => openLegal('user-agreement')} className="hover:text-white transition-colors">Пользовательское соглашение</button>
-            <button onClick={() => openLegal('offer')} className="hover:text-white transition-colors">Публичная оферта</button>
-            <button onClick={() => openLegal('privacy')} className="hover:text-white transition-colors">Конфиденциальность и Cookies</button>
+            <Link href={getPageHref('legal')} onClick={() => openLegal('user-agreement')} className="hover:text-white transition-colors">
+              Пользовательское соглашение
+            </Link>
+            <Link href={getPageHref('legal')} onClick={() => openLegal('offer')} className="hover:text-white transition-colors">
+              Публичная оферта
+            </Link>
+            <Link href={getPageHref('legal')} onClick={() => openLegal('privacy')} className="hover:text-white transition-colors">
+              Конфиденциальность и Cookies
+            </Link>
           </div>
         </div>
       </div>

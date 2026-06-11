@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Gift, Copy, Check, ChevronRight } from 'lucide-react';
 import { getMyPromotions } from '../services/api';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 export default function MyPromotions({ customer, onOpenAuth, onNavigate, showToast }) {
   const [promos, setPromos] = useState([]);
@@ -58,12 +60,13 @@ export default function MyPromotions({ customer, onOpenAuth, onNavigate, showToa
       {/* Sleek Breadcrumb */}
       {/* Sleek Breadcrumbs */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
-        <button 
+        <Link 
+          href={getPageHref('home')}
           onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Главная
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
         <span className="text-slate-900 font-extrabold">Мои промокоды</span>
       </nav>

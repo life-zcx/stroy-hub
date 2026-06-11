@@ -282,4 +282,31 @@ export const deleteReview = async (id) => {
   return response.data;
 };
 
+// Returns API
+export const getReturns = async () => {
+  const response = await api.get('/returns');
+  return response.data;
+};
+
+export const updateReturnStatus = async (id, status, adminComment) => {
+  const response = await api.put(`/returns/${id}/status`, { status, adminComment });
+  return response.data;
+};
+
+// Warranty Rules API
+export const getWarrantyRules = async () => {
+  const response = await api.get('/warranty-rules');
+  return response.data;
+};
+
+export const createWarrantyRule = async (ruleData) => {
+  const response = await api.post('/warranty-rules', ruleData);
+  return response.data;
+};
+
+export const deleteWarrantyRule = async (id) => {
+  const response = await api.delete(`/warranty-rules/${id}`);
+  return response.data;
+};
+
 export default api;

@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
@@ -40,6 +42,62 @@ export default function ProductPage({
   const [quantity, setQuantity] = useState(1);
   const [thumbnailOffset, setThumbnailOffset] = useState(0);
   const THUMBS_VISIBLE = 5; // сколько миниатюр видно сразу
+
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.name} — Купить в TORMAG`;
+
+      // 1. Meta Description
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute(
+          'content',
+          `Купить ${product.name} по выгодной цене в интернет-магазине TORMAG. Рейтинг: ${product.rating || '4.8'} (${product.reviews || '124'} отзывов). Быстрая доставка по Алматы и области, начисление бонусов!`
+        );
+      }
+
+      // 2. JSON-LD structured data
+      const oldScript = document.getElementById('jsonld-product-schema');
+      if (oldScript) {
+        oldScript.remove();
+      }
+
+      const schemaData = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": product.name,
+        "image": product.image,
+        "description": product.description || `Купить ${product.name} по выгодной цене в TORMAG.`,
+        "sku": `PROD-${product.id}`,
+        "offers": {
+          "@type": "Offer",
+          "url": window.location.href,
+          "priceCurrency": "KZT",
+          "price": product.price,
+          "itemCondition": "https://schema.org/NewCondition",
+          "availability": "https://schema.org/InStock"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": product.rating || "4.8",
+          "reviewCount": product.reviews || "124"
+        }
+      };
+
+      const script = document.createElement('script');
+      script.id = 'jsonld-product-schema';
+      script.type = 'application/ld+json';
+      script.innerHTML = JSON.stringify(schemaData);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      const oldScript = document.getElementById('jsonld-product-schema');
+      if (oldScript) {
+        oldScript.remove();
+      }
+    };
+  }, [product]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -180,8 +238,8 @@ export default function ProductPage({
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div className="flex flex-wrap items-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-2xl py-3 px-4 sm:px-5 shadow-sm">
-        <button
-          type="button"
+        <Link
+          href={getPageHref('catalog')}
           onClick={() => {
             onBackToCatalog();
           }}
@@ -189,37 +247,40 @@ export default function ProductPage({
         >
           <ArrowLeft className="h-4 w-4" />
           <span>В каталог</span>
-        </button>
+        </Link>
 
         <div className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
 
         <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-          <button
+          <Link
+            href={getPageHref('home')}
             onClick={() => onNavigate?.('home')}
             className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
           >
             Главная
-          </button>
+          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
-          <button
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => {
               onBackToCatalog();
             }}
             className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
           >
             Каталог
-          </button>
+          </Link>
           {breadcrumbs.map((cat) => (
             <React.Fragment key={cat.id}>
               <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
-              <button
+              <Link
+                href={getPageHref('catalog', null, cat.slug)}
                 onClick={() => {
                   if (setSelectedCategory) setSelectedCategory(cat.slug || cat.id);
                 }}
                 className="hover:text-emerald-600 transition-colors text-left cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
               >
                 {cat.name}
-              </button>
+              </Link>
             </React.Fragment>
           ))}
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
@@ -283,7 +344,7 @@ export default function ProductPage({
                         >
                           <img
                             src={img}
-                            alt=""
+                            alt={`${product.name} - фото ${idx + 1}`}
                             className="w-full h-full object-contain"
                             onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
                           />
@@ -347,7 +408,7 @@ export default function ProductPage({
                         >
                           <img
                             src={img}
-                            alt=""
+                            alt={`${product.name} - миниатюра ${idx + 1}`}
                             className="w-full h-full object-contain"
                             onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
                           />

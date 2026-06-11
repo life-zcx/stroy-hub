@@ -1,21 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, ChevronRight, Repeat } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { formatDateTime, getStatusMeta, StatusTimeline } from './MyOrders';
 import ReviewModal from '../components/ReviewModal';
+import ReturnRequestModal from '../components/ReturnRequestModal';
+import { getMyReturnRequests, getWarrantyRules } from '../services/api';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
-export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate, showToast }) {
+export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate, onAddToCart, showToast }) {
   const order = orders.find((item) => String(item.id) === String(orderId));
   const hasFullDetails = Boolean(order && Array.isArray(order.items));
 
   const [selectedProductForReview, setSelectedProductForReview] = useState(null);
   const [reviewedProductIds, setReviewedProductIds] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [warrantyRules, setWarrantyRules] = useState([]);
+
+  const fetchReturns = async () => {
+    try {
+      const data = await getMyReturnRequests();
+      setReturnRequests(data);
+    } catch (err) {
+      console.error('Failed to load returns:', err);
+    }
+  };
+
+  const fetchWarrantyRules = async () => {
+    try {
+      const data = await getWarrantyRules();
+      setWarrantyRules(data);
+    } catch (err) {
+      console.error('Failed to load warranty rules:', err);
+    }
+  };
 
   useEffect(() => {
     if (customer && orderId && !hasFullDetails && !loading && !error) {
       onLoadOrder(orderId);
     }
   }, [customer, orderId, hasFullDetails, loading, error, onLoadOrder]);
+
+  useEffect(() => {
+    if (customer) {
+      fetchReturns();
+      fetchWarrantyRules();
+    }
+  }, [customer, orderId]);
 
   if (!customer) {
     return (
@@ -63,6 +95,65 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
     );
   }
 
+  const getCompletedDate = () => {
+    let completedDate = new Date(order.createdAt);
+    if (order.statusHistory && Array.isArray(order.statusHistory)) {
+      const completedEntry = order.statusHistory.find(h => h.status === 'completed');
+      if (completedEntry && completedEntry.changedAt) {
+        completedDate = new Date(completedEntry.changedAt);
+      }
+    }
+    return completedDate;
+  };
+
+  const getProductReturnInfo = (item) => {
+    const completedDate = getCompletedDate();
+    const productRule = warrantyRules.find(r => r.scope === 'product' && r.targetId === item.productId);
+    const categoryRule = item.product?.categoryId 
+      ? warrantyRules.find(r => r.scope === 'category' && r.targetId === item.product.categoryId) 
+      : null;
+    const globalRule = warrantyRules.find(r => r.scope === 'global');
+
+    let warrantyDays = 14;
+    if (productRule) warrantyDays = productRule.days;
+    else if (categoryRule) warrantyDays = categoryRule.days;
+    else if (globalRule) warrantyDays = globalRule.days;
+
+    const deadline = new Date(completedDate.getTime() + warrantyDays * 24 * 60 * 60 * 1000);
+    const isExpired = new Date() > deadline;
+
+    const returnsForProduct = returnRequests.filter(
+      r => r.orderId === order.id && r.productId === item.productId && ['pending', 'approved', 'rejected'].includes(r.status)
+    );
+    const alreadyReturnedQty = returnsForProduct.reduce((sum, r) => sum + r.quantity, 0);
+    const availableQty = Math.max(0, item.quantity - alreadyReturnedQty);
+
+    return { isExpired, availableQty };
+  };
+
+  const isAnyItemReturnable = order?.status === 'completed' && (order?.items || []).some(item => {
+    const info = getProductReturnInfo(item);
+    return !info.isExpired && info.availableQty > 0;
+  });
+
+  const handleRepeatOrder = async (ord) => {
+    if (!ord.items || ord.items.length === 0) {
+      showToast('⚠️ В заказе нет позиций для копирования.');
+      return;
+    }
+
+    ord.items.forEach(item => {
+      if (item.product) {
+        for (let i = 0; i < item.quantity; i++) {
+          onAddToCart(item.product);
+        }
+      }
+    });
+
+    showToast(`🛒 Заказ №${ord.id} успешно добавлен в корзину!`);
+    onNavigate('cart');
+  };
+
   const statusMeta = getStatusMeta(order.status);
   const StatusIcon = statusMeta.icon;
 
@@ -70,19 +161,21 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
     <section className="space-y-6">
       {/* Sleek Breadcrumbs */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
-        <button 
+        <Link 
+          href={getPageHref('home')}
           onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Главная
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
-        <button 
+        <Link 
+          href={getPageHref('orders')}
           onClick={() => onNavigate?.('orders')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Мои заказы
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
         <span className="text-slate-900 font-extrabold">Заказ №{order.id}</span>
       </nav>
@@ -115,26 +208,32 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
             <div className="space-y-3">
               {order.items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-slate-50/50 hover:bg-slate-50 border border-slate-100 p-4 transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => item.product && onNavigate('product', item.productId)}
-                    className="w-14 h-14 bg-white border border-slate-150 rounded-xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors"
+                  <Link
+                    href={item.product ? getPageHref('product', item.productId) : '#'}
+                    onClick={(e) => {
+                      if (!item.product) e.preventDefault();
+                      else onNavigate('product', item.productId);
+                    }}
+                    className="w-14 h-14 bg-white border border-slate-150 rounded-xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors block"
                   >
                     <img 
                       src={item.product?.image || 'https://placehold.co/100x100/f8fafc/475569?text=Tormag'} 
                       className="w-full h-full object-contain" 
                       alt={item.product?.name} 
                     />
-                  </button>
+                  </Link>
                   <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-left">
-                      <button
-                        type="button"
-                        onClick={() => item.product && onNavigate('product', item.productId)}
+                      <Link
+                        href={item.product ? getPageHref('product', item.productId) : '#'}
+                        onClick={(e) => {
+                          if (!item.product) e.preventDefault();
+                          else onNavigate('product', item.productId);
+                        }}
                         className="text-sm font-black text-slate-900 leading-tight hover:text-blue-600 transition-colors cursor-pointer text-left block focus:outline-none"
                       >
                         {item.product?.name || 'Товар удален'}
-                      </button>
+                      </Link>
                       <p className="mt-1 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
                     </div>
                     <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end">
@@ -142,20 +241,43 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                         {formatPrice(item.price * item.quantity)}
                       </span>
                       {order.status === 'completed' && item.product && (
-                        <div className="shrink-0 pl-2">
+                        <div className="shrink-0 pl-2 flex flex-col sm:flex-row gap-2 items-center">
                           {item.isReviewed || reviewedProductIds.includes(item.productId) ? (
-                            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-55/30 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1">
+                            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1 shrink-0">
                               ✓ Отзыв оставлен
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => setSelectedProductForReview(item.product)}
-                              className="px-3.5 py-2 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+                              className="px-3.5 py-2 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
                             >
                               Оценить товар
                             </button>
                           )}
+
+                          {(() => {
+                            const ret = returnRequests.find(r => r.orderId === order.id && r.productId === item.productId);
+                            if (ret) {
+                              const statusTexts = {
+                                pending: 'Ожидает решения',
+                                approved: 'Возврат одобрен',
+                                rejected: 'Возврат отклонен'
+                              };
+                              const statusClasses = {
+                                pending: 'text-amber-700 bg-amber-50 border-amber-200',
+                                approved: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+                                rejected: 'text-rose-700 bg-rose-50 border-rose-200'
+                              };
+                              return (
+                                <div className={`text-[10px] font-bold border px-3 py-1.5 rounded-xl flex flex-col items-start gap-0.5 shrink-0 ${statusClasses[ret.status] || ''}`}>
+                                  <span>{statusTexts[ret.status] || ret.status} ({ret.quantity} шт)</span>
+                                  {ret.adminComment && <span className="text-[9px] opacity-80 max-w-[150px] truncate">Комм: {ret.adminComment}</span>}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       )}
                     </div>
@@ -230,6 +352,25 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                 <span className="font-black text-slate-950">К оплате</span>
                 <span className="font-outfit font-black text-blue-600 text-lg">{formatPrice(order.totalAmount)}</span>
               </div>
+              
+              <button
+                type="button"
+                onClick={() => handleRepeatOrder(order)}
+                className="w-full mt-5 px-4 py-3.5 bg-slate-950 hover:bg-blue-600 text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
+              >
+                <Repeat className="h-4 w-4" />
+                Повторить заказ
+              </button>
+
+              {isAnyItemReturnable && (
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(true)}
+                  className="w-full mt-2 px-4 py-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-2xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
+                >
+                  Оформить возврат
+                </button>
+              )}
             </div>
           </div>
 
@@ -246,6 +387,20 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
           showToast={showToast}
           onSubmitSuccess={(prodId) => {
             setReviewedProductIds((prev) => [...prev, prodId]);
+          }}
+        />
+      )}
+
+      {showReturnModal && (
+        <ReturnRequestModal
+          isOpen={showReturnModal}
+          onClose={() => setShowReturnModal(false)}
+          order={order}
+          rules={warrantyRules}
+          existingReturns={returnRequests}
+          showToast={showToast}
+          onSubmitSuccess={() => {
+            fetchReturns();
           }}
         />
       )}

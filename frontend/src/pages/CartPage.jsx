@@ -24,6 +24,8 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
@@ -481,29 +483,30 @@ export default function CartPage({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
-          <button
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => {
               setSuccessOrder(null);
               onNavigate('catalog');
             }}
-            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] text-center"
           >
             <ShoppingBag className="h-5 w-5 text-slate-650" />
             <span>Продолжить покупки</span>
-          </button>
-          <button
+          </Link>
+          <Link
+            href={successOrder ? getPageHref('order-detail', successOrder.id) : '#'}
             onClick={() => {
               const orderId = successOrder.id;
               setSuccessOrder(null);
               onNavigate('order-detail', orderId);
             }}
-            className="flex-1 bg-slate-900 hover:bg-slate-850 text-white font-bold py-4 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
+            className="flex-1 bg-slate-900 hover:bg-slate-850 text-white font-bold py-4 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] text-center"
           >
             <span>Отслеживать заказ</span>
             <ArrowRight className="h-5 w-5" />
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -514,12 +517,13 @@ export default function CartPage({
       <div className="space-y-6 animate-fade-in-up text-left">
         {/* Breadcrumbs */}
         <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-          <button 
+          <Link 
+            href={getPageHref('home')}
             onClick={() => onNavigate?.('home')} 
-            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
           >
             Главная
-          </button>
+          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
           <span className="text-slate-900 font-extrabold">Корзина</span>
         </nav>
@@ -531,12 +535,13 @@ export default function CartPage({
           <p className="text-slate-550 text-sm max-w-md mx-auto leading-relaxed">
             Выберите качественные стройматериалы на главной витрине или воспользуйтесь каталогом, чтобы добавить товары в корзину.
           </p>
-          <button
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => onNavigate('catalog')}
-            className="bg-slate-950 hover:bg-emerald-650 text-white px-7 py-3 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 cursor-pointer"
+            className="bg-slate-950 hover:bg-emerald-650 text-white px-7 py-3 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 cursor-pointer text-center inline-flex items-center"
           >
             Перейти к каталогу товаров
-          </button>
+          </Link>
         </div>
 
         {/* Recommendations Section */}
@@ -574,10 +579,11 @@ export default function CartPage({
                 style={{ transform: `translateX(-${carouselIndex * 276}px)` }}
               >
                 {displayItems.map((prod) => (
-                  <div 
+                  <Link 
                     key={prod.id} 
+                    href={getPageHref('product', prod.id)}
                     onClick={() => onNavigate('product', prod.id)}
-                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col cursor-pointer hover:border-emerald-500/30 snap-start snap-always"
+                    className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col cursor-pointer hover:border-emerald-500/30 snap-start snap-always text-slate-800"
                   >
                     <div className="h-32 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative mb-3">
                       {prod.isHit && (
@@ -595,7 +601,7 @@ export default function CartPage({
                     <h3 className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[2rem] leading-snug group-hover:text-emerald-600 transition-colors mb-2">
                       {prod.name}
                     </h3>
-                    <div className="mt-auto pt-2 flex items-center justify-between">
+                    <div className="mt-auto pt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                       <span className="text-sm font-black text-slate-900 font-outfit">{formatPrice(prod.price)}</span>
                       <button 
                         onClick={(e) => {
@@ -612,7 +618,7 @@ export default function CartPage({
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -626,12 +632,13 @@ export default function CartPage({
     <div className="space-y-8 animate-fade-in-up font-sans text-slate-800 text-left">
       {/* Sleek Breadcrumbs */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-        <button 
+        <Link 
+          href={getPageHref('home')}
           onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Главная
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
         {step === 'checkout' ? (
           <button 
@@ -693,7 +700,11 @@ export default function CartPage({
                   key={item.id}
                   className="flex gap-4 sm:gap-6 py-6 first:pt-0 last:pb-0 relative group"
                 >
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <Link
+                    href={getPageHref('product', item.id)}
+                    onClick={() => onNavigate('product', item.id)}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-emerald-500/30 transition-all"
+                  >
                     <img
                       src={item.image || '/tormag.png'}
                       alt={item.name}
@@ -703,13 +714,19 @@ export default function CartPage({
                         event.target.src = '/tormag.png';
                       }}
                     />
-                  </div>
+                  </Link>
 
                   <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex justify-between items-start gap-4">
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight pr-6">
-                        {item.name}
-                      </h3>
+                      <Link
+                        href={getPageHref('product', item.id)}
+                        onClick={() => onNavigate('product', item.id)}
+                        className="hover:text-emerald-700 transition-colors cursor-pointer text-left block flex-1"
+                      >
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight pr-6">
+                          {item.name}
+                        </h3>
+                      </Link>
                       <button
                         type="button"
                         onClick={() => onRemoveFromCart(item.id)}
@@ -764,14 +781,14 @@ export default function CartPage({
 
             {step === 'cart' && (
               <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center gap-4 flex-wrap">
-                <button
-                  type="button"
+                <Link
+                  href={getPageHref('catalog')}
                   onClick={() => onNavigate?.('catalog')}
-                  className="px-5 py-3 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer bg-transparent border-0"
+                  className="px-5 py-3 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer bg-transparent border-0 text-center"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Продолжить покупки
-                </button>
+                </Link>
                 <button
                   type="button"
                   onClick={() => {

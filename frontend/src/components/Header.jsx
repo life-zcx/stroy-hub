@@ -6,6 +6,7 @@ import {
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
 import { formatPrice } from '../utils/formatPrice';
+import Link from './Link';
 
 const MOBILE_NAV_ITEMS = [
   { id: 'catalog', name: 'Каталог' },
@@ -367,6 +368,15 @@ export default function Header({
     if (page === 'catalog') setSelectedCategory('all');
   };
 
+  const getPageHref = (pageId, productId = null, categorySlug = null) => {
+    if (pageId === 'product') return `/product/${productId}`;
+    if (pageId === 'order-detail') return `/orders/${productId}`;
+    if (pageId === 'promotions' && productId) return `/promotions/${productId}`;
+    if (pageId === 'catalog') return categorySlug && categorySlug !== 'all' ? `/catalog/${categorySlug}` : '/catalog';
+    if (pageId === 'home') return '/';
+    return `/${pageId}`;
+  };
+
   const handleCategoryClick = (cat) => {
     setSelectedCategory(cat.slug);
     setIsMegaMenuOpen(false);
@@ -425,7 +435,8 @@ export default function Header({
         <div className="fixed inset-0 bg-white z-[120] lg:hidden animate-fade-in space-y-4 p-4 overflow-y-auto flex flex-col text-slate-800">
           {/* Header row */}
           <div className="flex justify-between items-center h-12 border-b border-slate-100 pb-2">
-            <div
+            <Link
+              href="/"
               onClick={() => {
                 onNavigate('home');
                 setIsMobileMenuOpen(false);
@@ -434,7 +445,7 @@ export default function Header({
               className="flex items-center cursor-pointer group shrink-0"
             >
               <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="56" className="h-14 w-auto object-contain" />
-            </div>
+            </Link>
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -465,8 +476,9 @@ export default function Header({
               <div className="absolute left-3 right-3 top-full mt-2 bg-white rounded-2xl border border-slate-200/85 shadow-2xl z-50 py-2.5 max-h-[300px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
                 <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
                 {matchedProducts.map(p => (
-                  <div
+                  <Link
                     key={p.id}
+                    href={getPageHref('product', p.id)}
                     onClick={() => {
                       onNavigate('product', p.id);
                       setSearchQuery('');
@@ -476,18 +488,18 @@ export default function Header({
                     className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer transition-all group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
-                      </div>
-                      <div className="text-left min-w-0">
-                        <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
-                        <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
-                      {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
-                    </div>
-                  </div>
+                       <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                         <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
+                       </div>
+                       <div className="text-left min-w-0">
+                         <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
+                         <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
+                       </div>
+                     </div>
+                     <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
+                       {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
+                     </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -506,49 +518,49 @@ export default function Header({
               <span>Версия для слабовидящих</span>
             </button>
             {MOBILE_NAV_ITEMS.map(tab => (
-              <button
+              <Link
                 key={tab.id}
-                type="button"
+                href={getPageHref(tab.id)}
                 onClick={() => {
                   navigateTo(tab.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
+                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
                   ? 'bg-emerald-600/10 text-emerald-700'
                   : 'text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 {tab.name}
-              </button>
+              </Link>
             ))}
             {customer && (
               <>
-                <button
-                  type="button"
+                <Link
+                  href="/orders"
                   onClick={() => {
                     onOpenOrders();
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
+                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
                     ? 'bg-emerald-600/10 text-emerald-700'
                     : 'text-slate-500 hover:bg-slate-50'
                     }`}
                 >
                   Мои заказы
-                </button>
-                <button
-                  type="button"
+                </Link>
+                <Link
+                  href="/cashback"
                   onClick={() => {
                     onNavigate('cashback');
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
+                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
                     ? 'bg-amber-500/10 text-amber-700'
                     : 'text-slate-500 hover:bg-slate-50'
                     }`}
                 >
                   Мой кешбэк
-                </button>
+                </Link>
               </>
             )}
           </div>
@@ -577,12 +589,13 @@ export default function Header({
 
           {/* Links shifted from main header here */}
           <div className="flex items-center gap-6 font-semibold">
-            <button
+            <Link
+              href="/services"
               onClick={() => navigateTo('services')}
               className={`hover:text-white transition-colors ${currentPage === 'services' ? 'text-white font-bold' : ''}`}
             >
               Услуги
-            </button>
+            </Link>
 
             {/* "Клиенту" dropdown */}
             <div className="relative group">
@@ -595,30 +608,34 @@ export default function Header({
               </button>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
                 <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
-                  <button
+                  <Link
+                    href="/payment-terms"
                     onClick={() => navigateTo('payment-terms')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Условия оплаты
-                  </button>
-                  <button
+                  </Link>
+                  <Link
+                    href="/delivery-terms"
                     onClick={() => navigateTo('delivery-terms')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Условия доставки
-                  </button>
-                  <button
+                  </Link>
+                  <Link
+                    href="/warranty"
                     onClick={() => navigateTo('warranty')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Гарантия на товар
-                  </button>
-                  <button
+                  </Link>
+                  <Link
+                    href="/faq"
                     onClick={() => navigateTo('faq')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Вопрос-ответ
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -634,52 +651,59 @@ export default function Header({
               </button>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
                 <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
-                  <button
+                  <Link
+                    href="/about"
                     onClick={() => navigateTo('about')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     О нас
-                  </button>
-                  <button
+                  </Link>
+                  <Link
+                    href="/delivery"
                     onClick={() => navigateTo('delivery')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Доставка и оплата
-                  </button>
-                  <button
+                  </Link>
+                  <Link
+                    href="/requisites"
                     onClick={() => navigateTo('requisites')}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
+                    className="w-full text-left block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 text-xs font-bold text-slate-700 transition-colors"
                   >
                     Реквизиты
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <button
+            <Link
+              href="/partners"
               onClick={() => navigateTo('partners')}
               className={`hover:text-white transition-colors ${currentPage === 'partners' ? 'text-white font-bold' : ''}`}
             >
               Партнеры
-            </button>
-            <button
+            </Link>
+            <Link
+              href="/promotions"
               onClick={() => navigateTo('promotions')}
               className={`hover:text-white transition-colors ${currentPage === 'promotions' ? 'text-white font-bold' : ''}`}
             >
               Акции
-            </button>
-            <button
+            </Link>
+            <Link
+              href="/estimate"
               onClick={() => navigateTo('estimate')}
               className={`hover:text-white transition-colors ${currentPage === 'estimate' ? 'text-white font-bold' : ''}`}
             >
               Заказ по смете
-            </button>
-            <button
+            </Link>
+            <Link
+              href="/advisor"
               onClick={() => navigateTo('advisor')}
               className={`hover:text-white transition-colors ${currentPage === 'advisor' ? 'text-white font-bold' : ''}`}
             >
               Расчет материалов
-            </button>
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -776,7 +800,8 @@ export default function Header({
           <div className="flex justify-between items-center h-12 gap-4">
 
             {/* Logo */}
-            <div
+            <Link
+              href="/"
               onClick={() => {
                 onNavigate('home');
                 setIsMegaMenuOpen(false);
@@ -784,7 +809,7 @@ export default function Header({
               className="flex items-center cursor-pointer group shrink-0"
             >
               <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="56" fetchpriority="high" className="h-14 w-auto object-contain" />
-            </div>
+            </Link>
 
             {/* Catalog & Search Block in the center */}
             <div className="hidden lg:flex items-center flex-grow max-w-5xl ml-4 mr-8 gap-3 catalog-menu-container">
@@ -820,8 +845,9 @@ export default function Header({
                   <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xl z-50 py-3 max-h-[380px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
                     <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
                     {matchedProducts.map(p => (
-                      <div
+                      <Link
                         key={p.id}
+                        href={getPageHref('product', p.id)}
                         onClick={() => {
                           onNavigate('product', p.id);
                           setLocalSearchQuery('');
@@ -841,7 +867,7 @@ export default function Header({
                         <div className="shrink-0 font-extrabold text-xs text-slate-950 pr-2">
                           {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -876,8 +902,8 @@ export default function Header({
                         <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
                       </div>
                       <div className="space-y-1">
-                        <button
-                          type="button"
+                        <Link
+                          href="/orders"
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             onOpenOrders();
@@ -886,9 +912,9 @@ export default function Header({
                         >
                           <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
                           <span>Мои заказы</span>
-                        </button>
-                        <button
-                          type="button"
+                        </Link>
+                        <Link
+                          href="/cashback"
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             onNavigate('cashback');
@@ -897,9 +923,9 @@ export default function Header({
                         >
                           <Gift className="h-4.5 w-4.5 text-amber-500" />
                           <span>Мой кешбэк</span>
-                        </button>
-                        <button
-                          type="button"
+                        </Link>
+                        <Link
+                          href="/my-promotions"
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             onNavigate('my-promotions');
@@ -908,7 +934,7 @@ export default function Header({
                         >
                           <Tag className="h-4.5 w-4.5 text-emerald-600" />
                           <span>Мои промокоды</span>
-                        </button>
+                        </Link>
                         {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
                           <a
                             href={adminUrl}
@@ -947,11 +973,9 @@ export default function Header({
                 </button>
               )}
 
-
-
               {/* Favorites */}
-              <button
-                type="button"
+              <Link
+                href="/favorites"
                 onClick={onOpenFavorites}
                 className="relative flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
               >
@@ -959,12 +983,12 @@ export default function Header({
                   <Heart className="h-5 w-5 mb-0.5" />
                 </div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wide">Избранное</span>
-              </button>
+              </Link>
 
               {/* Cart */}
               <div className="relative group/cart py-1">
-                <button
-                  type="button"
+                <Link
+                  href="/cart"
                   onClick={onOpenCart}
                   className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
                 >
@@ -977,7 +1001,7 @@ export default function Header({
                     )}
                   </div>
                   <span className="text-[10px] font-extrabold uppercase tracking-wide">Корзина</span>
-                </button>
+                </Link>
 
                 {/* Premium Cart Popover Dropdown */}
                 {cartItemsCount > 0 && cart && cart.length > 0 && (
@@ -992,7 +1016,8 @@ export default function Header({
                       <div className="flex flex-col gap-3 max-h-56 overflow-y-auto pr-1 divide-y divide-slate-100">
                         {cart.map((item) => (
                           <div key={item.id} className="flex gap-3 pt-3 first:pt-0 items-center justify-between group/item">
-                            <div
+                            <Link
+                              href={`/product/${item.id}`}
                               onClick={() => onNavigate?.('product', item.id)}
                               className="flex gap-2.5 items-center min-w-0 cursor-pointer"
                             >
@@ -1012,7 +1037,7 @@ export default function Header({
                                   {item.quantity} шт × {formatPrice(item.price)}
                                 </p>
                               </div>
-                            </div>
+                            </Link>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-xs font-black text-slate-900">{formatPrice(item.price * item.quantity)}</span>
                               <button
@@ -1034,7 +1059,7 @@ export default function Header({
                       {/* Footer summary */}
                       <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
                         <div className="flex justify-between items-end">
-                          <span className="text-xs font-bold text-slate-550">Итого к оплате:</span>
+                          <span className="text-xs font-bold text-slate-555">Итого к оплате:</span>
                           <span className="text-base font-extrabold text-emerald-600 font-outfit">{formatPrice(cartTotal)}</span>
                         </div>
                         <button
@@ -1185,7 +1210,8 @@ export default function Header({
                 rootCategories.map(rootCat => (
                   <div key={rootCat.id} className="space-y-4">
                     {/* Parent Root Category */}
-                    <div
+                    <Link
+                      href={getPageHref('catalog', null, rootCat.slug)}
                       onClick={() => handleCategoryClick(rootCat)}
                       className="flex items-center gap-2.5 font-black text-slate-950 text-sm font-outfit cursor-pointer hover:text-emerald-600 transition-all border-b border-slate-100 pb-2.5 group"
                     >
@@ -1203,7 +1229,7 @@ export default function Header({
                         </div>
                       )}
                       <span className="leading-snug">{rootCat.name}</span>
-                    </div>
+                    </Link>
 
                     {/* Subcategories (Children) & Sub-subcategories (Grandchildren) */}
                     <div className="flex flex-col gap-3.5 pl-1">
@@ -1212,25 +1238,27 @@ export default function Header({
                         .map(sub => (
                           <div key={sub.id} className="space-y-1.5 text-left">
                             {/* Subcategory (2nd level) */}
-                            <button
+                            <Link
+                              href={getPageHref('catalog', null, sub.slug)}
                               onClick={() => handleCategoryClick(sub)}
-                              className="text-left text-xs text-slate-900 hover:text-emerald-600 font-extrabold transition-colors block w-full leading-snug"
+                              className="text-left text-xs text-slate-900 hover:text-emerald-600 font-extrabold transition-colors block w-full leading-snug cursor-pointer"
                             >
                               {sub.name}
-                            </button>
+                            </Link>
 
                             {/* Sub-subcategories (3rd level) */}
                             <div className="flex flex-col gap-1 pl-2 border-l border-slate-100 mt-1">
                               {categories
                                 .filter(grand => grand.parentId === sub.id)
                                 .map(grand => (
-                                  <button
+                                  <Link
                                     key={grand.id}
+                                    href={getPageHref('catalog', null, grand.slug)}
                                     onClick={() => handleCategoryClick(grand)}
                                     className="text-left text-[11px] text-slate-400 hover:text-emerald-600 font-semibold transition-colors py-0.5 leading-relaxed cursor-pointer"
                                   >
                                     {grand.name}
-                                  </button>
+                                  </Link>
                                 ))
                               }
                             </div>

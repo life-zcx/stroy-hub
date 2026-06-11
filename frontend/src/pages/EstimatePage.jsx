@@ -6,6 +6,8 @@ import {
 import { matchEstimate } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 export default function EstimatePage({ onAddToCart, onNavigate, showToast, customer, onRequireAuth }) {
   const [file, setFile] = useState(null);
@@ -450,15 +452,16 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
                           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
                             <HelpCircle className="mx-auto h-5 w-5 text-slate-300" />
                             <p className="mt-1 text-[11px] font-bold text-slate-400">Аналогов не найдено</p>
-                            <button
+                            <Link
+                              href={getPageHref('catalog')}
                               onClick={() => {
                                 onNavigate('catalog');
                                 showToast({ title: 'Поиск', message: 'Введите ключевые слова в строке поиска для подбора вручную', type: 'info' });
                               }}
-                              className="mt-2 text-[10px] font-black uppercase tracking-wider text-blue-600 hover:underline"
+                              className="mt-2 text-[10px] font-black uppercase tracking-wider text-blue-600 hover:underline inline-block"
                             >
                               Искать в каталоге
-                            </button>
+                            </Link>
                           </div>
                         )}
                       </div>

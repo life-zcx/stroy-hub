@@ -347,7 +347,26 @@ export const getAllOrders = async (req, res) => {
       const [orders, total] = await prisma.$transaction([
         prisma.order.findMany({
           where,
-          ...(summaryOnly ? { include: { _count: { select: { items: true } } } } : { include: buildOrderItemsInclude(user) }),
+          ...(summaryOnly
+            ? {
+                include: {
+                  _count: { select: { items: true } },
+                  returnRequests: {
+                    select: {
+                      id: true,
+                      status: true,
+                      quantity: true,
+                      productId: true,
+                    },
+                  },
+                },
+              }
+            : {
+                include: {
+                  ...buildOrderItemsInclude(user),
+                  returnRequests: true,
+                },
+              }),
           orderBy,
           skip: (page - 1) * limit,
           take: limit,
@@ -367,7 +386,10 @@ export const getAllOrders = async (req, res) => {
 
     const orders = await prisma.order.findMany({
       where,
-      include: buildOrderItemsInclude(user),
+      include: {
+        ...buildOrderItemsInclude(user),
+        returnRequests: true,
+      },
       orderBy
     });
     res.json(orders);

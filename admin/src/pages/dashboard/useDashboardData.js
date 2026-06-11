@@ -36,6 +36,11 @@ import {
   getReviews,
   approveReview,
   deleteReview,
+  getReturns,
+  updateReturnStatus,
+  getWarrantyRules,
+  createWarrantyRule,
+  deleteWarrantyRule,
 } from '../../services/api';
 import { buildHierarchicalCategories, getCategoryPath } from './utils';
 
@@ -157,6 +162,8 @@ export function useDashboardData({ user, showToast }) {
   const [brands, setBrands] = useState([]);
   const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [returns, setReturns] = useState([]);
+  const [warrantyRules, setWarrantyRules] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -246,11 +253,19 @@ export function useDashboardData({ user, showToast }) {
 
         const loadedReviews = await getReviews();
         setReviews(loadedReviews);
+
+        const loadedReturns = await getReturns();
+        setReturns(loadedReturns);
+
+        const loadedRules = await getWarrantyRules();
+        setWarrantyRules(loadedRules);
       } else {
         setCallbacks([]);
         setPromotions([]);
         setBrands([]);
         setReviews([]);
+        setReturns([]);
+        setWarrantyRules([]);
       }
     } catch (error) {
       console.error(error);
@@ -1008,7 +1023,38 @@ export function useDashboardData({ user, showToast }) {
       reloadData();
     } catch (error) {
       console.error(error);
-      alert('Ошибка при удалении отзыва: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleUpdateReturnStatus = async (id, status, adminComment) => {
+    try {
+      await updateReturnStatus(id, status, adminComment);
+      showToast(`✅ Возврат успешно ${status === 'approved' ? 'согласован' : 'отклонен'}!`);
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка при обновлении возврата: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleCreateWarrantyRule = async (ruleData) => {
+    try {
+      await createWarrantyRule(ruleData);
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const handleDeleteWarrantyRule = async (id) => {
+    try {
+      await deleteWarrantyRule(id);
+      showToast('🗑️ Правило удалено');
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка удаления правила: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -1114,5 +1160,10 @@ export function useDashboardData({ user, showToast }) {
     removeAdditionalFile,
     removeSavedImage,
     clearMainImage,
+    returns,
+    handleUpdateReturnStatus,
+    warrantyRules,
+    handleCreateWarrantyRule,
+    handleDeleteWarrantyRule,
   };
 }

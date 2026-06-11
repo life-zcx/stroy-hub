@@ -37,6 +37,7 @@ import useRegion from './hooks/useRegion';
 import useFavorites from './hooks/useFavorites'
 import useBonuses from './hooks/useBonuses';
 import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
+import { getPageHref } from './utils/navigationHelper';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,8 +49,8 @@ export default function App() {
   const { toast, showToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
   const catalog = useCatalog(showToast, currentCategorySlug || 'all');
-  const cart = useCart(showToast);
   const auth = useCustomerAuth(showToast);
+  const cart = useCart(showToast, auth.customer);
   const orders = useOrders(auth.customer, showToast);
   const region = useRegion(showToast);
   const favorites = useFavorites(showToast);
@@ -79,7 +80,7 @@ export default function App() {
     }
   }, [currentPage, currentProductId]);
 
-  // Dynamic SEO Page Titles
+  // Dynamic SEO Page Titles and Descriptions
   useEffect(() => {
     const pageTitles = {
       home: "TORMAG — Всё для стройки и ремонта",
@@ -98,12 +99,48 @@ export default function App() {
       faq: "TORMAG - Вопрос-ответ",
       legal: "TORMAG - Юридическая информация",
       estimate: "TORMAG - Заказ по смете",
-      product: "TORMAG - Просмотр товара"
+      product: "TORMAG - Просмотр товара",
+      'payment-terms': "TORMAG - Условия оплаты",
+      'delivery-terms': "TORMAG - Условия доставки",
+      warranty: "TORMAG - Гарантия на товар",
+      cart: "TORMAG - Корзина",
+      'order-detail': "TORMAG - Детали заказа"
+    };
+
+    const pageDescriptions = {
+      home: "Строительная платформа TORMAG в Алматы. Огромный каталог стройматериалов, прямые оптовые поставки от дистрибьюторов, оперативная доставка и кэшбэк 3%.",
+      catalog: "Каталог строительных и отделочных материалов TORMAG. Широкий ассортимент сухих смесей, красок, инструментов, крепежа с доставкой по Алматы.",
+      advisor: "Умный калькулятор-подборщик строительных материалов под ваш бюджет и задачи от платформы TORMAG.",
+      about: "Узнайте больше о строительной платформе TORMAG. Наша миссия, команда, ценности и преимущества работы с нами.",
+      delivery: "Условия и сроки доставки строительных материалов по Алматы и области. Удобные способы оплаты, включая Kaspi QR.",
+      services: "Услуги снабжения объектов, расчета смет, шеф-монтажа и специализированной логистики от платформы TORMAG.",
+      partners: "Официальные дистрибьюторы и бренды-партнеры строительной платформы TORMAG.",
+      promotions: "Акции, распродажи, спецпредложения и действующие промокоды на строительные материалы в TORMAG.",
+      favorites: "Ваш список избранных строительных материалов на платформе TORMAG.",
+      orders: "Управление и отслеживание статуса ваших заказов на платформе TORMAG.",
+      estimate: "Удобная загрузка смет в формате Excel/CSV для автоматического подбора материалов в TORMAG.",
+      legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG."
     };
 
     const newTitle = pageTitles[currentPage] || "TORMAG — Всё для стройки и ремонта";
     document.title = newTitle;
-  }, [currentPage]);
+
+    const newDesc = pageDescriptions[currentPage] || "Строительная платформа TORMAG в Алматы. Огромный выбор строительных материалов от дистрибьюторов по выгодным ценам с доставкой.";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', newDesc);
+    }
+
+    // Dynamic Canonical Link
+    const canonicalPath = getPageHref(currentPage, currentProductId, currentCategorySlug);
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', `https://tormag.kz${canonicalPath}`);
+  }, [currentPage, currentProductId, currentCategorySlug]);
 
   useEffect(() => {
     setAnalyticsContext({
@@ -320,6 +357,7 @@ export default function App() {
             onLoadOrder={orders.fetchOrderDetails}
             onOpenAuth={auth.openLoginModal}
             onNavigate={setCurrentPage}
+            onAddToCart={cart.handleAddToCart}
             showToast={showToast}
           />
         )}

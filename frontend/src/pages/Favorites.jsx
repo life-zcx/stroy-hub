@@ -1,6 +1,8 @@
 import React from 'react';
 import { Heart, ShoppingBag, Trash2, ArrowLeft, Zap, ShieldCheck, Clock, MapPin, ChevronRight } from 'lucide-react';
 import { getProductImage, FALLBACK_PRODUCT_IMAGE } from '../utils/productImage';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
@@ -18,12 +20,13 @@ export default function FavoritesPage({
     <div className="space-y-8 animate-fade-in-up font-sans text-slate-800 text-left">
       {/* ═══ BREADCRUMBS ═══ */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
-        <button 
+        <Link 
+          href={getPageHref('home')}
           onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
         >
           Главная
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
         <span className="text-slate-900 font-extrabold">Избранное</span>
       </nav>
@@ -66,18 +69,19 @@ export default function FavoritesPage({
               🔍
             </div>
           </div>
-          <div className="max-w-xs">
+          <div className="max-w-xs text-center flex flex-col items-center">
             <h3 className="text-xl font-extrabold text-slate-900 mb-2">Здесь пока пусто</h3>
             <p className="text-sm text-slate-500 mb-6 font-medium leading-relaxed">
               Добавляйте товары в избранное, нажимая на сердечко в каталоге
             </p>
-            <button 
+            <Link 
+              href={getPageHref('catalog')}
               onClick={() => onNavigate?.('catalog')}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 w-full transform hover:-translate-y-0.5"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 w-full transform hover:-translate-y-0.5 text-xs uppercase"
             >
               <ShoppingBag className="h-4 w-4" />
               Перейти в каталог
-            </button>
+            </Link>
           </div>
         </div>
       ) : (
@@ -96,9 +100,10 @@ export default function FavoritesPage({
               </div>
 
               {/* Image Section */}
-              <div 
+              <Link 
+                href={getPageHref('product', product.id)}
                 onClick={() => onOpenProduct?.(product.id)}
-                className="w-full aspect-square bg-slate-50/50 rounded-[2rem] flex items-center justify-center overflow-hidden mb-5 p-4 cursor-pointer group-hover:scale-[1.02] transition-transform duration-500"
+                className="w-full aspect-square bg-slate-50/50 rounded-[2rem] flex items-center justify-center overflow-hidden mb-5 p-4 cursor-pointer group-hover:scale-[1.02] transition-transform duration-500 block"
               >
                 <img 
                   src={getProductImage(product)} 
@@ -106,7 +111,7 @@ export default function FavoritesPage({
                   className="w-4/5 h-4/5 object-contain mix-blend-multiply transition-all duration-500"
                   onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
                 />
-              </div>
+              </Link>
 
               {/* Info Section */}
               <div className="flex flex-col flex-grow">
@@ -119,12 +124,13 @@ export default function FavoritesPage({
                   <span>{product.category?.name || 'Стройматериалы'}</span>
                 </div>
 
-                <h4 
+                <Link 
+                  href={getPageHref('product', product.id)}
                   onClick={() => onOpenProduct?.(product.id)}
-                  className="font-black text-slate-800 text-sm leading-tight mb-3 group-hover:text-emerald-700 transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem] font-outfit"
+                  className="font-black text-slate-800 text-sm leading-tight mb-3 group-hover:text-emerald-700 transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem] font-outfit block"
                 >
                   {product.name}
-                </h4>
+                </Link>
 
                 <div className="space-y-1.5 mb-5 mt-auto">
                    <div className="flex items-center text-[10px] text-slate-500 font-medium font-outfit">
@@ -161,13 +167,14 @@ export default function FavoritesPage({
       {/* ═══ BACK TO CATALOG BUTTON ═══ */}
       {favorites.length > 0 && (
         <div className="pt-10 flex justify-center">
-          <button 
+          <Link 
+            href={getPageHref('catalog')}
             onClick={() => onNavigate?.('catalog')}
             className="flex items-center gap-2.5 px-8 py-3.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all text-sm group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             Вернуться в каталог
-          </button>
+          </Link>
         </div>
       )}
     </div>

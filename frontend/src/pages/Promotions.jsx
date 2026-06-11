@@ -3,6 +3,8 @@ import { Calendar, ChevronRight, HardHat, RefreshCw, TicketPercent } from 'lucid
 import { getPublicPromotions, getProducts } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import ProductCard from '../components/ProductCard';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const THEME_GRADIENTS = {
   emerald: 'from-emerald-500 to-teal-600',
@@ -124,19 +126,21 @@ export default function Promotions({
       <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
         {/* Breadcrumbs */}
         <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-          <button 
+          <Link 
+            href={getPageHref('home')}
             onClick={() => onNavigate?.('home')} 
-            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
           >
             Главная
-          </button>
+          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-          <button 
+          <Link 
+            href={getPageHref('promotions')}
             onClick={() => onNavigate?.('promotions')} 
-            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
+            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
           >
             Акции
-          </button>
+          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
           <span className="text-slate-900 font-extrabold truncate max-w-xs sm:max-w-md">{selectedPromo.title}</span>
         </nav>
@@ -301,10 +305,11 @@ export default function Promotions({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {promotions.map((promotion) => (
-            <div
+            <Link
               key={promotion.id}
+              href={getPageHref('promotions', promotion.id)}
               onClick={() => onNavigate?.('promotions', promotion.id)}
-              className="group cursor-pointer space-y-4 text-left"
+              className="group cursor-pointer space-y-4 text-left block text-slate-800"
             >
               <div className="aspect-[16/9] w-full overflow-hidden rounded-[2rem] border border-slate-200/80 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-emerald-500/20 relative bg-slate-50">
                 {promotion.imageCard || promotion.image ? (
@@ -338,7 +343,7 @@ export default function Promotions({
                   <span>{formatPromotionPeriod(promotion)}</span>
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

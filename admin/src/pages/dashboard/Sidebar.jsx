@@ -18,7 +18,8 @@ import {
   Truck,
   BarChart3,
   Globe2,
-  Gift
+  Gift,
+  Shield
 } from 'lucide-react';
 
 const tabIcons = {
@@ -36,6 +37,8 @@ const tabIcons = {
   suppliers: UserCheckIcon,
   users: UserCheckIcon,
   cashback: Gift,
+  returns: RefreshCw,
+  'warranty-rules': Shield,
 };
 
 const tabLabels = {
@@ -53,6 +56,8 @@ const tabLabels = {
   suppliers: 'Дистрибьюторы',
   users: 'Пользователи',
   cashback: 'Кешбэк',
+  returns: 'Возвраты',
+  'warranty-rules': 'Правила гарантии',
 };
 
 export default function Sidebar({ activePage, onPageChange, pages, counts, user, onLogout, onReload, loading }) {

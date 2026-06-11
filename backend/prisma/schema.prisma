@@ -47,6 +47,8 @@ model User {
   reviews    Review[]
   promotions Promotion[]
   bonusTransactions BonusTransaction[]
+  returnRequests ReturnRequest[]
+  cartItems      CartItem[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 }
@@ -97,6 +99,8 @@ model Product {
   reviewsList    Review[]
   cashbackPercent Int?
   article        String?
+  returnRequests ReturnRequest[]
+  cartItems      CartItem[]
 }
 
 model Category {
@@ -142,6 +146,7 @@ model Order {
   items           OrderItem[]
   analyticsEvents AnalyticsEvent[]
   bonusTransactions BonusTransaction[]
+  returnRequests ReturnRequest[]
 }
 
 model OrderItem {
@@ -306,4 +311,50 @@ model BonusTransaction {
   @@index([status])
   @@index([type])
   @@index([userId, status])
+}
+
+model ReturnRequest {
+  id           Int      @id @default(autoincrement())
+  orderId      Int
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Int
+  reason       String
+  photoUrl     String?
+  status       String   @default("pending") // pending, approved, rejected
+  adminComment String?
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
+}
+
+model WarrantyRule {
+  id        Int      @id @default(autoincrement())
+  scope     String   // "global", "category", "product"
+  targetId  Int?     // Category ID or Product ID
+  days      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scope])
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId])
 }

@@ -18,6 +18,8 @@ import UsersPage from './dashboard/pages/UsersPage';
 import PricingPage from './dashboard/pages/PricingPage';
 import AnalyticsPage from './dashboard/pages/AnalyticsPage';
 import ReviewsPage from './dashboard/pages/ReviewsPage';
+import ReturnsPage from './dashboard/pages/ReturnsPage';
+import WarrantyRulesPage from './dashboard/pages/WarrantyRulesPage';
 import CashbackSettingsPage from './dashboard/pages/CashbackSettingsPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
@@ -31,7 +33,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users'];
+const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -43,6 +45,8 @@ const pageTitles = {
   'review-promos': 'Промокоды',
   brands: 'Бренды-партнеры',
   reviews: 'Модерация отзывов',
+  returns: 'Заявки на возврат',
+  'warranty-rules': 'Правила гарантии',
   callbacks: 'Обратные звонки',
   partners: 'Партнерские заявки',
   categories: 'Разделы каталога',
@@ -149,6 +153,11 @@ export default function Dashboard({ user, onLogout, showToast }) {
     handleDeleteReview,
     getCategoryPath,
     reviews,
+    returns,
+    handleUpdateReturnStatus,
+    warrantyRules,
+    handleCreateWarrantyRule,
+    handleDeleteWarrantyRule,
     additionalImageFiles,
     handleAdditionalFilesChange,
     removeAdditionalFile,
@@ -214,6 +223,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     suppliers: suppliers.length,
     users: users.length,
     reviews: reviews.filter((r) => !r.isApproved).length,
+    returns: (returns || []).filter((r) => r.status === 'pending').length,
   };
 
   const renderPage = () => {
@@ -280,6 +290,25 @@ export default function Dashboard({ user, onLogout, showToast }) {
             reviews={reviews}
             onApprove={handleApproveReview}
             onDelete={handleDeleteReview}
+          />
+        );
+      case 'returns':
+        return isSupplier ? null : (
+          <ReturnsPage
+            returns={returns}
+            onUpdateStatus={handleUpdateReturnStatus}
+            loading={loading}
+          />
+        );
+      case 'warranty-rules':
+        return isSupplier ? null : (
+          <WarrantyRulesPage
+            rules={warrantyRules}
+            categories={categories}
+            products={products}
+            onCreateRule={handleCreateWarrantyRule}
+            onDeleteRule={handleDeleteWarrantyRule}
+            loading={loading}
           />
         );
       case 'categories':

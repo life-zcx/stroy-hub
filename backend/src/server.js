@@ -18,6 +18,10 @@ import brandRoutes from './routes/brandRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import bonusRoutes from './routes/bonusRoutes.js';
+import returnRequestRoutes from './routes/returnRequestRoutes.js';
+import warrantyRuleRoutes from './routes/warrantyRuleRoutes.js';
+import ogRoutes from './routes/ogRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import logger from './utils/logger.js';
 
@@ -128,6 +132,10 @@ app.use('/api/brands', brandRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/bonuses', bonusRoutes);
+app.use('/api/returns', returnRequestRoutes);
+app.use('/api/warranty-rules', warrantyRuleRoutes);
+app.use('/api/og', ogRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Silent Geolocation helper endpoint to bypass client AdBlockers
 app.get('/api/geo', async (req, res) => {

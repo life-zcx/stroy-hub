@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 import {
   LayoutGrid,
   List,
@@ -74,6 +76,22 @@ export default function Storefront({
     return { ...cat, breadcrumbs, children };
   }, [selectedCategory, categories]);
 
+  useEffect(() => {
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (currentCategoryDetail) {
+      document.title = `${currentCategoryDetail.name} — Купить стройматериалы в TORMAG`;
+      if (metaDesc) {
+        metaDesc.setAttribute('content', `Большой выбор товаров в категории "${currentCategoryDetail.name}" в каталоге TORMAG. Доступные оптовые цены, оперативная доставка по Алматы и области.`);
+      }
+    } else {
+      document.title = "Каталог стройматериалов — TORMAG";
+      if (metaDesc) {
+        metaDesc.setAttribute('content', "Каталог строительных и отделочных материалов TORMAG. Широкий ассортимент сухих смесей, красок, инструментов, крепежа с доставкой по Алматы.");
+      }
+    }
+  }, [currentCategoryDetail]);
+
+
   const processedProducts = useMemo(() => {
     return products;
   }, [products]);
@@ -116,7 +134,8 @@ export default function Storefront({
           <LayoutGrid className="h-4 w-4" /> Разделы
         </h3>
         <div className="flex flex-col gap-1.5 pt-1">
-          <button
+          <Link
+            href={getPageHref('catalog')}
             onClick={() => { setSelectedCategory('all'); setIsMobileFiltersOpen(false); }}
             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${selectedCategory === 'all'
                 ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
@@ -124,10 +143,11 @@ export default function Storefront({
               }`}
           >
             Все товары
-          </button>
+          </Link>
           {rootCategories.map(cat => (
             <div key={cat.id} className="space-y-1">
-              <button
+              <Link
+                href={getPageHref('catalog', null, cat.slug)}
                 onClick={() => { setSelectedCategory(cat.slug); setIsMobileFiltersOpen(false); }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${selectedCategory === cat.slug || currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id)
                     ? 'bg-emerald-50 text-emerald-700'
@@ -136,14 +156,15 @@ export default function Storefront({
               >
                 <span>{cat.name}</span>
                 <ChevronRight className={`h-3 w-3 transition-transform ${currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id) ? 'rotate-90' : ''}`} />
-              </button>
+              </Link>
 
               {/* Subcategories if root is active/parent */}
               {currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id) && (
                 <div className="pl-4 pb-1 space-y-1 flex flex-col border-l border-slate-100 ml-3.5 mt-1">
                   {categories.filter(c => c.parentId === cat.id).map(sub => (
-                    <button
+                    <Link
                       key={sub.id}
+                      href={getPageHref('catalog', null, sub.slug)}
                       onClick={() => { setSelectedCategory(sub.slug); setIsMobileFiltersOpen(false); }}
                       className={`text-[11px] font-bold py-1.5 px-3 rounded-lg text-left transition-colors ${selectedCategory === sub.slug
                           ? 'text-emerald-600 bg-emerald-50/50'
@@ -151,7 +172,7 @@ export default function Storefront({
                         }`}
                     >
                       {sub.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -246,10 +267,11 @@ export default function Storefront({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {rootCategories.map(cat => (
-              <div
+              <Link
                 key={cat.id}
+                href={getPageHref('catalog', null, cat.slug)}
                 onClick={() => setSelectedCategory(cat.slug)}
-                className="group cursor-pointer bg-white border border-slate-200/60 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-500 flex flex-col relative h-[280px] justify-end overflow-hidden"
+                className="group cursor-pointer bg-white border border-slate-200/60 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-500 flex flex-col relative h-[280px] justify-end overflow-hidden text-slate-800"
               >
                 <div 
                   className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700 opacity-90"
@@ -263,7 +285,7 @@ export default function Storefront({
                     Перейти в раздел <ArrowRight className="h-3 w-3" />
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -288,24 +310,25 @@ export default function Storefront({
           <div className="flex items-center justify-between">
             {currentCategoryDetail && currentCategoryDetail.breadcrumbs ? (
               <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
-                <button onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</button>
+                <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</Link>
                 <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-                <button onClick={() => setSelectedCategory('all')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Каталог</button>
+                <Link href={getPageHref('catalog')} onClick={() => setSelectedCategory('all')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Каталог</Link>
                 {currentCategoryDetail.breadcrumbs.map((b, i) => (
                   <React.Fragment key={b.id}>
                     <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-                    <button 
+                    <Link 
+                      href={getPageHref('catalog', null, b.slug)}
                       onClick={() => setSelectedCategory(b.slug)} 
                       className={`hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold ${i === currentCategoryDetail.breadcrumbs.length - 1 ? 'text-slate-900 font-extrabold' : 'text-slate-500'}`}
                     >
                       {b.name}
-                    </button>
+                    </Link>
                   </React.Fragment>
                 ))}
               </nav>
             ) : (
               <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
-                <button onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</button>
+                <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</Link>
                 <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
                 <span className="text-slate-900 font-extrabold">Каталог</span>
               </nav>
@@ -358,13 +381,14 @@ export default function Storefront({
         {currentCategoryDetail?.children?.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mb-8">
             {currentCategoryDetail.children.map(sub => (
-              <button
+              <Link
                 key={sub.id}
+                href={getPageHref('catalog', null, sub.slug)}
                 onClick={() => setSelectedCategory(sub.slug)}
-                className="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95"
+                className="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 text-center"
               >
                 {sub.name}
-              </button>
+              </Link>
             ))}
           </div>
         )}
