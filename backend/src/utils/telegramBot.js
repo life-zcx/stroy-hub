@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import tls from 'tls';
 import { exec, execSync } from 'child_process';
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
@@ -13,6 +14,141 @@ const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim() || '';
 const TELEGRAM_API_BASE = process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org';
 
 const getSystemChatId = () => TELEGRAM_ADMIN_CHAT_ID || TELEGRAM_CHAT_ID;
+
+// Helper to check SSL certificate expiration
+const checkSslExpiry = (host) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const socket = tls.connect({
+        host,
+        port: 443,
+        servername: host,
+        rejectUnauthorized: false
+      }, () => {
+        const cert = socket.getPeerCertificate();
+        if (!cert || !cert.valid_to) {
+          reject(new Error('Не удалось получить информацию о сертификате.'));
+          socket.destroy();
+          return;
+        }
+        const validTo = new Date(cert.valid_to);
+        const daysRemaining = Math.ceil((validTo - new Date()) / (1000 * 60 * 60 * 24));
+        resolve({ validTo, daysRemaining });
+        socket.destroy();
+      });
+
+      socket.on('error', (err) => {
+        reject(err);
+      });
+
+      socket.setTimeout(5000, () => {
+        reject(new Error('Таймаут подключения к SSL-хосту (5 секунд)'));
+        socket.destroy();
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+// Helper to get default SSL Host
+const getSslHost = () => {
+  if (process.env.APP_URL) {
+    try {
+      return new URL(process.env.APP_URL).hostname;
+    } catch (e) {}
+  }
+  if (process.env.CORS_ORIGINS) {
+    const firstOrigin = process.env.CORS_ORIGINS.split(',')[0].trim();
+    try {
+      return new URL(firstOrigin).hostname;
+    } catch (e) {}
+  }
+  return 'stroy-hub.ru';
+};
+
+// Helper to check resources
+const checkSystemResources = () => {
+  const cpus = os.cpus().length;
+  const loadAvg = os.loadavg();
+  const cpuPercent = ((loadAvg[0] / cpus) * 100);
+
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const ramPercent = (((totalMem - freeMem) / totalMem) * 100);
+
+  let diskPercent = 0;
+  try {
+    const stdout = execSync("df -h / | tail -n 1 | awk '{print $5}'").toString();
+    const match = stdout.match(/(\d+)%/);
+    if (match) {
+      diskPercent = parseInt(match[1], 10);
+    } else {
+      // Fallback method
+      const stdoutFull = execSync('df -h /').toString();
+      const lines = stdoutFull.trim().split('\n');
+      if (lines.length > 1) {
+        const rootLine = lines.find(l => l.includes(' /')) || lines[1];
+        const secondMatch = rootLine.match(/(\d+)%/);
+        if (secondMatch) diskPercent = parseInt(secondMatch[1], 10);
+      }
+    }
+  } catch (e) {
+    console.error('[RESOURCE MONITOR] Failed to parse disk space:', e);
+  }
+
+  return { cpuPercent, ramPercent, diskPercent };
+};
+
+// Cooldown tracker for warnings
+let lastAlertTimes = {
+  cpu: 0,
+  ram: 0,
+  disk: 0
+};
+const COOLDOWN_12H = 12 * 60 * 60 * 1000;
+
+export const startResourceMonitoring = () => {
+  const checkAndAlert = async () => {
+    try {
+      const { cpuPercent, ramPercent, diskPercent } = checkSystemResources();
+      const now = Date.now();
+      const systemChatId = getSystemChatId();
+      if (!systemChatId) return;
+
+      const alertMessages = [];
+
+      if (cpuPercent > 90 && (now - lastAlertTimes.cpu > COOLDOWN_12H)) {
+        alertMessages.push(`⚠️ *Высокая загрузка CPU:* ${cpuPercent.toFixed(1)}%`);
+        lastAlertTimes.cpu = now;
+      }
+
+      if (ramPercent > 90 && (now - lastAlertTimes.ram > COOLDOWN_12H)) {
+        alertMessages.push(`⚠️ *Высокое потребление RAM:* ${ramPercent.toFixed(1)}%`);
+        lastAlertTimes.ram = now;
+      }
+
+      if (diskPercent > 90 && (now - lastAlertTimes.disk > COOLDOWN_12H)) {
+        alertMessages.push(`⚠️ *Мало свободного места на диске:* ${diskPercent}% занято`);
+        lastAlertTimes.disk = now;
+      }
+
+      if (alertMessages.length > 0) {
+        const fullMsg = `🚨 *Внимание! Ресурсы VPS перегружены:*\n\n` + alertMessages.join('\n');
+        await sendMsg(systemChatId, fullMsg);
+      }
+    } catch (err) {
+      console.error('[TELEGRAM BOT] Resource monitoring check failed:', err);
+    }
+  };
+
+  // Run first check 30 seconds after startup
+  setTimeout(checkAndAlert, 30000);
+
+  // Monitor every hour
+  const ONE_HOUR = 60 * 60 * 1000;
+  setInterval(checkAndAlert, ONE_HOUR);
+};
 
 // Helper to send a simple markdown message
 const sendMsg = async (chatId, text, replyMarkup = null) => {
@@ -187,11 +323,14 @@ const handleCommand = async (chatId, text) => {
   if (cleanText === '/help') {
     const helpMsg = `🛠️ *Доступные команды Telegram-бота:*\n\n` +
       `🖥️ /status — Показать параметры VPS (CPU, RAM, диск, аптайм)\n` +
-      `📊 /db — Проверить статус СУБД Postgres и получить счетчики таблиц\n` +
+      `📊 /db — Статус СУБД Postgres и счетчики таблиц\n` +
+      `🧹 /db_optimize — Оптимизация БД (VACUUM ANALYZE)\n` +
       `🧹 /redis_clear — Полная очистка кэша Redis\n` +
+      `📈 /redis_info — Статистика и память кэша Redis\n` +
+      `🔒 /ssl_check — Проверка срока действия SSL-сертификата\n` +
       `📝 /logs — Вывести последние 50 строк общего лога бэкенда\n` +
       `🚨 /logs_error — Вывести последние 30 строк лога ошибок\n` +
-      `💾 /backup — Запустить резервное копирование и отправить на Яндекс.Диск\n` +
+      `💾 /backup — Резервное копирование базы данных на Яндекс.Диск\n` +
       `🔄 /restart — Безопасно перезапустить контейнер бэкенда`;
     await sendMsg(chatId, helpMsg);
     return;
@@ -266,6 +405,63 @@ const handleCommand = async (chatId, text) => {
       await sendMsg(chatId, `🟢 *Кэш Redis успешно и полностью очищен!*`);
     } catch (err) {
       await sendMsg(chatId, `🔴 *Ошибка очистки Redis:* \`${err.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/redis_info') {
+    await sendMsg(chatId, `⏳ *Запрос статистики Redis...*`);
+    try {
+      const infoStr = await redisClient.info();
+      const memoryMatch = infoStr.match(/used_memory_human:([^\r\n]+)/);
+      const clientsMatch = infoStr.match(/connected_clients:([^\r\n]+)/);
+      const hitsMatch = infoStr.match(/keyspace_hits:([^\r\n]+)/);
+      const missesMatch = infoStr.match(/keyspace_misses:([^\r\n]+)/);
+
+      const mem = memoryMatch ? memoryMatch[1] : 'Неизвестно';
+      const clients = clientsMatch ? clientsMatch[1] : 'Неизвестно';
+      const hits = hitsMatch ? parseInt(hitsMatch[1], 10) : 0;
+      const misses = missesMatch ? parseInt(missesMatch[1], 10) : 0;
+      const total = hits + misses;
+      const hitRate = total > 0 ? ((hits / total) * 100).toFixed(1) + '%' : '0%';
+
+      const redisMsg = `📈 *Статистика Redis:*\n\n` +
+        `🧠 *Использование памяти:* ${mem}\n` +
+        `👥 *Активных подключений:* ${clients}\n` +
+        `🎯 *Эффективность кэша (Hit Rate):* ${hitRate} (Hits: ${hits}, Misses: ${misses})`;
+      await sendMsg(chatId, redisMsg);
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Ошибка получения статистики Redis:* \`${err.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/db_optimize') {
+    await sendMsg(chatId, `🧹 *Запускаю оптимизацию базы данных (VACUUM ANALYZE)...*`);
+    try {
+      const start = Date.now();
+      // Execute vacuum without blocking transaction sequence
+      await prisma.$executeRawUnsafe('VACUUM ANALYZE;');
+      const duration = ((Date.now() - start) / 1000).toFixed(1);
+      await sendMsg(chatId, `🟢 *Оптимизация базы данных успешно завершена!* (заняло ${duration} сек)`);
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Ошибка при оптимизации БД:* \`${err.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/ssl_check') {
+    const host = getSslHost();
+    await sendMsg(chatId, `⏳ *Проверяю SSL-сертификат для хоста* \`${host}\`...`);
+    try {
+      const { validTo, daysRemaining } = await checkSslExpiry(host);
+      const sslMsg = `🔒 *Проверка SSL-сертификата:*\n\n` +
+        `🌐 *Хост:* \`${host}\`\n` +
+        `📅 *Действителен до:* ${validTo.toLocaleDateString('ru-RU')}\n` +
+        `⏳ *Осталось дней:* ${daysRemaining} дн.`;
+      await sendMsg(chatId, sslMsg);
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Ошибка проверки SSL:* \`${err.message}\``);
     }
     return;
   }
@@ -395,6 +591,9 @@ export const startTelegramBotListener = () => {
   }
 
   console.log('[TELEGRAM BOT] Starting interactive polling listener...');
+  
+  // Start resource monitoring alerts
+  startResourceMonitoring();
   
   let lastUpdateId = 0;
   
