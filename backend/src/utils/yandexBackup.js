@@ -4,7 +4,7 @@ import path from 'path';
 const BACKUP_DIR = '/app/backups';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID?.trim() || '';
+const TELEGRAM_CHAT_ID = (process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_CHAT_ID)?.trim() || '';
 const TELEGRAM_API_BASE = process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org';
 
 const sendTelegramAlert = async (text) => {
