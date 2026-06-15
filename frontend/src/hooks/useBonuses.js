@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getBonusSummary, getBonusHistory } from '../services/api';
 
 export default function useBonuses(customer) {
@@ -32,6 +32,10 @@ export default function useBonuses(customer) {
     }
   }, [customer]);
 
+  useEffect(() => {
+    fetchSummary();
+  }, [customer, fetchSummary]);
+
   const fetchHistory = useCallback(async ({ page = 1, append = false } = {}) => {
     if (!customer) return;
     setHistoryLoading(true);
@@ -58,6 +62,7 @@ export default function useBonuses(customer) {
     totalEarned: summary.totalEarned,
     totalSpent: summary.totalSpent,
     availableBonusPoints: summary.availableBalance, // backward compat
+    loyalty: summary.loyalty,
     summaryLoading,
 
     // История транзакций

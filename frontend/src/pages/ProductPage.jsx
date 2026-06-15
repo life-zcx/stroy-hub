@@ -24,6 +24,63 @@ const splitLines = (value) => {
   return value ? value.split('\n').map(line => line.trim()).filter(Boolean) : [];
 };
 
+const QuantityInput = ({ value, onChange }) => {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+    const valStr = e.target.value;
+    if (valStr.length > 5) return;
+    setLocalVal(valStr);
+    const parsed = parseInt(valStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseInt(localVal, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalVal(value);
+      onChange(value);
+    } else {
+      const clamped = Math.min(99999, parsed);
+      setLocalVal(clamped);
+      onChange(clamped);
+    }
+  };
+
+  const inputLength = localVal ? localVal.toString().length : 1;
+
+  return (
+    <>
+      <style>{`
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .no-spinner {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+      <input
+        type="number"
+        min="1"
+        max="99999"
+        value={localVal}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="no-spinner text-center text-sm font-black text-slate-900 bg-transparent focus:outline-none font-mono"
+        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+      />
+    </>
+  );
+};
+
 export default function ProductPage({
   productId,
   onBackToCatalog,
@@ -534,9 +591,7 @@ export default function ProductPage({
                   >
                     -
                   </button>
-                  <span className="w-12 text-center text-sm font-black text-slate-900 font-outfit">
-                    {quantity}
-                  </span>
+                  <QuantityInput value={quantity} onChange={setQuantity} />
                   <button
                     type="button"
                     onClick={() => setQuantity(q => q + 1)}

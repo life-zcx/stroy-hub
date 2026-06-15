@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 
 // ─────────────────────────────────────────────
 // Утилитарные функции (переиспользуются в orderController)
@@ -125,7 +126,7 @@ export const getUserBonusSummary = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Пользователь не авторизован' });
 
-    const [availableBalance, pendingBalance, totalEarnedAgg, totalSpentAgg] = await Promise.all([
+    const [availableBalance, pendingBalance, totalEarnedAgg, totalSpentAgg, loyalty] = await Promise.all([
       getAvailableBalance(userId),
       getPendingBalance(userId),
       prisma.bonusTransaction.aggregate({
@@ -136,6 +137,7 @@ export const getUserBonusSummary = async (req, res) => {
         where: { userId, type: 'spent', status: 'used' },
         _sum: { amount: true },
       }),
+      getUserLoyaltyStatus(userId),
     ]);
 
     res.json({
@@ -143,6 +145,7 @@ export const getUserBonusSummary = async (req, res) => {
       pendingBalance: Math.round(pendingBalance),
       totalEarned: Math.round(totalEarnedAgg._sum.amount || 0),
       totalSpent: Math.round(totalSpentAgg._sum.amount || 0),
+      loyalty,
       // Оставляем старое поле для обратной совместимости
       availableBonusPoints: Math.round(availableBalance),
     });
@@ -203,7 +206,7 @@ export const getBonusHistory = async (req, res) => {
  */
 export const manualAdjustBonus = async (req, res) => {
   try {
-    const { userId, amount, description, type = 'manual' } = req.body;
+    const { userId, amount, description } = req.body;
 
     if (!userId || !amount || !description) {
       return res.status(400).json({ error: 'userId, amount и description обязательны' });
@@ -217,13 +220,20 @@ export const manualAdjustBonus = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
+    // Fetch the admin user who is performing this adjustment
+    const adminUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const adminName = adminUser?.name || adminUser?.email || 'Администратор';
+    const finalDescription = `${description} (Выполнил: ${adminName})`;
+
+    const isDeduction = parsedAmount < 0;
+
     const transaction = await prisma.bonusTransaction.create({
       data: {
         userId: parseInt(userId),
-        type: parsedAmount > 0 ? 'manual' : 'cancelled',
-        status: parsedAmount > 0 ? 'available' : 'cancelled',
+        type: isDeduction ? 'spent' : 'manual',
+        status: isDeduction ? 'used' : 'available',
         amount: Math.abs(parsedAmount),
-        description,
+        description: finalDescription,
       },
     });
 

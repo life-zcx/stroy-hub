@@ -211,6 +211,7 @@ export default function useCustomerAuth(showToast) {
 
   return {
     customer,
+    setCustomer,
     authModalOpen,
     setAuthModalOpen,
     authTab,

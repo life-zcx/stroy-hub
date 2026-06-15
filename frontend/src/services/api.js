@@ -34,6 +34,11 @@ export const getProfile = async () => {
   return response.data;
 };
 
+export const updateProfile = async (data) => {
+  const response = await api.put('/auth/me', data);
+  return response.data;
+};
+
 // Products API
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products', { params });

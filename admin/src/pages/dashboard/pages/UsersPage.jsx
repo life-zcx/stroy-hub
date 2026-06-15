@@ -5,6 +5,7 @@ import {
   Plus as PlusIcon,
   ShieldAlert as ShieldAlertIcon,
   ShieldCheck as ShieldCheckIcon,
+  User as UserIcon,
 } from 'lucide-react';
 import UserModal from '../modals/UserModal';
 
@@ -192,6 +193,12 @@ export default function UsersPage({
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => window.location.hash = `user-portrait/${user.id}`}
+                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                          >
+                            <UserIcon className="h-3.5 w-3.5" /> Портрет
+                          </button>
                           <button
                             onClick={() => openEditModal(user)}
                             className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"

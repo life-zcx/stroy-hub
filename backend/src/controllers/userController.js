@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../config/db.js';
+import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
+import { getAvailableBalance, getPendingBalance } from './bonusController.js';
 
 const ALLOWED_ROLES = ['ADMIN', 'SUPPLIER', 'CUSTOMER'];
 
@@ -303,3 +305,117 @@ export const updateUserBlockStatus = async (req, res) => {
     res.status(500).json({ error: 'Ошибка изменения статуса блокировки: ' + error.message });
   }
 };
+
+export const getUserPortrait = async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Неверный ID пользователя' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        supplier: true,
+        _count: {
+          select: { orders: true },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const loyalty = await getUserLoyaltyStatus(userId);
+    const availableBalance = await getAvailableBalance(userId);
+    const pendingBalance = await getPendingBalance(userId);
+
+    const earnedAgg = await prisma.bonusTransaction.aggregate({
+      where: { userId, type: { in: ['earned', 'manual'] }, status: { in: ['available', 'used'] } },
+      _sum: { amount: true },
+    });
+    const spentAgg = await prisma.bonusTransaction.aggregate({
+      where: { userId, type: 'spent', status: 'used' },
+      _sum: { amount: true },
+    });
+
+    const totalEarned = earnedAgg._sum.amount || 0;
+    const totalSpent = spentAgg._sum.amount || 0;
+
+    const orders = await prisma.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+      select: {
+        id: true,
+        status: true,
+        totalAmount: true,
+        paymentMethod: true,
+        createdAt: true,
+      },
+    });
+
+    const allOrders = await prisma.order.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        totalAmount: true,
+        paymentMethod: true,
+      },
+    });
+
+    const completedOrders = allOrders.filter(o => o.status === 'completed');
+    const totalSpentMoney = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const completedCount = completedOrders.length;
+    const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
+    const avgOrderValue = completedCount > 0 ? Math.round(totalSpentMoney / completedCount) : 0;
+
+    const paymentMethods = allOrders.map(o => o.paymentMethod);
+    const methodCounts = paymentMethods.reduce((acc, m) => {
+      acc[m] = (acc[m] || 0) + 1;
+      return acc;
+    }, {});
+    let favoritePaymentMethod = 'Не определен';
+    let maxCount = 0;
+    for (const [method, count] of Object.entries(methodCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        favoritePaymentMethod = method;
+      }
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role,
+        supplierName: user.supplier?.name || null,
+        isBlocked: user.isBlocked,
+        createdAt: user.createdAt,
+      },
+      loyalty,
+      bonuses: {
+        available: Math.round(availableBalance),
+        pending: Math.round(pendingBalance),
+        totalEarned: Math.round(totalEarned),
+        totalSpent: Math.round(totalSpent),
+      },
+      stats: {
+        totalOrders: allOrders.length,
+        completedOrders: completedCount,
+        cancelledOrders: cancelledCount,
+        totalSpent: Math.round(totalSpentMoney),
+        avgOrderValue,
+        favoritePaymentMethod,
+      },
+      recentOrders: orders,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения портрета пользователя: ' + error.message });
+  }
+};
+

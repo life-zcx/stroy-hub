@@ -124,6 +124,7 @@ function StatCard({ label, value, sub, color = 'slate', icon: Icon }) {
 
 export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth }) {
   const [filter, setFilter] = useState('all'); // all | earned | spent | pending
+  const [openFaqIdx, setOpenFaqIdx] = useState(null);
 
   useEffect(() => {
     if (customer && bonuses) {
@@ -178,194 +179,199 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
         <span className="text-slate-900 font-extrabold">Мой кешбэк</span>
       </nav>
 
-      {/* Hero Card */}
-      <div className="relative rounded-[2rem] overflow-hidden bg-white border border-slate-200/80 p-8 sm:p-10 text-slate-800 shadow-sm">
-        {/* Decorative blobs */}
-        <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div className="space-y-2">
+      {/* Unified Loyalty & Cashback Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column: Cashback Balance & Stats */}
+        <div className="lg:col-span-7 relative rounded-[2rem] overflow-hidden bg-white border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between shadow-sm min-h-[350px]">
+          {/* Background blobs */}
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2">
-              <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600">
-                <Gift className="h-5 w-5" />
+              <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600">
+                <Gift className="h-4 w-4" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                Программа кешбэка
+                Баланс кешбэка
               </span>
             </div>
-            <h1 className="font-outfit text-5xl font-black text-emerald-600">
-              {formatPrice(bonuses?.availableBalance ?? 0)}
-            </h1>
-            <p className="text-sm font-semibold text-slate-500">Доступный кешбэк-баланс</p>
+            
+            <div className="space-y-1">
+              <h1 className="font-outfit text-5xl font-black text-emerald-600">
+                {formatPrice(bonuses?.availableBalance ?? 0)}
+              </h1>
+              <p className="text-xs font-bold text-slate-400">Доступно для оплаты новых покупок</p>
+            </div>
+
             {(bonuses?.pendingBalance ?? 0) > 0 && (
               <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-[11px] font-bold text-amber-600">
                 <Clock className="h-3.5 w-3.5" />
                 +{formatPrice(bonuses.pendingBalance)} ожидает выполнения заказов
               </div>
             )}
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Всего заработано</span>
+                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.totalEarned ?? 0)}</span>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Потрачено</span>
+                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.totalSpent ?? 0)}</span>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">В ожидании</span>
+                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.pendingBalance ?? 0)}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2 text-right">
-            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed max-w-[200px] text-left sm:text-right">
-              Кешбэк 3% начисляется с каждого выполненного заказа и списывается при оплате новых.
+          <div className="relative z-10 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 mt-6">
+            <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-[280px]">
+              Кешбэк {bonuses?.loyalty?.baseCashbackPercent ?? 3}% начисляется с каждого выполненного заказа и списывается при оплате новых.
             </p>
             <Link
               href={getPageHref('cart')}
               onClick={() => onNavigate?.('cart')}
-              className="mt-1 self-start sm:self-end bg-slate-955 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-md text-center inline-block"
+              className="bg-slate-950 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all active:scale-95 shadow-md text-center inline-block shrink-0"
             >
               Перейти в корзину
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          label="Всего заработано"
-          value={formatPrice(bonuses?.totalEarned ?? 0)}
-          color="emerald"
-          icon={TrendingUp}
-        />
-        <StatCard
-          label="Потрачено"
-          value={formatPrice(bonuses?.totalSpent ?? 0)}
-          color="rose"
-          icon={Percent}
-        />
-        <StatCard
-          label="Ожидает"
-          value={formatPrice(bonuses?.pendingBalance ?? 0)}
-          sub="будет доступен после выполнения"
-          color="amber"
-          icon={Clock}
-        />
-        <StatCard
-          label="Доступно"
-          value={formatPrice(bonuses?.availableBalance ?? 0)}
-          sub="можно потратить прямо сейчас"
-          color="emerald"
-          icon={CheckCircle2}
-        />
-      </div>
+        {/* Right Column: Loyalty Status & Progress */}
+        {bonuses?.loyalty && (
+          <div className="lg:col-span-5 relative rounded-[2rem] overflow-hidden bg-white border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between shadow-sm min-h-[350px]">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="space-y-6 relative z-10">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-450 block">Ваш уровень лояльности</span>
+                  <span className={`inline-block text-[10px] font-black font-outfit uppercase px-3 py-1 rounded-lg ${
+                    bonuses.loyalty.level === 'partner' 
+                      ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                      : bonuses.loyalty.level === 'resident' 
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                        : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                  }`}>
+                    {bonuses.loyalty.levelName}
+                  </span>
+                </div>
+                <div className="text-right space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-450 block">Покупки за год</span>
+                  <span className="text-sm font-black text-slate-900 font-outfit">{formatPrice(bonuses.loyalty.totalSpentThisYear)}</span>
+                </div>
+              </div>
 
-      {/* How it works banner */}
-      <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col md:flex-row gap-5 items-start md:items-center relative overflow-hidden">
-        {/* Soft decorative background glows */}
-        <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute left-0 bottom-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
-        
-        <div className="glossy-icon-shell glossy-icon-blue shrink-0 hidden md:flex">
-          <Gift className="h-5 w-5" strokeWidth={2.5} />
-        </div>
-        <div className="space-y-3 relative z-10 w-full">
-          <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-            <span className="md:hidden">💡</span>
-            Как работает кешбэк?
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black">1</span>
-                <span className="text-xs font-extrabold text-slate-900">Покупка</span>
+              {/* Progress bar */}
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs font-bold text-slate-700">
+                  {bonuses.loyalty.level === 'partner' ? (
+                    <span className="text-purple-650 flex items-center gap-1">🎉 Максимальный уровень привилегий!</span>
+                  ) : (
+                    <span>До уровня {bonuses.loyalty.nextLevelName}</span>
+                  )}
+                  {bonuses.loyalty.level !== 'partner' && (
+                    <span className="font-mono text-slate-900 text-xs">
+                      Осталось: {formatPrice(bonuses.loyalty.neededToNextLevel)}
+                    </span>
+                  )}
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5 border border-slate-200/50 p-0.5">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-700 ease-out ${
+                      bonuses.loyalty.level === 'partner' 
+                        ? 'bg-gradient-to-r from-purple-500 to-indigo-650' 
+                        : bonuses.loyalty.level === 'resident' 
+                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500' 
+                          : 'bg-gradient-to-r from-emerald-500 to-blue-500'
+                    }`}
+                    style={{ width: `${bonuses.loyalty.progressPercent}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+                  <span>Участник (0 ₸)</span>
+                  <span>Резидент (500к ₸)</span>
+                  <span>Партнёр (2м ₸)</span>
+                </div>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pl-7">
-                Оформляете заказ — кешбэк 3% начисляется со статусом «Ожидает».
-              </p>
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black">2</span>
-                <span className="text-xs font-extrabold text-slate-900">Активация</span>
+
+            {/* Quick rates summary */}
+            <div className="relative z-10 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center mt-6">
+              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'participant' ? 'bg-emerald-50/40 border-emerald-200 text-emerald-900' : 'bg-slate-50/30 border-slate-100'}`}>
+                <p className="text-[10px] font-black">Участник</p>
+                <p className="text-[11px] font-extrabold mt-0.5">3% / 50%</p>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pl-7">
-                Когда заказ переходит в статус «Выполнен», кешбэк становится доступным.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-50 text-purple-600 text-[10px] font-black">3</span>
-                <span className="text-xs font-extrabold text-slate-900">Оплата</span>
+              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'resident' ? 'bg-blue-50/40 border-blue-250 text-blue-900' : 'bg-slate-50/30 border-slate-100'}`}>
+                <p className="text-[10px] font-black">Резидент</p>
+                <p className="text-[11px] font-extrabold mt-0.5">4% / 75%</p>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pl-7">
-                При следующем заказе выбираете «Оплатить кешбэком» прямо в корзине.
-              </p>
+              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'partner' ? 'bg-purple-50/40 border-purple-250 text-purple-900' : 'bg-slate-50/30 border-slate-100'}`}>
+                <p className="text-[10px] font-black">Партнёр</p>
+                <p className="text-[11px] font-extrabold mt-0.5">5% / 100%</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+
 
       {/* Transaction history */}
+      {/* Transaction history Preview */}
       <div className="rounded-[2rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-5 border-b border-slate-100 bg-slate-50/60">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/60">
           <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-amber-500" />
-            История транзакций
-            {bonuses?.historyTotal > 0 && (
-              <span className="bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 text-[10px] font-black">
-                {bonuses.historyTotal}
-              </span>
-            )}
+            Последние транзакции
           </h2>
-
-          {/* Filter tabs */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            {[
-              { id: 'all', label: 'Все' },
-              { id: 'earned', label: 'Начислено' },
-              { id: 'spent', label: 'Списано' },
-              { id: 'pending', label: 'Ожидание' },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all ${
-                  filter === f.id
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {(bonuses?.history || []).length > 0 && (
+            <Link
+              href={getPageHref('cashback/history')}
+              onClick={() => onNavigate?.('cashback/history')}
+              className="text-xs font-black text-blue-600 hover:text-blue-800 uppercase tracking-wider transition-colors"
+            >
+              Смотреть все
+            </Link>
+          )}
         </div>
 
         {/* Loading */}
         {bonuses?.historyLoading && (bonuses?.history || []).length === 0 && (
-          <div className="flex items-center justify-center gap-2 py-16 text-slate-400 text-sm font-semibold">
+          <div className="flex items-center justify-center gap-2 py-12 text-slate-400 text-sm font-semibold">
             <RefreshCw className="h-4 w-4 animate-spin" />
-            Загружаем историю...
+            Загружаем транзакции...
           </div>
         )}
 
         {/* Empty state */}
-        {!bonuses?.historyLoading && filteredHistory.length === 0 && (
-          <div className="py-16 text-center space-y-3">
+        {!bonuses?.historyLoading && (bonuses?.history || []).length === 0 && (
+          <div className="py-12 text-center space-y-3">
             <ShoppingBag className="h-12 w-12 text-slate-200 mx-auto" />
             <p className="text-sm font-bold text-slate-400">Транзакций пока нет</p>
             <p className="text-xs text-slate-400">
-              {filter === 'all'
-                ? 'Оформите первый заказ и получите кешбэк 3%'
-                : 'Нет транзакций в этой категории'}
+              Оформите первый заказ и получите кешбэк 3%
             </p>
           </div>
         )}
 
-        {/* Transactions list */}
-        {filteredHistory.length > 0 && (
+        {/* Transactions list preview (up to 3 items) */}
+        {(bonuses?.history || []).length > 0 && (
           <div className="divide-y divide-slate-100">
-            {filteredHistory.map((tx) => {
+            {(bonuses.history.slice(0, 3)).map((tx) => {
               const meta = getTxMeta(tx);
               const Icon = meta.icon;
               return (
                 <div
                   key={tx.id}
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/60 transition-colors"
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/40 transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 ${meta.bgColor}`}>
                     <Icon className={`h-5 w-5 ${meta.iconColor}`} />
@@ -403,46 +409,64 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             })}
           </div>
         )}
-
-        {/* Load more */}
-        {bonuses?.historyHasMore && (
-          <div className="px-6 py-5 border-t border-slate-100 bg-slate-50/60 text-center">
-            <button
-              type="button"
-              onClick={bonuses.loadMoreHistory}
-              disabled={bonuses.historyLoading}
-              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-600 hover:text-slate-900 disabled:opacity-50 transition-colors"
-            >
-              {bonuses.historyLoading ? (
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              ) : null}
-              Загрузить ещё
-            </button>
-          </div>
-        )}
       </div>
-
-      {/* CTA — go to orders */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-center sm:text-left">
-          <p className="text-sm font-black text-slate-900">Хотите больше кешбэка?</p>
-          <p className="text-xs text-slate-500 mt-0.5">Чем больше заказов — тем выше накопленный баланс.</p>
+      {/* FAQ Section */}
+      <div className="rounded-[2rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
+          <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            Часто задаваемые вопросы по программе лояльности
+          </h2>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Link
-            href={getPageHref('orders')}
-            onClick={() => onNavigate?.('orders')}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all active:scale-95 text-center inline-block"
-          >
-            Мои заказы
-          </Link>
-          <Link
-            href={getPageHref('catalog')}
-            onClick={() => onNavigate?.('catalog')}
-            className="bg-slate-950 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 text-center inline-block"
-          >
-            В каталог
-          </Link>
+        <div className="divide-y divide-slate-100">
+          {[
+            {
+              q: "Как работает система начисления и списания кешбэка?",
+              a: "Процесс состоит из 3 простых шагов: 1. Покупка (вы оформляете заказ, кешбэк начисляется на ваш баланс в статусе «Ожидает»); 2. Активация (когда статус заказа меняется на «Выполнен», бонусы переводятся в статус «Доступно»); 3. Оплата (при оформлении нового заказа вы можете оплатить накопленными бонусами часть стоимости прямо в корзине)."
+            },
+            {
+              q: "Как происходит регистрация в системе привилегий?",
+              a: "Регистрация происходит автоматически при создании учетной записи на сайте Tormag.kz. Никаких дополнительных действий предпринимать не требуется."
+            },
+            {
+              q: "Какой уровень привилегий присваивается при регистрации?",
+              a: "При регистрации каждому новому клиенту автоматически присваивается стартовый уровень «Участник», дающий право на базовый кешбэк 3% и списание бонусов до 50% от суммы заказа."
+            },
+            {
+              q: "Через сколько времени обновляется уровень привилегий?",
+              a: "Ваш уровень обновляется автоматически в режиме реального времени. Как только общая сумма выполненных (completed) заказов за текущий календарный год превысит 500 000 ₸, вам будет присвоен уровень «Резидент» (лимит списания 75%), а при превышении 2 000 000 ₸ — уровень «Партнёр» (лимит списания 100%)."
+            },
+            {
+              q: "Что будет, если не достигнуть необходимой суммы покупок для поддержания уровня?",
+              a: "Уровень привилегий рассчитывается заново в начале каждого календарного года на основе общей суммы ваших выполненных покупок за предыдущий год."
+            },
+            {
+              q: "Какие покупки не учитываются в системе привилегий?",
+              a: "В накоплениях для перехода на новые уровни не учитываются отмененные или возвращенные заказы. Также бонусы не начисляются на часть стоимости заказа, которая была оплачена другими бонусами."
+            },
+            {
+              q: "Могу ли я передать свои привилегии или накопленный кешбэк другому человеку?",
+              a: "Нет, привилегии и бонусный баланс привязаны к вашей индивидуальной учетной записи (номеру телефона и email) и не могут быть объединены с другими аккаунтами или переданы третьим лицам."
+            }
+          ].map((item, idx) => {
+            const isOpen = openFaqIdx === idx;
+            return (
+              <div key={idx} className="border-b border-slate-100 last:border-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                  className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:bg-slate-50/50 transition-colors gap-4"
+                >
+                  <span className="text-xs sm:text-sm font-bold text-slate-800">{item.q}</span>
+                  <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transform transition-transform ${isOpen ? 'rotate-90 text-slate-600' : ''}`} />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 pt-1 text-slate-500 text-xs sm:text-sm leading-relaxed font-medium">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

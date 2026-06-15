@@ -78,7 +78,7 @@ export default function Sidebar({ activePage, onPageChange, pages, counts, user,
       {/* Navigation Groups */}
       <nav className="flex-grow px-4 space-y-1 overflow-y-auto hide-scrollbar">
         <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2 mt-4">Навигация</p>
-        {pages.map((page) => {
+        {pages.filter(page => page !== 'user-portrait').map((page) => {
           const Icon = tabIcons[page];
           const isActive = activePage === page;
           const count = counts[page] ?? 0;

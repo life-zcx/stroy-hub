@@ -20,6 +20,63 @@ import { getFriendlyErrorMessage } from '../utils/errorHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
+const QuantityInput = ({ value, onChange }) => {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+    const valStr = e.target.value;
+    if (valStr.length > 5) return;
+    setLocalVal(valStr);
+    const parsed = parseInt(valStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseInt(localVal, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalVal(value);
+      onChange(value);
+    } else {
+      const clamped = Math.min(99999, parsed);
+      setLocalVal(clamped);
+      onChange(clamped);
+    }
+  };
+
+  const inputLength = localVal ? localVal.toString().length : 1;
+
+  return (
+    <>
+      <style>{`
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .no-spinner {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+      <input
+        type="number"
+        min="1"
+        max="99999"
+        value={localVal}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="no-spinner text-center text-xs font-bold text-slate-900 bg-transparent focus:outline-none font-mono"
+        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+      />
+    </>
+  );
+};
+
 
 
 export default function CartSidebar({
@@ -521,7 +578,10 @@ export default function CartSidebar({
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
-                          <span className="w-8 text-center text-sm font-bold text-slate-900">{item.quantity}</span>
+                          <QuantityInput
+                            value={item.quantity}
+                            onChange={(val) => onUpdateQuantity(item.id, val, true)}
+                          />
                           <button
                             onClick={() => onUpdateQuantity(item.id, 1)}
                             className="p-1 hover:bg-white rounded-md transition-colors text-slate-600 shadow-sm"

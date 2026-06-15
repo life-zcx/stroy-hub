@@ -118,11 +118,11 @@ export default function useCart(showToast, customer) {
     showToast?.(`🛒 «${product.name}» добавлен в корзину (${quantityToAdd} шт)`);
   };
 
-  const handleUpdateQuantity = async (id, delta) => {
+  const handleUpdateQuantity = async (id, val, isAbsolute = false) => {
     const existingItem = cart.find(item => item.id === id);
     if (!existingItem) return;
     
-    const newQty = Math.max(1, existingItem.quantity + delta);
+    const newQty = isAbsolute ? Math.max(1, val) : Math.max(1, existingItem.quantity + val);
 
     if (customer) {
       try {

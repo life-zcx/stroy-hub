@@ -29,6 +29,63 @@ import { getPageHref } from '../utils/navigationHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
+const QuantityInput = ({ value, onChange }) => {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+    const valStr = e.target.value;
+    if (valStr.length > 5) return;
+    setLocalVal(valStr);
+    const parsed = parseInt(valStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseInt(localVal, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalVal(value);
+      onChange(value);
+    } else {
+      const clamped = Math.min(99999, parsed);
+      setLocalVal(clamped);
+      onChange(clamped);
+    }
+  };
+
+  const inputLength = localVal ? localVal.toString().length : 1;
+
+  return (
+    <>
+      <style>{`
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .no-spinner {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+      <input
+        type="number"
+        min="1"
+        max="99999"
+        value={localVal}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="no-spinner text-center text-xs font-bold text-slate-900 bg-transparent focus:outline-none font-mono"
+        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+      />
+    </>
+  );
+};
+
 
 
 export default function CartPage({
@@ -239,8 +296,10 @@ export default function CartPage({
     price: item.price,
   })), [cart]);
 
+  const maxBonusPaymentPercent = bonuses?.loyalty?.maxBonusPaymentPercent ?? 50;
   const finalTotalBeforeBonuses = promoPreview.valid ? promoPreview.totalAmount : cartTotal;
-  const bonusDiscount = Math.min(availableBonusPoints, finalTotalBeforeBonuses, appliedBonuses);
+  const maxBonusDiscount = Math.floor(finalTotalBeforeBonuses * (maxBonusPaymentPercent / 100));
+  const bonusDiscount = Math.min(availableBonusPoints, maxBonusDiscount, appliedBonuses);
   const finalTotal = finalTotalBeforeBonuses - bonusDiscount;
   const estimatedEarnedBonuses = Math.round(finalTotal * 0.03);
 
@@ -757,9 +816,10 @@ export default function CartPage({
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </button>
-                        <span className="px-3 text-xs font-bold text-slate-900 min-w-[24px] text-center font-mono">
-                          {item.quantity}
-                        </span>
+                        <QuantityInput
+                          value={item.quantity}
+                          onChange={(val) => onUpdateQuantity(item.id, val, true)}
+                        />
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, 1)}
@@ -1027,7 +1087,7 @@ export default function CartPage({
                     {customer && (
                       <div className="bg-white border border-slate-150 rounded-2xl p-5 space-y-3 flex flex-col justify-center min-h-[120px] shadow-sm">
                         <div className="flex justify-between items-center">
-                          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Списать бонусы</label>
+                          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Списать бонусы (до {maxBonusPaymentPercent}%)</label>
                           <span className="text-[10px] font-bold text-slate-500">Доступно: {formatPrice(availableBonusPoints)}</span>
                         </div>
                         {appliedBonuses > 0 ? (
@@ -1059,7 +1119,8 @@ export default function CartPage({
                                 if (val === '') {
                                   setBonusInput('');
                                 } else {
-                                  const num = Math.min(availableBonusPoints, finalTotalBeforeBonuses, parseInt(val) || 0);
+                                  const maxAllowed = Math.floor(finalTotalBeforeBonuses * (maxBonusPaymentPercent / 100));
+                                  const num = Math.min(availableBonusPoints, maxAllowed, parseInt(val) || 0);
                                   setBonusInput(num.toString());
                                 }
                               }}

@@ -114,7 +114,7 @@ export default function Footer({
               </li>
               <li className="flex flex-col gap-1">
                 <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Режим работы</span>
-                <span className="text-white font-semibold">Пн. – Пт.: с 8:00 до 17:00</span>
+                <span className="text-white font-semibold">Пн. – Пт.: с 8:00 до 20:00</span>
               </li>
             </ul>
           </div>

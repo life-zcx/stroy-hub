@@ -20,6 +20,8 @@ import MyOrders from './pages/MyOrders';
 import MyOrderDetails from './pages/MyOrderDetails';
 import MyPromotions from './pages/MyPromotions';
 import CashbackPage from './pages/CashbackPage';
+import TransactionsHistoryPage from './pages/TransactionsHistoryPage';
+import Cabinet from './pages/Cabinet';
 import CartPage from './pages/CartPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -38,6 +40,7 @@ import useFavorites from './hooks/useFavorites'
 import useBonuses from './hooks/useBonuses';
 import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
 import { getPageHref } from './utils/navigationHelper';
+import { PATH_TO_CABINET_TAB } from './hooks/useNavigation';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -95,6 +98,7 @@ export default function App() {
       orders: "TORMAG - Мои заказы",
       'my-promotions': "TORMAG - Мои промокоды",
       cashback: "TORMAG - Мой кешбэк",
+      'cashback/history': "TORMAG - История транзакций",
       requisites: "TORMAG - Реквизиты компании",
       faq: "TORMAG - Вопрос-ответ",
       legal: "TORMAG - Юридическая информация",
@@ -119,6 +123,7 @@ export default function App() {
       favorites: "Ваш список избранных строительных материалов на платформе TORMAG.",
       orders: "Управление и отслеживание статуса ваших заказов на платформе TORMAG.",
       estimate: "Удобная загрузка смет в формате Excel/CSV для автоматического подбора материалов в TORMAG.",
+      'cashback/history': "История начисления и списания бонусных баллов кешбэка TORMAG.",
       legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG."
     };
 
@@ -204,8 +209,10 @@ export default function App() {
     };
   }, [auth.authModalOpen, region.regionModalOpen, isCallbackModalOpen, isMobileMenuOpen]);
 
+  const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
+
   useEffect(() => {
-    if (currentPage === 'orders' && auth.customer) {
+    if ((currentPage === 'orders' || isCabinetPage) && auth.customer) {
       orders.fetchMyOrders();
     }
   }, [currentPage, auth.customer]);
@@ -213,6 +220,11 @@ export default function App() {
   const handleLogout = () => {
     auth.handleLogout();
     orders.clearOrders();
+    setCurrentPage('home');
+  };
+
+  const handleCustomerUpdate = (updated) => {
+    auth.setCustomer?.(updated);
   };
 
   return (
@@ -238,13 +250,14 @@ export default function App() {
         onOpenCallback={() => setIsCallbackModalOpen(true)}
         onOpenFavorites={() => setCurrentPage('favorites')}
         favoritesCount={favorites.favoritesCount}
-        onOpenOrders={() => setCurrentPage('orders')}
+        onOpenOrders={() => setCurrentPage('cabinet')}
         handleLogout={handleLogout}
         searchQuery={catalog.searchQuery}
         setSearchQuery={catalog.setSearchQuery}
         categories={catalog.categories}
         products={catalog.searchSuggestions}
         loadSearchSuggestions={catalog.loadSearchSuggestions}
+        bonuses={bonuses}
       />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -253,6 +266,11 @@ export default function App() {
             onNavigate={setCurrentPage}
             setSelectedCategory={handleSetCategory}
             categories={catalog.categories}
+            setSearchQuery={catalog.setSearchQuery}
+            onAddToCart={cart.handleAddToCart}
+            onToggleFavorite={favorites.toggleFavorite}
+            isFavorite={favorites.isFavorite}
+            onOpenDetails={openProductPage}
           />
         )}
 
@@ -324,6 +342,25 @@ export default function App() {
             onOpenCallback={() => setIsCallbackModalOpen(true)}
           />
         )}
+        {isCabinetPage && (
+          <Cabinet
+            customer={auth.customer}
+            orders={orders.orders}
+            ordersLoading={orders.ordersLoading}
+            ordersHasMore={orders.ordersHasMore}
+            ordersTotal={orders.ordersTotal}
+            onRefreshOrders={orders.fetchMyOrders}
+            onLoadMoreOrders={orders.loadMoreOrders}
+            bonuses={bonuses}
+            onNavigate={setCurrentPage}
+            onOpenAuth={auth.openLoginModal}
+            handleLogout={handleLogout}
+            showToast={showToast}
+            onCustomerUpdate={handleCustomerUpdate}
+            onAddToCart={cart.handleAddToCart}
+            initialTab={PATH_TO_CABINET_TAB[currentPage] || 'profile'}
+          />
+        )}
         {currentPage === 'orders' && (
           <MyOrders
             customer={auth.customer}
@@ -350,6 +387,14 @@ export default function App() {
         )}
         {currentPage === 'cashback' && (
           <CashbackPage
+            customer={auth.customer}
+            bonuses={bonuses}
+            onNavigate={setCurrentPage}
+            onOpenAuth={auth.openLoginModal}
+          />
+        )}
+        {currentPage === 'cashback/history' && (
+          <TransactionsHistoryPage
             customer={auth.customer}
             bonuses={bonuses}
             onNavigate={setCurrentPage}

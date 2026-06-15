@@ -196,7 +196,7 @@ export const register = async (req, res) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
-    setAuthCookie(res, token);
+    setAuthCookie(req, res, token);
 
     res.status(201).json({
       user: buildUserPayload(newUser),
@@ -238,7 +238,7 @@ export const login = async (req, res) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
-    setAuthCookie(res, token);
+    setAuthCookie(req, res, token);
 
     res.json({
       user: buildUserPayload(user),
@@ -249,7 +249,7 @@ export const login = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  clearAuthCookie(res);
+  clearAuthCookie(req, res);
   res.json({ message: 'Вы успешно вышли из системы.' });
 };
 
@@ -267,6 +267,60 @@ export const getProfile = async (req, res) => {
     res.json(buildUserPayload(user));
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения профиля: ' + error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  const { name, phone, address } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Optional phone validation if phone is provided
+    if (phone) {
+      const phoneRegex = /^\+7\s\(\d{3}\)\s\d{3}-\d{2}-\d{2}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ error: 'Неверный формат номера телефона. Используйте шаблон +7 (707) 123-45-67' });
+      }
+
+      // Check if phone is already taken by another user
+      const digits = phone.replace(/[^\d]/g, '');
+      const last10Digits = digits.slice(-10);
+      const otherUsers = await prisma.user.findMany({
+        where: {
+          id: { not: req.user.id },
+          phone: { not: null }
+        },
+        select: { phone: true }
+      });
+      const phoneTaken = otherUsers.some(u => {
+        const uDigits = u.phone.replace(/[^\d]/g, '');
+        return uDigits.length >= 10 && uDigits.slice(-10) === last10Digits;
+      });
+      if (phoneTaken) {
+        return res.status(400).json({ error: 'Пользователь с таким номером телефона уже зарегистрирован' });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name !== undefined ? name : undefined,
+        phone: phone !== undefined ? phone : undefined,
+        address: address !== undefined ? address : undefined,
+      },
+      include: { supplier: true }
+    });
+
+    res.json(buildUserPayload(updatedUser));
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка обновления профиля: ' + error.message });
   }
 };
 

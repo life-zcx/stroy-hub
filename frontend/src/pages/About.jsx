@@ -4,16 +4,16 @@ import { Mail, Phone, Calendar, ShieldCheck, Percent, Zap } from 'lucide-react';
 export default function About() {
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up space-y-16 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
-            {/* Hero Header Banner */}
+      {/* Hero Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        
+
         {/* SVG Construction Crane Background */}
-        <svg 
-          className="absolute right-0 bottom-0 h-[110%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
-          viewBox="0 0 100 100" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className="absolute right-0 bottom-0 h-[110%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block"
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
           strokeWidth="0.8"
         >
           {/* Ground line */}
@@ -38,7 +38,7 @@ export default function About() {
           <line x1="75" y1="25" x2="78" y2="35" />
           <line x1="75" y1="25" x2="78" y2="15" />
           <line x1="75" y1="15" x2="78" y2="25" />
-          
+
           {/* Cabin */}
           <rect x="73" y="10" width="7" height="6" rx="1" fill="currentColor" fillOpacity="0.2" />
 
@@ -138,7 +138,7 @@ export default function About() {
       <div className="space-y-6">
         <h3 className="text-xl font-bold font-outfit text-slate-900">Tormag в цифрах</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
             <div className="space-y-3">
@@ -184,9 +184,9 @@ export default function About() {
       {/* Contact Details Cards */}
       <div className="space-y-6">
         <h3 className="text-xl font-bold font-outfit text-slate-900">Контакты и поддержка</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           <div className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
             <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 flex-shrink-0">
               <Phone className="h-6 w-6" />
@@ -216,7 +216,7 @@ export default function About() {
             </div>
             <div className="space-y-1">
               <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Режим работы</span>
-              <span className="block text-lg font-bold text-slate-950">Пн - Пт: 08:00 - 17:00</span>
+              <span className="block text-lg font-bold text-slate-950">Пн - Пт: 08:00 - 20:00</span>
               <span className="block text-xs text-slate-500">Суббота, Воскресенье — выходные дни</span>
             </div>
           </div>

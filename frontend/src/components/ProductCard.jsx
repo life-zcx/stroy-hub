@@ -7,6 +7,63 @@ import { getPageHref } from '../utils/navigationHelper';
 const formatPrice = (price) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
 
+const QuantityInput = ({ value, onChange }) => {
+  const [localVal, setLocalVal] = useState(value);
+
+  React.useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+    const valStr = e.target.value;
+    if (valStr.length > 5) return;
+    setLocalVal(valStr);
+    const parsed = parseInt(valStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseInt(localVal, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalVal(value);
+      onChange(value);
+    } else {
+      const clamped = Math.min(99999, parsed);
+      setLocalVal(clamped);
+      onChange(clamped);
+    }
+  };
+
+  const inputLength = localVal ? localVal.toString().length : 1;
+
+  return (
+    <>
+      <style>{`
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .no-spinner {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+      <input
+        type="number"
+        min="1"
+        max="99999"
+        value={localVal}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="no-spinner flex-grow text-center text-xs font-black text-slate-850 bg-transparent focus:outline-none font-mono"
+        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+      />
+    </>
+  );
+};
+
 export default function ProductCard({ 
   product, 
   onAddToCart, 
@@ -86,7 +143,7 @@ export default function ProductCard({
           </h3>
 
           {/* Supplier info */}
-          <div className="bg-slate-50 rounded-xl p-2.5 mb-4 space-y-1.5 border border-slate-100 text-[11px] text-slate-600">
+          <div className="bg-slate-50 rounded-xl p-2.5 mb-4 space-y-1.5 border border-slate-100 text-[11px] text-slate-655">
             <div className="flex items-center gap-1.5 leading-tight">
               <ShieldCheck className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
               <span className="truncate font-medium">{product.supplier?.name || 'Официальный склад'}</span>
@@ -130,9 +187,7 @@ export default function ProductCard({
             >
               -
             </button>
-            <span className="flex-grow text-center text-xs font-black text-slate-850">
-              {quantity}
-            </span>
+            <QuantityInput value={quantity} onChange={setQuantity} />
             <button
               type="button"
               onClick={() => setQuantity(q => q + 1)}

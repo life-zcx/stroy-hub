@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  ShoppingCart, Search, Menu, X, Hammer, ShieldCheck, Phone,
-  MapPin, User, ClipboardList, LogOut, ChevronDown, Heart, GitCompare, Tag, Gift, Eye,
+  ShoppingCart, Search, Menu, X, ShieldCheck, Phone,
+  MapPin, User, ChevronDown, Heart, Eye, Gift,
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
@@ -52,6 +52,7 @@ export default function Header({
   categories = [],
   products = [],
   loadSearchSuggestions,
+  bonuses,
 }) {
   const adminUrl = typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -82,7 +83,7 @@ export default function Header({
 
   useEffect(() => {
     const html = document.documentElement;
-    
+
     html.classList.remove(
       'accessibility-active',
       'accessibility-font-md',
@@ -95,13 +96,13 @@ export default function Header({
 
     if (accessibilityActive) {
       html.classList.add('accessibility-active');
-      
+
       if (fontSize === 'md') html.classList.add('accessibility-font-md');
       if (fontSize === 'lg') html.classList.add('accessibility-font-lg');
-      
+
       if (accessibilityTheme === 'bw') html.classList.add('accessibility-theme-bw');
       if (accessibilityTheme === 'yb') html.classList.add('accessibility-theme-yb');
-      
+
       if (fontType === 'dyslexic') html.classList.add('accessibility-dyslexic');
       if (hideImages) html.classList.add('accessibility-no-images');
     }
@@ -131,11 +132,11 @@ export default function Header({
     if (!isAccessibilityModalOpen) return null;
 
     return (
-      <div 
+      <div
         className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in cursor-pointer"
         onClick={() => setIsAccessibilityModalOpen(false)}
       >
-        <div 
+        <div
           className="w-full max-w-md bg-white rounded-[24px] shadow-2xl p-8 relative animate-fade-in-up cursor-default text-slate-800"
           onClick={(e) => e.stopPropagation()}
         >
@@ -175,11 +176,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setFontSize('sm');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    fontSize === 'sm'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${fontSize === 'sm'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Стандарт (А)
                 </button>
@@ -189,11 +189,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setFontSize('md');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    fontSize === 'md'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${fontSize === 'md'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Средний (А+)
                 </button>
@@ -203,11 +202,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setFontSize('lg');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    fontSize === 'lg'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${fontSize === 'lg'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Крупный (А++)
                 </button>
@@ -224,11 +222,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setAccessibilityTheme('default');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    accessibilityTheme === 'default'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${accessibilityTheme === 'default'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Обычная
                 </button>
@@ -238,11 +235,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setAccessibilityTheme('bw');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    accessibilityTheme === 'bw'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${accessibilityTheme === 'bw'
                       ? 'bg-black border-black text-white shadow-sm font-black'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Ч/Б контраст
                 </button>
@@ -252,11 +248,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setAccessibilityTheme('yb');
                   }}
-                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${
-                    accessibilityTheme === 'yb'
+                  className={`py-2 px-1 rounded-xl border text-center transition-all text-xs font-bold ${accessibilityTheme === 'yb'
                       ? 'bg-yellow-300 border-black text-black shadow-sm font-black'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Желто-черная
                 </button>
@@ -273,11 +268,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setFontType('default');
                   }}
-                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
-                    fontType === 'default'
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${fontType === 'default'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Стандартный
                 </button>
@@ -287,11 +281,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setFontType('dyslexic');
                   }}
-                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
-                    fontType === 'dyslexic'
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${fontType === 'dyslexic'
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Без засечек (Arial)
                 </button>
@@ -308,11 +301,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setHideImages(false);
                   }}
-                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
-                    !hideImages
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${!hideImages
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Показывать
                 </button>
@@ -322,11 +314,10 @@ export default function Header({
                     setAccessibilityActive(true);
                     setHideImages(true);
                   }}
-                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
-                    hideImages
+                  className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${hideImages
                       ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
                       : 'bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100 hover:border-slate-200'
-                  }`}
+                    }`}
                 >
                   Скрыть
                 </button>
@@ -429,7 +420,7 @@ export default function Header({
   return (
     <>
       {renderAccessibilityModal()}
-      
+
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-white z-[120] lg:hidden animate-fade-in space-y-4 p-4 overflow-y-auto flex flex-col text-slate-800">
@@ -488,23 +479,23 @@ export default function Header({
                     className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer transition-all group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                       <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                         <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
-                       </div>
-                       <div className="text-left min-w-0">
-                         <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
-                         <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
-                       </div>
-                     </div>
-                     <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
-                       {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
-                     </div>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                        <img src={p.image} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }} />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <h4 className="font-bold text-slate-900 text-[11px] truncate group-hover:text-emerald-600 transition-colors">{p.name}</h4>
+                        <span className="text-[8px] text-slate-400 font-semibold">{categories.find(c => c.slug === p.category)?.name || p.category}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 font-extrabold text-[11px] text-slate-950">
+                      {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(p.price)}
+                    </div>
                   </Link>
                 ))}
               </div>
             )}
           </form>
-          
+
           <div className="flex flex-col gap-1.5 pt-1">
             <button
               type="button"
@@ -534,34 +525,19 @@ export default function Header({
               </Link>
             ))}
             {customer && (
-              <>
-                <Link
-                  href="/orders"
-                  onClick={() => {
-                    onOpenOrders();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'orders'
-                    ? 'bg-emerald-600/10 text-emerald-700'
-                    : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                >
-                  Мои заказы
-                </Link>
-                <Link
-                  href="/cashback"
-                  onClick={() => {
-                    onNavigate('cashback');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
-                    ? 'bg-amber-500/10 text-amber-700'
-                    : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                >
-                  Мой кешбэк
-                </Link>
-              </>
+              <Link
+                href="/cabinet"
+                onClick={() => {
+                  onNavigate('cabinet');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cabinet'
+                  ? 'bg-blue-600/10 text-blue-700'
+                  : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+              >
+                Личный кабинет
+              </Link>
             )}
           </div>
         </div>
@@ -749,7 +725,7 @@ export default function Header({
 
                     <div className="flex flex-col gap-1">
                       <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">Режим работы</span>
-                      <span className="text-slate-900 text-sm font-bold">Пн. – Пт.: с 8:00 до 17:00</span>
+                      <span className="text-slate-900 text-sm font-bold">Пн. – Пт.: с 8:00 до 20:00</span>
                     </div>
 
                     <div className="flex gap-2">
@@ -876,6 +852,20 @@ export default function Header({
 
             {/* Right Action Icons with labels below */}
             <div className="hidden lg:flex items-center gap-7">
+              {/* Cashback Balance */}
+              {!isAuthChecking && customer && bonuses && (
+                <Link
+                  href="/cashback"
+                  onClick={() => onNavigate('cashback')}
+                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
+                >
+                  <Gift className="h-5 w-5 mb-0.5 text-emerald-600 animate-pulse" />
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">
+                    {formatPrice(bonuses.availableBalance ?? 0)}
+                  </span>
+                </Link>
+              )}
+
               {/* Auth / Account */}
               {isAuthChecking ? (
                 <div className="flex flex-col items-center justify-center animate-pulse py-1 min-w-[45px]">
@@ -883,83 +873,27 @@ export default function Header({
                   <div className="h-2.5 w-10 bg-slate-200 rounded" />
                 </div>
               ) : customer ? (
-                <div className="relative user-menu-container">
-                  <button
-                    type="button"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
+                <div className="flex flex-col items-center gap-1">
+                  <Link
+                    href="/cabinet"
+                    onClick={() => onNavigate('cabinet')}
+                    className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cabinet' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
                   >
                     <User className="h-5 w-5 mb-0.5" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide">
                       Профиль
                     </span>
-                  </button>
-
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 animate-fade-in-up">
-                      <div className="px-3 py-2 border-b border-gray-100 mb-2">
-                        <p className="text-xs font-bold text-slate-900 truncate">{customer.name || 'Покупатель'}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Link
-                          href="/orders"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onOpenOrders();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
-                          <span>Мои заказы</span>
-                        </Link>
-                        <Link
-                          href="/cashback"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onNavigate('cashback');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Gift className="h-4.5 w-4.5 text-amber-500" />
-                          <span>Мой кешбэк</span>
-                        </Link>
-                        <Link
-                          href="/my-promotions"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onNavigate('my-promotions');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Tag className="h-4.5 w-4.5 text-emerald-600" />
-                          <span>Мои промокоды</span>
-                        </Link>
-                        {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
-                          <a
-                            href={adminUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                          >
-                            <ShieldCheck className="h-4.5 w-4.5 text-blue-600" />
-                            <span>Кабинет дистрибьютора</span>
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="h-4.5 w-4.5" />
-                          <span>Выйти</span>
-                        </button>
-                      </div>
-                    </div>
+                  </Link>
+                  {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
+                    <a
+                      href={adminUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] font-bold text-blue-500 hover:text-blue-700 hover:underline transition-colors"
+                      title="Кабинет дистрибьютора"
+                    >
+                      Кабинет
+                    </a>
                   )}
                 </div>
               ) : (

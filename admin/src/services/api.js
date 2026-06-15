@@ -22,11 +22,13 @@ export const logout = async () => {
 export const getProfile = async () => {
   const response = await api.get('/auth/me');
   return response.data;
+};export const getUsers = async () => {
+  const response = await api.get('/users');
+  return response.data;
 };
 
-// Users API
-export const getUsers = async () => {
-  const response = await api.get('/users');
+export const getUserPortrait = async (id) => {
+  const response = await api.get(`/users/${id}/portrait`);
   return response.data;
 };
 
@@ -39,7 +41,6 @@ export const updateUser = async (id, userData) => {
   const response = await api.put(`/users/${id}`, userData);
   return response.data;
 };
-
 export const updateUserPassword = async (id, password) => {
   const response = await api.put(`/users/${id}/password`, { password });
   return response.data;
@@ -303,9 +304,13 @@ export const createWarrantyRule = async (ruleData) => {
   const response = await api.post('/warranty-rules', ruleData);
   return response.data;
 };
-
 export const deleteWarrantyRule = async (id) => {
   const response = await api.delete(`/warranty-rules/${id}`);
+  return response.data;
+};
+
+export const adjustUserBonuses = async (userId, amount, description) => {
+  const response = await api.post('/bonuses/admin/adjust', { userId, amount, description });
   return response.data;
 };
 

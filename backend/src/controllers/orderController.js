@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
 import { sendTelegramNotification } from '../utils/telegram.js';
@@ -213,7 +214,9 @@ export const createOrder = async (req, res) => {
           if (!isNaN(numericUseBonuses) && numericUseBonuses > 0) {
             maxBonusToUse = Math.min(availableBalance, numericUseBonuses);
           }
-          bonusDiscount = Math.min(maxBonusToUse, finalTotalAmount);
+          const loyalty = await getUserLoyaltyStatus(parseInt(userId));
+          const maxAllowedBonus = Math.floor(finalTotalAmount * (loyalty.maxBonusPaymentPercent / 100));
+          bonusDiscount = Math.min(maxBonusToUse, maxAllowedBonus);
           finalTotalAmount -= bonusDiscount;
           discountAmount += bonusDiscount;
         }
@@ -263,9 +266,19 @@ export const createOrder = async (req, res) => {
         await createBonusSpent(parseInt(userId), order.id, bonusDiscount, tx);
       }
 
-      // Начисляем кешбек 3% (pending — станет available после выполнения заказа)
-      const earnedAmount = Math.round(finalTotalAmount * 0.03);
-      await createBonusEarned(parseInt(userId), order.id, earnedAmount, null, tx);
+      // Начисляем кешбек динамически на основе уровня лояльности пользователя
+      const loyalty = await getUserLoyaltyStatus(parseInt(userId));
+      let earnedAmount = 0;
+      const discountRatio = subtotalAmount > 0 ? (finalTotalAmount / subtotalAmount) : 0;
+      
+      for (const item of order.items) {
+        const itemPrice = item.price;
+        const rate = itemPrice >= 1000000 ? loyalty.highValueCashback : loyalty.baseCashbackPercent;
+        const itemFinalTotal = item.price * item.quantity * discountRatio;
+        earnedAmount += Math.round(itemFinalTotal * (rate / 100));
+      }
+      
+      await createBonusEarned(parseInt(userId), order.id, earnedAmount, `Кешбек ${loyalty.baseCashbackPercent}% за заказ #${order.id}`, tx);
 
       if (reservedPromotion) {
         await tx.promotion.update({

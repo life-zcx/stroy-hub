@@ -15,6 +15,7 @@ import ReviewPromosPage from './dashboard/pages/ReviewPromosPage';
 import ProductsPage from './dashboard/pages/ProductsPage';
 import SuppliersPage from './dashboard/pages/SuppliersPage';
 import UsersPage from './dashboard/pages/UsersPage';
+import UserPortraitPage from './dashboard/pages/UserPortraitPage';
 import PricingPage from './dashboard/pages/PricingPage';
 import AnalyticsPage from './dashboard/pages/AnalyticsPage';
 import ReviewsPage from './dashboard/pages/ReviewsPage';
@@ -33,7 +34,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users'];
+const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users', 'user-portrait'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -53,6 +54,7 @@ const pageTitles = {
   suppliers: 'Дистрибьюторы',
   users: 'Пользователи системы',
   cashback: 'Управление кешбэком',
+  'user-portrait': 'Портрет пользователя',
 };
 
 function getPageFromHash(hash, allowedPages) {
@@ -354,6 +356,16 @@ export default function Dashboard({ user, onLogout, showToast }) {
             onUpdateUser={handleUpdateUser}
             onUpdateUserPassword={handleUpdateUserPassword}
             onToggleUserBlock={handleToggleUserBlock}
+          />
+        );
+      case 'user-portrait':
+        const hashParts = window.location.hash.split('/');
+        const portraitId = hashParts[1];
+        return isSupplier ? null : (
+          <UserPortraitPage
+            userId={portraitId}
+            onBack={() => handlePageChange('users')}
+            showToast={showToast}
           />
         );
       case 'products':
