@@ -48,9 +48,8 @@ export function StatusTimeline({ order }) {
 
           return (
             <div key={status} className="flex gap-3">
-              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-                isDone ? meta.color : 'border-slate-200 bg-white text-slate-300'
-              }`}>
+              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isDone ? meta.color : 'border-slate-200 bg-white text-slate-300'
+                }`}>
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
@@ -192,8 +191,8 @@ export default function MyOrders({
               const StatusIcon = statusMeta.icon;
 
               return (
-                <Link 
-                  key={order.id} 
+                <Link
+                  key={order.id}
                   href={getPageHref('order-detail', order.id)}
                   onClick={() => onNavigate('order-detail', order.id)}
                   className="grid gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 md:grid-cols-[1fr_160px_130px_260px] md:items-center cursor-pointer hover:bg-slate-50/40 transition-colors block text-slate-800"
@@ -222,8 +221,8 @@ export default function MyOrders({
 
                   <div className="flex justify-start md:justify-end gap-2 flex-wrap">
                     {order.status === 'completed' && (!order.returnRequests || order.returnRequests.length === 0) && (
-                      <Link
-                        href={getPageHref('order-detail', order.id)}
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNavigate('order-detail', order.id);
@@ -231,10 +230,10 @@ export default function MyOrders({
                         className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-rose-700 transition-colors cursor-pointer"
                       >
                         Возврат
-                      </Link>
+                      </button>
                     )}
-                    <Link
-                      href={getPageHref('order-detail', order.id)}
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onNavigate('order-detail', order.id);
@@ -243,7 +242,7 @@ export default function MyOrders({
                     >
                       Подробнее
                       <ChevronRight className="h-4 w-4" />
-                    </Link>
+                    </button>
                   </div>
                 </Link>
               );
