@@ -873,29 +873,16 @@ export default function Header({
                   <div className="h-2.5 w-10 bg-slate-200 rounded" />
                 </div>
               ) : customer ? (
-                <div className="flex flex-col items-center gap-1">
-                  <Link
-                    href="/cabinet"
-                    onClick={() => onNavigate('cabinet')}
-                    className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cabinet' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
-                  >
-                    <User className="h-5 w-5 mb-0.5" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide">
-                      Профиль
-                    </span>
-                  </Link>
-                  {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
-                    <a
-                      href={adminUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[9px] font-bold text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-                      title="Кабинет дистрибьютора"
-                    >
-                      Кабинет
-                    </a>
-                  )}
-                </div>
+                <Link
+                  href="/cabinet"
+                  onClick={() => onNavigate('cabinet')}
+                  className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cabinet' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
+                >
+                  <User className="h-5 w-5 mb-0.5" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide">
+                    Профиль
+                  </span>
+                </Link>
               ) : (
                 <button
                   type="button"

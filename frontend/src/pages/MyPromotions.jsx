@@ -59,25 +59,12 @@ export default function MyPromotions({ customer, onOpenAuth, onNavigate, showToa
 
   return (
     <section className="space-y-6 text-left animate-fade-in-up">
-      {/* Sleek Breadcrumb */}
-      {/* Sleek Breadcrumbs */}
-      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-6">
-        <Link 
-          href={getPageHref('home')}
-          onClick={() => onNavigate?.('home')} 
-          className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
-        >
-          Главная
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-0.5 shrink-0" />
-        <span className="text-slate-900 font-extrabold">Мои промокоды</span>
-      </nav>
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-outfit text-3xl font-black text-slate-950 tracking-tight">Мои промокоды</h1>
-          <p className="text-slate-500 text-xs font-medium mt-1">Ваши персональные промокоды за отзывы о товарах</p>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-left">
+            Ваши персональные промокоды за отзывы о товарах
+          </h3>
         </div>
       </div>
 

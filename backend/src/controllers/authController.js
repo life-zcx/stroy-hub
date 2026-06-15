@@ -271,7 +271,7 @@ export const getProfile = async (req, res) => {
 };
 
 export const updateProfile = async (req, res) => {
-  const { name, phone, address } = req.body;
+  const { name, phone, address, oldPassword, newPassword } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -308,12 +308,28 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    let hashedPassword = undefined;
+    if (newPassword) {
+      if (!oldPassword) {
+        return res.status(400).json({ error: 'Для смены пароля необходимо указать текущий пароль' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Новый пароль должен содержать минимум 6 символов' });
+      }
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Неверный текущий пароль' });
+      }
+      hashedPassword = await bcrypt.hash(newPassword, 10);
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         name: name !== undefined ? name : undefined,
         phone: phone !== undefined ? phone : undefined,
         address: address !== undefined ? address : undefined,
+        password: hashedPassword !== undefined ? hashedPassword : undefined,
       },
       include: { supplier: true }
     });

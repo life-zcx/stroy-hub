@@ -39,6 +39,7 @@ export const updateProfile = async (data) => {
   return response.data;
 };
 
+
 // Products API
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products', { params });

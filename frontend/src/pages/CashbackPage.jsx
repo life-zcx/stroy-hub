@@ -183,60 +183,96 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Column: Cashback Balance & Stats */}
-        <div className="lg:col-span-7 relative rounded-[2rem] overflow-hidden bg-white border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between shadow-sm min-h-[350px]">
-          {/* Background blobs */}
-          <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div 
+          className="lg:col-span-7 relative rounded-[2rem] overflow-hidden bg-[#0b1329] border border-slate-800/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl min-h-[350px] text-white"
+          style={{ backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+        >
+          {/* Blueprint Crane Graphic */}
+          <svg 
+            className="absolute right-0 bottom-0 h-full w-auto text-blue-500/10 opacity-30 select-none pointer-events-none z-0" 
+            viewBox="0 0 200 200" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="0.8"
+          >
+            {/* Crane tower */}
+            <line x1="140" y1="200" x2="140" y2="30" />
+            <line x1="146" y1="200" x2="146" y2="30" />
+            {/* Diagonal trusses for tower */}
+            <line x1="140" y1="180" x2="146" y2="165" />
+            <line x1="146" y1="165" x2="140" y2="150" />
+            <line x1="140" y1="150" x2="146" y2="135" />
+            <line x1="146" y1="135" x2="140" y2="120" />
+            <line x1="140" y1="120" x2="146" y2="105" />
+            <line x1="146" y1="105" x2="140" y2="90" />
+            <line x1="140" y1="90" x2="146" y2="75" />
+            <line x1="146" y1="75" x2="140" y2="60" />
+            <line x1="140" y1="60" x2="146" y2="45" />
+            <line x1="146" y1="45" x2="140" y2="30" />
+            {/* Crane jib (horizontal boom) */}
+            <line x1="30" y1="30" x2="185" y2="30" />
+            <line x1="140" y1="20" x2="140" y2="30" />
+            {/* Jib trusses */}
+            <line x1="140" y1="20" x2="90" y2="30" />
+            <line x1="140" y1="20" x2="175" y2="30" />
+            {/* Counterweight */}
+            <rect x="160" y="30" width="12" height="12" fill="currentColor" fillOpacity="0.1" />
+            {/* Trolley and hook */}
+            <rect x="80" y="30" width="5" height="3" fill="currentColor" />
+            <line x1="82.5" y1="33" x2="82.5" y2="85" />
+            {/* Load hook */}
+            <path d="M80.5,85 C80.5,89 84.5,89 84.5,85" />
+          </svg>
           
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600">
+              <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
                 <Gift className="h-4 w-4" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Баланс кешбэка
               </span>
             </div>
             
             <div className="space-y-1">
-              <h1 className="font-outfit text-5xl font-black text-emerald-600">
+              <h1 className="font-outfit text-5xl font-black text-white tracking-tight">
                 {formatPrice(bonuses?.availableBalance ?? 0)}
               </h1>
               <p className="text-xs font-bold text-slate-400">Доступно для оплаты новых покупок</p>
             </div>
 
             {(bonuses?.pendingBalance ?? 0) > 0 && (
-              <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 text-[11px] font-bold text-amber-600">
+              <div className="inline-flex items-center gap-1.5 bg-blue-500/15 border border-blue-500/25 rounded-xl px-3 py-1.5 text-[11px] font-bold text-blue-300">
                 <Clock className="h-3.5 w-3.5" />
                 +{formatPrice(bonuses.pendingBalance)} ожидает выполнения заказов
               </div>
             )}
-
+ 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-800/80">
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Всего заработано</span>
-                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.totalEarned ?? 0)}</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">Всего заработано</span>
+                <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.totalEarned ?? 0)}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Потрачено</span>
-                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.totalSpent ?? 0)}</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">Потрачено</span>
+                <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.totalSpent ?? 0)}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">В ожидании</span>
-                <span className="text-sm sm:text-base font-black text-slate-800 font-outfit">{formatPrice(bonuses?.pendingBalance ?? 0)}</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">В ожидании</span>
+                <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.pendingBalance ?? 0)}</span>
               </div>
             </div>
           </div>
 
-          <div className="relative z-10 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 mt-6">
-            <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-[280px]">
+          <div className="relative z-10 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-800/80 mt-6">
+            <p className="text-[11px] text-slate-400 font-semibold leading-normal max-w-[280px]">
               Кешбэк {bonuses?.loyalty?.baseCashbackPercent ?? 3}% начисляется с каждого выполненного заказа и списывается при оплате новых.
             </p>
             <Link
               href={getPageHref('cart')}
               onClick={() => onNavigate?.('cart')}
-              className="bg-slate-950 hover:bg-emerald-650 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all active:scale-95 shadow-md text-center inline-block shrink-0"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/10 hover:border-white/20 backdrop-blur-md font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all active:scale-95 text-center inline-block shrink-0 cursor-pointer"
             >
               Перейти в корзину
             </Link>
@@ -245,56 +281,87 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
 
         {/* Right Column: Loyalty Status & Progress */}
         {bonuses?.loyalty && (
-          <div className="lg:col-span-5 relative rounded-[2rem] overflow-hidden bg-white border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between shadow-sm min-h-[350px]">
-            <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+          <div 
+            className="lg:col-span-5 relative rounded-[2rem] overflow-hidden bg-[#0b1329] border border-slate-800/80 p-6 sm:p-8 flex flex-col justify-between shadow-xl min-h-[350px] text-white"
+            style={{ backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+          >
+            {/* Blueprint Building Structure Graphic - Unified blue blueprint style */}
+            <svg 
+              className="absolute right-0 bottom-0 h-full w-auto text-blue-500/10 opacity-40 select-none pointer-events-none z-0" 
+              viewBox="0 0 200 200" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="0.8"
+            >
+              {/* Ground line */}
+              <line x1="20" y1="180" x2="180" y2="180" />
+              {/* Foundation markings */}
+              <line x1="30" y1="185" x2="170" y2="185" strokeDasharray="3,3" />
+              
+              {/* Vertical Columns */}
+              <line x1="50" y1="180" x2="50" y2="70" />
+              <line x1="90" y1="180" x2="90" y2="70" />
+              <line x1="130" y1="180" x2="130" y2="70" />
+                           {/* Roof Truss Structure */}
+              <line x1="50" y1="75" x2="90" y2="45" />
+              <line x1="130" y1="75" x2="90" y2="45" />
+              <line x1="90" y1="75" x2="90" y2="45" />
+              <line x1="70" y1="60" x2="70" y2="75" />
+              <line x1="110" y1="60" x2="110" y2="75" />
+              
+              {/* Dimension / Measurement Lines */}
+              <line x1="35" y1="70" x2="35" y2="180" />
+              <line x1="30" y1="70" x2="40" y2="70" />
+              <line x1="30" y1="180" x2="40" y2="180" />
+              
+              <line x1="50" y1="35" x2="130" y2="35" />
+              <line x1="50" y1="30" x2="50" y2="40" />
+              <line x1="130" y1="30" x2="130" y2="40" />
+            </svg>
+
+            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
             
-            <div className="space-y-6 relative z-10">
+            <div className="space-y-6 relative z-10 font-sans">
               <div className="flex justify-between items-start">
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-450 block">Ваш уровень лояльности</span>
-                  <span className={`inline-block text-[10px] font-black font-outfit uppercase px-3 py-1 rounded-lg ${
+                <div className="space-y-1.5 text-left">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Ваш уровень лояльности</span>
+                  <span className={`inline-block text-[10px] font-bold uppercase px-3 py-1 rounded-lg border tracking-wider ${
                     bonuses.loyalty.level === 'partner' 
-                      ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                      ? 'bg-[#162235] text-[#7ea6e0] border-[#253954]' 
                       : bonuses.loyalty.level === 'resident' 
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                        : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      ? 'bg-[#162235] text-[#7ea6e0] border-[#253954]' 
+                      : 'bg-[#162235] text-[#7ea6e0] border-[#253954]'
                   }`}>
                     {bonuses.loyalty.levelName}
                   </span>
                 </div>
                 <div className="text-right space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-450 block">Покупки за год</span>
-                  <span className="text-sm font-black text-slate-900 font-outfit">{formatPrice(bonuses.loyalty.totalSpentThisYear)}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Покупки за год</span>
+                  <span className="text-sm sm:text-base font-black text-white font-outfit tracking-tight">{formatPrice(bonuses.loyalty.totalSpentThisYear)}</span>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div className="space-y-2 pt-2">
-                <div className="flex justify-between text-xs font-bold text-slate-700">
+              <div className="space-y-2 pt-2 text-left">
+                <div className="flex justify-between text-xs font-bold text-slate-350">
                   {bonuses.loyalty.level === 'partner' ? (
-                    <span className="text-purple-650 flex items-center gap-1">🎉 Максимальный уровень привилегий!</span>
+                    <span className="text-slate-300 flex items-center gap-1.5 font-bold">Вы достигли максимального уровня</span>
                   ) : (
                     <span>До уровня {bonuses.loyalty.nextLevelName}</span>
                   )}
                   {bonuses.loyalty.level !== 'partner' && (
-                    <span className="font-mono text-slate-900 text-xs">
+                    <span className="font-mono text-slate-300 text-xs bg-slate-900/60 px-2 py-0.5 rounded border border-slate-800/80">
                       Осталось: {formatPrice(bonuses.loyalty.neededToNextLevel)}
                     </span>
                   )}
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 border border-slate-200/50 p-0.5">
+                <div className="w-full bg-[#080d1d] rounded-full h-2 border border-[#162235] p-0.5">
                   <div
-                    className={`h-1.5 rounded-full transition-all duration-700 ease-out ${
-                      bonuses.loyalty.level === 'partner' 
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-650' 
-                        : bonuses.loyalty.level === 'resident' 
-                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500' 
-                          : 'bg-gradient-to-r from-emerald-500 to-blue-500'
-                    }`}
+                    className="h-1 rounded-full transition-all duration-700 ease-out bg-blue-500/70"
                     style={{ width: `${bonuses.loyalty.progressPercent}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+                <div className="flex justify-between text-[8px] text-slate-550 font-extrabold uppercase tracking-widest">
                   <span>Участник (0 ₸)</span>
                   <span>Резидент (500к ₸)</span>
                   <span>Партнёр (2м ₸)</span>
@@ -303,18 +370,30 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             </div>
 
             {/* Quick rates summary */}
-            <div className="relative z-10 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center mt-6">
-              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'participant' ? 'bg-emerald-50/40 border-emerald-200 text-emerald-900' : 'bg-slate-50/30 border-slate-100'}`}>
-                <p className="text-[10px] font-black">Участник</p>
-                <p className="text-[11px] font-extrabold mt-0.5">3% / 50%</p>
+            <div className="relative z-10 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center mt-6">
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                bonuses.loyalty.level === 'participant'
+                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
+                  : 'bg-transparent border-[#162235] text-[#556987]'
+              }`}>
+                <p className="text-[9px] font-black uppercase tracking-wider">Участник</p>
+                <p className="text-xs font-black mt-1">3% / 50%</p>
               </div>
-              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'resident' ? 'bg-blue-50/40 border-blue-250 text-blue-900' : 'bg-slate-50/30 border-slate-100'}`}>
-                <p className="text-[10px] font-black">Резидент</p>
-                <p className="text-[11px] font-extrabold mt-0.5">4% / 75%</p>
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                bonuses.loyalty.level === 'resident' 
+                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
+                  : 'bg-transparent border-[#162235] text-[#556987]'
+              }`}>
+                <p className="text-[9px] font-black uppercase tracking-wider">Резидент</p>
+                <p className="text-xs font-black mt-1">4% / 75%</p>
               </div>
-              <div className={`p-2 rounded-xl border ${bonuses.loyalty.level === 'partner' ? 'bg-purple-50/40 border-purple-250 text-purple-900' : 'bg-slate-50/30 border-slate-100'}`}>
-                <p className="text-[10px] font-black">Партнёр</p>
-                <p className="text-[11px] font-extrabold mt-0.5">5% / 100%</p>
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                bonuses.loyalty.level === 'partner' 
+                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
+                  : 'bg-transparent border-[#162235] text-[#556987]'
+              }`}>
+                <p className="text-[9px] font-black uppercase tracking-wider">Партнёр</p>
+                <p className="text-xs font-black mt-1">5% / 100%</p>
               </div>
             </div>
           </div>

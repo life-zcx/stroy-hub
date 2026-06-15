@@ -220,18 +220,6 @@ export default function MyOrders({
                   </div>
 
                   <div className="flex justify-start md:justify-end gap-2 flex-wrap">
-                    {order.status === 'completed' && (!order.returnRequests || order.returnRequests.length === 0) && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigate('order-detail', order.id);
-                        }}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3.5 py-2.5 text-xs font-black uppercase tracking-wider text-rose-700 transition-colors cursor-pointer"
-                      >
-                        Возврат
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={(e) => {

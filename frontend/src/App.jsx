@@ -16,9 +16,7 @@ import Faq from './pages/Faq';
 import Requisites from './pages/Requisites';
 import Partners from './pages/Partners';
 import Promotions from './pages/Promotions';
-import MyOrders from './pages/MyOrders';
 import MyOrderDetails from './pages/MyOrderDetails';
-import MyPromotions from './pages/MyPromotions';
 import CashbackPage from './pages/CashbackPage';
 import TransactionsHistoryPage from './pages/TransactionsHistoryPage';
 import Cabinet from './pages/Cabinet';
@@ -51,6 +49,7 @@ export default function App() {
 
   const { toast, showToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
+  const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
   const catalog = useCatalog(showToast, currentCategorySlug || 'all');
   const auth = useCustomerAuth(showToast);
   const cart = useCart(showToast, auth.customer);
@@ -98,6 +97,10 @@ export default function App() {
       orders: "TORMAG - Мои заказы",
       'my-promotions': "TORMAG - Мои промокоды",
       cashback: "TORMAG - Мой кешбэк",
+      cabinet: "TORMAG - Личный кабинет",
+      'cabinet/orders': "TORMAG - Мои заказы",
+      'cabinet/promotions': "TORMAG - Мои промокоды",
+      'cabinet/cashback': "TORMAG - Мой кешбэк",
       'cashback/history': "TORMAG - История транзакций",
       requisites: "TORMAG - Реквизиты компании",
       faq: "TORMAG - Вопрос-ответ",
@@ -122,6 +125,10 @@ export default function App() {
       promotions: "Акции, распродажи, спецпредложения и действующие промокоды на строительные материалы в TORMAG.",
       favorites: "Ваш список избранных строительных материалов на платформе TORMAG.",
       orders: "Управление и отслеживание статуса ваших заказов на платформе TORMAG.",
+      cabinet: "Личный кабинет покупателя TORMAG. Управление профилем, заказами и бонусами.",
+      'cabinet/orders': "История ваших заказов на платформе TORMAG.",
+      'cabinet/promotions': "Ваши активные промокоды и купоны на скидку в TORMAG.",
+      'cabinet/cashback': "Бонусный баланс и история кешбэка TORMAG.",
       estimate: "Удобная загрузка смет в формате Excel/CSV для автоматического подбора материалов в TORMAG.",
       'cashback/history': "История начисления и списания бонусных баллов кешбэка TORMAG.",
       legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG."
@@ -155,7 +162,22 @@ export default function App() {
       document.head.appendChild(canonicalLink);
     }
     canonicalLink.setAttribute('href', `https://tormag.kz${canonicalPath}`);
-  }, [currentPage, currentProductId, currentCategorySlug]);
+
+    // Dynamic Robots Meta Tag for Private/Cabinet Pages
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (isCabinetPage) {
+      if (!robotsMeta) {
+        robotsMeta = document.createElement('meta');
+        robotsMeta.setAttribute('name', 'robots');
+        document.head.appendChild(robotsMeta);
+      }
+      robotsMeta.setAttribute('content', 'noindex, nofollow');
+    } else {
+      if (robotsMeta) {
+        robotsMeta.remove();
+      }
+    }
+  }, [currentPage, currentProductId, currentCategorySlug, isCabinetPage]);
 
   useEffect(() => {
     setAnalyticsContext({
@@ -208,8 +230,6 @@ export default function App() {
       document.documentElement.style.overflow = '';
     };
   }, [auth.authModalOpen, region.regionModalOpen, isCallbackModalOpen, isMobileMenuOpen]);
-
-  const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
 
   useEffect(() => {
     if ((currentPage === 'orders' || isCabinetPage) && auth.customer) {
@@ -361,30 +381,7 @@ export default function App() {
             initialTab={PATH_TO_CABINET_TAB[currentPage] || 'profile'}
           />
         )}
-        {currentPage === 'orders' && (
-          <MyOrders
-            customer={auth.customer}
-            orders={orders.orders}
-            loading={orders.ordersLoading}
-            hasMore={orders.ordersHasMore}
-            total={orders.ordersTotal}
-            onRefresh={orders.fetchMyOrders}
-            onLoadMore={orders.loadMoreOrders}
-            onOpenAuth={auth.openLoginModal}
-            onNavigate={setCurrentPage}
-            onAddToCart={cart.handleAddToCart}
-            showToast={showToast}
-            bonuses={bonuses}
-          />
-        )}
-        {currentPage === 'my-promotions' && (
-          <MyPromotions
-            customer={auth.customer}
-            onOpenAuth={auth.openLoginModal}
-            onNavigate={setCurrentPage}
-            showToast={showToast}
-          />
-        )}
+
         {currentPage === 'cashback' && (
           <CashbackPage
             customer={auth.customer}

@@ -22,7 +22,20 @@ export const PATH_TO_CABINET_TAB = {
 };
 
 const getInitialPage = () => {
-  const path = window.location.pathname.replace(/^\/|\/$/g, '');
+  let path = window.location.pathname.replace(/^\/|\/$/g, '');
+
+  // Handle redirects for standalone paths to cabinet sub-pages
+  if (path === 'orders') {
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/cabinet/orders');
+    }
+    path = 'cabinet/orders';
+  } else if (path === 'my-promotions') {
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/cabinet/promotions');
+    }
+    path = 'cabinet/promotions';
+  }
 
   // Product page check
   const productMatch = path.match(/^product\/(\d+)$/);
@@ -64,25 +77,32 @@ export default function useNavigation() {
   const [navigation, setNavigation] = useState(getInitialPage);
 
   const setCurrentPage = (page, productId = null, categorySlug = null) => {
-    const orderId = page === 'order-detail' ? productId : null;
+    let targetPage = page;
+    if (page === 'orders') {
+      targetPage = 'cabinet/orders';
+    } else if (page === 'my-promotions') {
+      targetPage = 'cabinet/promotions';
+    }
+
+    const orderId = targetPage === 'order-detail' ? productId : null;
     setNavigation({
-      page,
-      productId: (page === 'product' || page === 'promotions') ? productId : null,
+      page: targetPage,
+      productId: (targetPage === 'product' || targetPage === 'promotions') ? productId : null,
       categorySlug,
       orderId,
     });
 
     let path = '/';
-    if (page === 'product') {
+    if (targetPage === 'product') {
       path = `/product/${productId}`;
-    } else if (page === 'order-detail') {
+    } else if (targetPage === 'order-detail') {
       path = `/orders/${productId}`;
-    } else if (page === 'promotions' && productId) {
+    } else if (targetPage === 'promotions' && productId) {
       path = `/promotions/${productId}`;
-    } else if (page === 'catalog') {
+    } else if (targetPage === 'catalog') {
       path = categorySlug && categorySlug !== 'all' ? `/catalog/${categorySlug}` : '/catalog';
-    } else if (page !== 'home') {
-      path = `/${page}`;
+    } else if (targetPage !== 'home') {
+      path = `/${targetPage}`;
     }
 
     window.history.pushState({}, '', path);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, ClipboardList, Tag, LogOut, Edit3, Check, X,
-  Phone, Mail, MapPin, RefreshCw, ShieldCheck,
+  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock,
 } from 'lucide-react';
-import { updateProfile } from '../services/api';
+import { updateProfile, forgotPassword, resetPassword } from '../services/api';
 import { CABINET_TAB_PATHS } from '../hooks/useNavigation';
 import MyOrders from './MyOrders';
 import MyPromotions from './MyPromotions';
@@ -17,6 +17,16 @@ function ProfileTab({ customer, showToast, onCustomerUpdate }) {
     phone:   customer?.phone   || '',
     address: customer?.address || '',
   });
+
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [pwdForm, setPwdForm] = useState({
+    code: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [savingPwd, setSavingPwd] = useState(false);
 
   useEffect(() => {
     setForm({ name: customer?.name||'', phone: customer?.phone||'', address: customer?.address||'' });
@@ -42,6 +52,56 @@ function ProfileTab({ customer, showToast, onCustomerUpdate }) {
     setEditing(false);
   };
 
+  const handleSendCode = async () => {
+    if (!customer?.email) return;
+    setSendingCode(true);
+    try {
+      await forgotPassword(customer.email);
+      setCodeSent(true);
+      showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
+    } catch (err) {
+      const errMsg = err.response?.data?.error || 'Не удалось отправить код подтверждения';
+      showToast?.(`❌ ${errMsg}`);
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (!pwdForm.code) {
+      showToast?.('❌ Укажите код из письма');
+      return;
+    }
+    if (pwdForm.newPassword.length < 6) {
+      showToast?.('❌ Новый пароль должен содержать не менее 6 символов');
+      return;
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      showToast?.('❌ Пароли не совпадают');
+      return;
+    }
+
+    setSavingPwd(true);
+    try {
+      await resetPassword(customer.email, pwdForm.code, pwdForm.newPassword);
+      showToast?.('✅ Пароль успешно изменён');
+      setPwdForm({ code: '', newPassword: '', confirmPassword: '' });
+      setCodeSent(false);
+      setChangingPassword(false);
+    } catch (err) {
+      const errMsg = err.response?.data?.error || 'Не удалось изменить пароль';
+      showToast?.(`❌ ${errMsg}`);
+    } finally {
+      setSavingPwd(false);
+    }
+  };
+
+  const handleCancelPassword = () => {
+    setPwdForm({ code: '', newPassword: '', confirmPassword: '' });
+    setCodeSent(false);
+    setChangingPassword(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header card */}
@@ -54,10 +114,27 @@ function ProfileTab({ customer, showToast, onCustomerUpdate }) {
             <h2 className="text-xl font-black text-slate-900 truncate">{customer?.name || 'Покупатель'}</h2>
             <p className="text-sm text-slate-500 font-medium mt-0.5">{customer?.email}</p>
             {customer?.role && customer.role !== 'CUSTOMER' && (
-              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                <ShieldCheck className="h-3 w-3" />
-                {customer.role}
-              </span>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                  <ShieldCheck className="h-3 w-3" />
+                  {customer.role}
+                </span>
+                {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
+                  <a
+                    href={
+                      typeof window !== 'undefined' &&
+                      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                        ? 'http://localhost:3001'
+                        : 'https://cabinet.tormag.kz'
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-full transition-all"
+                  >
+                    Перейти в кабинет
+                  </a>
+                )}
+              </div>
             )}
           </div>
           {!editing && (
@@ -143,6 +220,118 @@ function ProfileTab({ customer, showToast, onCustomerUpdate }) {
               <X className="h-4 w-4" />
               Отмена
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Change Password Card */}
+      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 shrink-0">
+              <Lock className="h-5 w-5 text-slate-500" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-black text-slate-900">Безопасность</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Смена пароля с подтверждением через email</p>
+            </div>
+          </div>
+          {!changingPassword && (
+            <button
+              type="button"
+              onClick={() => setChangingPassword(true)}
+              className="flex items-center gap-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200/70 hover:border-blue-200 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Изменить пароль
+            </button>
+          )}
+        </div>
+
+        {changingPassword && (
+          <div className="space-y-4 pt-4 border-t border-slate-100 text-left">
+            {!codeSent ? (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  Для смены пароля мы отправим одноразовый код подтверждения на ваш email: <strong className="text-slate-900">{customer?.email}</strong>
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendCode}
+                  disabled={sendingCode}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                >
+                  {sendingCode ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {sendingCode ? 'Отправка...' : 'Получить код на email'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Code field */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Код подтверждения из письма</label>
+                  <input
+                    type="text"
+                    value={pwdForm.code}
+                    onChange={e => setPwdForm(p => ({ ...p, code: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    placeholder="Введите 6-значный код"
+                  />
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Новый пароль</label>
+                  <input
+                    type="password"
+                    value={pwdForm.newPassword}
+                    onChange={e => setPwdForm(p => ({ ...p, newPassword: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    placeholder="Минимум 6 символов"
+                  />
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Подтверждение нового пароля</label>
+                  <input
+                    type="password"
+                    value={pwdForm.confirmPassword}
+                    onChange={e => setPwdForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    placeholder="Повторите новый пароль"
+                  />
+                </div>
+
+                {/* Password Action Buttons */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSavePassword}
+                    disabled={savingPwd}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                  >
+                    {savingPwd ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    {savingPwd ? 'Сохранение...' : 'Обновить пароль'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelPassword}
+                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={sendingCode}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline bg-transparent border-0 p-0 ml-auto cursor-pointer"
+                  >
+                    Отправить код повторно
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
