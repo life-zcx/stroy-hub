@@ -857,10 +857,10 @@ export default function Header({
                 <Link
                   href="/cashback"
                   onClick={() => onNavigate('cashback')}
-                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
+                  className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cashback' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
                 >
-                  <Gift className="h-5 w-5 mb-0.5 text-emerald-600 animate-pulse" />
-                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">
+                  <Gift className="h-5 w-5 mb-0.5" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide">
                     {formatPrice(bonuses.availableBalance ?? 0)}
                   </span>
                 </Link>

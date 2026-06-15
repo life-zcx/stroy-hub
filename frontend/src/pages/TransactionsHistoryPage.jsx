@@ -194,7 +194,13 @@ export default function TransactionsHistoryPage({ customer, bonuses, onNavigate,
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-800 truncate">
-                      {tx.description || meta.label}
+                      {(tx.description || meta.label)
+                        .replace(/\s*\(Участник\)/g, '')
+                        .replace(/\s*\(Резидент\)/g, '')
+                        .replace(/\s*\(Партнёр\)/g, '')
+                        .replace(/\s*\(Партнер\)/g, '')
+                        .replace(/Кешбек \d+%/g, 'Начисление кешбэка')
+                        .replace(/Кешбэк \d+%/g, 'Начисление кешбэка')}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
                       <p className="text-[11px] text-slate-400 font-medium">
@@ -212,7 +218,7 @@ export default function TransactionsHistoryPage({ customer, bonuses, onNavigate,
                           Заказ #{tx.orderId}
                         </Link>
                       )}
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${meta.bgColor} ${meta.iconColor}`}>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-slate-200/60 bg-slate-50 text-slate-500">
                         {meta.label}
                       </span>
                     </div>
@@ -220,6 +226,7 @@ export default function TransactionsHistoryPage({ customer, bonuses, onNavigate,
                   <span className={`font-black text-base shrink-0 ${meta.amountColor}`}>
                     {meta.sign}{formatPrice(tx.amount)}
                   </span>
+                  <ChevronRight className="h-4 w-4 text-slate-350 shrink-0 ml-1" />
                 </div>
               );
             })}

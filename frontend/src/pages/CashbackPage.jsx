@@ -229,7 +229,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
               <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
                 <Gift className="h-4 w-4" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-200/90">
                 Баланс кешбэка
               </span>
             </div>
@@ -238,7 +238,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
               <h1 className="font-outfit text-5xl font-black text-white tracking-tight">
                 {formatPrice(bonuses?.availableBalance ?? 0)}
               </h1>
-              <p className="text-xs font-bold text-slate-400">Доступно для оплаты новых покупок</p>
+              <p className="text-xs font-bold text-slate-200/80">Доступно для оплаты новых покупок</p>
             </div>
 
             {(bonuses?.pendingBalance ?? 0) > 0 && (
@@ -251,30 +251,30 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-800/80">
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">Всего заработано</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Всего заработано</span>
                 <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.totalEarned ?? 0)}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">Потрачено</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Потрачено</span>
                 <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.totalSpent ?? 0)}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">В ожидании</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">В ожидании</span>
                 <span className="text-sm sm:text-base font-black text-white font-outfit">{formatPrice(bonuses?.pendingBalance ?? 0)}</span>
               </div>
             </div>
           </div>
 
           <div className="relative z-10 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-800/80 mt-6">
-            <p className="text-[11px] text-slate-400 font-semibold leading-normal max-w-[280px]">
+            <p className="text-[11px] text-slate-200/80 font-semibold leading-normal max-w-[280px]">
               Кешбэк {bonuses?.loyalty?.baseCashbackPercent ?? 3}% начисляется с каждого выполненного заказа и списывается при оплате новых.
             </p>
             <Link
-              href={getPageHref('cart')}
-              onClick={() => onNavigate?.('cart')}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/10 hover:border-white/20 backdrop-blur-md font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all active:scale-95 text-center inline-block shrink-0 cursor-pointer"
+              href={getPageHref('catalog')}
+              onClick={() => onNavigate?.('catalog')}
+              className="bg-blue-600 hover:bg-blue-500 text-white border-0 font-black text-xs uppercase tracking-wider px-6 py-3 rounded-xl transition-all active:scale-95 text-center inline-block shrink-0 cursor-pointer"
             >
-              Перейти в корзину
+              Перейти в каталог
             </Link>
           </div>
         </div>
@@ -287,7 +287,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
           >
             {/* Blueprint Building Structure Graphic - Unified blue blueprint style */}
             <svg 
-              className="absolute right-0 bottom-0 h-full w-auto text-blue-500/10 opacity-40 select-none pointer-events-none z-0" 
+              className="absolute right-0 bottom-0 h-full w-auto text-blue-500/10 opacity-20 select-none pointer-events-none z-0" 
               viewBox="0 0 200 200" 
               fill="none" 
               stroke="currentColor" 
@@ -324,7 +324,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             <div className="space-y-6 relative z-10 font-sans">
               <div className="flex justify-between items-start">
                 <div className="space-y-1.5 text-left">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Ваш уровень лояльности</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-200/90 block">Ваш уровень лояльности</span>
                   <span className={`inline-block text-[10px] font-bold uppercase px-3 py-1 rounded-lg border tracking-wider ${
                     bonuses.loyalty.level === 'partner' 
                       ? 'bg-[#162235] text-[#7ea6e0] border-[#253954]' 
@@ -336,21 +336,21 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                   </span>
                 </div>
                 <div className="text-right space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Покупки за год</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-200/90 block">Покупки за год</span>
                   <span className="text-sm sm:text-base font-black text-white font-outfit tracking-tight">{formatPrice(bonuses.loyalty.totalSpentThisYear)}</span>
                 </div>
               </div>
 
               {/* Progress bar */}
               <div className="space-y-2 pt-2 text-left">
-                <div className="flex justify-between text-xs font-bold text-slate-350">
+                <div className="flex justify-between text-xs font-bold text-slate-200/80">
                   {bonuses.loyalty.level === 'partner' ? (
-                    <span className="text-slate-300 flex items-center gap-1.5 font-bold">Вы достигли максимального уровня</span>
+                    <span className="text-slate-200 flex items-center gap-1.5 font-bold">Вы достигли максимального уровня</span>
                   ) : (
                     <span>До уровня {bonuses.loyalty.nextLevelName}</span>
                   )}
                   {bonuses.loyalty.level !== 'partner' && (
-                    <span className="font-mono text-slate-300 text-xs bg-slate-900/60 px-2 py-0.5 rounded border border-slate-800/80">
+                    <span className="font-mono text-slate-350 text-xs bg-slate-900/60 px-2 py-0.5 rounded border border-slate-800/80">
                       Осталось: {formatPrice(bonuses.loyalty.neededToNextLevel)}
                     </span>
                   )}
@@ -361,7 +361,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                     style={{ width: `${bonuses.loyalty.progressPercent}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[8px] text-slate-550 font-extrabold uppercase tracking-widest">
+                <div className="flex justify-between text-[8px] text-slate-400 font-extrabold uppercase tracking-widest">
                   <span>Участник (0 ₸)</span>
                   <span>Резидент (500к ₸)</span>
                   <span>Партнёр (2м ₸)</span>
@@ -372,25 +372,25 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
             {/* Quick rates summary */}
             <div className="relative z-10 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center mt-6">
               <div className={`p-2.5 rounded-xl border transition-all ${
-                bonuses.loyalty.level === 'participant'
-                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
-                  : 'bg-transparent border-[#162235] text-[#556987]'
+                bonuses.loyalty.level === 'participant' || bonuses.loyalty.level === 'member'
+                  ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
+                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Участник</p>
                 <p className="text-xs font-black mt-1">3% / 50%</p>
               </div>
               <div className={`p-2.5 rounded-xl border transition-all ${
                 bonuses.loyalty.level === 'resident' 
-                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
-                  : 'bg-transparent border-[#162235] text-[#556987]'
+                  ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
+                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Резидент</p>
                 <p className="text-xs font-black mt-1">4% / 75%</p>
               </div>
               <div className={`p-2.5 rounded-xl border transition-all ${
                 bonuses.loyalty.level === 'partner' 
-                  ? 'bg-[#1a2638] border-[#2b3c54] text-white font-bold shadow-none' 
-                  : 'bg-transparent border-[#162235] text-[#556987]'
+                  ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
+                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Партнёр</p>
                 <p className="text-xs font-black mt-1">5% / 100%</p>
@@ -457,7 +457,13 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-800 truncate">
-                      {tx.description || meta.label}
+                      {(tx.description || meta.label)
+                        .replace(/\s*\(Участник\)/g, '')
+                        .replace(/\s*\(Резидент\)/g, '')
+                        .replace(/\s*\(Партнёр\)/g, '')
+                        .replace(/\s*\(Партнер\)/g, '')
+                        .replace(/Кешбек \d+%/g, 'Начисление кешбэка')
+                        .replace(/Кешбэк \d+%/g, 'Начисление кешбэка')}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[11px] text-slate-400">
@@ -475,14 +481,15 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                           Заказ #{tx.orderId}
                         </Link>
                       )}
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${meta.bgColor} ${meta.iconColor}`}>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-slate-200/60 bg-slate-50 text-slate-500">
                         {meta.label}
                       </span>
                     </div>
                   </div>
-                  <span className={`font-black text-base shrink-0 ${meta.amountColor}`}>
+                  <span className={`font-black text-base sm:text-[17px] shrink-0 ${meta.amountColor}`}>
                     {meta.sign}{formatPrice(tx.amount)}
                   </span>
+                  <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 ml-1" />
                 </div>
               );
             })}

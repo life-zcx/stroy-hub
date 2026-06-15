@@ -278,7 +278,7 @@ export const createOrder = async (req, res) => {
         earnedAmount += Math.round(itemFinalTotal * (rate / 100));
       }
       
-      await createBonusEarned(parseInt(userId), order.id, earnedAmount, `Кешбек ${loyalty.baseCashbackPercent}% за заказ #${order.id}`, tx);
+      await createBonusEarned(parseInt(userId), order.id, earnedAmount, `Начисление кешбэка за заказ #${order.id}`, tx);
 
       if (reservedPromotion) {
         await tx.promotion.update({

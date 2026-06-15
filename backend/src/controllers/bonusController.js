@@ -48,7 +48,7 @@ export async function createBonusEarned(userId, orderId, amount, description, tx
       type: 'earned',
       status: 'pending',
       amount: Math.round(amount),
-      description: description || `Кешбек 3% за заказ #${orderId}`,
+      description: description || `Начисление кешбэка за заказ #${orderId}`,
     },
   });
 }
