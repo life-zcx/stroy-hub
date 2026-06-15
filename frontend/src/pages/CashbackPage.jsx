@@ -374,7 +374,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
               <div className={`p-2.5 rounded-xl border transition-all ${
                 bonuses.loyalty.level === 'participant' || bonuses.loyalty.level === 'member'
                   ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
-                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
+                  : 'bg-slate-950/20 border-slate-800/60 text-slate-400/80'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Участник</p>
                 <p className="text-xs font-black mt-1">3% / 50%</p>
@@ -382,7 +382,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
               <div className={`p-2.5 rounded-xl border transition-all ${
                 bonuses.loyalty.level === 'resident' 
                   ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
-                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
+                  : 'bg-slate-950/20 border-slate-800/60 text-slate-400/80'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Резидент</p>
                 <p className="text-xs font-black mt-1">4% / 75%</p>
@@ -390,7 +390,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
               <div className={`p-2.5 rounded-xl border transition-all ${
                 bonuses.loyalty.level === 'partner' 
                   ? 'bg-blue-500/15 border-blue-500/35 text-blue-300 font-bold scale-[1.03] shadow-md' 
-                  : 'bg-transparent border-slate-800/40 text-slate-500/40 opacity-40'
+                  : 'bg-slate-950/20 border-slate-800/60 text-slate-400/80'
               }`}>
                 <p className="text-[9px] font-black uppercase tracking-wider">Партнёр</p>
                 <p className="text-xs font-black mt-1">5% / 100%</p>
