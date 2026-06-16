@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ShoppingCart, Search, Menu, X, ShieldCheck, Phone,
-  MapPin, User, ChevronDown, Heart, Eye, Gift,
+  MapPin, User, ChevronDown, Heart, Eye, Gift, ClipboardList, Tag, LogOut, Hammer,
 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { trackEvent } from '../utils/analytics';
@@ -525,19 +525,40 @@ export default function Header({
               </Link>
             ))}
             {customer && (
-              <Link
-                href="/cabinet"
-                onClick={() => {
-                  onNavigate('cabinet');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cabinet'
-                  ? 'bg-blue-600/10 text-blue-700'
-                  : 'text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                Личный кабинет
-              </Link>
+              <>
+                <Link
+                  href="/cabinet"
+                  onClick={() => {
+                    onNavigate('cabinet');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cabinet'
+                    ? 'bg-blue-600/10 text-blue-700'
+                    : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                >
+                  Личный кабинет
+                </Link>
+                {bonuses && (
+                  <Link
+                    href="/cashback"
+                    onClick={() => {
+                      onNavigate('cashback');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
+                      ? 'bg-emerald-600/10 text-emerald-700'
+                      : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                  >
+                    <span>Мой кешбэк</span>
+                    <span className="text-emerald-700 font-extrabold flex items-center gap-1 shrink-0 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                      <Gift className="h-3.5 w-3.5" />
+                      {formatPrice(bonuses.availableBalance ?? 0)}
+                    </span>
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1008,81 +1029,16 @@ export default function Header({
                   <div className="h-5 w-5 bg-slate-200 rounded-full" />
                 </div>
               ) : customer ? (
-                <div className="relative user-menu-container">
-                  <button
-                    type="button"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
-                  >
-                    <User className="h-5 w-5" />
-                  </button>
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 animate-fade-in-up">
-                      <div className="px-3 py-2 border-b border-gray-100 mb-2">
-                        <p className="text-xs font-bold text-slate-900 truncate">{customer.name || 'Покупатель'}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{customer.email}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onOpenOrders();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <ClipboardList className="h-4.5 w-4.5 text-blue-600" />
-                          <span>Мои заказы</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onNavigate('cashback');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Gift className="h-4.5 w-4.5 text-amber-500" />
-                          <span>Мой кешбэк</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onNavigate('my-promotions');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Tag className="h-4.5 w-4.5 text-emerald-600" />
-                          <span>Мои промокоды</span>
-                        </button>
-                        {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
-                          <a
-                            href={adminUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                          >
-                            <ShieldCheck className="h-4.5 w-4.5 text-blue-600" />
-                            <span>Кабинет дистрибьютора</span>
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="h-4.5 w-4.5" />
-                          <span>Выйти</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href={getPageHref('cabinet')}
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onNavigate?.('cabinet');
+                  }}
+                  className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
+                >
+                  <User className="h-5 w-5" />
+                </Link>
               ) : (
                 <button
                   type="button"

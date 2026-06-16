@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, ClipboardList, Tag, LogOut, Edit3, Check, X,
-  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock,
+  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift,
 } from 'lucide-react';
 import { updateProfile, forgotPassword, resetPassword } from '../services/api';
 import { CABINET_TAB_PATHS } from '../hooks/useNavigation';
 import MyOrders from './MyOrders';
 import MyPromotions from './MyPromotions';
+import { formatPrice } from '../utils/formatPrice';
 
 // ─── Profile edit tab ─────────────────────────────────────────────────────────
-function ProfileTab({ customer, showToast, onCustomerUpdate }) {
+function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -105,48 +106,62 @@ function ProfileTab({ customer, showToast, onCustomerUpdate }) {
   return (
     <div className="space-y-6">
       {/* Header card */}
-      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm">
-        <div className="flex items-center gap-5">
-          <div className="p-4 rounded-2xl bg-slate-100 border border-slate-200 shrink-0">
-            <User className="h-8 w-8 text-slate-500" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xl font-black text-slate-900 truncate">{customer?.name || 'Покупатель'}</h2>
-            <p className="text-sm text-slate-500 font-medium mt-0.5">{customer?.email}</p>
-            {customer?.role && customer.role !== 'CUSTOMER' && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                  <ShieldCheck className="h-3 w-3" />
-                  {customer.role}
-                </span>
-                {(customer.role === 'SUPPLIER' || customer.role === 'ADMIN') && (
-                  <a
-                    href={
-                      typeof window !== 'undefined' &&
-                      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                        ? 'http://localhost:3001'
-                        : 'https://cabinet.tormag.kz'
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-full transition-all"
-                  >
-                    Перейти в кабинет
-                  </a>
+      <div className="bg-white rounded-3xl border border-slate-200/70 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          {/* Left info block */}
+          <div className="flex items-center gap-4">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 shrink-0">
+              <User className="h-7 w-7 text-slate-500" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate leading-tight">{customer?.name || 'Покупатель'}</h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-semibold truncate mt-0.5">{customer?.email}</p>
+              
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {customer?.role && customer.role !== 'CUSTOMER' && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 whitespace-nowrap">
+                    <ShieldCheck className="h-3 w-3" />
+                    {customer.role === 'ADMIN' ? 'Админ' : customer.role}
+                  </span>
+                )}
+                {bonuses && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 whitespace-nowrap">
+                    <Gift className="h-3 w-3 animate-pulse" />
+                    {formatPrice(bonuses.availableBalance ?? 0)}
+                  </span>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Right actions block */}
+          <div className="flex flex-row sm:flex-col items-stretch sm:items-end gap-2 border-t border-slate-100/70 pt-4 sm:border-0 sm:pt-0">
+            {(customer?.role === 'SUPPLIER' || customer?.role === 'ADMIN') && (
+              <a
+                href={
+                  typeof window !== 'undefined' &&
+                  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:3001'
+                    : 'https://cabinet.tormag.kz'
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none justify-center inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-100 whitespace-nowrap text-center cursor-pointer"
+              >
+                Панель управления
+              </a>
+            )}
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-slate-400" />
+                Редактировать
+              </button>
             )}
           </div>
-          {!editing && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200/70 hover:border-blue-200 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-              Редактировать
-            </button>
-          )}
         </div>
       </div>
 
@@ -432,6 +447,7 @@ export default function Cabinet({
           customer={customer}
           showToast={showToast}
           onCustomerUpdate={onCustomerUpdate}
+          bonuses={bonuses}
         />
       )}
 

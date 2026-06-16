@@ -125,6 +125,31 @@ export default function Home({
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
+  // Touch Swipe support for mobile
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
+  };
+
   useEffect(() => {
     // Set descriptive title and meta description for SEO
     const prevTitle = document.title;
@@ -197,7 +222,12 @@ export default function Home({
     <div className="space-y-20 animate-fade-in-up font-sans text-slate-800">
 
       {/* 🚀 ULTRA-MINIMALIST LIGHT HERO CAROUSEL */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-slate-50/50 via-white to-white border border-slate-200/40 px-5 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-10 md:py-12 group/hero h-[510px] sm:h-[460px] lg:h-[480px] flex items-center">
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-slate-50/50 via-white to-white border border-slate-200/40 px-5 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-10 md:py-12 group/hero h-[510px] sm:h-[460px] lg:h-[480px] flex items-center"
+      >
         {/* Soft, beautiful ambient glowing spheres (SaaS style) */}
         <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0"></div>
         <div className="absolute top-10 -right-40 w-[600px] h-[600px] rounded-full bg-blue-600/5 blur-[150px] pointer-events-none z-0"></div>
@@ -256,7 +286,7 @@ export default function Home({
                   <div className="space-y-1">
                     <h4 className="font-extrabold text-slate-900 text-base font-outfit">Цены дистрибьюторов</h4>
                     <p className="text-slate-555 text-xs leading-relaxed font-semibold">
-                      Прямые поставки от officialных дистрибьюторов без розничных наценок
+                      Прямые поставки от официальных дистрибьюторов без розничных наценок
                     </p>
                   </div>
                 </div>
