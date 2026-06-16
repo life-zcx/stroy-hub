@@ -14,8 +14,8 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name:    customer?.name    || '',
-    phone:   customer?.phone   || '',
+    name: customer?.name || '',
+    phone: customer?.phone || '',
     address: customer?.address || '',
   });
 
@@ -30,7 +30,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   const [savingPwd, setSavingPwd] = useState(false);
 
   useEffect(() => {
-    setForm({ name: customer?.name||'', phone: customer?.phone||'', address: customer?.address||'' });
+    setForm({ name: customer?.name || '', phone: customer?.phone || '', address: customer?.address || '' });
   }, [customer]);
 
   const handleSave = async () => {
@@ -49,7 +49,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   };
 
   const handleCancel = () => {
-    setForm({ name: customer?.name||'', phone: customer?.phone||'', address: customer?.address||'' });
+    setForm({ name: customer?.name || '', phone: customer?.phone || '', address: customer?.address || '' });
     setEditing(false);
   };
 
@@ -116,7 +116,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
             <div className="min-w-0">
               <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate leading-tight">{customer?.name || 'Покупатель'}</h2>
               <p className="text-xs sm:text-sm text-slate-500 font-semibold truncate mt-0.5">{customer?.email}</p>
-              
+
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 {customer?.role && customer.role !== 'CUSTOMER' && (
                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 whitespace-nowrap">
@@ -140,7 +140,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
               <a
                 href={
                   typeof window !== 'undefined' &&
-                  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                     ? 'http://localhost:3001'
                     : 'https://cabinet.tormag.kz'
                 }
@@ -248,7 +248,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
             </div>
             <div className="text-left">
               <h3 className="text-sm font-black text-slate-900">Безопасность</h3>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Смена пароля с подтверждением через email</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Смена пароля (требуется код подтверждения)</p>
             </div>
           </div>
           {!changingPassword && (
@@ -269,15 +269,25 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                 <p className="text-sm text-slate-600">
                   Для смены пароля мы отправим одноразовый код подтверждения на ваш email: <strong className="text-slate-900">{customer?.email}</strong>
                 </p>
-                <button
-                  type="button"
-                  onClick={handleSendCode}
-                  disabled={sendingCode}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
-                >
-                  {sendingCode ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  {sendingCode ? 'Отправка...' : 'Получить код на email'}
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={sendingCode}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                  >
+                    {sendingCode ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    {sendingCode ? 'Отправка...' : 'Получить код на email'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelPassword}
+                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                    Отмена
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -356,9 +366,9 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'profile',    label: 'Профиль',    icon: User },
-  { id: 'orders',     label: 'Мои заказы', icon: ClipboardList },
-  { id: 'promotions', label: 'Промокоды',  icon: Tag },
+  { id: 'profile', label: 'Профиль', icon: User },
+  { id: 'orders', label: 'Заказы', icon: ClipboardList },
+  { id: 'promotions', label: 'Промокоды', icon: Tag },
 ];
 
 // ─── Cabinet ──────────────────────────────────────────────────────────────────
@@ -412,30 +422,38 @@ export default function Cabinet({
   return (
     <section className="space-y-6 pb-10">
       {/* Page header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 font-outfit">Личный кабинет</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Управляйте профилем, заказами и бонусами</p>
+      <div className="flex flex-row items-center justify-between gap-4 border-b border-slate-100 pb-5">
+        <div className="text-left min-w-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-outfit tracking-tight truncate">Личный кабинет</h1>
+          <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">Управляйте профилем, заказами и бонусами</p>
         </div>
-        <button type="button" onClick={handleLogout}
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/70 px-4 py-2.5 rounded-xl transition-all">
-          <LogOut className="h-4 w-4" />
-          Выйти
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="group flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:text-rose-600 bg-slate-50 hover:bg-rose-50/50 border border-slate-250 hover:border-rose-200/80 px-3 py-2 sm:px-4 sm:py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow shrink-0"
+        >
+          <LogOut className="h-3.5 w-3.5 text-slate-400 group-hover:text-rose-500 transition-colors" />
+          <span>Выйти</span>
         </button>
       </div>
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-white border border-slate-200/70 rounded-2xl p-1.5 shadow-sm overflow-x-auto">
+      <div className="grid grid-cols-3 gap-1 bg-slate-50/50 border border-slate-200/60 rounded-xl p-1 shadow-sm">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
-            <button key={tab.id} type="button" onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all ${
-                isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-              }`}>
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center justify-center gap-1 py-2 sm:py-2.5 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${isActive
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-800'
+                }`}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{tab.label}</span>
             </button>
           );
         })}
