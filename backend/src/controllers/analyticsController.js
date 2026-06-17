@@ -106,25 +106,97 @@ function getConversionPercent(nextValue, prevValue) {
 }
 
 export const createPageView = async (req, res) => {
-  const { path } = req.body;
+  const { path, title, referrer, sessionId } = req.body;
 
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'path обязателен' });
   }
 
-  // Internal page view analytics writing is disabled.
-  return res.status(201).json({ ok: true });
+  try {
+    const ip = getClientIp(req);
+    const userAgent = truncate(req.headers['user-agent'], MAX_USER_AGENT_LENGTH);
+    const userId = getUserIdFromToken(req);
+    const region = truncate(req.headers['cf-ipcity'] || 'Almaty', MAX_LOCATION_LENGTH);
+
+    await prisma.pageView.create({
+      data: {
+        path: truncate(path, MAX_PATH_LENGTH),
+        title: title ? truncate(title, MAX_TITLE_LENGTH) : null,
+        referrer: referrer ? truncate(referrer, MAX_REFERRER_LENGTH) : null,
+        userAgent,
+        ip,
+        sessionId: sessionId ? truncate(sessionId, MAX_SESSION_ID_LENGTH) : null,
+        region,
+        userId,
+      },
+    });
+
+    if (userId && sessionId) {
+      Promise.all([
+        prisma.analyticsEvent.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId }
+        }),
+        prisma.pageView.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId }
+        })
+      ]).catch(err => console.error('Error retroactively linking session events:', err));
+    }
+
+    res.status(201).json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка записи просмотра страницы: ' + error.message });
+  }
 };
 
 export const createAnalyticsEvent = async (req, res) => {
-  const { type } = req.body;
+  const { type, path, sessionId, productId, orderId, searchQuery, value, metadata } = req.body;
 
   if (!type || typeof type !== 'string') {
     return res.status(400).json({ error: 'type обязателен' });
   }
 
-  // Internal analytics event writing is disabled.
-  return res.status(201).json({ ok: true });
+  try {
+    const ip = getClientIp(req);
+    const userAgent = truncate(req.headers['user-agent'], MAX_USER_AGENT_LENGTH);
+    const userId = getUserIdFromToken(req);
+    const region = truncate(req.headers['cf-ipcity'] || 'Almaty', MAX_LOCATION_LENGTH);
+
+    await prisma.analyticsEvent.create({
+      data: {
+        type: truncate(type, MAX_EVENT_TYPE_LENGTH),
+        path: path ? truncate(path, MAX_PATH_LENGTH) : null,
+        sessionId: sessionId ? truncate(sessionId, MAX_SESSION_ID_LENGTH) : null,
+        userId,
+        productId: productId ? parseInt(productId, 10) : null,
+        orderId: orderId ? parseInt(orderId, 10) : null,
+        searchQuery: searchQuery ? truncate(searchQuery, MAX_SEARCH_QUERY_LENGTH) : null,
+        value: value ? parseFloat(value) : null,
+        metadata: metadata || null,
+        userAgent,
+        ip,
+        region,
+      },
+    });
+
+    if (userId && sessionId) {
+      Promise.all([
+        prisma.analyticsEvent.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId }
+        }),
+        prisma.pageView.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId }
+        })
+      ]).catch(err => console.error('Error retroactively linking session events:', err));
+    }
+
+    res.status(201).json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка записи аналитического события: ' + error.message });
+  }
 };
 
 export const getAnalyticsSummary = async (req, res) => {

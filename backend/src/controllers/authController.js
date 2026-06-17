@@ -25,17 +25,13 @@ const checkPhoneExists = async (phone) => {
   if (digits.length < 10) return false;
   const last10Digits = digits.slice(-10);
 
-  const users = await prisma.user.findMany({
-    where: {
-      phone: { not: null }
-    },
-    select: { phone: true }
-  });
-
-  return users.some(u => {
-    const uDigits = u.phone.replace(/[^\d]/g, '');
-    return uDigits.length >= 10 && uDigits.slice(-10) === last10Digits;
-  });
+  const matched = await prisma.$queryRaw`
+    SELECT id FROM "User" 
+    WHERE "phone" IS NOT NULL 
+      AND RIGHT(REGEXP_REPLACE("phone", '[^\d]', '', 'g'), 10) = ${last10Digits}
+    LIMIT 1
+  `;
+  return matched.length > 0;
 };
 
 export const sendRegisterCode = async (req, res) => {
@@ -125,7 +121,7 @@ export const sendRegisterCode = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { email, password, name, phone, address, code } = req.body;
+  const { email, password, name, phone, address, code, sessionId } = req.body;
 
   if (!email || !password || !phone || !name || !code) {
     return res.status(400).json({ error: 'Все поля, включая код подтверждения, обязательны' });
@@ -198,6 +194,19 @@ export const register = async (req, res) => {
     );
     setAuthCookie(req, res, token);
 
+    if (sessionId) {
+      Promise.all([
+        prisma.analyticsEvent.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId: newUser.id }
+        }),
+        prisma.pageView.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId: newUser.id }
+        })
+      ]).catch(err => console.error('Error linking session events on register:', err));
+    }
+
     res.status(201).json({
       user: buildUserPayload(newUser),
     });
@@ -207,7 +216,7 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, sessionId } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Укажите email и пароль' });
@@ -239,6 +248,19 @@ export const login = async (req, res) => {
       { expiresIn: '7d' }
     );
     setAuthCookie(req, res, token);
+
+    if (sessionId) {
+      Promise.all([
+        prisma.analyticsEvent.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId: user.id }
+        }),
+        prisma.pageView.updateMany({
+          where: { sessionId, userId: null },
+          data: { userId: user.id }
+        })
+      ]).catch(err => console.error('Error linking session events on login:', err));
+    }
 
     res.json({
       user: buildUserPayload(user),
@@ -292,17 +314,14 @@ export const updateProfile = async (req, res) => {
       // Check if phone is already taken by another user
       const digits = phone.replace(/[^\d]/g, '');
       const last10Digits = digits.slice(-10);
-      const otherUsers = await prisma.user.findMany({
-        where: {
-          id: { not: req.user.id },
-          phone: { not: null }
-        },
-        select: { phone: true }
-      });
-      const phoneTaken = otherUsers.some(u => {
-        const uDigits = u.phone.replace(/[^\d]/g, '');
-        return uDigits.length >= 10 && uDigits.slice(-10) === last10Digits;
-      });
+      const otherMatched = await prisma.$queryRaw`
+        SELECT id FROM "User" 
+        WHERE "id" != ${req.user.id}
+          AND "phone" IS NOT NULL 
+          AND RIGHT(REGEXP_REPLACE("phone", '[^\d]', '', 'g'), 10) = ${last10Digits}
+        LIMIT 1
+      `;
+      const phoneTaken = otherMatched.length > 0;
       if (phoneTaken) {
         return res.status(400).json({ error: 'Пользователь с таким номером телефона уже зарегистрирован' });
       }

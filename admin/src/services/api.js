@@ -314,4 +314,25 @@ export const adjustUserBonuses = async (userId, amount, description) => {
   return response.data;
 };
 
+export const addUserCartItem = async (userId, productId, quantity) => {
+  const response = await api.post(`/users/${userId}/cart`, { productId, quantity });
+  return response.data;
+};
+
+export const updateUserCartItem = async (userId, productId, quantity) => {
+  const response = await api.put(`/users/${userId}/cart/${productId}`, { quantity });
+  return response.data;
+};
+
+export const removeUserCartItem = async (userId, productId) => {
+  const response = await api.delete(`/users/${userId}/cart/${productId}`);
+  return response.data;
+};
+
+export const clearUserCart = async (userId) => {
+  const response = await api.delete(`/users/${userId}/cart`);
+  return response.data;
+};
+
 export default api;
+

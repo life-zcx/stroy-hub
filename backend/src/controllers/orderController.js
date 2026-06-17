@@ -149,32 +149,8 @@ export const createOrder = async (req, res) => {
       appliedPromotion = await prisma.promotion.findUnique({
         where: { promoCode: normalizedPromoCode },
       });
-
-      // Проверка: промокод только для первого заказа
-      if (appliedPromotion?.isFirstOrderOnly) {
-        const existingOrdersCount = await prisma.order.count({
-          where: {
-            userId: parseInt(userId),
-            status: { not: 'cancelled' },
-          },
-        });
-        if (existingOrdersCount > 0) {
-          return res.status(400).json({ error: 'Этот промокод действует только на первый заказ.' });
-        }
-      }
-
-      // Проверка: максимальное кол-во использований на одного пользователя
-      if (appliedPromotion?.maxUsagePerUser != null) {
-        const userPromoUsageCount = await prisma.order.count({
-          where: {
-            userId: parseInt(userId),
-            promotionId: appliedPromotion.id,
-            status: { not: 'cancelled' },
-          },
-        });
-        if (userPromoUsageCount >= appliedPromotion.maxUsagePerUser) {
-          return res.status(400).json({ error: 'Вы уже использовали этот промокод максимальное количество раз.' });
-        }
+      if (!appliedPromotion || !appliedPromotion.isActive) {
+        return res.status(400).json({ error: 'Указанный промокод неактивен или не существует.' });
       }
 
       const evaluation = evaluatePromotion(appliedPromotion, evaluationContext);
@@ -195,6 +171,37 @@ export const createOrder = async (req, res) => {
         reservedPromotion = await tx.promotion.findUnique({
           where: { id: appliedPromotion.id },
         });
+
+        if (!reservedPromotion || !reservedPromotion.isActive) {
+          throw new Error('Указанный промокод неактивен или не существует.');
+        }
+
+        // Проверка: промокод только для первого заказа (ВНУТРИ транзакции)
+        if (reservedPromotion.isFirstOrderOnly) {
+          const existingOrdersCount = await tx.order.count({
+            where: {
+              userId: parseInt(userId),
+              status: { not: 'cancelled' },
+            },
+          });
+          if (existingOrdersCount > 0) {
+            throw new Error('Этот промокод действует только на первый заказ.');
+          }
+        }
+
+        // Проверка: максимальное кол-во использований на одного пользователя (ВНУТРИ транзакции)
+        if (reservedPromotion.maxUsagePerUser != null) {
+          const userPromoUsageCount = await tx.order.count({
+            where: {
+              userId: parseInt(userId),
+              promotionId: reservedPromotion.id,
+              status: { not: 'cancelled' },
+            },
+          });
+          if (userPromoUsageCount >= reservedPromotion.maxUsagePerUser) {
+            throw new Error('Вы уже использовали этот промокод максимальное количество раз.');
+          }
+        }
 
         reservedEvaluation = evaluatePromotion(reservedPromotion, evaluationContext);
         if (!reservedEvaluation.valid) {
@@ -494,21 +501,25 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const updated = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status,
-        statusHistory: buildStatusHistory(existing, status),
-      },
-      include: buildOrderItemsInclude(req.user)
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status,
+          statusHistory: buildStatusHistory(existing, status),
+        },
+        include: buildOrderItemsInclude(req.user)
+      });
 
-    // Обновляем бонусы при смене статуса
-    if (status === 'completed') {
-      await activatePendingBonuses(orderId);
-    } else if (status === 'cancelled') {
-      await cancelBonusesForOrder(orderId, existing.userId);
-    }
+      // Обновляем бонусы при смене статуса (ВНУТРИ транзакции)
+      if (status === 'completed') {
+        await activatePendingBonuses(orderId, tx);
+      } else if (status === 'cancelled') {
+        await cancelBonusesForOrder(orderId, existing.userId, tx);
+      }
+
+      return order;
+    });
 
     res.json(updated);
   } catch (error) {
@@ -697,22 +708,21 @@ export const updateOrder = async (req, res) => {
         include: buildOrderItemsInclude(req.user),
       });
 
+      // Also update bonuses if status changed (ВНУТРИ транзакции)
+      if (status === 'completed') {
+        await activatePendingBonuses(orderId, tx);
+      } else if (status === 'cancelled') {
+        if (existingOrder.userId) {
+          await cancelBonusesForOrder(orderId, existingOrder.userId, tx);
+        }
+      }
+
       return updatedOrder;
     });
 
     // Notify the client about order updates (simulated)
     const phone = clientPhone || existingOrder.clientPhone;
     console.log(`[CLIENT NOTIFICATION] Sent SMS/Whatsapp notification about order #${orderId} updates to ${phone}`);
-
-    //    Also update bonuses if status changed
-    if (status === 'completed') {
-      await activatePendingBonuses(orderId);
-    } else if (status === 'cancelled') {
-      const orderForCancel = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
-      if (orderForCancel?.userId) {
-        await cancelBonusesForOrder(orderId, orderForCancel.userId);
-      }
-    }
 
     res.json(result);
   } catch (error) {

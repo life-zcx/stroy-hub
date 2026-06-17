@@ -385,6 +385,45 @@ export const getUserPortrait = async (req, res) => {
       }
     }
 
+    // --- CRM INSIGHTS ---
+    const cartItems = await prisma.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: { id: true, name: true, price: true, image: true, category: true }
+        }
+      }
+    });
+
+    const recentlyViewed = await prisma.analyticsEvent.findMany({
+      where: { userId, type: 'product_view', productId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      include: {
+        product: {
+          select: { id: true, name: true, price: true, image: true, category: true }
+        }
+      }
+    });
+
+    const recentSearches = await prisma.analyticsEvent.findMany({
+      where: { userId, type: 'search', searchQuery: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { searchQuery: true, createdAt: true }
+    });
+
+    const bonusTransactions = await prisma.bonusTransaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+      include: {
+        order: {
+          select: { id: true, totalAmount: true }
+        }
+      }
+    });
+
     res.json({
       user: {
         id: user.id,
@@ -413,9 +452,243 @@ export const getUserPortrait = async (req, res) => {
         favoritePaymentMethod,
       },
       recentOrders: orders,
+      cart: cartItems.filter(c => c.product).map(c => ({
+        id: c.product.id,
+        name: c.product.name,
+        price: c.product.price,
+        image: c.product.image,
+        category: c.product.category,
+        quantity: c.quantity,
+        addedAt: c.updatedAt,
+      })),
+      recentlyViewed: recentlyViewed.filter(rv => rv.product).map(rv => ({
+        id: rv.product.id,
+        name: rv.product.name,
+        price: rv.product.price,
+        image: rv.product.image,
+        category: rv.product.category,
+        viewedAt: rv.createdAt,
+      })),
+      recentSearches: recentSearches.map(rs => ({
+        query: rs.searchQuery,
+        searchedAt: rs.createdAt,
+      })),
+      bonusTransactions: bonusTransactions.map(bt => ({
+        id: bt.id,
+        orderId: bt.orderId,
+        orderAmount: bt.order?.totalAmount || null,
+        type: bt.type,
+        status: bt.status,
+        amount: bt.amount,
+        description: bt.description,
+        createdAt: bt.createdAt
+      })),
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения портрета пользователя: ' + error.message });
   }
 };
+
+// Add or increment item in user's cart (admin view)
+export const addUserCartItem = async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  const { productId, quantity } = req.body;
+
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Неверный ID пользователя' });
+  }
+
+  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+  const prodId = parseInt(productId, 10);
+
+  if (isNaN(prodId)) {
+    return res.status(400).json({ error: 'Некорректный ID товара.' });
+  }
+
+  try {
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      return res.status(404).json({ error: 'Пользователь не найден.' });
+    }
+
+    // Verify product exists
+    const product = await prisma.product.findUnique({
+      where: { id: prodId }
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Товар не найден.' });
+    }
+
+    // Upsert cart item
+    await prisma.cartItem.upsert({
+      where: {
+        userId_productId: {
+          userId,
+          productId: prodId
+        }
+      },
+      update: {
+        quantity: {
+          increment: qty
+        }
+      },
+      create: {
+        userId,
+        productId: prodId,
+        quantity: qty
+      }
+    });
+
+    // Return the updated cart items formatted
+    const cartItems = await prisma.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: { id: true, name: true, price: true, image: true, category: true }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    res.json(cartItems.filter(c => c.product).map(c => ({
+      id: c.product.id,
+      name: c.product.name,
+      price: c.product.price,
+      image: c.product.image,
+      category: c.product.category,
+      quantity: c.quantity,
+      addedAt: c.updatedAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при добавлении товара в корзину: ' + error.message });
+  }
+};
+
+// Update item quantity in user's cart (admin view)
+export const updateUserCartItem = async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  const productId = parseInt(req.params.productId, 10);
+  const { quantity } = req.body;
+
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Неверный ID пользователя' });
+  }
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Некорректный ID товара.' });
+  }
+
+  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+
+  try {
+    await prisma.cartItem.update({
+      where: {
+        userId_productId: {
+          userId,
+          productId
+        }
+      },
+      data: {
+        quantity: qty
+      }
+    });
+
+    // Return updated cart
+    const cartItems = await prisma.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: { id: true, name: true, price: true, image: true, category: true }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    res.json(cartItems.filter(c => c.product).map(c => ({
+      id: c.product.id,
+      name: c.product.name,
+      price: c.product.price,
+      image: c.product.image,
+      category: c.product.category,
+      quantity: c.quantity,
+      addedAt: c.updatedAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при обновлении количества товара в корзине: ' + error.message });
+  }
+};
+
+// Remove item from user's cart (admin view)
+export const removeUserCartItem = async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  const productId = parseInt(req.params.productId, 10);
+
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Неверный ID пользователя' });
+  }
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Некорректный ID товара.' });
+  }
+
+  try {
+    await prisma.cartItem.delete({
+      where: {
+        userId_productId: {
+          userId,
+          productId
+        }
+      }
+    });
+
+    // Return updated cart
+    const cartItems = await prisma.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: { id: true, name: true, price: true, image: true, category: true }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    res.json(cartItems.filter(c => c.product).map(c => ({
+      id: c.product.id,
+      name: c.product.name,
+      price: c.product.price,
+      image: c.product.image,
+      category: c.product.category,
+      quantity: c.quantity,
+      addedAt: c.updatedAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при удалении товара из корзины: ' + error.message });
+  }
+};
+
+// Clear user's cart (admin view)
+export const clearUserCart = async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Неверный ID пользователя' });
+  }
+
+  try {
+    await prisma.cartItem.deleteMany({
+      where: { userId }
+    });
+
+    res.json({ success: true, message: 'Корзина успешно очищена' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при очистке корзины пользователя: ' + error.message });
+  }
+};
+
 

@@ -9,8 +9,8 @@ const api = axios.create({
 });
 
 // Auth API
-export const login = async (email, password) => {
-  const response = await api.post('/auth/login', { email, password });
+export const login = async (email, password, sessionId) => {
+  const response = await api.post('/auth/login', { email, password, sessionId });
   return response.data;
 };
 

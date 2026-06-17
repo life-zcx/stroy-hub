@@ -219,7 +219,8 @@ export const syncCart = async (req, res) => {
     // Merge each item sequentially or in transaction
     await prisma.$transaction(
       items.map(item => {
-        const prodId = parseInt(item.id, 10);
+        const targetId = item.productId !== undefined ? item.productId : item.id;
+        const prodId = parseInt(targetId, 10);
         const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
 
         return prisma.cartItem.upsert({

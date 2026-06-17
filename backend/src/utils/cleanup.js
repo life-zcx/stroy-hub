@@ -16,11 +16,40 @@ export const cleanExpiredTokens = async () => {
   }
 };
 
+export const cleanOldAnalytics = async () => {
+  try {
+    const cutOffViews = new Date();
+    cutOffViews.setDate(cutOffViews.getDate() - 60); // 60 дней для обычных просмотров страниц (занимают больше всего места)
+
+    const cutOffEvents = new Date();
+    cutOffEvents.setDate(cutOffEvents.getDate() - 180); // 180 дней (6 месяцев) для CRM-событий (интересы, поиски, корзины)
+
+    const deletedViews = await prisma.pageView.deleteMany({
+      where: {
+        createdAt: { lt: cutOffViews }
+      }
+    });
+
+    const deletedEvents = await prisma.analyticsEvent.deleteMany({
+      where: {
+        createdAt: { lt: cutOffEvents }
+      }
+    });
+
+    if (deletedViews.count > 0 || deletedEvents.count > 0) {
+      console.log(`[CLEANUP] Automatically deleted ${deletedViews.count} page views (older than 60d) and ${deletedEvents.count} analytics events (older than 180d).`);
+    }
+  } catch (error) {
+    console.error('[CLEANUP ERROR] Failed to clean old analytics:', error);
+  }
+};
+
 export const startCleanupScheduler = () => {
   console.log('[CLEANUP] Starting cleanup & backup scheduler (Runs every 24 hours)...');
   
-  // 1. Run expired tokens cleanup immediately
+  // 1. Run expired tokens and old analytics cleanup immediately
   cleanExpiredTokens();
+  cleanOldAnalytics();
 
   // 2. Run Yandex.Disk backup upload after a short delay on startup (e.g., 30s)
   // to avoid overlapping with container initialization/db boot.
@@ -28,10 +57,11 @@ export const startCleanupScheduler = () => {
     uploadLatestBackupToYandex();
   }, 30000);
 
-  // 3. Schedule both tasks every 24 hours
+  // 3. Schedule all tasks every 24 hours
   const INTERVAL_24H = 86400000;
   setInterval(() => {
     cleanExpiredTokens();
+    cleanOldAnalytics();
     uploadLatestBackupToYandex();
   }, INTERVAL_24H);
 };

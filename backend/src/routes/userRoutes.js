@@ -6,6 +6,10 @@ import {
   updateUserBlockStatus,
   updateUserPassword,
   getUserPortrait,
+  addUserCartItem,
+  updateUserCartItem,
+  removeUserCartItem,
+  clearUserCart,
 } from '../controllers/userController.js';
 import { requireRoles, verifyToken } from '../middleware/auth.js';
 
@@ -20,4 +24,11 @@ router.put('/:id', updateUser);
 router.put('/:id/password', updateUserPassword);
 router.put('/:id/block', updateUserBlockStatus);
 
+// Cart administration routes
+router.post('/:id/cart', addUserCartItem);
+router.put('/:id/cart/:productId', updateUserCartItem);
+router.delete('/:id/cart/:productId', removeUserCartItem);
+router.delete('/:id/cart', clearUserCart);
+
 export default router;
+

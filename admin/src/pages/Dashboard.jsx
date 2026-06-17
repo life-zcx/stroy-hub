@@ -3,7 +3,7 @@ import Sidebar from './dashboard/Sidebar';
 import BrandModal from './dashboard/modals/BrandModal';
 import CategoryModal from './dashboard/modals/CategoryModal';
 import ProductModal from './dashboard/modals/ProductModal';
-import { LogOut, RefreshCw } from 'lucide-react';
+import { LogOut, RefreshCw, Menu as MenuIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import SupplierModal from './dashboard/modals/SupplierModal';
 import CallbacksPage from './dashboard/pages/CallbacksPage';
 import BrandsPage from './dashboard/pages/BrandsPage';
@@ -181,6 +181,8 @@ export default function Dashboard({ user, onLogout, showToast }) {
   });
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem('admin_sidebar_collapsed') === 'true');
 
   useEffect(() => {
     const syncPageFromHash = () => {
@@ -407,19 +409,41 @@ export default function Dashboard({ user, onLogout, showToast }) {
         onLogout={onLogout}
         onReload={reloadData}
         loading={loading}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-72 h-screen flex flex-col relative overflow-hidden">
+      <main className={`flex-1 h-screen flex flex-col relative overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'}`}>
         {/* Compact Top Bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight font-outfit uppercase">
-              {pageTitles[activePage]}
-            </h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-              Панель управления / {activePage}
-            </p>
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 sm:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition-colors"
+            >
+              <MenuIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                const next = !isSidebarCollapsed;
+                setIsSidebarCollapsed(next);
+                localStorage.setItem('admin_sidebar_collapsed', String(next));
+              }}
+              className="hidden lg:flex p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition-colors"
+              title={isSidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
+            >
+              {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+            </button>
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                {pageTitles[activePage]}
+              </h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                Панель управления / {activePage}
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -481,7 +505,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 animate-fade-in-up admin-main-scroll">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8 animate-fade-in-up admin-main-scroll">
           {renderPage()}
         </div>
       </main>

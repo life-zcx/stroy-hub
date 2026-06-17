@@ -860,42 +860,50 @@ export const importProductsXlsx = async (req, res) => {
       });
     }
 
-    let createdCount = 0;
-    let updatedCount = 0;
-
-    await prisma.$transaction(async (tx) => {
-      for (const data of validRows) {
-        const existing = await tx.product.findFirst({
-          where: {
-            name: data.name,
-            supplierId: data.supplierId
-          }
-        });
-
-        if (existing) {
-          await tx.product.update({
-            where: { id: existing.id },
-            data: {
-              description: data.description,
-              details: data.details,
-              specifications: data.specifications,
-              usage: data.usage,
-              category: data.category,
-              categoryId: data.categoryId,
-              price: data.price,
-              oldPrice: data.oldPrice,
-              isHit: data.isHit,
-              bulkDiscount: data.bulkDiscount,
-              article: data.article
-            }
-          });
-          updatedCount++;
-        } else {
-          await tx.product.create({ data });
-          createdCount++;
-        }
-      }
+    const existingProducts = await prisma.product.findMany({
+      where: { supplierId: effectiveSupplierId },
+      select: { id: true, name: true }
     });
+
+    const existingMap = new Map(
+      existingProducts.map(p => [p.name.toLowerCase().trim(), p.id])
+    );
+
+    const toCreate = [];
+    const toUpdate = [];
+
+    for (const data of validRows) {
+      const nameKey = data.name.toLowerCase().trim();
+      const existingId = existingMap.get(nameKey);
+      if (existingId) {
+        toUpdate.push({ id: existingId, data });
+      } else {
+        toCreate.push(data);
+      }
+    }
+
+    let createdCount = toCreate.length;
+    let updatedCount = toUpdate.length;
+
+    await prisma.$transaction([
+      ...(toCreate.length > 0 ? [prisma.product.createMany({ data: toCreate })] : []),
+      ...toUpdate.map(item => prisma.product.update({
+        where: { id: item.id },
+        data: {
+          description: item.data.description,
+          details: item.data.details,
+          specifications: item.data.specifications,
+          usage: item.data.usage,
+          category: item.data.category,
+          categoryId: item.data.categoryId,
+          price: item.data.price,
+          oldPrice: item.data.oldPrice,
+          isHit: item.data.isHit,
+          bulkDiscount: item.data.bulkDiscount,
+          article: item.data.article
+        }
+      }))
+    ]);
 
     await clearProductsCache();
     res.json({

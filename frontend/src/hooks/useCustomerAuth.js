@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getProfile, login, logout, register, forgotPassword, resetPassword, sendRegisterCode } from '../services/api';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
+import { getAnalyticsSessionId } from '../utils/analytics';
 
 export default function useCustomerAuth(showToast) {
   const [customer, setCustomer] = useState(null);
@@ -124,7 +125,7 @@ export default function useCustomerAuth(showToast) {
 
     try {
       if (authTab === 'login') {
-        const data = await login(authEmail, authPassword);
+        const data = await login(authEmail, authPassword, getAnalyticsSessionId());
         setCustomer(data.user);
         showToast?.(`👋 Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
         setAuthModalOpen(false);
@@ -172,6 +173,7 @@ export default function useCustomerAuth(showToast) {
           phone: authPhone,
           address: authAddress,
           code: authResetCode,
+          sessionId: getAnalyticsSessionId(),
         };
         const data = await register(payload);
         setCustomer(data.user);

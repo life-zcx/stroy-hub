@@ -42,5 +42,30 @@ const shouldSkipDuplicate = (key) => {
 };
 
 export const trackEvent = (type, payload = {}) => {
-  // Internal tracking is deactivated.
+  const path = payload.path || window.location.pathname;
+  const key = buildDedupeKey(type, payload);
+
+  if (shouldSkipDuplicate(key)) {
+    return;
+  }
+
+  const sessionId = getAnalyticsSessionId();
+  const data = {
+    type,
+    path,
+    sessionId,
+    productId: payload.productId || null,
+    orderId: payload.orderId || null,
+    searchQuery: payload.searchQuery || null,
+    value: payload.value || null,
+    metadata: payload.metadata || null,
+    referrer: document.referrer || null,
+    title: document.title || null,
+  };
+
+  if (type === 'page_view') {
+    recordPageView(data).catch(() => {});
+  } else {
+    recordAnalyticsEvent(data).catch(() => {});
+  }
 };

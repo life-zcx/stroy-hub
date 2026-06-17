@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Sparkles, DollarSign, TrendingUp, BarChart3, Info, 
-  RefreshCw, Award, PieChart, ShoppingBag, ArrowUpRight, 
+  DollarSign, TrendingUp, BarChart3, 
+  RefreshCw, Award, PieChart, ShoppingBag, 
   Calendar, Layers, UserCheck
 } from 'lucide-react';
 import { getOrders, getProducts, getPricingSettings } from '../../../services/api';
@@ -16,6 +16,7 @@ export default function AnalyticsPage({ showToast }) {
   const [pricingSettings, setPricingSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('all'); // all, month, week
+  const [activeTab, setActiveTab] = useState('overview'); // overview, history
 
   const loadAnalyticsData = async () => {
     setLoading(true);
@@ -28,7 +29,7 @@ export default function AnalyticsPage({ showToast }) {
           return null;
         })
       ]);
-      setOrders(ordersData);
+      setOrders(ordersData?.data || (Array.isArray(ordersData) ? ordersData : []));
       setProducts(productsData);
       if (settingsData) {
         setPricingSettings(settingsData);
@@ -101,7 +102,7 @@ export default function AnalyticsPage({ showToast }) {
       });
     });
 
-    // Fallbacks if database has no registered orders yet (to show a mathematically perfect, rich dashboard)
+    // Fallbacks if database has no registered orders yet
     if (orders.length === 0) {
       grossRevenue = 1580000;
       totalCostPrice = 1320000;
@@ -152,12 +153,9 @@ export default function AnalyticsPage({ showToast }) {
 
   if (loading) {
     return (
-      <div className="py-36 flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
-        <div className="relative flex items-center justify-center mb-6">
-          <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-emerald-500 animate-spin" />
-          <RefreshCw className="h-6 w-6 text-emerald-500 absolute animate-pulse" />
-        </div>
-        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Генерируем финансовую отчетность...</p>
+      <div className="py-36 flex flex-col items-center justify-center min-h-[60vh] text-slate-500 gap-3">
+        <div className="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-slate-500">Загрузка данных аналитики...</p>
       </div>
     );
   }
@@ -165,29 +163,26 @@ export default function AnalyticsPage({ showToast }) {
   const isNegativeProfit = stats.netProfit < 0;
 
   return (
-    <div className="space-y-10 animate-fade-in-up pb-12">
+    <div className="space-y-5 pb-12">
       
-      {/* Header section with high-end typography */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-6 text-left">
-        <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/60 rounded-full text-[10px] font-black text-emerald-700 uppercase tracking-wider">
-            <Sparkles className="h-3 w-3 animate-pulse" /> Финансовый мониторинг B2B
-          </div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight font-outfit mt-1">Аналитика & Отчетность</h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Сводный анализ оборота, чистой маржи ресейла, динамики продаж по категориям и доли закупа у дистрибьюторов.
+      {/* Header section */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4 text-left">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight font-outfit">Аналитика & Отчетность</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Сводный анализ оборота, себестоимости закупа, чистой прибыли и активности по дистрибьюторам.
           </p>
         </div>
 
-        {/* Time filters wrapper */}
-        <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/60 shrink-0 shadow-sm">
+        {/* Time filters */}
+        <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0 shadow-sm w-fit">
           {['all', 'month', 'week'].map(range => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 border-0 cursor-pointer ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors border-0 cursor-pointer ${
                 timeRange === range 
-                  ? 'bg-slate-950 text-white shadow-md' 
+                  ? 'bg-slate-900 text-white shadow-sm' 
                   : 'text-slate-500 hover:text-slate-900 bg-transparent hover:bg-slate-200/30'
               }`}
             >
@@ -197,273 +192,267 @@ export default function AnalyticsPage({ showToast }) {
         </div>
       </div>
 
-      {/* 4 Financial Indicator Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-        
-        {/* Gross Revenue Card */}
-        <div className="bg-white border-t-4 border-t-emerald-500 border-x border-b border-slate-200/80 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden min-h-[145px] flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 rounded-full blur-xl pointer-events-none" />
-          <div className="space-y-4 relative z-10 flex-1 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Валовый оборот</span>
-              <div className="bg-emerald-50 text-emerald-700 p-2.5 rounded-xl border border-emerald-100/60 shrink-0 shadow-sm">
+      {/* Tabs Menu */}
+      <div className="flex border border-slate-200/65 bg-slate-100/70 p-0.5 rounded-xl w-fit gap-1">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer border-0 ${
+            activeTab === 'overview'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 bg-transparent hover:bg-slate-200/40'
+          }`}
+        >
+          Обзор аналитики
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer border-0 ${
+            activeTab === 'history'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 bg-transparent hover:bg-slate-200/40'
+          }`}
+        >
+          Реестр сделок (История продаж)
+        </button>
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 4 Financial Indicator Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+            
+            {/* Gross Revenue Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between min-h-[90px]">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Валовый оборот</span>
+                <h4 className="text-xl font-black text-slate-900 font-outfit tracking-tight">{formatPrice(stats.grossRevenue)}</h4>
+                <span className="text-[10px] text-slate-500 block">Выручка от продаж</span>
+              </div>
+              <div className="bg-slate-50 text-slate-700 p-2 rounded-xl border border-slate-200/60 shrink-0 shadow-inner">
                 <TrendingUp className="h-4 w-4" />
               </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-2xl font-black text-slate-900 font-outfit tracking-tight leading-none">{formatPrice(stats.grossRevenue)}</h4>
-              <span className="text-[9px] text-emerald-600 font-extrabold flex items-center gap-1 leading-none mt-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                Resale Gross Revenue
-              </span>
-            </div>
-          </div>
-        </div>
 
-        {/* COGS Card */}
-        <div className="bg-white border-t-4 border-t-slate-400 border-x border-b border-slate-200/80 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden min-h-[145px] flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-500/5 to-slate-800/5 rounded-full blur-xl pointer-events-none" />
-          <div className="space-y-4 relative z-10 flex-1 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Расходы на закуп (COGS)</span>
-              <div className="bg-slate-50 text-slate-700 p-2.5 rounded-xl border border-slate-200/80 shrink-0 shadow-sm">
+            {/* COGS Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between min-h-[90px]">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Себестоимость (COGS)</span>
+                <h4 className="text-xl font-black text-slate-900 font-outfit tracking-tight">{formatPrice(stats.totalCostPrice)}</h4>
+                <span className="text-[10px] text-slate-500 block">Оптовая стоимость товаров</span>
+              </div>
+              <div className="bg-slate-50 text-slate-700 p-2 rounded-xl border border-slate-200/60 shrink-0 shadow-inner">
                 <DollarSign className="h-4 w-4" />
               </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-2xl font-black text-slate-900 font-outfit tracking-tight leading-none">{formatPrice(stats.totalCostPrice)}</h4>
-              <span className="text-[9px] text-slate-550 font-bold block leading-none mt-1">Wholesale Distributor Cost</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Net Profit Card - Sleek White & Emerald-Teal Gradient Card */}
-        <div className={`border-t-4 border-x border-b rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden min-h-[145px] flex flex-col justify-between ${
-          isNegativeProfit 
-            ? 'bg-gradient-to-br from-rose-50/70 to-red-50/30 border-rose-200/85 text-rose-950 border-t-rose-500' 
-            : 'bg-gradient-to-br from-emerald-50/70 to-teal-50/30 border-emerald-200/85 text-emerald-950 border-t-emerald-600'
-        }`}>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-550/10 to-teal-550/10 rounded-full blur-xl pointer-events-none" />
-          <div className="space-y-4 relative z-10 flex-1 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className={`text-[10px] font-black uppercase tracking-wider block ${
-                isNegativeProfit ? 'text-rose-500' : 'text-emerald-700'
-              }`}>
-                Чистая прибыль маржи
-              </span>
-              <div className={`p-2.5 rounded-xl border shrink-0 shadow-sm ${
+            {/* Net Profit Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between min-h-[90px]">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-455 font-bold uppercase tracking-wider block">Чистая прибыль</span>
+                <h4 className={`text-xl font-black font-outfit tracking-tight ${
+                  isNegativeProfit ? 'text-rose-700' : 'text-emerald-700'
+                }`}>{formatPrice(stats.netProfit)}</h4>
+                <span className="text-[10px] text-slate-500 block">
+                  Рентабельность: {stats.avgMarginPercentage}%
+                </span>
+              </div>
+              <div className={`p-2 rounded-xl border shrink-0 shadow-inner ${
                 isNegativeProfit 
-                  ? 'bg-rose-100 text-rose-700 border-rose-200' 
-                  : 'bg-emerald-500/10 text-emerald-850 border-emerald-300'
+                  ? 'bg-rose-50 text-rose-700 border-rose-100' 
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-100'
               }`}>
-                <Sparkles className="h-4 w-4" />
+                <BarChart3 className="h-4 w-4" />
               </div>
             </div>
-            <div className="space-y-1">
-              <h4 className={`text-2xl font-black font-outfit tracking-tight leading-none ${
-                isNegativeProfit ? 'text-rose-900' : 'text-emerald-900'
-              }`}>{formatPrice(stats.netProfit)}</h4>
-              <span className={`text-[9px] font-black block leading-none mt-1.5 ${
-                isNegativeProfit ? 'text-rose-600 bg-rose-100/50' : 'text-emerald-700 bg-emerald-100/50'
-              } py-1 px-2.5 rounded-lg w-fit shadow-inner`}>
-                {isNegativeProfit 
-                  ? `Убыток закупа (${stats.avgMarginPercentage}% ROI)` 
-                  : `Net Margin Profit (${stats.avgMarginPercentage}% ROI)`}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        {/* AOV Card */}
-        <div className="bg-white border-t-4 border-t-indigo-500 border-x border-b border-slate-200/80 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden min-h-[145px] flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-full blur-xl pointer-events-none" />
-          <div className="space-y-4 relative z-10 flex-1 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Средний чек (AOV)</span>
-              <div className="bg-indigo-50 text-indigo-700 p-2.5 rounded-xl border border-indigo-100/60 shrink-0 shadow-sm">
+            {/* AOV Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between min-h-[90px]">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Средний чек (AOV)</span>
+                <h4 className="text-xl font-black text-slate-900 font-outfit tracking-tight">{formatPrice(stats.avgOrderValue)}</h4>
+                <span className="text-[10px] text-slate-500 block">Продано: {stats.itemsSold} шт.</span>
+              </div>
+              <div className="bg-slate-50 text-slate-700 p-2 rounded-xl border border-slate-200/60 shrink-0 shadow-inner">
                 <ShoppingBag className="h-4 w-4" />
               </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-2xl font-black text-slate-900 font-outfit tracking-tight leading-none">{formatPrice(stats.avgOrderValue)}</h4>
-              <span className="text-[9px] text-slate-550 font-bold block leading-none mt-1">Продано {stats.itemsSold} товаров</span>
-            </div>
-          </div>
-        </div>
 
-
-      </div>
-
-      {/* Grid: Sales by Category & Top Distributors */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
-        {/* Category distribution */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-7 sm:p-8 shadow-sm space-y-6 text-left relative overflow-hidden">
-          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
-            <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 shrink-0 shadow-sm">
-              <PieChart className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black text-slate-950 uppercase tracking-widest font-outfit">Продажи по категориям</h4>
-              <p className="text-[10px] text-slate-400 font-medium">Доля выручки в разрезе товарных групп</p>
-            </div>
           </div>
 
-          <div className="space-y-6">
-            {stats.categorySalesList.map(item => (
-              <div key={item.key} className="space-y-3 group">
-                <div className="flex items-center justify-between text-xs font-black text-slate-700">
-                  <span className="flex items-center gap-2 text-slate-800 font-bold">
-                    <Layers className="h-4 w-4 text-slate-400 group-hover:text-emerald-650 transition-colors" />
-                    {item.name}
-                  </span>
-                  <div className="space-x-2 font-outfit text-right">
-                    <span className="text-slate-900 font-black">{formatPrice(item.value)}</span>
-                    <span className="text-emerald-700 text-[10px] bg-emerald-50 border border-emerald-250 py-0.5 px-2 rounded-md font-extrabold">{item.percentage}%</span>
-                  </div>
+          {/* Grid: Sales by Category & Top Distributors */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            {/* Category distribution */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <div className="p-2 bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shrink-0 shadow-sm">
+                  <PieChart className="h-4 w-4" />
                 </div>
-                
-                {/* Modern premium gradient progress bar */}
-                <div className="h-2.5 w-full rounded-full bg-slate-100 p-0.5 overflow-hidden shadow-inner border border-slate-200/20">
-                  <div 
-                    style={{ width: `${Math.min(100, Math.max(3, item.percentage))}%` }}
-                    className="h-full bg-gradient-to-r from-emerald-450 to-emerald-600 rounded-full transition-all duration-1000 shadow-md shadow-emerald-500/20"
-                  />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest font-outfit">Продажи по категориям</h4>
+                  <p className="text-[10px] text-slate-455">Доля выручки в разрезе товарных групп</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Suppliers leaderboard */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-7 sm:p-8 shadow-sm space-y-6 text-left relative overflow-hidden">
-          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
-            <div className="p-2.5 bg-amber-50 text-amber-650 rounded-xl border border-amber-100 shrink-0 shadow-sm">
-              <Award className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black text-slate-950 uppercase tracking-widest font-outfit">Закупки у дистрибьюторов</h4>
-              <p className="text-[10px] text-slate-400 font-medium">Рейтинг поставщиков по объему закупа</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {stats.supplierSalesList.map((sup, idx) => (
-              <div key={sup.name} className="flex items-center justify-between p-4 bg-slate-50/70 hover:bg-slate-50 rounded-2.5xl border border-slate-200/50 hover:border-slate-350 hover:scale-[1.01] transform transition-all duration-300">
-                <div className="flex items-center gap-3 text-left min-w-0">
-                  <span className="w-6.5 h-6.5 rounded-full bg-amber-550/10 text-amber-850 border border-amber-350/60 font-black text-[10px] flex items-center justify-center shadow-sm shrink-0">
-                    #{idx + 1}
-                  </span>
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="block font-black text-xs text-slate-900 truncate max-w-[150px] sm:max-w-[240px]" title={sup.name}>
-                      {sup.name}
-                    </span>
-                    <span className="text-[9px] text-slate-450 font-bold block flex items-center gap-1">
-                      <UserCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Доля закупа: {sup.percentage}%
-                    </span>
+              <div className="space-y-4">
+                {stats.categorySalesList.map(item => (
+                  <div key={item.key} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span className="flex items-center gap-2 text-slate-700">
+                        <Layers className="h-3.5 w-3.5 text-slate-400" />
+                        {item.name}
+                      </span>
+                      <div className="space-x-2 font-outfit text-right">
+                        <span className="text-slate-900 font-extrabold">{formatPrice(item.value)}</span>
+                        <span className="text-slate-600 text-[10px] bg-slate-100 border border-slate-200 py-0.5 px-1.5 rounded font-bold">{item.percentage}%</span>
+                      </div>
+                    </div>
+                    
+                    {/* Clean static progress bar */}
+                    <div className="h-2 w-full rounded-full bg-slate-100 p-0.5 overflow-hidden border border-slate-200/40">
+                      <div 
+                        style={{ width: `${Math.min(100, Math.max(3, item.percentage))}%` }}
+                        className="h-full bg-slate-900 rounded-full"
+                      />
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="text-right font-outfit shrink-0 ml-2">
-                  <span className="block text-[8px] text-slate-450 font-bold uppercase tracking-wider">Сумма закупа</span>
-                  <span className="block font-black text-xs text-slate-900">{formatPrice(sup.value)}</span>
+            {/* Suppliers leaderboard */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <div className="p-2 bg-slate-50 text-slate-700 rounded-lg border border-slate-200 shrink-0 shadow-sm">
+                  <Award className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest font-outfit">Закупки у дистрибьюторов</h4>
+                  <p className="text-[10px] text-slate-455">Рейтинг поставщиков по объему закупа</p>
                 </div>
               </div>
-            ))}
+
+              <div className="space-y-3">
+                {stats.supplierSalesList.map((sup, idx) => (
+                  <div key={sup.name} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-200/50">
+                    <div className="flex items-center gap-2.5 text-left min-w-0">
+                      <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-extrabold text-[10px] flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="block font-bold text-xs text-slate-900 truncate max-w-[150px] sm:max-w-[240px]" title={sup.name}>
+                          {sup.name}
+                        </span>
+                        <span className="text-[10px] text-slate-455 font-bold block flex items-center gap-1">
+                          <UserCheck className="h-3 w-3 text-slate-400 shrink-0" /> Доля закупа: {sup.percentage}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right font-outfit shrink-0 ml-2">
+                      <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">Сумма закупа</span>
+                      <span className="block font-extrabold text-xs text-slate-900">{formatPrice(sup.value)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
+      )}
 
-      </div>
-
-      {/* Historical Sales Log Table */}
-      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden text-left">
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black text-slate-450 uppercase tracking-widest block">Реестр закрытых B2B-сделок</span>
-            <h4 className="text-sm font-black text-slate-950 uppercase tracking-wide font-outfit">Исторические продажи</h4>
+      {activeTab === 'history' && (
+        /* Historical Sales Log Table */
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden text-left animate-fade-in">
+          <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Реестр сделок</span>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide font-outfit">Исторические продажи</h4>
+            </div>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 py-1 px-3 rounded-lg w-fit">
+              {orders.length > 0 ? orders.length : 4} сделок
+            </span>
           </div>
-          <span className="text-[10px] font-black text-slate-550 bg-slate-50 border border-slate-200/80 py-1.5 px-4 rounded-xl w-fit shadow-inner">
-            {orders.length > 0 ? orders.length : 4} сделок
-          </span>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-150 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                <th className="py-4.5 px-6">Номер сделки</th>
-                <th className="py-4.5 px-6">B2B Клиент</th>
-                <th className="py-4.5 px-6">Дата закрытия</th>
-                <th className="py-4.5 px-6 text-right">Закуп (₸)</th>
-                <th className="py-4.5 px-6 text-right">Выручка (₸)</th>
-                <th className="py-4.5 px-6 text-right text-emerald-700">Чистая маржа (₸)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-              {orders.length > 0 ? (
-                orders.map(order => {
-                  const gross = order.total || order.totalAmount || 150000;
-                  const cost = gross * 0.85; // approx cost of goods sold
-                  const margin = gross - cost;
-                  const isMarginNegative = margin < 0;
-                  
-                  return (
-                    <tr key={order.id} className="hover:bg-slate-55/30 transition-colors">
-                      <td className="py-4 px-6">
-                        <span className="font-black text-slate-900 font-outfit">№{String(order.id).slice(0, 8)}</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-150 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="py-3 px-5">Номер сделки</th>
+                  <th className="py-3 px-5">Клиент</th>
+                  <th className="py-3 px-5">Дата сделки</th>
+                  <th className="py-3 px-5 text-right">Себестоимость</th>
+                  <th className="py-3 px-5 text-right">Выручка</th>
+                  <th className="py-3 px-5 text-right text-emerald-800">Чистая маржа</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                {orders.length > 0 ? (
+                  orders.map(order => {
+                    const gross = order.total || order.totalAmount || 150000;
+                    const cost = gross * 0.85; // approx cost of goods sold
+                    const margin = gross - cost;
+                    const isMarginNegative = margin < 0;
+                    
+                    return (
+                      <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
+                        <td className="py-3 px-5">
+                          <span className="font-bold text-slate-900 font-outfit">№{String(order.id).slice(0, 8)}</span>
+                        </td>
+                        <td className="py-3 px-5 text-slate-650 font-bold">
+                          {order.clientName || order.customerName || order.user?.name || 'ТОО КазСтройМонтаж'}
+                        </td>
+                        <td className="py-3 px-5 text-slate-450 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-slate-450" />
+                            {new Date(order.createdAt || Date.now()).toLocaleDateString('ru-RU')}
+                          </div>
+                        </td>
+                        <td className="py-3 px-5 text-right font-bold text-slate-700 font-outfit">
+                          {formatPrice(cost)}
+                        </td>
+                        <td className="py-3 px-5 text-right font-bold text-slate-900 font-outfit">
+                          {formatPrice(gross)}
+                        </td>
+                        <td className={`py-3 px-5 text-right font-bold font-outfit ${
+                          isMarginNegative ? 'text-rose-700 bg-rose-50/20' : 'text-emerald-700 bg-emerald-50/20'
+                        }`}>
+                          {formatPrice(margin)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  // Rich Simulated historical data for a complete working dashboard
+                  [
+                    { id: 'deal_105', client: 'ТОО Алматы-Курылыс', date: '25.05.2026', cost: 420000, gross: 495000, margin: 75000 },
+                    { id: 'deal_104', client: 'ИП Сабитов и К', date: '22.05.2026', cost: 180000, gross: 215000, margin: 35000 },
+                    { id: 'deal_103', client: 'ТОО МегаПроектСтрой', date: '18.05.2026', cost: 620000, gross: 718000, margin: 98000 },
+                    { id: 'deal_102', client: 'Бригадир Ахметов С.', date: '12.05.2026', cost: 142000, gross: 168000, margin: 26000 }
+                  ].map(deal => (
+                    <tr key={deal.id} className="hover:bg-slate-50/40 transition-colors">
+                      <td className="py-3 px-5">
+                        <span className="font-bold text-slate-900 font-outfit">№{deal.id}</span>
                       </td>
-                      <td className="py-4 px-6 text-slate-650 font-bold">
-                        {order.clientName || order.customerName || order.user?.name || 'ТОО КазСтройМонтаж'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-450 font-medium">
+                      <td className="py-3 px-5 text-slate-650 font-bold">{deal.client}</td>
+                      <td className="py-3 px-5 text-slate-450 font-medium">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                          {new Date(order.createdAt || Date.now()).toLocaleDateString('ru-RU')}
+                          <Calendar className="h-3.5 w-3.5 text-slate-450" />
+                          {deal.date}
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right font-bold text-slate-750 font-outfit">
-                        {formatPrice(cost)}
-                      </td>
-                      <td className="py-4 px-6 text-right font-black text-slate-900 font-outfit">
-                        {formatPrice(gross)}
-                      </td>
-                      <td className={`py-4 px-6 text-right font-black font-outfit ${
-                        isMarginNegative ? 'text-rose-700 bg-rose-50/20' : 'text-emerald-700 bg-emerald-50/20'
-                      }`}>
-                        {formatPrice(margin)}
-                      </td>
+                      <td className="py-3 px-5 text-right font-bold text-slate-700 font-outfit">{formatPrice(deal.cost)}</td>
+                      <td className="py-3 px-5 text-right font-bold text-slate-900 font-outfit">{formatPrice(deal.gross)}</td>
+                      <td className="py-3 px-5 text-right font-bold text-emerald-700 bg-emerald-50/20 font-outfit">{formatPrice(deal.margin)}</td>
                     </tr>
-                  );
-                })
-              ) : (
-                // Rich Simulated historical data for a complete working dashboard
-                [
-                  { id: 'deal_105', client: 'ТОО Алматы-Курылыс', date: '25.05.2026', cost: 420000, gross: 495000, margin: 75000 },
-                  { id: 'deal_104', client: 'ИП Сабитов и К', date: '22.05.2026', cost: 180000, gross: 215000, margin: 35000 },
-                  { id: 'deal_103', client: 'ТОО МегаПроектСтрой', date: '18.05.2026', cost: 620000, gross: 718000, margin: 98000 },
-                  { id: 'deal_102', client: 'Бригадир Ахметов С.', date: '12.05.2026', cost: 142000, gross: 168000, margin: 26000 }
-                ].map(deal => (
-                  <tr key={deal.id} className="hover:bg-slate-50/40 transition-colors">
-                    <td className="py-4 px-6">
-                      <span className="font-black text-slate-900 font-outfit">№{deal.id}</span>
-                    </td>
-                    <td className="py-4 px-6 text-slate-650 font-bold">{deal.client}</td>
-                    <td className="py-4 px-6 text-slate-450 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {deal.date}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right font-bold text-slate-750 font-outfit">{formatPrice(deal.cost)}</td>
-                    <td className="py-4 px-6 text-right font-black text-slate-900 font-outfit">{formatPrice(deal.gross)}</td>
-                    <td className="py-4 px-6 text-right font-black text-emerald-700 bg-emerald-50/20 font-outfit">{formatPrice(deal.margin)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
