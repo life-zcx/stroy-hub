@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, ChevronRight, Repeat } from 'lucide-react';
+import { 
+  ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, 
+  ChevronRight, Repeat, Clock, Truck, CheckCircle2, AlertCircle 
+} from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
-import { formatDateTime, getStatusMeta, StatusTimeline } from './MyOrders';
+import { formatDateTime, getStatusMeta } from './MyOrders';
 import ReviewModal from '../components/ReviewModal';
 import ReturnRequestModal from '../components/ReturnRequestModal';
 import { getMyReturnRequests, getWarrantyRules } from '../services/api';
@@ -374,7 +377,96 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
             </div>
           </div>
 
-          <StatusTimeline order={order} />
+          {/* Custom Beautiful Status Timeline */}
+          <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm space-y-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Clock className="h-4.5 w-4.5 text-blue-600" />
+              Отслеживание заказа
+            </h3>
+            
+            <div className="relative space-y-6 text-left">
+              {/* Vertical timeline line */}
+              <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100" />
+
+              {(() => {
+                const STATUS_STEPS = ['pending', 'processing', 'shipped', 'completed'];
+                const currentIndex = STATUS_STEPS.indexOf(order.status);
+                const steps = order.status === 'cancelled' ? ['pending', 'cancelled'] : STATUS_STEPS;
+
+                const getHistoryTime = (status) => {
+                  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+                  const entry = [...history].reverse().find((item) => item?.status === status);
+                  if (entry?.changedAt) return entry.changedAt;
+                  if (status === 'pending') return order.createdAt;
+                  return null;
+                };
+
+                const getStepMeta = (status) => {
+                  const metas = {
+                    pending: { text: 'Принят в обработку', desc: 'Заказ успешно зарегистрирован и ожидает подтверждения оператором', icon: Clock, activeColor: 'text-amber-600 bg-amber-50 border-amber-200' },
+                    processing: { text: 'Сборка и комплектация', desc: 'Собираем товары на складе и готовим сопроводительные документы', icon: ClipboardList, activeColor: 'text-blue-600 bg-blue-50 border-blue-200' },
+                    shipped: { text: 'Передан в доставку', desc: 'Заказ передан курьеру и находится в пути на ваш объект', icon: Truck, activeColor: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+                    completed: { text: 'Заказ выполнен', desc: 'Товары успешно доставлены, приняты и оплачены', icon: CheckCircle2, activeColor: 'text-emerald-700 bg-emerald-50 border-emerald-250' },
+                    cancelled: { text: 'Заказ отменен', desc: order.cancellationReason ? `Причина: ${order.cancellationReason}` : 'Заказ был отменен покупателем или менеджером', icon: AlertCircle, activeColor: 'text-rose-600 bg-rose-50 border-rose-200' },
+                  };
+                  return metas[status] || metas.pending;
+                };
+
+                return steps.map((status, index) => {
+                  const meta = getStepMeta(status);
+                  const Icon = meta.icon;
+                  const changedAt = getHistoryTime(status);
+                  const isDone = status === 'cancelled' || (currentIndex >= index && currentIndex !== -1);
+                  const isCurrent = order.status === status;
+
+                  return (
+                    <div key={status} className="flex gap-4 items-start group">
+                      {/* Timeline Dot Indicator */}
+                      <div className="relative flex h-6 w-6 items-center justify-center rounded-full shrink-0 z-10">
+                        <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isDone 
+                            ? isCurrent 
+                              ? 'bg-white border-blue-600 shadow-md ring-4 ring-blue-500/10' 
+                              : 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-300'
+                        }`}>
+                          {isDone && !isCurrent ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                          ) : (
+                            <Icon className={`h-3 w-3 ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`} />
+                          )}
+                        </div>
+                        {isCurrent && (
+                          <span className="absolute h-6 w-6 rounded-full bg-blue-500/20 animate-ping pointer-events-none" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          <span className={`text-sm font-extrabold transition-colors ${isDone ? 'text-slate-900' : 'text-slate-400'}`}>
+                            {meta.text}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[8px] font-black uppercase tracking-wider bg-slate-950 text-white px-2 py-0.5 rounded-full shrink-0">
+                              текущий
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[11px] leading-relaxed font-semibold transition-colors ${isDone ? 'text-slate-655' : 'text-slate-350'}`}>
+                          {meta.desc}
+                        </p>
+                        {changedAt && (
+                          <p className="text-[10px] text-slate-400 font-extrabold font-mono uppercase">
+                            {new Date(changedAt).toLocaleString('ru-RU')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
         </aside>
       </div>
 

@@ -6,11 +6,6 @@
     "auditLog": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\.61479a8f4b168cbc0ff7d2fbc49e95c06bef8207-audit.json",
     "files": [
         {
-            "date": 1780549281343,
-            "name": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\error-2026-06-04.log",
-            "hash": "060aa4088f6b5ab057e83ac04240c665e32d000a845c4afccffcb8280a37b210"
-        },
-        {
             "date": 1780899872402,
             "name": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\error-2026-06-08.log",
             "hash": "e9c3bef3c29d989b097f3347068654d3c5092d9d30c4d06e75b7dc2c8821b709"
@@ -24,6 +19,11 @@
             "date": 1781682033440,
             "name": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\error-2026-06-17.log",
             "hash": "60114d844642f9c04bc3206a2a3be35a1e093557b0de4ba7df8802baa7816dd5"
+        },
+        {
+            "date": 1781774538647,
+            "name": "C:\\Users\\lgs03\\Desktop\\project\\stroy-hub\\backend\\logs\\error-2026-06-18.log",
+            "hash": "3ec898a7be8ce20a8fcea84ee9a1f097dac2e8d56b4753c1ff9d5baa9974a487"
         }
     ],
     "hashType": "sha256"

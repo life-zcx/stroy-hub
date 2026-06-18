@@ -101,6 +101,10 @@ model Product {
   article        String?
   returnRequests ReturnRequest[]
   cartItems      CartItem[]
+
+  @@index([supplierId])
+  @@index([categoryId])
+  @@index([price])
 }
 
 model Category {
@@ -147,6 +151,10 @@ model Order {
   analyticsEvents AnalyticsEvent[]
   bonusTransactions BonusTransaction[]
   returnRequests ReturnRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {

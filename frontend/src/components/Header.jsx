@@ -373,12 +373,22 @@ export default function Header({
     setIsMegaMenuOpen(false);
   };
 
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
   const handleSearchChange = (e) => {
     setLocalSearchQuery(e.target.value);
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (activeSuggestionIndex >= 0 && matchedProducts[activeSuggestionIndex]) {
+      const selectedProduct = matchedProducts[activeSuggestionIndex];
+      onNavigate('product', selectedProduct.id);
+      setLocalSearchQuery('');
+      setIsSearchFocused(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
     setSearchQuery(localSearchQuery);
     if (localSearchQuery.trim()) {
       trackEvent('search', { searchQuery: localSearchQuery.trim() });
@@ -387,6 +397,29 @@ export default function Header({
     navigateTo('catalog');
     setIsSearchFocused(false);
   };
+
+  const handleKeyDown = (e) => {
+    if (!isSearchFocused || matchedProducts.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) => 
+        prev < matchedProducts.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) => 
+        prev > 0 ? prev - 1 : matchedProducts.length - 1
+      );
+    } else if (e.key === 'Escape') {
+      setIsSearchFocused(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
+
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [localSearchQuery]);
 
   useEffect(() => {
     const query = localSearchQuery.trim();
@@ -455,6 +488,7 @@ export default function Header({
                 value={localSearchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={handleKeyDown}
                 className="w-full pl-10 pr-4 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600 text-sm"
               />
               <button type="submit" className="absolute left-3 top-3.5 text-gray-400 hover:text-emerald-600 transition-colors">
@@ -466,7 +500,7 @@ export default function Header({
             {isSearchFocused && matchedProducts.length > 0 && (
               <div className="absolute left-3 right-3 top-full mt-2 bg-white rounded-2xl border border-slate-200/85 shadow-2xl z-50 py-2.5 max-h-[300px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
                 <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
-                {matchedProducts.map(p => (
+                {matchedProducts.map((p, idx) => (
                   <Link
                     key={p.id}
                     href={getPageHref('product', p.id)}
@@ -476,7 +510,9 @@ export default function Header({
                       setIsSearchFocused(false);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer transition-all group"
+                    className={`flex items-center justify-between gap-3 px-4 py-2 cursor-pointer transition-all group ${
+                      idx === activeSuggestionIndex ? 'bg-slate-150 font-semibold' : 'hover:bg-slate-50'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
@@ -828,6 +864,7 @@ export default function Header({
                   value={localSearchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => setIsSearchFocused(true)}
+                  onKeyDown={handleKeyDown}
                   className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600/50 text-xs text-slate-900 transition-all placeholder-slate-400 h-[42px]"
                 />
                 <button
@@ -841,7 +878,7 @@ export default function Header({
                 {isSearchFocused && matchedProducts.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-2xl z-50 py-3 max-h-[380px] overflow-y-auto divide-y divide-slate-50 animate-slide-up">
                     <div className="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Найденные товары</div>
-                    {matchedProducts.map(p => (
+                    {matchedProducts.map((p, idx) => (
                       <Link
                         key={p.id}
                         href={getPageHref('product', p.id)}
@@ -850,7 +887,9 @@ export default function Header({
                           setLocalSearchQuery('');
                           setIsSearchFocused(false);
                         }}
-                        className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-all group"
+                        className={`flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-all group ${
+                          idx === activeSuggestionIndex ? 'bg-slate-150 font-semibold' : 'hover:bg-slate-50'
+                        }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
@@ -961,7 +1000,7 @@ export default function Header({
                             <Link
                               href={`/product/${item.id}`}
                               onClick={() => onNavigate?.('product', item.id)}
-                              className="flex gap-2.5 items-center min-w-0 cursor-pointer"
+                              className="flex gap-2.5 items-center flex-1 min-w-0 cursor-pointer"
                             >
                               <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                                 <img
@@ -971,8 +1010,8 @@ export default function Header({
                                   onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }}
                                 />
                               </div>
-                              <div className="min-w-0">
-                                <h4 className="text-xs font-bold text-slate-800 truncate leading-snug w-[150px] group-hover/item:text-blue-600 transition-colors" title={item.name}>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-bold text-slate-800 truncate leading-snug group-hover/item:text-blue-600 transition-colors" title={item.name}>
                                   {item.name}
                                 </h4>
                                 <p className="text-[10px] text-slate-400 font-semibold mt-0.5">

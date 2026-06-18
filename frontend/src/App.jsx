@@ -330,6 +330,7 @@ export default function App() {
             products={catalog.products}
             onAddToCart={cart.handleAddToCart}
             showToast={showToast}
+            onNavigate={setCurrentPage}
           />
         )}
 

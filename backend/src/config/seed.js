@@ -20,6 +20,7 @@ async function main() {
   await prisma.user.deleteMany({});
   await prisma.supplier.deleteMany({});
   await prisma.category.deleteMany({});
+  await prisma.promotion.deleteMany({});
 
   // Создаем дистрибьюторов
   const suppliersData = [
@@ -385,6 +386,45 @@ async function main() {
       image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80',
       rating: 4.9,
       reviews: 88,
+      isHit: false,
+      bulkDiscount: null,
+      supplierId: createdSuppliers['Крепеж-Мастер']
+    },
+    {
+      name: 'Экструдированный пенополистирол Пеноплекс Комфорт 50 мм',
+      category: 'lumber',
+      categoryId: boards.id,
+      price: 9800,
+      oldPrice: 10500,
+      image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&auto=format&fit=crop&q=80',
+      rating: 4.8,
+      reviews: 94,
+      isHit: true,
+      bulkDiscount: 'от 20 упак: 9300 ₸',
+      supplierId: createdSuppliers['СтройОпт ТОО']
+    },
+    {
+      name: 'Минеральная вата ТеплоКнауф Для Коттеджа 50 мм',
+      category: 'lumber',
+      categoryId: boards.id,
+      price: 7200,
+      oldPrice: null,
+      image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&auto=format&fit=crop&q=80',
+      rating: 4.7,
+      reviews: 43,
+      isHit: false,
+      bulkDiscount: null,
+      supplierId: createdSuppliers['Кнауф Центр (Прямой склад)']
+    },
+    {
+      name: 'Дюбель для теплоизоляции тарельчатый (дюбель-гриб) 10х100 мм',
+      category: 'hardware',
+      categoryId: woodScrews.id,
+      price: 2400,
+      oldPrice: null,
+      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?w=400&auto=format&fit=crop&q=80',
+      rating: 4.6,
+      reviews: 67,
       isHit: false,
       bulkDiscount: null,
       supplierId: createdSuppliers['Крепеж-Мастер']

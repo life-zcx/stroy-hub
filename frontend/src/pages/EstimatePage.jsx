@@ -17,7 +17,17 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
   const [results, setResults] = useState(null);
   const [selectedItems, setSelectedItems] = useState({}); // id-to-product mapping to keep track of checkboxes
   const [activeAlternativeDropdown, setActiveAlternativeDropdown] = useState(null); // row index
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [progressStatus, setProgressStatus] = useState('');
   const fileInputRef = useRef(null);
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -36,12 +46,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      const ext = droppedFile.name.split('.').pop().toLowerCase();
-      if (['xlsx', 'csv'].includes(ext)) {
-        await processFile(droppedFile);
-      } else {
-        showToast({ title: 'Ошибка', message: 'Пожалуйста, загрузите файл Excel (.xlsx) или .csv', type: 'error' });
-      }
+      await processFile(droppedFile);
     }
   };
 
@@ -58,14 +63,60 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
       return;
     }
 
+    // File validation: Size check
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (selectedFile.size > maxSize) {
+      showToast({ title: 'Файл слишком большой', message: 'Максимальный размер файла — 10 МБ', type: 'error' });
+      setError('Размер файла превышает допустимый лимит 10 МБ. Пожалуйста, оптимизируйте смету.');
+      return;
+    }
+
+    // File validation: Extension check
+    const ext = selectedFile.name.split('.').pop().toLowerCase();
+    if (!['xlsx', 'csv'].includes(ext)) {
+      showToast({ title: 'Неподдерживаемый формат', message: 'Пожалуйста, загрузите файл Excel (.xlsx) или .csv', type: 'error' });
+      setError('Выбран неподдерживаемый формат файла. Поддерживаются только файлы с расширением .xlsx и .csv');
+      return;
+    }
+
     setFile(selectedFile);
     setLoading(true);
     setError(null);
     setResults(null);
     setSelectedItems({});
+    setUploadProgress(0);
+    setProgressStatus('Чтение файла...');
+
+    let progressVal = 0;
+    const progressInterval = setInterval(() => {
+      progressVal += Math.random() * 12 + 6;
+      if (progressVal >= 92) {
+        progressVal = 92;
+        clearInterval(progressInterval);
+      }
+      setUploadProgress(Math.floor(progressVal));
+      
+      if (progressVal < 25) {
+        setProgressStatus('Парсинг структуры Excel/CSV...');
+      } else if (progressVal < 55) {
+        setProgressStatus('Анализ спецификации товаров...');
+      } else if (progressVal < 82) {
+        setProgressStatus('Сопоставление позиций с каталогом Tormag...');
+      } else {
+        setProgressStatus('Подготовка интерактивного превью...');
+      }
+    }, 220);
 
     try {
       const data = await matchEstimate(selectedFile);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      setProgressStatus('Успешно завершено!');
+      
+      // Smooth delay to appreciate the 100% state
+      await new Promise(resolve => setTimeout(resolve, 400));
+
       if (data.success) {
         setResults(data);
         // Pre-select exact matches and high quality alternative matches
@@ -85,6 +136,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
         setError(data.error || 'Не удалось распознать смету. Проверьте структуру файла.');
       }
     } catch (err) {
+      clearInterval(progressInterval);
       console.error(err);
       setError(getFriendlyErrorMessage(err));
     } finally {
@@ -227,7 +279,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
       </div>
 
       {!results && !loading && (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto space-y-6">
           {/* Uploader Box */}
           <div 
             onDragEnter={handleDrag}
@@ -235,10 +287,10 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current.click()}
-            className={`group relative overflow-hidden rounded-3xl border-2 border-dashed p-12 text-center transition-all cursor-pointer ${
+            className={`group relative overflow-hidden rounded-3xl border-2 border-dashed p-14 text-center transition-all duration-300 transform cursor-pointer ${
               dragActive 
-                ? 'border-blue-500 bg-blue-50/40 shadow-inner' 
-                : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-xl hover:shadow-slate-100'
+                ? 'border-blue-600 bg-blue-50/50 scale-[1.02] shadow-lg shadow-blue-100/40 ring-4 ring-blue-500/10' 
+                : 'border-slate-200 bg-white hover:border-blue-500 hover:shadow-xl hover:shadow-slate-100 hover:scale-[1.01]'
             }`}
           >
             <input 
@@ -249,22 +301,30 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
               onChange={handleFileChange}
             />
 
-            <div className="space-y-4 max-w-sm mx-auto">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shadow-sm">
-                <UploadCloud className="h-10 w-10 transition-transform group-hover:-translate-y-1" />
+            <div className="space-y-5 max-w-sm mx-auto relative z-10 pointer-events-none">
+              <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-300 ${
+                dragActive 
+                  ? 'bg-blue-600 text-white scale-110 rotate-6 shadow-md' 
+                  : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'
+              }`}>
+                <UploadCloud className={`h-10 w-10 transition-transform ${dragActive ? 'animate-bounce' : 'group-hover:-translate-y-1'}`} />
               </div>
               <div>
-                <p className="text-base font-bold text-slate-800">Перетащите файл сюда или выберите на компьютере</p>
-                <p className="mt-1.5 text-xs text-slate-400 font-semibold">Поддерживаются форматы Excel (.xlsx) и CSV до 10 МБ</p>
+                <p className="text-base font-bold text-slate-800 transition-colors group-hover:text-slate-900">
+                  {dragActive ? 'Отпустите файл для мгновенной загрузки' : 'Перетащите файл сюда или выберите на компьютере'}
+                </p>
+                <p className="mt-2 text-xs text-slate-400 font-semibold">
+                  Поддерживаются форматы Excel (.xlsx) и CSV до 10 МБ
+                </p>
               </div>
             </div>
 
-            {/* Micro-grid overlay decorative */}
-            <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30"></div>
+            {/* Decorative background grid */}
+            <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40"></div>
           </div>
 
           {/* Guidelines info */}
-          <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50/50 p-5 flex gap-4 text-slate-500 text-xs sm:text-sm">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 flex gap-4 text-slate-500 text-xs sm:text-sm shadow-sm">
             <Info className="h-5 w-5 text-blue-600 shrink-0" />
             <div className="space-y-1.5 font-medium text-slate-600">
               <p className="font-bold text-slate-900">Полезные советы по структуре файла:</p>
@@ -278,24 +338,46 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
         </div>
       )}
 
-      {/* Loading Skeleton state */}
+      {/* Loading State with Progress Bar & File details */}
       {loading && (
-        <div className="max-w-4xl mx-auto rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm space-y-6">
-          <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <RefreshCw className="h-12 w-12 text-blue-600 animate-spin" />
-            <div className="text-center">
-              <h3 className="text-lg font-black text-slate-800">Анализируем вашу смету...</h3>
-              <p className="text-sm font-semibold text-slate-400 mt-1">Обычно это занимает 3-5 секунд. Сопоставляем товары с каталогом.</p>
+        <div className="max-w-3xl mx-auto rounded-3xl border border-slate-200/80 bg-white p-8 shadow-lg space-y-6">
+          <div className="border-b border-slate-100 pb-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <FileSpreadsheet className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-slate-900 truncate">{file?.name}</h4>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">{file ? formatFileSize(file.size) : 'Загрузка...'}</p>
+              </div>
+              <div className="shrink-0 flex items-center justify-center">
+                <RefreshCw className="h-6 w-6 text-blue-600 animate-spin" />
+              </div>
             </div>
           </div>
-          
-          {/* Skeletons */}
-          <div className="space-y-3">
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+              <span>{progressStatus}</span>
+              <span className="font-bold text-blue-600">{uploadProgress}%</span>
+            </div>
+            
+            {/* Progress Bar Container */}
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 h-full transition-all duration-300 rounded-full shadow-inner"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-5 space-y-3">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Генерация предварительного просмотра сметы:</p>
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-16 rounded-2xl bg-slate-50 animate-pulse flex items-center justify-between px-6">
-                <div className="h-4 w-1/3 bg-slate-200 rounded"></div>
-                <div className="h-4 w-1/4 bg-slate-200 rounded"></div>
-                <div className="h-4 w-16 bg-slate-200 rounded"></div>
+              <div key={n} className="h-14 rounded-2xl bg-slate-50/80 animate-pulse flex items-center justify-between px-6">
+                <div className="h-3 w-1/3 bg-slate-200 rounded"></div>
+                <div className="h-3 w-1/4 bg-slate-200 rounded"></div>
+                <div className="h-3 w-12 bg-slate-200 rounded"></div>
               </div>
             ))}
           </div>

@@ -54,32 +54,46 @@ export const addToCart = async (req, res) => {
       return res.status(404).json({ error: 'Товар не найден.' });
     }
 
-    // Upsert cart item
-    const cartItem = await prisma.cartItem.upsert({
-      where: {
-        userId_productId: {
-          userId,
-          productId: prodId
-        }
-      },
-      update: {
-        quantity: {
-          increment: qty
-        }
-      },
-      create: {
-        userId,
-        productId: prodId,
-        quantity: qty
-      },
-      include: {
-        product: {
-          include: {
-            supplier: true
+    // Upsert cart item with race condition resilience
+    try {
+      await prisma.cartItem.upsert({
+        where: {
+          userId_productId: {
+            userId,
+            productId: prodId
           }
+        },
+        update: {
+          quantity: {
+            increment: qty
+          }
+        },
+        create: {
+          userId,
+          productId: prodId,
+          quantity: qty
         }
+      });
+    } catch (upsertError) {
+      if (upsertError.code === 'P2002') {
+        // Fallback update in case concurrent requests triggered the race condition
+        await prisma.cartItem.update({
+          where: {
+            userId_productId: {
+              userId,
+              productId: prodId
+            }
+          },
+          data: {
+            quantity: {
+              increment: qty
+            }
+          }
+        });
+      } else {
+        throw upsertError;
       }
-    });
+    }
 
     // Retrieve full updated cart
     const cartItems = await prisma.cartItem.findMany({
@@ -216,33 +230,41 @@ export const syncCart = async (req, res) => {
       return res.status(400).json({ error: 'Некорректный формат данных.' });
     }
 
-    // Merge each item sequentially or in transaction
-    await prisma.$transaction(
-      items.map(item => {
-        const targetId = item.productId !== undefined ? item.productId : item.id;
-        const prodId = parseInt(targetId, 10);
-        const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+    // Merge each valid item in transaction, filtering out invalid NaN IDs
+    const validItems = items.filter(item => {
+      const targetId = item.productId !== undefined ? item.productId : item.id;
+      const prodId = parseInt(targetId, 10);
+      return !isNaN(prodId);
+    });
 
-        return prisma.cartItem.upsert({
-          where: {
-            userId_productId: {
+    if (validItems.length > 0) {
+      await prisma.$transaction(
+        validItems.map(item => {
+          const targetId = item.productId !== undefined ? item.productId : item.id;
+          const prodId = parseInt(targetId, 10);
+          const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+
+          return prisma.cartItem.upsert({
+            where: {
+              userId_productId: {
+                userId,
+                productId: prodId
+              }
+            },
+            update: {
+              quantity: {
+                increment: qty
+              }
+            },
+            create: {
               userId,
-              productId: prodId
+              productId: prodId,
+              quantity: qty
             }
-          },
-          update: {
-            quantity: {
-              increment: qty
-            }
-          },
-          create: {
-            userId,
-            productId: prodId,
-            quantity: qty
-          }
-        });
-      })
-    );
+          });
+        })
+      );
+    }
 
     // Retrieve full updated cart
     const updatedCartItems = await prisma.cartItem.findMany({

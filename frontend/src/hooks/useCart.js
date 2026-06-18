@@ -39,11 +39,13 @@ export default function useCart(showToast, customer) {
           const localItems = savedLocal ? JSON.parse(savedLocal) : [];
           
           if (localItems.length > 0) {
-            // Prepare items for DB merge
-            const itemsToSync = localItems.map(item => ({
-              productId: item.id,
-              quantity: item.quantity
-            }));
+            // Prepare items for DB merge, skipping temporary items
+            const itemsToSync = localItems
+              .filter(item => !(typeof item.id === 'string' && item.id.startsWith('temp_')))
+              .map(item => ({
+                productId: item.id,
+                quantity: item.quantity
+              }));
             
             // Sync with backend — returns flat [{...product, quantity}]
             const dbCart = await syncCartApi(itemsToSync);
@@ -95,7 +97,9 @@ export default function useCart(showToast, customer) {
       },
     });
 
-    if (customer) {
+    const isTempProduct = typeof product.id === 'string' && product.id.startsWith('temp_');
+
+    if (customer && !isTempProduct) {
       try {
         // Backend returns flat [{...product, quantity}]
         const dbCart = await addToCartApi(product.id, quantityToAdd);

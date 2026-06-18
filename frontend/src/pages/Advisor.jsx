@@ -2,9 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { 
   Sparkles, ShoppingCart, SlidersHorizontal, ArrowLeft, Check, 
   Compass, Calculator, Hammer, Settings, Paintbrush, Layers, 
-  Info, Plus, Minus, Trash2, CheckCircle2, DollarSign, ShieldAlert
+  Info, Plus, Minus, Trash2, CheckCircle2, DollarSign, ShieldAlert,
+  ClipboardList
 } from 'lucide-react';
 import { calculateMaterials } from '../utils/advisorCalculator.js';
+import { getProducts } from '../services/api';
+import Link from '../components/Link';
+import { getPageHref } from '../utils/navigationHelper';
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
@@ -129,12 +133,32 @@ const PROJECT_TYPES = [
   }
 ];
 
-export default function Advisor({ products = [], onAddToCart, showToast }) {
+export default function Advisor({ products: propProducts = [], onAddToCart, showToast, onNavigate }) {
   const [advisorStep, setAdvisorStep] = useState(1);
   const [selectedProjectId, setSelectedProjectId] = useState('renovation');
   const [advisorBudget, setAdvisorBudget] = useState('standard'); // budget, standard, premium
   const [includeTools, setIncludeTools] = useState(true);
   const [extraStrength, setExtraStrength] = useState(false);
+
+  const [products, setProducts] = useState(propProducts);
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    const fetchAdvisorProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await getProducts({ limit: 200 });
+        if (data && data.length > 0) {
+          setProducts(data);
+        }
+      } catch (err) {
+        console.error('[ADVISOR PRODUCTS LOAD ERROR]', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdvisorProducts();
+  }, []);
   
   // Dynamic parameters dictionary with expanded limits
   const [dimensions, setDimensions] = useState({
@@ -200,9 +224,7 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
     if (advisorResults.length === 0) return;
     
     advisorResults.forEach(item => {
-      for (let i = 0; i < item.quantity; i++) {
-        onAddToCart(item.product);
-      }
+      onAddToCart(item.product, item.quantity);
     });
 
     showToast(`🛒 Комплект собран! ${advisorResults.length} наим. товаров добавлены в корзину!`);
@@ -524,8 +546,8 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
               <div className="flex items-center gap-3">
-                <div className="bg-emerald-500 text-slate-950 p-3 rounded-2xl shadow-lg shadow-emerald-500/10">
-                  <Check className="h-5.5 w-5.5 stroke-[2.5]" />
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/15">
+                  <ClipboardList className="h-5.5 w-5.5" />
                 </div>
                 <div className="text-left">
                   <h3 className="font-extrabold text-slate-900 text-xl font-outfit">Ведомость строительных материалов</h3>
@@ -566,53 +588,58 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                     return (
                       <div 
                         key={product.id} 
-                        className="bg-white border border-slate-200/80 hover:border-slate-350 rounded-2.5xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 transition-all shadow-sm hover:shadow relative"
+                        className="bg-white border border-slate-200/60 hover:border-slate-300 rounded-3xl p-6 flex flex-col lg:flex-row items-start justify-between gap-6 transition-all shadow-sm hover:shadow-md relative"
                       >
-                        <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-7 h-7 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm hidden md:flex">
+                        <span className="absolute -left-4 top-8 w-8 h-8 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center text-xs font-black text-slate-650 shadow-sm hidden lg:flex">
                           {idx + 1}
                         </span>
-
-                        <div className="flex items-center gap-4.5 w-full sm:w-auto text-left">
-                          <div className="w-18 h-18 bg-slate-50 border border-slate-150 rounded-2xl flex items-center justify-center flex-shrink-0 p-2 overflow-hidden shadow-inner">
-                            <img src={product.image} className="w-full h-full object-contain" alt={product.name} />
-                          </div>
-                          <div className="space-y-2 text-left">
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                {categoryLabelsMap[product.category] || product.category}
-                              </span>
-                              {product.supplier?.delivery === 'Завтра' && (
-                                <span className="inline-flex items-center text-[9px] font-bold text-blue-750 bg-blue-50/50 border border-blue-150 px-2 py-0.5 rounded-full">
-                                  ⚡ Быстрая доставка
-                                </span>
-                              )}
-                            </div>
-                            
-                            <h4 className="text-sm sm:text-base font-black text-slate-900 leading-tight block hover:text-emerald-700 transition-colors">
-                              {product.name}
+ 
+                        <div className="flex items-start gap-5 w-full lg:w-auto text-left">
+                          {/* Larger and clearer image preview with link to product card */}
+                          <Link 
+                            href={getPageHref('product', product.id)}
+                            onClick={() => onNavigate?.('product', product.id)}
+                            className="w-24 h-24 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-center shrink-0 p-3 overflow-hidden shadow-inner cursor-pointer hover:border-slate-350 transition-colors block"
+                          >
+                            <img src={product.image} className="w-full h-full object-contain rounded-lg" alt={product.name} />
+                          </Link>
+ 
+                          <div className="space-y-2 text-left flex-grow">
+                            <h4 className="text-base font-black text-slate-900 leading-snug hover:text-emerald-700 transition-colors">
+                              <Link 
+                                href={getPageHref('product', product.id)}
+                                onClick={() => onNavigate?.('product', product.id)}
+                              >
+                                {product.name}
+                              </Link>
                             </h4>
                             
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400 font-semibold">
-                              <span>Поставщик: <span className="text-slate-600">{product.supplier?.name || 'Дистрибьютор'}</span></span>
-                              <span>•</span>
-                              <span>Срок поставки: <span className="text-slate-600">{product.supplier?.delivery || '1 день'}</span></span>
+                            {/* Consolidated clean metadata line */}
+                            <div className="flex flex-wrap gap-2 text-xs text-slate-500 items-center font-bold">
+                              <span className="bg-slate-100 text-slate-655 px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">
+                                {categoryLabelsMap[product.category] || product.category}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span>Поставщик: <span className="text-slate-700 font-extrabold">{product.supplier?.name || 'Дистрибьютор'}</span></span>
+                              <span className="text-slate-300">•</span>
+                              <span>Срок: <span className="text-slate-750 font-extrabold">{product.supplier?.delivery || '1 день'}</span></span>
                             </div>
-
-                            {/* Math consumption justification */}
-                            <div className="inline-flex items-start gap-1.5 text-[10px] font-bold text-slate-655 bg-slate-100/80 py-1.5 px-3 rounded-xl border border-slate-150">
-                              <Info className="h-3.5 w-3.5 text-emerald-650 shrink-0 mt-0.5" /> 
+ 
+                            {/* Beautiful explanation badge */}
+                            <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-150 px-3.5 py-2 rounded-xl inline-flex items-start gap-2 max-w-lg mt-1 font-medium shadow-sm">
+                              <Info className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" /> 
                               <span>{item.calcReason}</span>
                             </div>
                           </div>
                         </div>
-
-                        {/* Interactive Quantity controls */}
-                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+ 
+                        {/* Interactive Quantity and price controls aligned to top */}
+                        <div className="flex flex-row items-center justify-between lg:justify-end gap-6 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0 lg:self-start lg:mt-1">
                           
-                          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-inner">
+                          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-250 rounded-xl p-1 shadow-inner">
                             <button
                               onClick={() => handleUpdateQty(product.id, item.quantity - 1)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all border-0 cursor-pointer bg-transparent"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all border-0 cursor-pointer bg-transparent"
                             >
                               <Minus className="h-3.5 w-3.5" />
                             </button>
@@ -622,27 +649,27 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                             />
                             <button
                               onClick={() => handleUpdateQty(product.id, item.quantity + 1)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all border-0 cursor-pointer bg-transparent"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all border-0 cursor-pointer bg-transparent"
                             >
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
-
-                          <div className="text-right min-w-[100px]">
-                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Сумма</span>
-                            <span className="block text-base font-black text-slate-900">{formatPrice(itemCost)}</span>
-                            <span className="block text-[10px] text-slate-400 font-bold">{formatPrice(product.price)} / шт</span>
+ 
+                          <div className="text-right min-w-[110px]">
+                            <span className="block text-[9px] text-slate-400 font-black uppercase tracking-wider">Сумма</span>
+                            <span className="block text-base font-black text-slate-900 leading-tight">{formatPrice(itemCost)}</span>
+                            <span className="block text-[10px] text-slate-450 font-bold">{formatPrice(product.price)} / шт</span>
                           </div>
-
+ 
                           <button
                             onClick={() => handleRemoveItem(product.id)}
-                            className="text-slate-350 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all cursor-pointer border-0 bg-transparent"
+                            className="text-slate-350 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-2xl transition-all cursor-pointer border-0 bg-transparent shrink-0"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
-
+ 
                         </div>
-
+ 
                       </div>
                     );
                   })}
@@ -664,51 +691,117 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
               {/* Right side: visual breakdown and checkout summary */}
               <div className="lg:col-span-4 space-y-6">
                 
-                {/* Summary details card */}
-                <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg space-y-6 relative overflow-hidden border border-white/5 animate-fade-in-up">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                {/* Summary details card (Light theme matching Tormag style) */}
+                <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 sm:p-7 shadow-sm space-y-6 relative overflow-hidden animate-fade-in-up">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
                   
                   <div className="space-y-2 text-left">
-                    <span className="text-[10px] text-emerald-400 uppercase font-black tracking-widest">
+                    <span className="text-[10px] text-slate-450 uppercase font-black tracking-widest">
                       Итоговая смета подбора
                     </span>
-                    <h4 className="text-3xl sm:text-4xl font-black font-outfit text-white">
+                    <h4 className="text-3xl sm:text-4xl font-black font-outfit text-emerald-600 transition-all duration-300">
                       {formatPrice(totalCost)}
                     </h4>
-                    <span className="text-[10px] text-slate-400 block font-bold">
-                      Сгенерировано по классу: <span className="text-emerald-400 font-extrabold uppercase">{advisorBudget}</span>
+                    <span className="text-[10px] text-slate-500 block font-bold">
+                      Класс спецификации: <span className="text-blue-600 font-extrabold uppercase">{advisorBudget === 'budget' ? 'Эконом' : advisorBudget === 'standard' ? 'Стандарт' : 'Премиум'}</span>
                     </span>
+
+                    {/* Interactive Budget Class Switcher */}
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 mt-3">
+                      {['budget', 'standard', 'premium'].map((b) => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => {
+                            setAdvisorBudget(b);
+                            const newItems = calculateMaterials({
+                              selectedProjectId,
+                              dimensions,
+                              includeTools,
+                              extraStrength,
+                              advisorBudget: b,
+                              products
+                            });
+                            setAdvisorResults(newItems);
+                          }}
+                          className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all border-0 cursor-pointer ${
+                            advisorBudget === b
+                              ? b === 'budget'
+                                ? 'bg-slate-700 text-white shadow-sm'
+                                : b === 'standard'
+                                  ? 'bg-blue-600 text-white shadow-sm'
+                                  : 'bg-amber-500 text-slate-950 shadow-sm'
+                              : 'bg-transparent text-slate-550 hover:text-slate-900 hover:bg-slate-200/50'
+                          }`}
+                        >
+                          {b === 'budget' ? 'Эконом' : b === 'standard' ? 'Стандарт' : 'Премиум'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Visual Cost Breakdown Chart */}
-                  <div className="space-y-3.5 border-t border-white/10 pt-5 text-left">
+                  {/* Visual Cost Breakdown Chart - Donut style (Light theme colors) */}
+                  <div className="space-y-4 border-t border-slate-100 pt-5 text-left">
                     <span className="block text-[9px] text-slate-400 font-black uppercase tracking-widest">
                       Распределение затрат
                     </span>
                     
-                    <div className="h-3.5 w-full rounded-full bg-white/10 flex overflow-hidden shadow-inner">
-                      {costBreakdown.map((item, idx) => {
-                        const colors = ['bg-emerald-500', 'bg-teal-500', 'bg-sky-500', 'bg-amber-500', 'bg-purple-500'];
-                        const col = colors[idx % colors.length];
-                        return (
-                          <div 
-                            key={item.category} 
-                            style={{ width: `${item.percentage}%` }} 
-                            className={`h-full ${col} transition-all`} 
+                    {costBreakdown.length > 0 ? (
+                      <div className="flex flex-col items-center justify-center py-2 relative">
+                        <svg viewBox="0 0 42 42" className="w-28 h-28 transform -rotate-90">
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r="15.91549430918954"
+                            fill="transparent"
+                            stroke="#f1f5f9"
+                            strokeWidth="3.8"
                           />
-                        );
-                      })}
-                    </div>
+                          {(() => {
+                            let accumulatedPercent = 0;
+                            const colors = ['#10b981', '#14b8a6', '#0ea5e9', '#f59e0b', '#a855f7'];
+                            return costBreakdown.map((item, idx) => {
+                              const percentage = item.percentage;
+                              if (percentage <= 0) return null;
+                              const strokeDasharray = `${percentage} ${100 - percentage}`;
+                              const strokeDashoffset = 100 - accumulatedPercent;
+                              accumulatedPercent += percentage;
+                              const col = colors[idx % colors.length];
+                              return (
+                                <circle
+                                  key={item.category}
+                                  cx="21"
+                                  cy="21"
+                                  r="15.91549430918954"
+                                  fill="transparent"
+                                  stroke={col}
+                                  strokeWidth="3.8"
+                                  strokeDasharray={strokeDasharray}
+                                  strokeDashoffset={strokeDashoffset}
+                                  className="transition-all duration-500 ease-out"
+                                />
+                              );
+                            });
+                          })()}
+                        </svg>
+                        <div className="absolute flex flex-col items-center justify-center text-center">
+                          <span className="text-[9px] text-slate-405 font-bold uppercase tracking-wider leading-none">Комплект</span>
+                          <span className="text-xs font-black text-slate-800 mt-1 leading-none">{advisorResults.length} наим.</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 text-center py-4">Нет данных для отображения</div>
+                    )}
 
                     <div className="grid grid-cols-1 gap-2 pt-2.5">
                       {costBreakdown.map((item, idx) => {
                         const colors = ['bg-emerald-500', 'bg-teal-500', 'bg-sky-500', 'bg-amber-500', 'bg-purple-500'];
                         const col = colors[idx % colors.length];
                         return (
-                          <div key={item.category} className="flex items-center gap-2 text-[10px] font-black text-slate-300">
+                          <div key={item.category} className="flex items-center gap-2 text-[10px] font-black text-slate-600">
                             <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${col}`} />
                             <span className="truncate uppercase tracking-wider">{categoryLabelsMap[item.category] || item.category}:</span>
-                            <span className="text-white shrink-0 ml-auto font-black">{item.percentage}%</span>
+                            <span className="text-slate-800 shrink-0 ml-auto font-black">{item.percentage}%</span>
                           </div>
                         );
                       })}
@@ -716,44 +809,231 @@ export default function Advisor({ products = [], onAddToCart, showToast }) {
                   </div>
 
                   {/* Add all items checkout CTA */}
-                  <div className="pt-3.5 space-y-3.5">
+                  <div className="pt-3.5 space-y-3">
                     <button 
                       onClick={handleAddAllToCart}
                       disabled={advisorResults.length === 0}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black py-4.5 px-6 rounded-2xl transition-all text-xs uppercase shadow-md flex items-center justify-center gap-2 border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 px-6 rounded-2xl transition-all text-xs uppercase shadow-md flex items-center justify-center gap-2 border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ShoppingCart className="h-4.5 w-4.5 stroke-[2.5]" /> Добавить в корзину
                     </button>
 
                     <button 
                       onClick={() => {
-                        setShowSavedNotification(true);
-                        setTimeout(() => setShowSavedNotification(false), 3000);
+                        // Natively generate and print/save PDF
+                        const dateStr = new Date().toLocaleDateString('ru-RU', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+
+                        const projectTypeName = activeProject?.name || 'Расчет';
+                        const budgetName = advisorBudget === 'budget' ? 'Эконом' : advisorBudget === 'standard' ? 'Стандарт' : 'Премиум';
+
+                        const itemsRows = advisorResults.map((item, idx) => `
+                          <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px; text-align: center; font-size: 12px;">${idx + 1}</td>
+                            <td style="padding: 10px; font-size: 12px; font-weight: 600; text-align: left;">${item.product.name}</td>
+                            <td style="padding: 10px; font-size: 11px; color: #475569; text-align: center;">${categoryLabelsMap[item.product.category] || item.product.category}</td>
+                            <td style="padding: 10px; font-size: 12px; font-weight: 600; text-align: center;">${item.quantity} шт</td>
+                            <td style="padding: 10px; font-size: 12px; font-family: monospace; text-align: right;">${formatPrice(item.product.price)}</td>
+                            <td style="padding: 10px; font-size: 12px; font-weight: 700; font-family: monospace; text-align: right;">${formatPrice(item.product.price * item.quantity)}</td>
+                          </tr>
+                        `).join('');
+
+                        const htmlContent = `
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <title>Смета TORMAG - ${projectTypeName}</title>
+                            <meta charset="utf-8">
+                            <style>
+                              body {
+                                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                                color: #1e293b;
+                                margin: 40px;
+                                line-height: 1.5;
+                              }
+                              .header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-start;
+                                border-bottom: 3px solid #10b981;
+                                padding-bottom: 20px;
+                                margin-bottom: 30px;
+                              }
+                              .logo {
+                                font-size: 28px;
+                                font-weight: 900;
+                                color: #0f172a;
+                                letter-spacing: -1px;
+                              }
+                              .logo span {
+                                color: #10b981;
+                              }
+                              .doc-info {
+                                text-align: right;
+                                font-size: 12px;
+                                color: #64748b;
+                              }
+                              .title {
+                                font-size: 22px;
+                                font-weight: 800;
+                                margin-bottom: 20px;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                              }
+                              .specs-grid {
+                                display: grid;
+                                grid-template-cols: 1fr 1fr;
+                                gap: 20px;
+                                background-color: #f8fafc;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 12px;
+                                padding: 20px;
+                                margin-bottom: 30px;
+                                font-size: 13px;
+                              }
+                              .specs-col span {
+                                display: block;
+                                margin-bottom: 6px;
+                              }
+                              .specs-col strong {
+                                color: #0f172a;
+                              }
+                              table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 30px;
+                              }
+                              th {
+                                background-color: #f1f5f9;
+                                color: #334155;
+                                font-weight: 700;
+                                font-size: 11px;
+                                text-transform: uppercase;
+                                padding: 12px 10px;
+                                border-bottom: 2px solid #cbd5e1;
+                              }
+                              .totals-section {
+                                display: flex;
+                                justify-content: flex-end;
+                                margin-bottom: 40px;
+                              }
+                              .totals-table {
+                                width: 300px;
+                                font-size: 14px;
+                              }
+                              .totals-table tr td {
+                                padding: 8px 0;
+                              }
+                              .grand-total {
+                                font-size: 20px;
+                                font-weight: 900;
+                                color: #10b981;
+                                border-top: 2px solid #e2e8f0;
+                                padding-top: 12px !important;
+                              }
+                              .footer-note {
+                                font-size: 11px;
+                                color: #64748b;
+                                border-top: 1px solid #e2e8f0;
+                                padding-top: 20px;
+                                margin-top: 50px;
+                                text-align: justify;
+                              }
+                              @media print {
+                                body { margin: 20px; }
+                                button { display: none; }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="header">
+                              <div>
+                                <div class="logo">TOR<span>MAG</span></div>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Строительная B2B-платформа</div>
+                              </div>
+                              <div class="doc-info">
+                                <div><strong>Дата:</strong> ${dateStr}</div>
+                                <div><strong>Сайт:</strong> tormag.kz</div>
+                                <div><strong>Статус:</strong> Спецификация активна</div>
+                              </div>
+                            </div>
+
+                            <div class="title">Смета подбора строительных материалов</div>
+
+                            <div class="specs-grid">
+                              <div class="specs-col">
+                                <span><strong>Тип работ:</strong> ${projectTypeName}</span>
+                                <span><strong>Класс материалов:</strong> ${budgetName}</span>
+                              </div>
+                              <div class="specs-col" style="text-align: right;">
+                                ${activeProject?.fields?.map(field => `
+                                  <span><strong>${field.label}:</strong> ${dimensions[field.id]} ${field.unit}</span>
+                                `).join('')}
+                              </div>
+                            </div>
+
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th style="width: 5%; text-align: center;">№</th>
+                                  <th style="width: 45%; text-align: left;">Наименование товара</th>
+                                  <th style="width: 15%; text-align: center;">Категория</th>
+                                  <th style="width: 10%; text-align: center;">Кол-во</th>
+                                  <th style="width: 12%; text-align: right;">Цена</th>
+                                  <th style="width: 13%; text-align: right;">Сумма</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                ${itemsRows}
+                              </tbody>
+                            </table>
+
+                            <div class="totals-section">
+                              <table class="totals-table">
+                                <tr>
+                                  <td style="color: #64748b;">Итого наименований:</td>
+                                  <td style="text-align: right; font-weight: 700;">${advisorResults.length}</td>
+                                </tr>
+                                <tr class="grand-total">
+                                  <td>ИТОГО К ОПЛАТЕ:</td>
+                                  <td style="text-align: right;">${formatPrice(totalCost)}</td>
+                                </tr>
+                              </table>
+                            </div>
+
+                            <div class="footer-note">
+                              <strong>Важная информация:</strong> Расчет произведен на основе усредненных норм расхода материалов согласно СНиП Республики Казахстан. Фактический расход на объекте может отличаться в зависимости от геометрических погрешностей конструкций, метода нанесения смесей и квалификации исполнителей. Рекомендуется приобретать материалы с технологическим запасом 5-10%.
+                            </div>
+
+                            <script>
+                              window.onload = function() {
+                                window.print();
+                                setTimeout(function() { window.close(); }, 500);
+                              };
+                            </script>
+                          </body>
+                          </html>
+                        `;
+
+                        const printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                          printWindow.document.write(htmlContent);
+                          printWindow.document.close();
+                        } else {
+                          showToast('⚠️ Пожалуйста, разрешите всплывающие окна в браузере для скачивания сметы.');
+                        }
                       }}
-                      className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3.5 px-5 rounded-2xl transition-all text-[11px] uppercase flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-850 font-bold py-3.5 px-5 rounded-2xl transition-all text-[11px] uppercase flex items-center justify-center gap-1.5 border border-slate-200 cursor-pointer"
                     >
                       <Compass className="h-4 w-4" /> Скачать смету в PDF
                     </button>
-
-                    {showSavedNotification && (
-                      <div className="text-[11px] text-emerald-400 font-extrabold text-center bg-emerald-950/70 border border-emerald-900 py-3 px-4 rounded-xl animate-pulse">
-                        👍 Смета успешно сохранена в вашем личном кабинете!
-                      </div>
-                    )}
                   </div>
 
-                </div>
-
-                {/* Expert recommendation tips card */}
-                <div className="border border-slate-200 rounded-3xl p-6 bg-slate-50 space-y-3 text-left">
-                  <span className="inline-flex items-center gap-1 text-[9px] font-black text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Рекомендация эксперта
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-slate-655 font-medium">
-                    {advisorBudget === 'budget' && 'Вы выбрали Эконом смету. Данные материалы отлично подойдут для дачных пристроек, технических или нежилых зон. Для внутренних жилых пространств мы рекомендуем рассмотреть класс Стандарт для долговечности.'}
-                    {advisorBudget === 'standard' && 'Выбран стандартный комплект материалов. Это сбалансированная смета из сертифицированных брендовых составов со сроком службы более 15 лет без изменения свойств.'}
-                    {advisorBudget === 'premium' && 'Сформирован премиальный комплект наивысшего качества. Продукция от лидеров рынка с максимальными гарантийными сроками, высочайшими показателями прочности и экологическими паспортами.'}
-                  </p>
                 </div>
 
               </div>
