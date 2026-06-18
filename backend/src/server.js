@@ -22,6 +22,7 @@ import returnRequestRoutes from './routes/returnRequestRoutes.js';
 import warrantyRuleRoutes from './routes/warrantyRuleRoutes.js';
 import ogRoutes from './routes/ogRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
@@ -33,6 +34,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
+
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
@@ -140,6 +142,7 @@ app.use('/api/returns', returnRequestRoutes);
 app.use('/api/warranty-rules', warrantyRuleRoutes);
 app.use('/api/og', ogRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Silent Geolocation helper endpoint to bypass client AdBlockers
 app.get('/api/geo', async (req, res) => {

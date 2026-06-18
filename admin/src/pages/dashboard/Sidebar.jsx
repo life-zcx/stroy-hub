@@ -19,7 +19,8 @@ import {
   BarChart3,
   Globe2,
   Gift,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 
 const tabIcons = {
@@ -39,6 +40,7 @@ const tabIcons = {
   cashback: Gift,
   returns: RefreshCw,
   'warranty-rules': Shield,
+  settings: Settings,
 };
 
 const tabLabels = {
@@ -58,6 +60,7 @@ const tabLabels = {
   cashback: 'Кешбэк',
   returns: 'Возвраты',
   'warranty-rules': 'Правила гарантии',
+  settings: 'Настройки сайта',
 };
 
 export default function Sidebar({ activePage, onPageChange, pages, counts, user, onLogout, onReload, loading, isOpen, onClose, isCollapsed }) {

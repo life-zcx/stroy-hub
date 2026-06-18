@@ -334,5 +334,16 @@ export const clearUserCart = async (userId) => {
   return response.data;
 };
 
+// System Settings API
+export const getSystemSettings = async () => {
+  const response = await api.get('/settings');
+  return response.data;
+};
+
+export const saveSystemSettings = async (settings) => {
+  const response = await api.post('/settings', settings);
+  return response.data;
+};
+
 export default api;
 

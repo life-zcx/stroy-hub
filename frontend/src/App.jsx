@@ -39,6 +39,8 @@ import useBonuses from './hooks/useBonuses';
 import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
 import { getPageHref } from './utils/navigationHelper';
 import { PATH_TO_CABINET_TAB } from './hooks/useNavigation';
+import { getSystemSettings } from './services/api';
+import ComingSoonModal from './components/ComingSoonModal';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -46,6 +48,12 @@ export default function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState('user-agreement');
+  const [comingSoonSettings, setComingSoonSettings] = useState({
+    comingSoonModalEnabled: false,
+    comingSoonTitle: '',
+    comingSoonMessage: ''
+  });
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
   const { toast, showToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
@@ -204,6 +212,28 @@ export default function App() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await getSystemSettings();
+        setComingSoonSettings(data);
+        
+        const wasDismissed = sessionStorage.getItem('tormag_coming_soon_dismissed') === 'true';
+        if (data.comingSoonModalEnabled && !wasDismissed) {
+          setIsComingSoonModalOpen(true);
+        }
+      } catch (err) {
+        console.error('Failed to load system settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleCloseComingSoonModal = () => {
+    setIsComingSoonModalOpen(false);
+    sessionStorage.setItem('tormag_coming_soon_dismissed', 'true');
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -505,6 +535,13 @@ export default function App() {
         onClose={() => setIsCallbackModalOpen(false)}
         onNavigate={setCurrentPage}
         showToast={showToast}
+      />
+
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={handleCloseComingSoonModal}
+        title={comingSoonSettings.comingSoonTitle}
+        message={comingSoonSettings.comingSoonMessage}
       />
 
       <Toast toast={toast} />

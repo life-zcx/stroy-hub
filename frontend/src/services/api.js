@@ -235,4 +235,9 @@ export const clearCartApi = async () => {
   return response.data;
 };
 
+export const getSystemSettings = async () => {
+  const response = await api.get('/settings');
+  return response.data;
+};
+
 export default api;
