@@ -539,11 +539,14 @@ export default function Home({
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                currentSlide === idx ? 'w-6 bg-blue-600' : 'w-2 bg-slate-300 hover:bg-slate-400'
-              }`}
+              className="p-3 -m-3 flex items-center justify-center transition-all duration-300 cursor-pointer"
               title={`Слайд ${idx + 1}`}
-            />
+              aria-label={`Слайд ${idx + 1}`}
+            >
+              <span className={`h-2 rounded-full transition-all duration-300 ${
+                currentSlide === idx ? 'w-6 bg-blue-600' : 'w-2 bg-slate-400 hover:bg-slate-500'
+              }`} />
+            </button>
           ))}
         </div>
       </div>

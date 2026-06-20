@@ -45,6 +45,7 @@ export default function RegionModal({
         <div className="p-6 pb-4 relative">
           <button
             onClick={onClose}
+            aria-label="Закрыть"
             className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all duration-200"
           >
             <X className="h-5 w-5" />
@@ -77,7 +78,7 @@ export default function RegionModal({
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                   currentRegion === city 
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10' 
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
                 {city}
@@ -97,7 +98,7 @@ export default function RegionModal({
                   className={`group flex items-center justify-between py-2 px-3 rounded-lg transition-all ${
                     currentRegion === city 
                     ? 'bg-emerald-50 text-emerald-700 font-bold' 
-                    : 'hover:bg-slate-50 text-slate-500 hover:text-slate-900'
+                    : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900'
                   }`}
                 >
                   <span className="text-sm truncate">{city}</span>
@@ -115,7 +116,7 @@ export default function RegionModal({
 
         {/* Footer */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 box-border">
-          <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+          <div className="flex items-center gap-2 text-slate-600 text-xs font-semibold">
             <MapPin className="h-3.5 w-3.5" />
             <span>Текущий город: <span className="text-slate-900">{currentRegion || 'Не выбран'}</span></span>
           </div>

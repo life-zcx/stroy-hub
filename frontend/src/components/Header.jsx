@@ -145,6 +145,7 @@ export default function Header({
             type="button"
             onClick={() => setIsAccessibilityModalOpen(false)}
             className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
+            aria-label="Закрыть настройки доступности"
           >
             <X className="h-5 w-5" />
           </button>
@@ -474,6 +475,7 @@ export default function Header({
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 hover:bg-gray-100 h-[40px] w-[40px] flex items-center justify-center"
+              aria-label="Закрыть меню"
             >
               <X className="h-5 w-5" />
             </button>
@@ -491,7 +493,7 @@ export default function Header({
                 onKeyDown={handleKeyDown}
                 className="w-full pl-10 pr-4 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600 text-sm"
               />
-              <button type="submit" className="absolute left-3 top-3.5 text-gray-400 hover:text-emerald-600 transition-colors">
+              <button type="submit" className="absolute left-3 top-3.5 text-gray-400 hover:text-emerald-600 transition-colors" aria-label="Искать">
                 <Search className="h-5 w-5" />
               </button>
             </div>
@@ -744,6 +746,7 @@ export default function Header({
               type="button"
               onClick={() => setIsAccessibilityModalOpen(true)}
               title="Версия для слабовидящих"
+              aria-label="Панель настроек доступности"
               className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all mr-1"
             >
               <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -1074,6 +1077,7 @@ export default function Header({
                     setIsUserMenuOpen(false);
                     onNavigate?.('cabinet');
                   }}
+                  aria-label="Личный кабинет"
                   className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
                 >
                   <User className="h-5 w-5" />
@@ -1082,6 +1086,7 @@ export default function Header({
                 <button
                   type="button"
                   onClick={onOpenAuthLogin}
+                  aria-label="Войти в личный кабинет"
                   className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
                 >
                   <User className="h-5 w-5" />
@@ -1091,6 +1096,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={onOpenCart}
+                aria-label="Корзина"
                 className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -1104,6 +1110,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label={isMobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
                 className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 hover:bg-gray-100 h-[40px] w-[40px] flex items-center justify-center"
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5.5 w-5.5" />}

@@ -35,7 +35,7 @@ export default function Footer({
               TORMAG.KZ — крупнейший строительный маркетплейс Казахстана. Всё для качественного строительства, ремонта и благоустройства вашего дома напрямую от ведущих дистрибьюторов по лучшим ценам.
             </p>
             <div className="flex flex-col gap-1.5 border-t border-slate-800/40 pt-4 max-w-xs">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Надежность и гарантия</span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Надежность и гарантия</span>
               <span className="text-slate-300 text-xs font-bold flex items-center gap-1.5">
                 <ShieldCheck className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
                 Проверенные поставщики
@@ -109,11 +109,11 @@ export default function Footer({
                 </div>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">E-mail</span>
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">E-mail</span>
                 <a href="mailto:zakaz@tormag.kz" className="text-white hover:text-emerald-600 transition-colors font-semibold">zakaz@tormag.kz</a>
               </li>
               <li className="flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Режим работы</span>
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Режим работы</span>
                 <span className="text-white font-semibold">Пн. – Пт.: с 8:00 до 20:00</span>
               </li>
             </ul>
@@ -148,7 +148,7 @@ export default function Footer({
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+        <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
           <p>© 2026 TORMAG.KZ  Все права защищены.</p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
             <Link href={getPageHref('legal')} onClick={() => openLegal('user-agreement')} className="hover:text-white transition-colors">
