@@ -218,6 +218,7 @@ export default function ReturnRequestModal({
       >
         <button
           onClick={onClose}
+          aria-label="Закрыть"
           className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
         >
           <X className="h-5 w-5" />

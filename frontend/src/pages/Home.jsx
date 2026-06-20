@@ -365,7 +365,7 @@ export default function Home({
                   <p className="text-slate-850 text-xs font-semibold leading-relaxed">
                     «Отличные пиломатериалы и штукатурка, привезли прямо на объект на следующий день. Цены действительно ниже розницы. Будем брать еще.»
                   </p>
-                  <span className="text-[10px] text-slate-400 block mt-2 font-bold">— ТОО "СпецМонолитСтрой"</span>
+                  <span className="text-[10px] text-slate-600 block mt-2 font-bold">— ТОО "СпецМонолитСтрой"</span>
                 </div>
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-3xl shadow-md text-left flex items-center gap-4 w-full max-w-xs mx-auto transform lg:translate-x-4">
                   <div className="text-3xl font-black font-outfit leading-none shrink-0">-10%</div>

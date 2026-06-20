@@ -618,7 +618,7 @@ export default function Header({
               onClick={onOpenRegion}
               className="flex items-center gap-1.5 hover:text-white cursor-pointer transition-colors font-semibold"
             >
-              <MapPin className="h-3.5 w-3.5 text-blue-600" /> {currentRegion}
+              <MapPin className="h-3.5 w-3.5 text-blue-400" /> {currentRegion}
             </span>
           </div>
 
@@ -756,7 +756,7 @@ export default function Header({
                 href="tel:77077111653"
                 className="flex items-center gap-1.5 font-bold text-white hover:text-blue-500 transition-colors py-1"
               >
-                <Phone className="h-3.5 w-3.5 text-blue-600 group-hover/phone:animate-pulse" /> 8 (707) 711-16-53
+                <Phone className="h-3.5 w-3.5 text-blue-400 group-hover/phone:animate-pulse" /> 8 (707) 711-16-53
               </a>
 
               {/* Contact Information Cards (Popup) */}
@@ -818,7 +818,7 @@ export default function Header({
             {/* Header direct call button */}
             <button
               onClick={onOpenCallback}
-              className="bg-blue-600/10 hover:bg-blue-600 border border-blue-600/20 hover:border-blue-600 text-blue-500 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
+              className="bg-blue-600/10 hover:bg-blue-600 border border-blue-600/20 hover:border-blue-600 text-blue-400 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
             >
               Заказать звонок
             </button>
@@ -872,6 +872,7 @@ export default function Header({
                 />
                 <button
                   type="submit"
+                  aria-label="Искать"
                   className="absolute right-1 top-1 bottom-1 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Search className="h-4 w-4" />
