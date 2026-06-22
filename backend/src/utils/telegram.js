@@ -56,3 +56,25 @@ export const sendTelegramNotification = async (order) => {
     console.error('[TELEGRAM ERROR] Error compiling Telegram message:', error.message);
   }
 };
+
+export const sendTelegramAlert = async (text) => {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.warn('[TELEGRAM BYPASS] Telegram Bot Token or Chat ID not set. Skipping alert.');
+    return;
+  }
+  try {
+    const apiBase = TELEGRAM_API_BASE.replace(/\/+$/, '');
+    const url = `${apiBase}/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: 'Markdown',
+      }),
+    });
+  } catch (err) {
+    console.error('[TELEGRAM ALERT ERROR] Failed to send alert:', err);
+  }
+};

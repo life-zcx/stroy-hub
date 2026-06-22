@@ -5,6 +5,7 @@ import { JWT_SECRET } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
+import { sendTelegramAlert } from '../utils/telegram.js';
 
 
 const buildUserPayload = (user) => ({
@@ -144,12 +145,28 @@ export const register = async (req, res) => {
   }
 
   try {
+    const cleanEmail = email.trim().toLowerCase();
+    const attemptsKey = `fail-attempts:register:${cleanEmail}`;
+    const attempts = await redisClient.get(attemptsKey);
+    if (attempts && parseInt(attempts, 10) >= 5) {
+      await prisma.passwordResetToken.deleteMany({ where: { email } });
+      return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Регистрация аннулирована. Запросите новый код.' });
+    }
+
     // Verify registration OTP code
     const resetToken = await prisma.passwordResetToken.findFirst({
       where: { email, code },
     });
 
     if (!resetToken) {
+      const currentAttempts = await redisClient.incr(attemptsKey);
+      if (currentAttempts === 1) {
+        await redisClient.expire(attemptsKey, 600); // 10 minutes
+      }
+      if (currentAttempts >= 5) {
+        await prisma.passwordResetToken.deleteMany({ where: { email } });
+        return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Регистрация аннулирована. Запросите новый код.' });
+      }
       return res.status(400).json({ error: 'Неверный код подтверждения регистрации' });
     }
 
@@ -186,6 +203,7 @@ export const register = async (req, res) => {
 
     // Delete token
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+    await redisClient.del(attemptsKey);
 
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role, supplierId: newUser.supplierId },
@@ -248,6 +266,14 @@ export const login = async (req, res) => {
       { expiresIn: '7d' }
     );
     setAuthCookie(req, res, token);
+
+    // Send Telegram alert on admin/supplier login
+    if (user.role === 'ADMIN' || user.role === 'SUPPLIER') {
+      const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const text = `🔑 *[Вход в систему]*\n\n👤 *Пользователь:* \`${user.email}\` (${user.name || 'без имени'})\n🛡️ *Роль:* \`${user.role}\`\n🌐 *IP-адрес:* \`${ip}\`\n🖥️ *User-Agent:* \`${userAgent}\``;
+      sendTelegramAlert(text).catch(err => console.error('Error sending Telegram alert on login:', err));
+    }
 
     if (sessionId) {
       Promise.all([
@@ -438,12 +464,28 @@ export const resetPassword = async (req, res) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const attemptsKey = `fail-attempts:reset-password:${cleanEmail}`;
+    const attempts = await redisClient.get(attemptsKey);
+    if (attempts && parseInt(attempts, 10) >= 5) {
+      await prisma.passwordResetToken.deleteMany({ where: { email } });
+      return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Восстановление аннулировано. Запросите код заново.' });
+    }
+
     // Verify recovery code
     const resetToken = await prisma.passwordResetToken.findFirst({
       where: { email, code },
     });
 
     if (!resetToken) {
+      const currentAttempts = await redisClient.incr(attemptsKey);
+      if (currentAttempts === 1) {
+        await redisClient.expire(attemptsKey, 600); // 10 minutes
+      }
+      if (currentAttempts >= 5) {
+        await prisma.passwordResetToken.deleteMany({ where: { email } });
+        return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Восстановление аннулировано. Запросите код заново.' });
+      }
       return res.status(400).json({ error: 'Неверный код подтверждения' });
     }
 
@@ -460,6 +502,7 @@ export const resetPassword = async (req, res) => {
 
     // Delete token so it cannot be reused
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+    await redisClient.del(attemptsKey);
 
     res.json({ message: 'Пароль успешно изменен. Теперь вы можете войти в систему.' });
   } catch (error) {

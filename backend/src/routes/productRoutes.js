@@ -10,7 +10,7 @@ import { imageUpload, excelUpload } from '../config/upload.js';
 const router = express.Router();
 
 // Pricing settings routes (Must be registered BEFORE /:id)
-router.get('/pricing/settings', getPricingSettings);
+router.get('/pricing/settings', verifyToken, requireRoles(['ADMIN']), getPricingSettings);
 router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePricingSettings);
 
 // Public endpoints
