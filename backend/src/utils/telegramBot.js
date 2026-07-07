@@ -150,6 +150,19 @@ export const startResourceMonitoring = () => {
   setInterval(checkAndAlert, ONE_HOUR);
 };
 
+const cleanErrorText = (text) => {
+  if (!text) return '';
+  const clean = text.trim();
+  if (clean.startsWith('<')) {
+    const titleMatch = clean.match(/<title>([\s\S]*?)<\/title>/i);
+    if (titleMatch) {
+      return `[HTML Response: ${titleMatch[1].trim()}]`;
+    }
+    return `[HTML Response: ${clean.substring(0, 100)}...]`;
+  }
+  return clean.length > 200 ? clean.substring(0, 200) + '...' : clean;
+};
+
 // Helper to send a simple markdown message
 const sendMsg = async (chatId, text, replyMarkup = null) => {
   if (!TELEGRAM_BOT_TOKEN || !chatId) return;
@@ -171,7 +184,7 @@ const sendMsg = async (chatId, text, replyMarkup = null) => {
     });
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      console.error(`[TELEGRAM BOT] Failed to send message to ${chatId}. Status ${res.status}: ${errText}`);
+      console.error(`[TELEGRAM BOT] Failed to send message to ${chatId}. Status ${res.status}: ${cleanErrorText(errText)}`);
     }
   } catch (err) {
     console.error('[TELEGRAM BOT] Failed to send message:', err);
@@ -616,12 +629,12 @@ export const startTelegramBotListener = () => {
   const poll = async () => {
     try {
       const apiBase = TELEGRAM_API_BASE.replace(/\/+$/, '');
-      const url = `${apiBase}/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`;
+      const url = `${apiBase}/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=15`;
       
       const res = await fetch(url);
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
-        console.error(`[TELEGRAM BOT] Polling HTTP error status ${res.status}: ${errText}`);
+        console.error(`[TELEGRAM BOT] Polling HTTP error status ${res.status}: ${cleanErrorText(errText)}`);
         setTimeout(poll, 10000);
         return;
       }

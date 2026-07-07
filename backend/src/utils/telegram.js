@@ -2,6 +2,19 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID?.trim() || '';
 const TELEGRAM_API_BASE = process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org';
 
+const cleanErrorText = (text) => {
+  if (!text) return '';
+  const clean = text.trim();
+  if (clean.startsWith('<')) {
+    const titleMatch = clean.match(/<title>([\s\S]*?)<\/title>/i);
+    if (titleMatch) {
+      return `[HTML Response: ${titleMatch[1].trim()}]`;
+    }
+    return `[HTML Response: ${clean.substring(0, 100)}...]`;
+  }
+  return clean.length > 200 ? clean.substring(0, 200) + '...' : clean;
+};
+
 export const sendTelegramNotification = async (order) => {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.warn('[TELEGRAM BYPASS] Telegram Bot Token or Chat ID not set. Skipping notification.');
@@ -43,7 +56,7 @@ export const sendTelegramNotification = async (order) => {
       .then((res) => {
         if (!res.ok) {
           res.text().then((text) => {
-            console.error('[TELEGRAM ERROR] Telegram API returned non-OK response:', text);
+            console.error('[TELEGRAM ERROR] Telegram API returned non-OK response:', cleanErrorText(text));
           });
         } else {
           console.log(`[TELEGRAM SUCCESS] Notification sent for order #${order.id}`);

@@ -6,49 +6,9 @@
     "auditLog": "/app/logs/.25faa2bd5c8732f003c6b4e53b09ec2689a18b40-audit.json",
     "files": [
         {
-            "date": 1780900748327,
-            "name": "/app/logs/error-2026-06-08.log",
-            "hash": "aa075ded7d970c626074591417f90f902853e1b09eb421ab4320b4bace4eb115"
-        },
-        {
-            "date": 1780980994897,
-            "name": "/app/logs/error-2026-06-09.log",
-            "hash": "02c666a9bfc0ca41605586b3c2f93b9180ad8fe8d08161266f39b74335cbd5aa"
-        },
-        {
-            "date": 1781075726717,
-            "name": "/app/logs/error-2026-06-10.log",
-            "hash": "0202c9e2a28f64fa3c6021bd8741735a66326e31f0c9d7febc045d8dfc69085f"
-        },
-        {
-            "date": 1781155084690,
-            "name": "/app/logs/error-2026-06-11.log",
-            "hash": "3e62f01fda3216bf4ef75fd344c09f3aae738c0f23f390b4282e33b896aac7a8"
-        },
-        {
-            "date": 1781504033180,
-            "name": "/app/logs/error-2026-06-15.log",
-            "hash": "70fd8a7b5d759a89a533c1f38626c8bf2d73de5ecb7ea508e78b05a91b5e36ba"
-        },
-        {
-            "date": 1781609968452,
-            "name": "/app/logs/error-2026-06-16.log",
-            "hash": "34d64f971580c2d428fc721cf09ce05e5c4992b28496837f157d5c261ea12d42"
-        },
-        {
-            "date": 1781687184076,
-            "name": "/app/logs/error-2026-06-17.log",
-            "hash": "437798870ac95a93592a156a81412d8cf390feeced607eb60eb1d14093cdd74d"
-        },
-        {
-            "date": 1781774237828,
-            "name": "/app/logs/error-2026-06-18.log",
-            "hash": "8613811f7b2289bf621de5a24874d68459413433452190feb1f78c5133f74e32"
-        },
-        {
-            "date": 1781977009983,
-            "name": "/app/logs/error-2026-06-20.log",
-            "hash": "af1baf21e34eb508bb511b3a2f1abed31c7fbdb5dc0d58d6ad7df0b2bb5389ed"
+            "date": 1783437658692,
+            "name": "/app/logs/error-2026-07-07.log",
+            "hash": "eac90e8a2f7d40201a7a16f6e559b4f96eed04454385ddb778399ebd39d1d125"
         }
     ],
     "hashType": "sha256"
