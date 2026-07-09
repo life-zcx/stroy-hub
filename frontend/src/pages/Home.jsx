@@ -324,17 +324,22 @@ export default function Home({
         {/* ── Slide 2: Review Promo ── */}
         {currentSlide === 1 && (
           <div className="w-full animate-fade-in relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center w-full">
               {/* Left Column */}
-              <div className="lg:col-span-7 space-y-4 md:space-y-6 text-left">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight font-outfit">
+              <div className="lg:col-span-7 space-y-5 text-left">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 text-[11px] font-extrabold text-emerald-600 bg-emerald-50 rounded-full border border-emerald-100 uppercase tracking-widest">
+                  <TicketPercent className="h-3.5 w-3.5" />
+                  <span>Акция за отзыв</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] tracking-tight font-outfit">
                   Скидка 10% <br />
                   <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
                     за ваш отзыв!
                   </span>
                 </h1>
                 
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-4">
                   <p className="text-base sm:text-lg md:text-xl font-bold text-slate-800 leading-snug font-outfit border-l-4 border-emerald-500 pl-4">
                     Оцените ваши прошлые покупки и сэкономьте на следующих заказах
                   </p>
@@ -344,32 +349,67 @@ export default function Home({
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 pt-2 md:pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-3">
                   <Link
                     href={getPageHref('orders')}
                     onClick={() => onNavigate('orders')}
-                    className="w-full sm:w-auto justify-center px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
+                    className="w-full sm:w-auto justify-center px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
                   >
                     <span>Оценить покупки</span>
-                    <Award className="h-4.5 w-4.5 text-emerald-550" />
+                    <Award className="h-4.5 w-4.5 text-emerald-450" />
                   </Link>
                 </div>
               </div>
 
               {/* Right Column */}
               <div className="hidden lg:flex relative lg:col-span-5 space-y-4 z-10 w-full flex-col justify-center">
-                <div className="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm text-left backdrop-blur-[2px] w-full max-w-md mx-auto">
-                  <div className="flex items-center gap-1 text-yellow-400 mb-2">
-                    <span className="text-lg">★</span><span className="text-lg">★</span><span className="text-lg">★</span><span className="text-lg">★</span><span className="text-lg">★</span>
+                {/* Clean Testimonial Card */}
+                <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left w-full hover:shadow-md transition-all duration-300 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-0.5 text-amber-400">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span key={i} className="text-sm">★</span>
+                      ))}
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Отзыв к товару</span>
                   </div>
-                  <p className="text-slate-850 text-xs font-semibold leading-relaxed">
+                  
+                  {/* Product Tag */}
+                  <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span className="truncate">Штукатурка Knauf Ротбанд + Брус сосна 50x100</span>
+                  </div>
+                  
+                  <p className="text-slate-650 text-xs sm:text-sm font-medium leading-relaxed italic">
                     «Отличные пиломатериалы и штукатурка, привезли прямо на объект на следующий день. Цены действительно ниже розницы. Будем брать еще.»
                   </p>
-                  <span className="text-[10px] text-slate-600 block mt-2 font-bold">— ТОО "СпецМонолитСтрой"</span>
+                  
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                    <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px] text-slate-600 font-outfit border border-slate-200/60 shrink-0">
+                      СМ
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-900 block font-bold">ТОО "СпецМонолитСтрой"</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">Прораб / Закупщик</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-3xl shadow-md text-left flex items-center gap-4 w-full max-w-xs mx-auto transform lg:translate-x-4">
-                  <div className="text-3xl font-black font-outfit leading-none shrink-0">-10%</div>
-                  <div className="text-[10px] font-bold leading-tight">Ваш персональный промокод за отзыв в личном кабинете</div>
+
+                {/* Cohesive Coupon Card */}
+                <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left w-full hover:shadow-md transition-all duration-300 flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/80 flex flex-col items-center justify-center shrink-0 shadow-sm">
+                    <span className="text-xl font-black font-outfit leading-none">-10%</span>
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-700 mt-1">купон</span>
+                  </div>
+                  
+                  <div className="h-10 w-px border-r border-dashed border-slate-200 shrink-0"></div>
+                  
+                  <div className="space-y-1">
+                    <h4 className="font-extrabold text-slate-900 text-sm font-outfit">Промокод за отзыв</h4>
+                    <p className="text-slate-555 text-xs leading-relaxed font-semibold">
+                      Напишите честный отзыв в личном кабинете после покупки и получите скидку на следующий заказ.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -414,30 +454,30 @@ export default function Home({
               {/* Right Column: Sleek Minimalist Tiles matching Slide 1 */}
               <div className="hidden lg:block relative lg:col-span-5 space-y-4 z-10 w-full">
                 {/* Tile 1 */}
-                <div className="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
-                  <div className="p-3 rounded-2xl bg-slate-50 text-slate-600 border border-slate-100 shrink-0 shadow-sm w-12 h-12 flex items-center justify-center font-bold text-sm">
+                <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 hover:shadow-md transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-500 border border-slate-200/60 flex items-center justify-center font-black font-outfit text-base shrink-0 shadow-sm">
                     01
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <h4 className="font-extrabold text-slate-900 text-sm font-outfit flex items-center gap-2">
                       Уровень «Участник» 
-                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">Базовый</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">Базовый</span>
                     </h4>
                     <p className="text-slate-555 text-[11px] leading-relaxed font-semibold">
-                      Кешбэк <span className="text-slate-900 font-extrabold">3%</span> • Оплата бонусами до <span className="text-slate-900 font-extrabold">50%</span> заказа
+                      Кешбэк <span className="text-slate-800 font-extrabold">3%</span> • Оплата бонусами до <span className="text-slate-800 font-extrabold">50%</span> заказа
                     </p>
                   </div>
                 </div>
 
                 {/* Tile 2 */}
-                <div className="bg-white border border-blue-200/80 p-4 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
-                  <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/30 shrink-0 shadow-sm w-12 h-12 flex items-center justify-center font-bold text-sm">
+                <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 hover:shadow-md transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-black font-outfit text-base shrink-0 shadow-sm">
                     02
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <h4 className="font-extrabold text-slate-900 text-sm font-outfit flex items-center gap-2">
                       Уровень «Резидент»
-                      <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">от 500 тыс. ₸</span>
+                      <span className="text-[10px] bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-full font-bold">от 500 тыс. ₸</span>
                     </h4>
                     <p className="text-slate-555 text-[11px] leading-relaxed font-semibold">
                       Кешбэк <span className="text-blue-600 font-extrabold">4%</span> • Оплата бонусами до <span className="text-blue-600 font-extrabold">75%</span> заказа
@@ -446,17 +486,17 @@ export default function Home({
                 </div>
 
                 {/* Tile 3 */}
-                <div className="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-sm text-left flex items-center gap-5 backdrop-blur-[2px]">
-                  <div className="p-3 rounded-2xl bg-indigo-55/10 text-indigo-600 border border-indigo-100/30 shrink-0 shadow-sm w-12 h-12 flex items-center justify-center font-bold text-sm">
+                <div className="bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm text-left flex items-center gap-5 hover:shadow-md transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center font-black font-outfit text-base shrink-0 shadow-sm">
                     03
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <h4 className="font-extrabold text-slate-900 text-sm font-outfit flex items-center gap-2">
                       Уровень «Партнёр»
-                      <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">от 2 млн. ₸</span>
+                      <span className="text-[10px] bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full font-bold">от 2 млн. ₸</span>
                     </h4>
                     <p className="text-slate-555 text-[11px] leading-relaxed font-semibold">
-                      Кешбэк <span className="text-indigo-600 font-extrabold">5%</span> • Оплата бонусами до <span className="text-indigo-600 font-extrabold">100%</span> заказа
+                      Кешбэк <span className="text-amber-600 font-extrabold">5%</span> • Оплата бонусами до <span className="text-amber-600 font-extrabold">100%</span> заказа
                     </p>
                   </div>
                 </div>
