@@ -321,6 +321,9 @@ export default function App() {
             onToggleFavorite={favorites.toggleFavorite}
             isFavorite={favorites.isFavorite}
             onOpenDetails={openProductPage}
+            customer={auth.customer}
+            bonuses={bonuses}
+            onOpenAuth={auth.openLoginModal}
           />
         )}
 

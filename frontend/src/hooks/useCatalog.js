@@ -71,7 +71,7 @@ export default function useCatalog(showToast, initialCategory = 'all') {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedCategory, searchQuery, sortBy, priceRange, onlyHits, onlyBulk, showToast]);
+  }, [selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk, showToast]);
 
   const loadMoreProducts = () => {
     if (!loadingMore && hasMore) {
@@ -100,7 +100,8 @@ export default function useCatalog(showToast, initialCategory = 'all') {
 
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk]);
 
   return {
     products,
