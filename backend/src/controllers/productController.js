@@ -475,6 +475,7 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
+  console.log('[DEBUG createProduct] Received body:', req.body);
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
     rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article
@@ -496,6 +497,19 @@ export const createProduct = async (req, res) => {
   }
 
   try {
+    // Check if category exists if categoryId is provided
+    if (categoryId) {
+      const parsedCatId = parseInt(categoryId, 10);
+      if (!isNaN(parsedCatId)) {
+        const cat = await prisma.category.findUnique({
+          where: { id: parsedCatId }
+        });
+        if (!cat) {
+          return res.status(400).json({ error: 'Указанная категория не найдена в базе данных. Пожалуйста, обновите страницу.' });
+        }
+      }
+    }
+
     // Check if supplier exists
     const supplier = await prisma.supplier.findUnique({
       where: { id: effectiveSupplierId }
@@ -571,6 +585,7 @@ export const createProduct = async (req, res) => {
 };
 
 export const updateProduct = async (req, res) => {
+  console.log('[DEBUG updateProduct] Received body:', req.body);
   const { id } = req.params;
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
@@ -585,6 +600,19 @@ export const updateProduct = async (req, res) => {
     });
     if (!existing) {
       return res.status(404).json({ error: 'Товар не найден' });
+    }
+
+    // Check if category exists if categoryId is being changed
+    if (categoryId !== undefined && categoryId !== null && categoryId !== '') {
+      const parsedCatId = parseInt(categoryId, 10);
+      if (!isNaN(parsedCatId)) {
+        const cat = await prisma.category.findUnique({
+          where: { id: parsedCatId }
+        });
+        if (!cat) {
+          return res.status(400).json({ error: 'Указанная категория не найдена в базе данных. Пожалуйста, обновите страницу.' });
+        }
+      }
     }
 
     if (isSupplierUser(req)) {
@@ -1121,5 +1149,42 @@ export const matchEstimateXlsx = async (req, res) => {
       userId: req.user?.id || null,
     });
     res.status(500).json({ error: 'Ошибка сопоставления сметы: ' + error.message });
+  }
+};
+
+export const getProductStats = async (req, res) => {
+  const { id } = req.params;
+  const productId = parseInt(id, 10);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Недопустимый ID товара' });
+  }
+
+  try {
+    const productPath = `/product/${productId}`;
+    
+    const pageViewsCount = await prisma.pageView.count({
+      where: { path: productPath }
+    });
+
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const activeSessions = await prisma.pageView.findMany({
+      where: {
+        path: productPath,
+        createdAt: { gte: fifteenMinutesAgo }
+      },
+      distinct: ['sessionId'],
+      select: { sessionId: true }
+    });
+    
+    // Exact database tracking counts (with a minimum of 1 since the user is on the page)
+    const views = Math.max(1, pageViewsCount);
+    const watching = Math.max(1, activeSessions.length);
+
+    res.json({
+      views,
+      watching
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения статистики товара: ' + error.message });
   }
 };

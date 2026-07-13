@@ -457,6 +457,9 @@ export default function App() {
             onNavigate={setCurrentPage}
             categories={catalog.categories}
             setSelectedCategory={handleSetCategory}
+            onToggleFavorite={favorites.toggleFavorite}
+            isFavorite={favorites.isFavorite}
+            showToast={showToast}
           />
         )}
 

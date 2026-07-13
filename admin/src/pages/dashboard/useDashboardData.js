@@ -349,8 +349,24 @@ export function useDashboardData({ user, showToast }) {
     event.preventDefault();
 
     const supplierIdToUse = isSupplier ? user.supplierId : productForm.supplierId;
-    const categoryIdToUse = productForm.categoryId || (categories[0]?.id || '');
-    const categorySlugToUse = productForm.category || (categories[0]?.slug || 'mixes');
+    
+    // Resolve and heal categoryId to prevent mismatch/old cache errors
+    let categoryIdToUse = productForm.categoryId;
+    let categorySlugToUse = productForm.category;
+
+    const catExists = categories.some(c => String(c.id) === String(categoryIdToUse));
+    if (!catExists) {
+      const matched = categories.find(c => c.slug === categorySlugToUse);
+      if (matched) {
+        categoryIdToUse = matched.id;
+      } else if (categories.length > 0) {
+        categoryIdToUse = categories[0].id;
+        categorySlugToUse = categories[0].slug;
+      } else {
+        categoryIdToUse = '';
+        categorySlugToUse = 'mixes';
+      }
+    }
 
     if (!productForm.name || !productForm.price || !supplierIdToUse) {
       alert('Заполните обязательные поля: Название, Цена и Дистрибьютор');
@@ -437,6 +453,17 @@ export function useDashboardData({ user, showToast }) {
 
   const startEditProduct = (product) => {
     setEditingProduct(product);
+
+    // Auto-heal categoryId if it is outdated in local cache
+    let finalCategoryId = product.categoryId;
+    const catExists = categories.some(c => String(c.id) === String(product.categoryId));
+    if (!catExists && product.category) {
+      const matched = categories.find(c => c.slug === product.category);
+      if (matched) {
+        finalCategoryId = matched.id;
+      }
+    }
+
     setProductForm({
       name: product.name || '',
       description: product.description || '',
@@ -444,7 +471,7 @@ export function useDashboardData({ user, showToast }) {
       specifications: product.specifications || '',
       usage: product.usage || '',
       category: product.category || '',
-      categoryId: product.categoryId || '',
+      categoryId: finalCategoryId || '',
       price: product.wholesalePrice || product.price || '',
       oldPrice: product.oldPrice || '',
       bulkDiscount: product.bulkDiscount || '',

@@ -4,13 +4,14 @@ import { getPageHref } from '../utils/navigationHelper';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
-  ChevronUp, ChevronDown,
+  ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins
 } from 'lucide-react';
-import { getProductById, getProductReviews } from '../services/api';
+import { getProductById, getProductReviews, getProductStats } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
+import InfoModals from '../components/InfoModals';
 
 const CATEGORY_LABELS = {
   mixes: 'Сухие смеси',
@@ -22,6 +23,68 @@ const CATEGORY_LABELS = {
 
 const splitLines = (value) => {
   return value ? value.split('\n').map(line => line.trim()).filter(Boolean) : [];
+};
+
+const getProductOptions = (productName) => {
+  const nameLower = productName.toLowerCase();
+  if (nameLower.includes('цемент')) {
+    return {
+      label: 'Фасовка:',
+      items: [
+        { value: '50 кг', available: true },
+        { value: '25 кг', available: false, reason: 'Нет в наличии' },
+        { value: '10 кг', available: false, reason: 'Под заказ' }
+      ]
+    };
+  }
+  if (nameLower.includes('штукатурка') || nameLower.includes('ротбанд')) {
+    return {
+      label: 'Фасовка:',
+      items: [
+        { value: '30 кг', available: true },
+        { value: '10 кг', available: false, reason: 'Нет в наличии' },
+        { value: '5 кг', available: false, reason: 'Под заказ' }
+      ]
+    };
+  }
+  if (nameLower.includes('краска') || nameLower.includes('тиккурила')) {
+    return {
+      label: 'Объем:',
+      items: [
+        { value: '9 л', available: true },
+        { value: '2.7 л', available: false, reason: 'Нет в наличии' },
+        { value: '0.9 л', available: false, reason: 'Нет в наличии' }
+      ]
+    };
+  }
+  if (nameLower.includes('перфоратор')) {
+    return {
+      label: 'Модель:',
+      items: [
+        { value: 'GBH 2-28', available: true },
+        { value: 'GBH 2-26', available: false, reason: 'Нет в наличии' }
+      ]
+    };
+  }
+  if (nameLower.includes('шуруповерт')) {
+    return {
+      label: 'Напряжение:',
+      items: [
+        { value: '18V', available: true },
+        { value: '12V', available: false, reason: 'Нет в наличии' }
+      ]
+    };
+  }
+  if (nameLower.includes('саморезы') || nameLower.includes('анкерный') || nameLower.includes('пеноплекс')) {
+    return {
+      label: 'Фасовка / Размер:',
+      items: [
+        { value: 'Стандарт', available: true },
+        { value: 'Увеличенный', available: false, reason: 'Под заказ' }
+      ]
+    };
+  }
+  return null;
 };
 
 const QuantityInput = ({ value, onChange }) => {
@@ -74,8 +137,7 @@ const QuantityInput = ({ value, onChange }) => {
         value={localVal}
         onChange={handleChange}
         onBlur={handleBlur}
-        className="no-spinner text-center text-sm font-black text-slate-900 bg-transparent focus:outline-none font-mono"
-        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+        className="no-spinner text-center text-base font-extrabold text-slate-900 bg-transparent focus:outline-none font-mono w-10"
       />
     </>
   );
@@ -88,7 +150,9 @@ export default function ProductPage({
   showToast,
   onNavigate,
   categories = [],
-  setSelectedCategory
+  setSelectedCategory,
+  onToggleFavorite,
+  isFavorite
 }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,22 +164,30 @@ export default function ProductPage({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [thumbnailOffset, setThumbnailOffset] = useState(0);
-  const THUMBS_VISIBLE = 5; // сколько миниатюр видно сразу
+  const THUMBS_VISIBLE = 5;
+
+  // Variant selector state
+  const [selectedOption, setSelectedOption] = useState('');
+
+  // active tab below (specs vs reviews vs description)
+  const [activeTab, setActiveTab] = useState('description');
+
+  // Stats state
+  const [stats, setStats] = useState({ views: 0, watching: 0 });
+  const [activeInfoModal, setActiveInfoModal] = useState(null);
 
   useEffect(() => {
     if (product) {
       document.title = `${product.name} — Купить в TORMAG`;
 
-      // 1. Meta Description
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {
         metaDesc.setAttribute(
           'content',
-          `Купить ${product.name} по выгодной цене в интернет-магазине TORMAG. Рейтинг: ${product.rating || '4.8'} (${product.reviews || '124'} отзывов). Быстрая доставка по Алматы и области, начисление бонусов!`
+          `Купить ${product.name} по выгодной цене in интернет-магазине TORMAG. Рейтинг: ${product.rating || '4.8'} (${product.reviews || '124'} отзывов). Быстрая доставка по Алматы и области, начисление бонусов!`
         );
       }
 
-      // 2. JSON-LD structured data
       const oldScript = document.getElementById('jsonld-product-schema');
       if (oldScript) {
         oldScript.remove();
@@ -169,6 +241,14 @@ export default function ProductPage({
       try {
         const data = await getProductById(productId);
         setProduct(data);
+        
+        // Initialize default option
+        const options = getProductOptions(data.name);
+        if (options && options.items.length > 0) {
+          const firstAvailable = options.items.find(i => i.available) || options.items[0];
+          setSelectedOption(firstAvailable.value);
+        }
+
         trackEvent('product_view', {
           productId: data.id,
           value: data.price,
@@ -224,9 +304,21 @@ export default function ProductPage({
       }
     };
 
+    const loadStats = async () => {
+      try {
+        const statsData = await getProductStats(productId);
+        if (statsData) {
+          setStats(statsData);
+        }
+      } catch (err) {
+        console.error('Error loading product stats:', err);
+      }
+    };
+
     if (productId) {
       loadProduct();
       loadReviews();
+      loadStats();
     }
   }, [productId]);
 
@@ -254,7 +346,6 @@ export default function ProductPage({
   const breadcrumbs = useMemo(() => {
     if (!product || !categories || categories.length === 0) return [];
     
-    // Find the category of the product
     let currentCat = categories.find(c => c.id === product.categoryId || c.slug === product.category);
     
     if (!currentCat && product.categoryRelation) {
@@ -277,6 +368,61 @@ export default function ProductPage({
     return path;
   }, [product, categories]);
 
+  const parsedSpecs = useMemo(() => {
+    if (!product?.specifications) return [];
+    const lines = product.specifications.split(/\r?\n/);
+    const result = [];
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      const parts = line.includes(';') ? line.split(';') : [line];
+      parts.forEach(part => {
+        if (!part.trim()) return;
+        const colonIdx = part.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = part.substring(0, colonIdx).trim();
+          const val = part.substring(colonIdx + 1).trim();
+          if (key && val) {
+            result.push({ label: key, value: val });
+          }
+        } else {
+          result.push({ label: part.trim(), value: '' });
+        }
+      });
+    });
+    return result;
+  }, [product?.specifications]);
+
+  const groupedSpecs = useMemo(() => {
+    if (parsedSpecs.length === 0) return {};
+    
+    const groups = {
+      'Основные характеристики': ['бренд', 'страна', 'производитель', 'назначение', 'тип', 'состав', 'вид'],
+      'Физические свойства': ['цвет', 'фракция', 'вес', 'объем', 'размер', 'толщина', 'ширина', 'длина', 'высота', 'плотность'],
+      'Технические параметры': ['мощность', 'напряжение', 'аккумулятор', 'сила удара', 'обороты', 'частота', 'емкость', 'диаметр']
+    };
+
+    const result = {};
+
+    parsedSpecs.forEach(item => {
+      const labelLower = item.label.toLowerCase();
+      let matchedGroup = 'Прочие характеристики';
+      
+      for (const [groupName, keywords] of Object.entries(groups)) {
+        if (keywords.some(k => labelLower.includes(k))) {
+          matchedGroup = groupName;
+          break;
+        }
+      }
+
+      if (!result[matchedGroup]) {
+        result[matchedGroup] = [];
+      }
+      result[matchedGroup].push(item);
+    });
+
+    return result;
+  }, [parsedSpecs]);
+
   const specs = useMemo(() => splitLines(product?.specifications), [product]);
   const usage = useMemo(() => splitLines(product?.usage), [product]);
 
@@ -295,25 +441,42 @@ export default function ProductPage({
     return list.length > 0 ? list : [FALLBACK_PRODUCT_IMAGE];
   }, [product]);
 
+  const handleShare = () => {
+    setActiveInfoModal('share');
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    onAddToCart(product, quantity);
+    onNavigate?.('cart');
+  };
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center text-center text-slate-400">
-        <RefreshCw className="h-8 w-8 animate-spin text-emerald-600 mb-3" />
-        <p className="text-sm font-bold uppercase tracking-wider">Загружаем страницу товара...</p>
+      <div className="py-32 flex flex-col items-center justify-center text-center text-slate-400">
+        <RefreshCw className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+        <p className="text-sm font-bold uppercase tracking-wider text-slate-500">Загрузка информации о товаре...</p>
       </div>
     );
   }
 
   if (error || !product) {
     return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm">
-        <Package className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-        <h1 className="text-2xl font-extrabold text-slate-900 font-outfit mb-2">Товар не найден</h1>
-        <p className="text-sm text-slate-500 mb-6">{error || 'Позиция отсутствует или была удалена поставщиком.'}</p>
+      <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm max-w-2xl mx-auto my-12">
+        <Package className="h-16 w-16 text-slate-350 mx-auto mb-4" />
+        <h1 className="text-2xl font-black text-slate-900 font-outfit mb-2">Товар не найден</h1>
+        <p className="text-sm text-slate-500 mb-6">{error || 'Указанный товар отсутствует или удален.'}</p>
         <button
           type="button"
           onClick={onBackToCatalog}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-sm font-bold transition-all shadow-md transform hover:-translate-y-0.5"
+          className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md transform hover:-translate-y-0.5"
         >
           <ArrowLeft className="h-4 w-4" />
           Вернуться в каталог
@@ -324,418 +487,597 @@ export default function ProductPage({
 
   const activeImage = allImages[activeImageIndex] || allImages[0];
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : null;
+  const isFav = isFavorite ? isFavorite(product.id) : false;
+  const optionsConfig = getProductOptions(product.name);
+
+  // Articles generated or fetched
+  const articleNum = product.article || `2989${10 + product.id}`;
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
-      <div className="flex flex-wrap items-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-2xl py-3 px-4 sm:px-5 shadow-sm">
+    <div className="space-y-6 animate-fade-in-up">
+      {/* ── Breadcrumbs ── */}
+      <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+        <Link
+          href={getPageHref('home')}
+          onClick={() => onNavigate?.('home')}
+          className="hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-400"
+        >
+          Главная
+        </Link>
+        <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
         <Link
           href={getPageHref('catalog')}
-          onClick={() => {
-            onBackToCatalog();
-          }}
-          className="inline-flex items-center justify-center gap-1.5 text-slate-500 hover:text-emerald-600 transition-colors text-xs font-bold shrink-0 cursor-pointer bg-transparent border-0 p-0"
+          onClick={onBackToCatalog}
+          className="hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-400"
         >
-          <ArrowLeft className="h-4 w-4" />
-          <span>В каталог</span>
+          Каталог
         </Link>
-
-        <div className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
-
-        <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed">
-          <Link
-            href={getPageHref('home')}
-            onClick={() => onNavigate?.('home')}
-            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
-          >
-            Главная
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
-          <Link
-            href={getPageHref('catalog')}
-            onClick={() => {
-              onBackToCatalog();
-            }}
-            className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
-          >
-            Каталог
-          </Link>
-          {breadcrumbs.map((cat) => (
-            <React.Fragment key={cat.id}>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
-              <Link
-                href={getPageHref('catalog', null, cat.slug)}
-                onClick={() => {
-                  if (setSelectedCategory) setSelectedCategory(cat.slug || cat.id);
-                }}
-                className="hover:text-emerald-600 transition-colors text-left cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-550"
-              >
-                {cat.name}
-              </Link>
-            </React.Fragment>
-          ))}
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 mx-1 shrink-0" />
-          <span className="text-slate-800 font-bold truncate max-w-[150px] sm:max-w-[280px]">
-            {product.name}
-          </span>
-        </nav>
+        {breadcrumbs.map((cat) => (
+          <React.Fragment key={cat.id}>
+            <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+            <Link
+              href={getPageHref('catalog', null, cat.slug)}
+              onClick={() => {
+                if (setSelectedCategory) setSelectedCategory(cat.slug || cat.id);
+              }}
+              className="hover:text-blue-600 transition-colors text-left cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-400"
+            >
+              {cat.name}
+            </Link>
+          </React.Fragment>
+        ))}
+        <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+        <span className="text-slate-600 font-bold truncate max-w-[200px] sm:max-w-xs">
+          {product.name}
+        </span>
       </div>
 
-      <section className="bg-white border border-slate-200/70 rounded-[2rem] shadow-sm overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-          {/* ── Image column: vertical thumbs left + big photo right ── */}
-          <div className="relative bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col p-5 sm:p-8 min-h-[360px]">
-            {/* Badges */}
-            <div className="absolute top-5 left-5 flex flex-wrap gap-2 z-10">
-              <span className="bg-white/90 border border-slate-200 text-slate-600 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                {CATEGORY_LABELS[product.category] || product.category}
-              </span>
-              {product.isHit && (
-                <span className="bg-red-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  Хит продаж
-                </span>
-              )}
-              {discount && (
-                <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  -{discount}%
-                </span>
-              )}
-            </div>
-
-            {allImages.length > 1 ? (
-              /* Layout with thumbnails */
-              <div className="flex flex-col sm:flex-row gap-4 flex-grow mt-10 sm:mt-6">
-
-                {/* ── Vertical thumbnail strip with arrow buttons (desktop) ── */}
-                <div className="hidden sm:flex flex-col items-center gap-1.5 shrink-0">
-                  {/* Up arrow */}
-                  <button
-                    type="button"
-                    onClick={() => setThumbnailOffset(o => Math.max(0, o - 1))}
-                    disabled={thumbnailOffset === 0}
-                    className="w-8 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-
-                  {/* Visible thumbnails */}
-                  <div className="flex flex-col gap-2">
-                    {allImages.slice(thumbnailOffset, thumbnailOffset + THUMBS_VISIBLE).map((img, i) => {
-                      const idx = thumbnailOffset + i;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setActiveImageIndex(idx)}
-                          className={`w-[68px] h-[68px] rounded-xl border-2 overflow-hidden bg-transparent transition-all duration-200 shrink-0 hover:scale-110 hover:shadow-md ${
-                            activeImageIndex === idx
-                              ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md scale-105'
-                              : 'border-slate-200 hover:border-slate-400'
-                          }`}
-                        >
-                          <img
-                            src={img}
-                            alt={`${product.name} - фото ${idx + 1}`}
-                            className="w-full h-full object-contain"
-                            onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
-                          />
-                        </button>
-                      );
-                    })}
+      {/* ── Main Product Section (Two separate blocks) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        {/* BLOCK 1: Gallery & Product Details (9 cols on lg) */}
+        <div className="lg:col-span-9 bg-white border border-slate-100 rounded-3xl shadow-sm p-4 sm:p-6 lg:p-8 flex flex-col justify-between h-full">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10">
+            
+            {/* COLUMN 1: IMAGE GALLERY */}
+            <div className="md:col-span-7 flex flex-col h-full min-h-[380px] sm:min-h-[450px]">
+              <div className="flex flex-col space-y-4">
+                <div className="relative border border-slate-100 bg-slate-50/50 rounded-2xl p-6 flex items-center justify-center min-h-[300px] sm:min-h-[385px] group overflow-hidden">
+                  {/* Badges */}
+                  <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+                    {product.isHit && (
+                      <span className="bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm">
+                        Хит
+                      </span>
+                    )}
+                    {discount && (
+                      <span className="bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm">
+                        -{discount}%
+                      </span>
+                    )}
                   </div>
 
-                  {/* Down arrow */}
-                  <button
-                    type="button"
-                    onClick={() => setThumbnailOffset(o => Math.min(allImages.length - THUMBS_VISIBLE, o + 1))}
-                    disabled={thumbnailOffset + THUMBS_VISIBLE >= allImages.length}
-                    className="w-8 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-
-                  {/* Dot indicator */}
-                  {allImages.length > THUMBS_VISIBLE && (
-                    <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                      {thumbnailOffset + 1}–{Math.min(thumbnailOffset + THUMBS_VISIBLE, allImages.length)}/{allImages.length}
-                    </span>
-                  )}
-                </div>
-
-                {/* Main image */}
-                <div className="flex-grow flex items-center justify-center">
+                  {/* Main Image */}
                   <img
                     src={activeImage}
                     alt={product.name}
-                    className="w-full max-w-xl h-[300px] sm:h-[380px] object-contain drop-shadow-xl transition-all duration-300"
+                    className="w-full max-w-sm h-[280px] sm:h-[320px] object-contain drop-shadow-md group-hover:scale-105 transition-all duration-300"
                     onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
                   />
                 </div>
 
-                {/* ── Horizontal strip with arrows (mobile only) ── */}
-                <div className="flex sm:hidden items-center gap-1.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setThumbnailOffset(o => Math.max(0, o - 1))}
-                    disabled={thumbnailOffset === 0}
-                    className="w-7 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all shrink-0"
-                  >
-                    <ChevronUp className="h-4 w-4 -rotate-90" />
-                  </button>
-
-                  <div className="flex gap-2 overflow-hidden">
-                    {allImages.slice(thumbnailOffset, thumbnailOffset + THUMBS_VISIBLE).map((img, i) => {
-                      const idx = thumbnailOffset + i;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setActiveImageIndex(idx)}
-                          className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-transparent transition-all duration-200 shrink-0 hover:scale-110 ${
-                            activeImageIndex === idx
-                              ? 'border-emerald-500 ring-2 ring-emerald-200 shadow-md scale-105'
-                              : 'border-slate-200 hover:border-slate-400'
-                          }`}
-                        >
-                          <img
-                            src={img}
-                            alt={`${product.name} - миниатюра ${idx + 1}`}
-                            className="w-full h-full object-contain"
-                            onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
-                          />
-                        </button>
-                      );
-                    })}
+                {/* Thumbnails strip */}
+                {allImages.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                    {allImages.map((img, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImageIndex(i)}
+                        className={`w-[60px] h-[60px] rounded-xl border bg-white overflow-hidden p-1 transition-all shrink-0 hover:border-blue-500 ${
+                          activeImageIndex === i
+                            ? 'border-blue-600 ring-2 ring-blue-100'
+                            : 'border-slate-200'
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${product.name} - фото ${i + 1}`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                        />
+                      </button>
+                    ))}
                   </div>
+                )}
+              </div>
 
+              {/* Engagement Metrics (No pulsing dot, aligned to bottom like Kaspi) */}
+              <div className="mt-auto pt-4 flex items-center justify-between text-xs font-semibold text-slate-400">
+                <div className="flex items-center">
+                  <span>Смотрят сейчас:</span>
+                  <span className="text-emerald-600 font-bold ml-1.5">
+                    {stats.watching || 1} {(stats.watching || 1) % 10 === 1 && (stats.watching || 1) % 100 !== 11 ? 'человек' : [2, 3, 4].includes((stats.watching || 1) % 10) && ![12, 13, 14].includes((stats.watching || 1) % 100) ? 'человека' : 'человек'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4 text-slate-455 shrink-0" />
+                  <span className="text-slate-500 font-bold">{stats.views || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMN 2: SPECS, RATING & OPTIONS */}
+            <div className="md:col-span-5 flex flex-col space-y-6">
+              <div>
+                {/* Rating & Review counter */}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center text-amber-400 gap-0.5">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span className="text-sm font-bold text-slate-800 ml-1">{product.rating || '4.8'}</span>
+                  </div>
+                  <span className="h-3 w-px bg-slate-200" />
                   <button
                     type="button"
-                    onClick={() => setThumbnailOffset(o => Math.min(allImages.length - THUMBS_VISIBLE, o + 1))}
-                    disabled={thumbnailOffset + THUMBS_VISIBLE >= allImages.length}
-                    className="w-7 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-25 disabled:cursor-not-allowed transition-all shrink-0"
+                    onClick={() => scrollToSection('reviews-section')}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
                   >
-                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                    {reviewsMeta.total} отзывов
                   </button>
                 </div>
 
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-outfit leading-snug mb-1">
+                  {product.name}
+                </h1>
+
+                <div className="text-[11px] font-bold text-slate-400 font-mono">
+                  Артикул: {articleNum}
+                </div>
               </div>
-            ) : (
-              /* Single image — centered */
-              <div className="flex-grow flex items-center justify-center mt-10 sm:mt-6">
-                <img
-                  src={activeImage}
-                  alt={product.name}
-                  className="w-full max-w-xl h-[300px] sm:h-[420px] object-contain drop-shadow-2xl transition-all duration-300"
-                  onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
-                />
+
+              {/* Variant selector options */}
+              {optionsConfig && (
+                <div className="space-y-2 border-t border-slate-100 pt-4">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    {optionsConfig.label}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {optionsConfig.items.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={!opt.available}
+                        onClick={() => setSelectedOption(opt.value)}
+                        className={`relative px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+                          !opt.available
+                            ? 'border-slate-100 bg-slate-50 text-slate-350 border-dashed cursor-not-allowed'
+                            : selectedOption === opt.value
+                            ? 'border-blue-600 bg-blue-50/50 text-blue-600 ring-1 ring-blue-600'
+                            : 'border-slate-200 hover:border-slate-400 text-slate-700'
+                        }`}
+                        title={opt.reason || ''}
+                      >
+                        {opt.value}
+                        {!opt.available && opt.reason && (
+                          <span className="block text-[8px] font-medium text-slate-400 mt-0.5">
+                            {opt.reason}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Compact Specs list with dotted leader line */}
+              {parsedSpecs.length > 0 && (
+                <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    Характеристики:
+                  </h3>
+                  <div className="space-y-2.5">
+                    {parsedSpecs.slice(0, 4).map((item, index) => (
+                      <div key={index} className="flex items-end text-xs font-semibold leading-relaxed w-full">
+                        <span className="text-slate-400 shrink-0 pr-1">{item.label}</span>
+                        <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[10px]"></span>
+                        <span className="text-slate-800 font-bold pl-1 shrink-0 break-all max-w-[60%]">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {parsedSpecs.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('specs');
+                        scrollToSection('tabs-section');
+                      }}
+                      className="text-blue-600 hover:text-blue-700 hover:underline text-xs font-bold block text-center mt-3 cursor-pointer bg-transparent border-0 w-full"
+                    >
+                      Все характеристики
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* BLOCK 2: Sticky Buy Box (3 cols on lg) */}
+        <div className="lg:col-span-3 bg-white border border-slate-100 rounded-3xl shadow-sm p-5 space-y-4 h-full">
+          {/* Guarantee Label */}
+          <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-extrabold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100/50">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>Гарантия низкой цены</span>
+          </div>
+
+          {/* Pricing block */}
+          <div>
+            {product.oldPrice && (
+              <div className="text-xs text-slate-400 line-through mb-0.5">
+                {formatPrice(product.oldPrice * quantity)}
               </div>
             )}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-black text-slate-900 font-outfit">
+                {formatPrice(product.price * quantity)}
+              </span>
+              <span className="text-xs text-slate-400">
+                {quantity > 1 ? `за ${quantity} шт` : '/ шт'}
+              </span>
+            </div>
+
+            {/* Cashback computation */}
+            <div className="inline-flex items-center gap-1 mt-2 text-[10px] font-black text-emerald-700 bg-emerald-50/50 border border-emerald-100 px-2 py-0.5 rounded-md">
+              <Tag className="h-3 w-3" />
+              <span>+ {formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100) * quantity)} бонусов</span>
+            </div>
           </div>
 
-          <div className="p-6 sm:p-8 lg:p-10 flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${i <= Math.round(product.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
-                  />
-                ))}
+          {/* Quantity selector */}
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl h-11 p-1 justify-between shadow-sm">
+            <button
+              type="button"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              className="w-10 h-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-bold rounded-lg transition-all text-lg"
+            >
+              -
+            </button>
+            <QuantityInput value={quantity} onChange={setQuantity} />
+            <button
+              type="button"
+              onClick={() => setQuantity(q => q + 1)}
+              className="w-10 h-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-bold rounded-lg transition-all text-lg"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="space-y-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onAddToCart(product, quantity)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold h-11 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+            >
+              <ShoppingCart className="h-4.5 w-4.5" />
+              В корзину
+            </button>
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              className="w-full border border-blue-600 hover:bg-blue-50 text-blue-600 font-extrabold h-11 rounded-xl transition-all flex items-center justify-center"
+            >
+              Купить сейчас
+            </button>
+          </div>
+
+          {/* Shipping info */}
+          <div className="border-t border-slate-100 pt-3 space-y-2.5 text-xs">
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-slate-400 font-medium">Продавец: </span>
+                <span className="font-bold text-slate-800 block sm:inline">{product.supplier?.name || 'TORMAG.KZ'}</span>
               </div>
-              <span className="text-xs font-semibold text-slate-500">{product.rating} · {product.reviews} отзывов</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Clock className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-slate-400 font-medium">Доставка: </span>
+                <span className="font-bold text-slate-800">{product.supplier?.delivery || '1-2 дня'}</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 text-slate-455 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-slate-400 font-medium">Склад: </span>
+                <span className="font-bold text-slate-800">Алматы, РК</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Price alert */}
+          <button
+            type="button"
+            onClick={() => setActiveInfoModal('priceAlert')}
+            className="w-full text-center text-[11px] font-bold text-slate-400 hover:text-blue-600 transition-colors pt-1 cursor-pointer"
+          >
+            Сообщить о снижении цены
+          </button>
+
+          {/* Under-card Actions */}
+          <div className="border-t border-slate-100 pt-3 flex items-center justify-around gap-2 text-slate-400">
+            <button
+              type="button"
+              onClick={() => showToast?.('⚖️ Товар добавлен в список сравнения')}
+              className="flex flex-col items-center gap-1 hover:text-slate-700 transition-colors text-[10px] font-bold"
+            >
+              <Scale className="h-4.5 w-4.5" />
+              <span>Сравнить</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleFavorite?.(product)}
+              className={`flex flex-col items-center gap-1 transition-colors text-[10px] font-bold ${
+                isFav ? 'text-red-500 hover:text-red-600' : 'hover:text-slate-700'
+              }`}
+            >
+              <Heart className={`h-4.5 w-4.5 ${isFav ? 'fill-current' : ''}`} />
+              <span>{isFav ? 'В избранном' : 'В избранное'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex flex-col items-center gap-1 hover:text-slate-700 transition-colors text-[10px] font-bold"
+            >
+              <Share2 className="h-4.5 w-4.5" />
+              <span>Поделиться</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Service Info Badges (Aligned under the left card) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-9">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Badge 1: Нашли дешевле */}
+            <div 
+              onClick={() => setActiveInfoModal('lowPrice')}
+              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+            >
+              <Coins className="h-6 w-6 text-slate-800 shrink-0" />
+              <div className="text-left">
+                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Нашли товар дешевле?</h4>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Компенсируем 110% разницы</p>
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black text-slate-950 leading-tight font-outfit mb-4">
-              {product.name}
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-6">
-              {product.description || product.details || 'Поставщик пока не добавил подробное описание товара.'}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3">
-                <ShieldCheck className="h-4 w-4 text-blue-500 mb-2" />
-                <p className="text-[10px] uppercase font-bold text-slate-400">Поставщик</p>
-                <p className="text-xs font-bold text-slate-800 truncate">{product.supplier?.name || 'Официальный склад'}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3">
-                <Clock className="h-4 w-4 text-emerald-600 mb-2" />
-                <p className="text-[10px] uppercase font-bold text-slate-400">Доставка</p>
-                <p className="text-xs font-bold text-slate-800">{product.supplier?.delivery || '1-2 дня'}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3">
-                <MapPin className="h-4 w-4 text-emerald-500 mb-2" />
-                <p className="text-[10px] uppercase font-bold text-slate-400">Склад</p>
-                <p className="text-xs font-bold text-slate-800">Алматы · РК</p>
+            {/* Badge 2: Условия доставки */}
+            <div 
+              onClick={() => setActiveInfoModal('delivery')}
+              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+            >
+              <RefreshCw className="h-6 w-6 text-slate-800 shrink-0" />
+              <div className="text-left">
+                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Условия доставки и самовывоза</h4>
               </div>
             </div>
 
-            <div className="mt-auto rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
-              {product.oldPrice && (
-                <div className="text-sm text-slate-400 line-through mb-1">{formatPrice(product.oldPrice * quantity)}</div>
-              )}
-              <div className="flex flex-wrap items-baseline gap-2 mb-4">
-                <span className="text-4xl font-black text-slate-950 font-outfit">{formatPrice(product.price * quantity)}</span>
-                <span className="text-sm text-slate-400 pb-1">{quantity > 1 ? `за ${quantity} шт` : '/ шт'}</span>
-                <span className="bg-emerald-50 text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1 border border-emerald-100/50 shadow-sm" title="Бонусы за покупку">
-                  + {formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100) * quantity)} бонусов
-                </span>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex items-center bg-white border border-slate-200 rounded-2xl h-14 p-1 shadow-sm shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    className="w-12 h-full flex items-center justify-center text-slate-650 hover:bg-slate-100 font-bold rounded-xl transition-all"
-                  >
-                    -
-                  </button>
-                  <QuantityInput value={quantity} onChange={setQuantity} />
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(q => q + 1)}
-                    className="w-12 h-full flex items-center justify-center text-slate-650 hover:bg-slate-100 font-bold rounded-xl transition-all"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onAddToCart(product, quantity);
-                  }}
-                  className="flex-grow bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-14 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md transform hover:-translate-y-0.5"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  В корзину
-                </button>
+            {/* Badge 3: Условия возврата */}
+            <div 
+              onClick={() => setActiveInfoModal('returns')}
+              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+            >
+              <Truck className="h-6 w-6 text-slate-800 shrink-0" />
+              <div className="text-left">
+                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Условия возврата и обмена</h4>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200/70 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
-          <h2 className="text-2xl font-extrabold text-slate-950 font-outfit">Подробная информация</h2>
-          <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-            {product.details || product.description || 'Поставщик пока не добавил расширенную информацию по товару.'}
-          </div>
+      {/* ── Bottom Section with Tabs ── */}
+      <div id="tabs-section" className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+        {/* Tab Headers */}
+        <div className="flex border-b border-slate-100 bg-slate-50/50">
+          <button
+            type="button"
+            onClick={() => setActiveTab('description')}
+            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'description'
+                ? 'border-blue-600 text-blue-600 bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Описание
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('specs')}
+            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'specs'
+                ? 'border-blue-600 text-blue-600 bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Характеристики ({parsedSpecs.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('reviews')}
+            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'reviews'
+                ? 'border-blue-600 text-blue-600 bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Отзывы ({reviewsMeta.total})
+          </button>
         </div>
 
-        <div className="bg-white border border-slate-200/70 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
-          <h2 className="text-xl font-extrabold text-slate-950 font-outfit">Характеристики</h2>
-          {specs.length > 0 ? (
-            <dl className="space-y-3">
-              {specs.map((line, index) => {
-                const [label, ...rest] = line.split(':');
-                return (
-                  <div key={`${line}-${index}`} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                    <dt className="text-[10px] uppercase font-bold text-slate-400">{rest.length ? label : `Параметр ${index + 1}`}</dt>
-                    <dd className="text-sm font-semibold text-slate-800 mt-0.5">{rest.length ? rest.join(':').trim() : line}</dd>
-                  </div>
-                );
-              })}
-            </dl>
-          ) : (
-            <p className="text-sm text-slate-400">Характеристики пока не заполнены.</p>
-          )}
-        </div>
-      </section>
-
-      {/* Reviews block */}
-      <section className="bg-white border border-slate-200/70 rounded-[2rem] p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black text-slate-950 font-outfit">Отзывы покупателей ({reviewsMeta.total})</h2>
-            <p className="text-slate-400 text-xs font-semibold">На основе покупок этого товара</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center text-amber-400">
-              <Star className="h-5 w-5 fill-amber-400" />
-              <span className="ml-1.5 font-outfit text-xl font-bold text-slate-900">{product.rating || '4.5'}</span>
-            </div>
-            <span className="text-slate-200">|</span>
-            <span className="text-xs font-semibold text-slate-500">{reviewsMeta.total} оценок</span>
-          </div>
-        </div>
-
-        {loadingReviews ? (
-          <div className="py-8 text-center text-sm font-semibold text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
-            <span>Загружаем отзывы...</span>
-          </div>
-        ) : reviews.length === 0 ? (
-          <div className="py-12 text-center bg-slate-50/50 rounded-2xl border border-slate-100">
-            <p className="text-sm font-bold text-slate-400">У этого товара пока нет отзывов.</p>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              Оставить отзыв могут только пользователи, купившие и получившие данный товар.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
+        {/* Tab Contents */}
+        <div className="p-6 sm:p-8">
+          {/* TAB 1: DESCRIPTION */}
+          {activeTab === 'description' && (
             <div className="space-y-6">
-              {reviews.map((rev) => (
-                <div key={rev.id} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800 text-sm font-outfit">{rev.user?.name}</span>
-                        <span className="text-slate-300 text-[10px]">·</span>
-                        <span className="text-slate-400 text-[11px] font-semibold">
-                          {new Date(rev.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
+              <div className="prose prose-slate max-w-none text-sm text-slate-655 leading-relaxed">
+                <p className="whitespace-pre-line">
+                  {product.details || product.description || 'Поставщик пока не добавил подробное описание товара.'}
+                </p>
+              </div>
+
+              {usage.length > 0 && (
+                <div className="border-t border-slate-100 pt-6 space-y-3">
+                  <h3 className="text-base font-extrabold text-slate-900 font-outfit">Способ применения / Инструкция</h3>
+                  <ul className="list-disc pl-5 space-y-2 text-sm text-slate-600">
+                    {usage.map((step, i) => (
+                      <li key={i} className="leading-relaxed">{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: FULL SPECS */}
+          {activeTab === 'specs' && (
+            <div className="max-w-3xl space-y-6">
+              <h3 className="text-base font-extrabold text-slate-900 font-outfit mb-4">Технические характеристики</h3>
+              {Object.keys(groupedSpecs).length > 0 ? (
+                <div className="space-y-6">
+                  {Object.entries(groupedSpecs).map(([groupName, items]) => (
+                    <div key={groupName} className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-6 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                      {/* Left Column: Group Header */}
+                      <div className="text-slate-400 font-extrabold text-xs uppercase tracking-wider md:pt-1">
+                        {groupName}
                       </div>
-                      {/* Stars */}
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-3 w-3 ${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
-                          />
+                      {/* Right Column: Dotted list of specs */}
+                      <div className="md:col-span-2 space-y-3">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="flex items-end text-xs font-semibold leading-relaxed w-full">
+                            <span className="text-slate-500 shrink-0 pr-1">{item.label}</span>
+                            <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[10px]"></span>
+                            <span className="text-slate-800 font-bold pl-1 shrink-0 break-all max-w-[60%]">{item.value}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
-                    {rev.user?.email && (
-                      <span className="text-[10px] text-slate-400 font-mono tracking-wider bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100/80">
-                        {rev.user.email}
-                      </span>
-                    )}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">Характеристики пока не добавлены.</p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: REVIEWS */}
+          {activeTab === 'reviews' && (
+            <div id="reviews-section" className="space-y-8">
+              {/* Rating header */}
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900 font-outfit">Отзывы о товаре</h3>
+                  <p className="text-slate-400 text-xs font-semibold">На основе подтвержденных покупок</p>
+                </div>
+                <div className="flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
+                  <div className="flex items-center text-amber-400">
+                    <Star className="h-5 w-5 fill-amber-400" />
+                    <span className="ml-1.5 font-outfit text-xl font-black text-slate-900">{product.rating || '4.8'}</span>
                   </div>
-                  {rev.comment && (
-                    <p className="text-sm text-slate-650 leading-relaxed mt-3 bg-slate-50/40 p-3.5 rounded-2xl border border-slate-100/60 font-medium">
-                      {rev.comment}
-                    </p>
+                  <span className="text-slate-200">|</span>
+                  <span className="text-xs font-bold text-slate-500">{reviewsMeta.total} отзывов</span>
+                </div>
+              </div>
+
+              {/* Reviews body */}
+              {loadingReviews ? (
+                <div className="py-8 text-center text-sm font-semibold text-slate-400 flex items-center justify-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                  <span>Загружаем отзывы покупателей...</span>
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="py-12 text-center bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                  <p className="text-sm font-bold text-slate-400">У этого товара пока нет отзывов.</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Отзывы могут оставлять только клиенты, которые приобрели и получили этот товар.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="divide-y divide-slate-100">
+                    {reviews.map((rev) => (
+                      <div key={rev.id} className="py-6 first:pt-0 last:pb-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-800 text-sm font-outfit">{rev.user?.name}</span>
+                              <span className="text-slate-350 text-[10px]">·</span>
+                              <span className="text-slate-400 text-xs font-semibold">
+                                {new Date(rev.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </span>
+                            </div>
+                            {/* Stars */}
+                            <div className="flex items-center gap-0.5 mt-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`h-3 w-3 ${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {rev.user?.email && (
+                            <span className="text-[10px] text-slate-400 font-mono tracking-wider bg-slate-50 px-2 py-0.5 rounded border border-slate-100/80">
+                              {rev.user.email}
+                            </span>
+                          )}
+                        </div>
+                        {rev.comment && (
+                          <p className="text-sm text-slate-600 leading-relaxed mt-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100/40 font-medium">
+                            {rev.comment}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {reviewsMeta.hasMore && (
+                    <div className="pt-4 text-center">
+                      <button
+                        type="button"
+                        onClick={loadMoreReviews}
+                        disabled={loadingMoreReviews}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        {loadingMoreReviews ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                            Загрузка...
+                          </>
+                        ) : (
+                          'Показать еще отзывы'
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
-              ))}
+              )}
             </div>
+          )}
+        </div>
+      </div>
 
-            {reviewsMeta.hasMore && (
-              <div className="pt-4 text-center">
-                <button
-                  type="button"
-                  onClick={loadMoreReviews}
-                  disabled={loadingMoreReviews}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-2xl text-xs tracking-wider uppercase transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
-                >
-                  {loadingMoreReviews ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
-                      Загрузка...
-                    </>
-                  ) : (
-                    'Показать еще отзывы'
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
+      {/* Info Modals */}
+      <InfoModals
+        isOpen={!!activeInfoModal}
+        type={activeInfoModal}
+        onClose={() => setActiveInfoModal(null)}
+        showToast={showToast}
+      />
     </div>
   );
 }

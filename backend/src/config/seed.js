@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import redisClient from './redis.js';
 
 const prisma = new PrismaClient();
 
@@ -21,6 +22,17 @@ async function main() {
   await prisma.supplier.deleteMany({});
   await prisma.category.deleteMany({});
   await prisma.promotion.deleteMany({});
+
+  // Очистка кэша Redis
+  try {
+    const keys = await redisClient.keys('*');
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      console.log('Кэш Redis успешно очищен.');
+    }
+  } catch (err) {
+    console.warn('Предупреждение: Не удалось очистить кэш Redis при сидировании:', err.message);
+  }
 
   // Создаем дистрибьюторов
   const suppliersData = [
@@ -491,4 +503,7 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    try {
+      await redisClient.quit();
+    } catch (err) {}
   });

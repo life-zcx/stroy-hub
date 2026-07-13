@@ -58,6 +58,11 @@ export const getProductById = async (id) => {
   return response.data;
 };
 
+export const getProductStats = async (id) => {
+  const response = await api.get(`/products/${id}/stats`);
+  return response.data;
+};
+
 // Suppliers API
 export const getSuppliers = async () => {
   const response = await api.get('/suppliers');
