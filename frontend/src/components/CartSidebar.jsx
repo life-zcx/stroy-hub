@@ -318,27 +318,7 @@ export default function CartSidebar({
             </button>
           </div>
 
-          {cart.length > 0 && !checkoutMode && (
-            <div className="bg-emerald-50/50 p-4 border-b border-emerald-100">
-              <div className="flex justify-between text-xs font-medium text-slate-700 mb-2">
-                <span>До бесплатной доставки</span>
-                <span>
-                  {cartTotal >= FREE_DELIVERY_THRESHOLD
-                    ? 'Готово! Доставим бесплатно 🚚'
-                    : `${formatPrice(FREE_DELIVERY_THRESHOLD - cartTotal)}`}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-500">
-                При заказе от {formatPrice(FREE_DELIVERY_THRESHOLD)} доставка по Алматы за наш счет.
-              </p>
-            </div>
-          )}
+
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/50">
             {cart.length === 0 ? (

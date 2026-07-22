@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import {
@@ -18,6 +19,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import ProductSkeleton from '../components/ProductSkeleton';
 
 export default function Storefront({
   products,
@@ -91,6 +93,22 @@ export default function Storefront({
     }
   }, [currentCategoryDetail]);
 
+  // Lock background scroll when Mobile Filters are open
+  useEffect(() => {
+    if (isMobileFiltersOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isMobileFiltersOpen]);
+
 
   const processedProducts = useMemo(() => {
     return products;
@@ -108,10 +126,10 @@ export default function Storefront({
   const rootCategories = categories.filter(c => !c.parentId);
 
   // ═══ RENDER SIDEBAR CONTENT ═══
-  const SidebarContent = () => (
-    <div className="space-y-8">
+  const SidebarContent = ({ isCompact = false }) => (
+    <div className={isCompact ? "space-y-4" : "space-y-8"}>
       {/* Sort */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-[9px]">Сортировка</h3>
         <div className="relative group">
           <select
@@ -395,9 +413,8 @@ export default function Storefront({
 
         {/* ═══ PRODUCT GRID ═══ */}
         {loading && products.length === 0 ? (
-          <div className="text-center py-20 flex flex-col items-center">
-            <RefreshCw className="h-10 w-10 text-emerald-600 animate-spin mb-4" />
-            <p className="text-sm font-black text-slate-400 uppercase tracking-widest animate-pulse">Загружаем товары...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            <ProductSkeleton count={6} />
           </div>
         ) : processedProducts.length === 0 ? (
           <div className="text-center py-32 bg-slate-50/50 rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-6">
@@ -445,15 +462,15 @@ export default function Storefront({
           </>
         ) : (
           <>
-            <div className="space-y-5">
+            <div className="space-y-4 w-full">
               {processedProducts.map(product => (
-                <div key={product.id} className="bg-white border border-slate-100 p-5 rounded-3xl hover:shadow-xl hover:border-emerald-500/10 transition-all flex flex-col sm:flex-row items-center gap-6 relative group text-left">
+                <div key={product.id} className="bg-white border border-slate-100 p-4 sm:p-5 rounded-3xl hover:shadow-xl hover:border-emerald-500/10 transition-all flex flex-col sm:flex-row items-center gap-4 sm:gap-6 relative group text-left w-full overflow-hidden">
                 {product.isHit && (
-                  <span className="absolute top-5 left-5 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase flex items-center gap-1 z-10 shadow-lg shadow-red-500/30">
+                  <span className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase flex items-center gap-1 z-10 shadow-lg shadow-red-500/30">
                     <Zap className="h-3 w-3 fill-current" /> Хит
                   </span>
                 )}
-                <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
                   <img 
                     src={product.image} 
                     alt={product.name} 
@@ -461,26 +478,26 @@ export default function Storefront({
                     onError={(e) => { e.target.src = 'https://placehold.co/128x128'; }} 
                   />
                 </div>
-                <div className="flex-grow space-y-3 min-w-0 py-2">
-                  <div className="flex flex-col gap-1">
+                <div className="flex-grow space-y-2 min-w-0 w-full py-1">
+                  <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{categories.find(c => c.slug === product.category)?.name || product.category}</span>
-                    <h3 className="text-lg font-black text-slate-900 leading-tight group-hover:text-emerald-700 transition-colors truncate">{product.name}</h3>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 break-words">{product.name}</h3>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold uppercase">Цена</span>
-                      <p className="text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
+                      <p className="text-lg sm:text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
                     </div>
                     {product.bulkDiscount && (
-                       <div className="bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5">
+                       <div className="bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
                          <Tag className="h-3 w-3 text-emerald-600" />
                          <span className="text-[10px] font-bold text-emerald-700 uppercase">Оптом дешевле</span>
                        </div>
                     )}
                   </div>
                 </div>
-                <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-slate-100" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl h-11 p-0.5 w-full sm:w-28 shadow-inner">
+                <div className="flex flex-col sm:flex-col items-stretch sm:items-center gap-2.5 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-0 border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-xl h-10 p-0.5 w-full sm:w-28 shadow-inner">
                     <button
                       type="button"
                       onClick={() => changeQuantity(product.id, -1)}
@@ -501,7 +518,7 @@ export default function Storefront({
                   </div>
                   <button 
                     onClick={() => onAddToCart(product, getQuantity(product.id))}
-                    className="flex-grow w-full sm:w-28 h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                    className="w-full sm:w-28 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 shrink-0"
                   >
                     <ShoppingCart className="h-4 w-4" />
                     <span className="text-xs font-bold">В корзину</span>
@@ -527,18 +544,22 @@ export default function Storefront({
         )}
       </div>
 
-      {/* ═══ MOBILE FILTERS DRAWER ═══ */}
-      {isMobileFiltersOpen && (
-        <div className="fixed inset-0 z-[100] lg:hidden">
-          <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-fade-in" onClick={() => setIsMobileFiltersOpen(false)} />
-          <div className="absolute right-0 top-0 bottom-0 w-80 bg-white shadow-2xl animate-slide-left p-6 overflow-y-auto">
-             <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
-               <h2 className="text-xl font-black text-slate-900 uppercase font-outfit">Фильтры</h2>
-               <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 bg-slate-50 rounded-xl"><X className="h-6 w-6 text-slate-400" /></button>
+      {/* ═══ MOBILE FILTERS BOTTOM SHEET (TELEPORTED TO BODY) ═══ */}
+      {isMobileFiltersOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] lg:hidden flex flex-col justify-end">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsMobileFiltersOpen(false)} />
+          <div className="relative z-10 w-full h-[96vh] max-h-[96vh] bg-white rounded-t-[2rem] shadow-2xl animate-slide-up p-4 pt-3 pb-8 overflow-y-auto border-t border-slate-100 text-left flex flex-col">
+             <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2 shrink-0" />
+             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+               <h2 className="text-lg font-extrabold text-slate-900 uppercase font-outfit">Фильтры</h2>
+               <button onClick={() => setIsMobileFiltersOpen(false)} className="p-1.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+                 <X className="h-4.5 w-4.5 text-slate-600" />
+               </button>
              </div>
-             <SidebarContent />
+             <SidebarContent isCompact={true} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

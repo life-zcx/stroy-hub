@@ -27,6 +27,8 @@ import AuthModal from './components/AuthModal';
 import RegionModal from './components/RegionModal';
 import CallbackModal from './components/CallbackModal';
 import Toast from './components/Toast';
+import ScrollToTop from './components/ScrollToTop';
+import MobileCartBar from './components/MobileCartBar';
 import useToast from './hooks/useToast';
 import useNavigation from './hooks/useNavigation';
 import useCatalog from './hooks/useCatalog';
@@ -41,6 +43,7 @@ import { getPageHref } from './utils/navigationHelper';
 import { PATH_TO_CABINET_TAB } from './hooks/useNavigation';
 import { getSystemSettings } from './services/api';
 import ComingSoonModal from './components/ComingSoonModal';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -211,6 +214,27 @@ export default function App() {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Prevent iOS / PWA standalone mode from breaking out to browser on internal link clicks
+  useEffect(() => {
+    const handleGlobalLinkClick = (e) => {
+      const anchor = e.target.closest('a');
+      if (!anchor) return;
+      
+      const href = anchor.getAttribute('href');
+      // If it's an internal link starting with '/' and not external http/tel/mailto
+      if (href && href.startsWith('/') && !href.startsWith('//')) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        
+        e.preventDefault();
+        window.history.pushState({}, '', href);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    };
+
+    document.addEventListener('click', handleGlobalLinkClick);
+    return () => document.removeEventListener('click', handleGlobalLinkClick);
   }, []);
 
   useEffect(() => {
@@ -550,6 +574,14 @@ export default function App() {
         message={comingSoonSettings.comingSoonMessage}
       />
 
+      <MobileCartBar
+        cartItemsCount={cart.cartItemsCount}
+        cartTotal={cart.cartTotal}
+        onOpenCart={() => setCurrentPage('cart')}
+        currentPage={currentPage}
+      />
+      <ScrollToTop />
+      <PWAInstallPrompt />
       <Toast toast={toast} />
     </div>
   );

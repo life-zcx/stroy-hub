@@ -110,11 +110,11 @@ export default function ProductCard({
       {/* ── Link wrapper for clickable product area ── */}
       <Link
         href={getPageHref('product', product.id)}
-        className="flex flex-col flex-1 cursor-pointer"
+        className="flex flex-col flex-1 cursor-pointer min-w-0 w-full"
         onClick={() => onOpenDetails && onOpenDetails(product.id)}
       >
         {/* ── Image zone (fixed height) ── */}
-        <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative">
           <img
             src={imageSrc}
             alt={product.name}
@@ -127,7 +127,7 @@ export default function ProductCard({
         </div>
 
         {/* ── Content ── */}
-        <div className="flex flex-col flex-1 p-4 pb-0">
+        <div className="flex flex-col flex-1 p-4 pb-0 min-w-0 w-full">
           {/* Rating row */}
           <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
             <span className="flex items-center text-emerald-500 font-semibold">
@@ -138,7 +138,7 @@ export default function ProductCard({
           </div>
 
           {/* Name (2 lines fixed) */}
-          <h3 className="text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-3 min-h-[2.5rem]">
+          <h3 className="text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-3 min-h-[2.5rem] break-words">
             {product.name}
           </h3>
 
@@ -178,8 +178,8 @@ export default function ProductCard({
 
       {/* ── Interactive Actions Zone (outside Link to prevent navigation) ── */}
       <div className="p-4 pt-0">
-        <div className="grid grid-cols-[100px_1fr] gap-2">
-          <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-xl h-[42px] p-0.5 shadow-inner">
+        <div className="flex flex-col sm:grid sm:grid-cols-[90px_1fr] gap-2">
+          <div className="flex items-center justify-between bg-slate-100 border border-slate-200/60 rounded-xl h-[40px] p-0.5 shadow-inner w-full">
             <button
               type="button"
               onClick={() => setQuantity(q => Math.max(1, q - 1))}
@@ -198,10 +198,10 @@ export default function ProductCard({
           </div>
           <button
             onClick={() => onAddToCart(product, quantity)}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-md"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-[40px] rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-md active:scale-95 text-xs uppercase tracking-wider shrink-0"
           >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="text-sm">В корзину</span>
+            <ShoppingCart className="h-4 w-4 shrink-0" />
+            <span>В корзину</span>
           </button>
         </div>
       </div>

@@ -38,7 +38,7 @@ const QuantityInput = ({ value, onChange }) => {
 
   const handleChange = (e) => {
     const valStr = e.target.value;
-    if (valStr.length > 5) return;
+    if (valStr.length > 4) return;
     setLocalVal(valStr);
     const parsed = parseInt(valStr, 10);
     if (!isNaN(parsed) && parsed > 0) {
@@ -52,7 +52,7 @@ const QuantityInput = ({ value, onChange }) => {
       setLocalVal(value);
       onChange(value);
     } else {
-      const clamped = Math.min(99999, parsed);
+      const clamped = Math.min(9999, parsed);
       setLocalVal(clamped);
       onChange(clamped);
     }
@@ -75,12 +75,12 @@ const QuantityInput = ({ value, onChange }) => {
       <input
         type="number"
         min="1"
-        max="99999"
+        max="9999"
         value={localVal}
         onChange={handleChange}
         onBlur={handleBlur}
         className="no-spinner text-center text-xs font-bold text-slate-900 bg-transparent focus:outline-none font-mono"
-        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
+        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '4.5ch' }}
       />
     </>
   );
@@ -431,7 +431,7 @@ export default function CartPage({
         },
       });
 
-      showToast('🎉 Заказ успешно оформлен!');
+      showToast('Заказ успешно оформлен!');
       onClearCart();
       setSuccessOrder(createdOrder);
     } catch (error) {
@@ -672,7 +672,7 @@ export default function CartPage({
                         onClick={() => {
                           if (onAddToCart) {
                             onAddToCart(prod);
-                            showToast?.(`🛒 «${prod.name}» добавлен в корзину`);
+                            showToast?.(`«${prod.name}» добавлен в корзину`);
                           } else {
                             onUpdateQuantity?.(prod.id, 1);
                           }
@@ -729,34 +729,15 @@ export default function CartPage({
           {step === 'cart' && (
             /* Cart Items List */
             <div className="bg-white rounded-[2rem] border border-slate-150 p-6 sm:p-8 shadow-sm">
-            <h1 className="text-2xl font-black text-slate-950 flex items-center gap-3 mb-6">
-              <ShoppingCart className="h-7 w-7 text-emerald-600" />
-              Корзина покупок
-              <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold">
+            <div className="flex items-center gap-3 mb-6">
+              <ShoppingCart className="h-7 w-7 text-emerald-600 shrink-0" />
+              <h1 className="text-2xl font-black text-slate-950 flex-1 leading-tight">Корзина покупок</h1>
+              <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold shrink-0">
                 {cartItemsCount} шт
               </span>
-            </h1>
-
-            {/* Delivery Progress Bar */}
-            <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 mb-6">
-              <div className="flex justify-between text-xs font-bold text-slate-700 mb-2">
-                <span>До бесплатной доставки</span>
-                <span>
-                  {cartTotal >= FREE_DELIVERY_THRESHOLD
-                    ? 'Готово! Доставим бесплатно 🚚'
-                    : `${formatPrice(FREE_DELIVERY_THRESHOLD - cartTotal)}`}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-500">
-                При заказе от {formatPrice(FREE_DELIVERY_THRESHOLD)} доставка по Алматы за наш счет.
-              </p>
             </div>
+
+
 
             {/* List */}
             <ul className="divide-y divide-slate-100">
@@ -782,23 +763,23 @@ export default function CartPage({
                   </Link>
 
                   <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex justify-between items-start gap-4">
+                    <div className="flex justify-between items-start gap-2">
                       <Link
                         href={getPageHref('product', item.id)}
                         onClick={() => onNavigate('product', item.id)}
-                        className="hover:text-emerald-700 transition-colors cursor-pointer text-left block flex-1"
+                        className="hover:text-emerald-700 transition-colors cursor-pointer text-left block flex-1 min-w-0"
                       >
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight pr-6">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight">
                           {item.name}
                         </h3>
                       </Link>
                       <button
                         type="button"
                         onClick={() => onRemoveFromCart(item.id)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer mt-0.5"
                         title="Удалить из корзины"
                       >
-                        <X className="h-4.5 w-4.5" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
 
@@ -806,8 +787,8 @@ export default function CartPage({
                       <ShieldCheck className="h-3.5 w-3.5 text-blue-500" /> {item.supplier?.name || 'Официальный склад'}
                     </div>
 
-                    <div className="flex items-end justify-between mt-4">
-                      <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                    <div className="flex items-center justify-between gap-3 mt-4 pt-2 border-t border-slate-50">
+                      <div className="flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, -1)}
@@ -829,8 +810,8 @@ export default function CartPage({
                         </button>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-sm font-black text-slate-900 font-outfit block">
+                      <div className="text-right ml-auto shrink-0">
+                        <span className="text-sm sm:text-base font-black text-slate-900 font-outfit block">
                           {formatPrice(item.price * item.quantity)}
                         </span>
                         {item.quantity > 1 && (
@@ -1108,7 +1089,7 @@ export default function CartPage({
                             </button>
                           </div>
                         ) : (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2 w-full">
                             <input
                               type="text"
                               inputMode="numeric"
@@ -1125,7 +1106,7 @@ export default function CartPage({
                                 }
                               }}
                               placeholder="Количество бонусов"
-                              className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-emerald-550 transition-all"
+                              className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-emerald-550 transition-all"
                             />
                             <button
                               type="button"
@@ -1133,11 +1114,11 @@ export default function CartPage({
                                 const amt = parseInt(bonusInput) || 0;
                                 if (amt > 0) {
                                   setAppliedBonuses(amt);
-                                  showToast?.(`🪙 Списано ${amt} бонусов`);
+                                  showToast?.(`Списано ${amt} бонусов`);
                                 }
                               }}
                               disabled={!bonusInput || parseInt(bonusInput) <= 0}
-                              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                              className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                             >
                               Использовать
                             </button>
@@ -1164,19 +1145,19 @@ export default function CartPage({
                           </button>
                         </div>
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full">
                           <input
                             type="text"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                             placeholder="TORMAG10"
-                            className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold uppercase outline-none focus:bg-white focus:border-emerald-550 transition-all"
+                            className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold uppercase outline-none focus:bg-white focus:border-emerald-550 transition-all"
                           />
                           <button
                             type="button"
                             onClick={handleApplyPromoCode}
                             disabled={promoLoading}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                           >
                             {promoLoading ? '...' : 'Использовать'}
                           </button>

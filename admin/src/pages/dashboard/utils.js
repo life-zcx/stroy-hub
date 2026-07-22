@@ -64,13 +64,13 @@ export function formatPrice(price) {
 export function getOrderStatusText(status) {
   switch (status) {
     case 'pending':
-      return 'В обработке';
+      return 'Создан';
     case 'processing':
-      return 'Сборка заказа';
+      return 'Сборка';
     case 'shipped':
-      return 'В доставке';
+      return 'Доставляется клиенту';
     case 'completed':
-      return 'Выполнен';
+      return 'Доставлен';
     case 'cancelled':
       return 'Отменен';
     default:

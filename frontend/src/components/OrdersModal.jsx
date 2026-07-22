@@ -4,10 +4,10 @@ import { formatPrice } from '../utils/formatPrice';
 
 const getStatusDisplay = (status) => {
   switch (status) {
-    case 'pending': return { text: 'В обработке', color: 'text-emerald-600 bg-emerald-50', icon: Clock };
-    case 'processing': return { text: 'Сборка заказа', color: 'text-blue-500 bg-blue-50', icon: ClipboardList };
-    case 'shipped': return { text: 'В доставке 🚚', color: 'text-purple-500 bg-purple-50', icon: Truck };
-    case 'completed': return { text: 'Выполнен', color: 'text-green-500 bg-green-50', icon: CheckCircle2 };
+    case 'pending': return { text: 'Создан', color: 'text-emerald-600 bg-emerald-50', icon: Clock };
+    case 'processing': return { text: 'Сборка', color: 'text-blue-500 bg-blue-50', icon: ClipboardList };
+    case 'shipped': return { text: 'Доставляется клиенту', color: 'text-purple-500 bg-purple-50', icon: Truck };
+    case 'completed': return { text: 'Доставлен', color: 'text-green-500 bg-green-50', icon: CheckCircle2 };
     case 'cancelled': return { text: 'Отменен', color: 'text-red-500 bg-red-50', icon: AlertCircle };
     default: return { text: status, color: 'text-gray-500 bg-gray-50', icon: Clock };
   }

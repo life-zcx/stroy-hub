@@ -34,8 +34,43 @@
 
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/src/favicon.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="google-site-verification" content="z17DDIs8RnOd_pFKkmwd_m_v2qOD2Wg9wcDoSVeec7U" />
+
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0062BE" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="TORMAG" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- iOS Standalone PWA Link Navigation Fix -->
+  <script>
+    (function(document, navigator, standalone) {
+      if ((standalone in navigator) && navigator[standalone]) {
+        var c2g;
+        document.addEventListener('click', function(e) {
+          c2g = e.target;
+          while (c2g && c2g.nodeName !== 'A' && c2g.nodeName !== 'HTML') {
+            c2g = c2g.parentNode;
+          }
+          if (c2g && 'href' in c2g) {
+            var href = c2g.getAttribute('href');
+            if (href && (href.startsWith('/') || href.startsWith('#')) && !href.startsWith('//')) {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+              e.preventDefault();
+              if (href !== '#') {
+                window.history.pushState({}, '', href);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }
+            }
+          }
+        }, true);
+      }
+    })(document, window.navigator, 'standalone');
+  </script>
 
   <!-- SEO Meta Tags -->
   <title>TORMAG — Всё для стройки и ремонта</title>

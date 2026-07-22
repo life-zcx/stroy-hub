@@ -34,15 +34,15 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   }, [customer]);
 
   const handleSave = async () => {
-    if (!form.name.trim()) { showToast?.('❌ Имя не может быть пустым'); return; }
+    if (!form.name.trim()) { showToast?.('Имя не может быть пустым'); return; }
     setSaving(true);
     try {
       const updated = await updateProfile(form);
       onCustomerUpdate?.(updated);
       setEditing(false);
-      showToast?.('✅ Профиль сохранён');
+      showToast?.('Профиль сохранён');
     } catch {
-      showToast?.('❌ Не удалось сохранить профиль');
+      showToast?.('Не удалось сохранить профиль');
     } finally {
       setSaving(false);
     }
@@ -59,10 +59,10 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
     try {
       await forgotPassword(customer.email);
       setCodeSent(true);
-      showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
+      showToast?.('Код подтверждения отправлен на вашу почту!');
     } catch (err) {
       const errMsg = err.response?.data?.error || 'Не удалось отправить код подтверждения';
-      showToast?.(`❌ ${errMsg}`);
+      showToast?.(errMsg);
     } finally {
       setSendingCode(false);
     }
@@ -70,28 +70,28 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
 
   const handleSavePassword = async () => {
     if (!pwdForm.code) {
-      showToast?.('❌ Укажите код из письма');
+      showToast?.('Укажите код из письма');
       return;
     }
     if (pwdForm.newPassword.length < 6) {
-      showToast?.('❌ Новый пароль должен содержать не менее 6 символов');
+      showToast?.('Новый пароль должен содержать не менее 6 символов');
       return;
     }
     if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      showToast?.('❌ Пароли не совпадают');
+      showToast?.('Пароли не совпадают');
       return;
     }
 
     setSavingPwd(true);
     try {
       await resetPassword(customer.email, pwdForm.code, pwdForm.newPassword);
-      showToast?.('✅ Пароль успешно изменён');
+      showToast?.('Пароль успешно изменён');
       setPwdForm({ code: '', newPassword: '', confirmPassword: '' });
       setCodeSent(false);
       setChangingPassword(false);
     } catch (err) {
       const errMsg = err.response?.data?.error || 'Не удалось изменить пароль';
-      showToast?.(`❌ ${errMsg}`);
+      showToast?.(errMsg);
     } finally {
       setSavingPwd(false);
     }
@@ -135,7 +135,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
           </div>
 
           {/* Right actions block */}
-          <div className="flex flex-row sm:flex-col items-stretch sm:items-end gap-2 border-t border-slate-100/70 pt-4 sm:border-0 sm:pt-0">
+          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-end gap-2.5 w-full sm:w-auto border-t border-slate-100/70 pt-4 sm:border-0 sm:pt-0">
             {(customer?.role === 'SUPPLIER' || customer?.role === 'ADMIN') && (
               <a
                 href={
@@ -146,7 +146,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 sm:flex-none justify-center inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-100 whitespace-nowrap text-center cursor-pointer"
+                className="w-full sm:w-auto justify-center inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-100 whitespace-nowrap text-center cursor-pointer"
               >
                 Панель управления
               </a>
@@ -155,7 +155,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer"
+                className="w-full sm:w-auto justify-center flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer"
               >
                 <Edit3 className="h-3.5 w-3.5 text-slate-400" />
                 Редактировать

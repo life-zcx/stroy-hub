@@ -5,10 +5,10 @@ import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 
 const STATUS_META = {
-  pending: { text: 'В обработке', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
-  processing: { text: 'Сборка заказа', color: 'text-blue-600 bg-blue-50 border-blue-100', icon: ClipboardList },
-  shipped: { text: 'В доставке', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', icon: Truck },
-  completed: { text: 'Выполнен', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', icon: CheckCircle2 },
+  pending: { text: 'Создан', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
+  processing: { text: 'Сборка', color: 'text-blue-600 bg-blue-50 border-blue-100', icon: ClipboardList },
+  shipped: { text: 'Доставляется клиенту', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', icon: Truck },
+  completed: { text: 'Доставлен', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', icon: CheckCircle2 },
   cancelled: { text: 'Отменен', color: 'text-rose-600 bg-rose-50 border-rose-100', icon: AlertCircle },
 };
 
@@ -98,13 +98,13 @@ export default function MyOrders({
         orderWithItems = await getOrderById(order.id);
       } catch (e) {
         console.error(e);
-        showToast('⚠️ Не удалось загрузить состав заказа.');
+        showToast('Не удалось загрузить состав заказа.');
         return;
       }
     }
 
     if (!orderWithItems.items || orderWithItems.items.length === 0) {
-      showToast('⚠️ В заказе нет позиций для копирования.');
+      showToast('В заказе нет позиций для копирования.');
       return;
     }
 
@@ -116,7 +116,7 @@ export default function MyOrders({
       }
     });
 
-    showToast(`🛒 Заказ №${order.id} успешно добавлен в корзину!`);
+    showToast(`Заказ №${order.id} успешно добавлен в корзину!`);
     onNavigate('cart');
   };
 

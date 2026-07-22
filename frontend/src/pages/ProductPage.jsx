@@ -4,7 +4,7 @@ import { getPageHref } from '../utils/navigationHelper';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
-  ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins
+  ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins, RotateCcw
 } from 'lucide-react';
 import { getProductById, getProductReviews, getProductStats } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -540,11 +540,11 @@ export default function ProductPage({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10">
             
             {/* COLUMN 1: IMAGE GALLERY */}
-            <div className="md:col-span-7 flex flex-col h-full min-h-[380px] sm:min-h-[450px]">
+            <div className="md:col-span-7 flex flex-col justify-between">
               <div className="flex flex-col space-y-4">
-                <div className="relative border border-slate-100 bg-slate-50/50 rounded-2xl p-6 flex items-center justify-center min-h-[300px] sm:min-h-[385px] group overflow-hidden">
+                <div className="relative border border-slate-150 bg-slate-50/40 rounded-2xl p-2 sm:p-4 flex items-center justify-center aspect-[4/3] sm:aspect-square max-h-[380px] overflow-hidden shadow-xs">
                   {/* Badges */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
                     {product.isHit && (
                       <span className="bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm">
                         Хит
@@ -561,7 +561,7 @@ export default function ProductPage({
                   <img
                     src={activeImage}
                     alt={product.name}
-                    className="w-full max-w-sm h-[280px] sm:h-[320px] object-contain drop-shadow-md group-hover:scale-105 transition-all duration-300"
+                    className="w-full h-full object-contain drop-shadow-sm rounded-xl"
                     onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
                   />
                 </div>
@@ -590,20 +590,6 @@ export default function ProductPage({
                     ))}
                   </div>
                 )}
-              </div>
-
-              {/* Engagement Metrics (No pulsing dot, aligned to bottom like Kaspi) */}
-              <div className="mt-auto pt-4 flex items-center justify-between text-xs font-semibold text-slate-400">
-                <div className="flex items-center">
-                  <span>Смотрят сейчас:</span>
-                  <span className="text-emerald-600 font-bold ml-1.5">
-                    {stats.watching || 1} {(stats.watching || 1) % 10 === 1 && (stats.watching || 1) % 100 !== 11 ? 'человек' : [2, 3, 4].includes((stats.watching || 1) % 10) && ![12, 13, 14].includes((stats.watching || 1) % 100) ? 'человека' : 'человек'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4 text-slate-455 shrink-0" />
-                  <span className="text-slate-500 font-bold">{stats.views || 0}</span>
-                </div>
               </div>
             </div>
 
@@ -700,6 +686,20 @@ export default function ProductPage({
               )}
             </div>
 
+          </div>
+
+          {/* Engagement Metrics footer at bottom of BLOCK 1 */}
+          <div className="border-t border-slate-100 pt-4 mt-6 flex items-center justify-between text-xs font-semibold text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <span>Смотрят сейчас:</span>
+              <span className="text-emerald-600 font-bold">
+                {stats.watching || 1} {(stats.watching || 1) % 10 === 1 && (stats.watching || 1) % 100 !== 11 ? 'человек' : [2, 3, 4].includes((stats.watching || 1) % 10) && ![12, 13, 14].includes((stats.watching || 1) % 100) ? 'человека' : 'человек'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="h-4 w-4 text-slate-400 shrink-0" />
+              <span className="text-slate-500 font-bold">{stats.views || 0}</span>
+            </div>
           </div>
         </div>
 
@@ -846,35 +846,46 @@ export default function ProductPage({
             {/* Badge 1: Нашли дешевле */}
             <div 
               onClick={() => setActiveInfoModal('lowPrice')}
-              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+              className="bg-white border border-slate-200/80 hover:border-slate-400 hover:shadow-sm rounded-2xl p-4 flex items-center justify-between gap-3 transition-all cursor-pointer group w-full h-full"
             >
-              <Coins className="h-6 w-6 text-slate-800 shrink-0" />
-              <div className="text-left">
-                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Нашли товар дешевле?</h4>
-                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Компенсируем 110% разницы</p>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Coins className="h-5 w-5 text-slate-700 group-hover:text-emerald-600 transition-colors shrink-0" />
+                <div className="text-left min-w-0">
+                  <h4 className="text-xs font-bold text-slate-900 leading-snug">Нашли дешевле?</h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">Компенсируем 110% разницы</p>
+                </div>
               </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
 
             {/* Badge 2: Условия доставки */}
             <div 
               onClick={() => setActiveInfoModal('delivery')}
-              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+              className="bg-white border border-slate-200/80 hover:border-slate-400 hover:shadow-sm rounded-2xl p-4 flex items-center justify-between gap-3 transition-all cursor-pointer group w-full h-full"
             >
-              <RefreshCw className="h-6 w-6 text-slate-800 shrink-0" />
-              <div className="text-left">
-                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Условия доставки и самовывоза</h4>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Truck className="h-5 w-5 text-slate-700 group-hover:text-blue-600 transition-colors shrink-0" />
+                <div className="text-left min-w-0">
+                  <h4 className="text-xs font-bold text-slate-900 leading-snug">Доставка и самовывоз</h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">Условия и способы оплаты</p>
+                </div>
               </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
 
             {/* Badge 3: Условия возврата */}
             <div 
               onClick={() => setActiveInfoModal('returns')}
-              className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 flex items-center gap-4 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer shadow-xs w-full h-full"
+              className="bg-white border border-slate-200/80 hover:border-slate-400 hover:shadow-sm rounded-2xl p-4 flex items-center justify-between gap-3 transition-all cursor-pointer group w-full h-full"
             >
-              <Truck className="h-6 w-6 text-slate-800 shrink-0" />
-              <div className="text-left">
-                <h4 className="text-xs font-black text-slate-800 leading-tight font-outfit">Условия возврата и обмена</h4>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <RotateCcw className="h-5 w-5 text-slate-700 group-hover:text-purple-600 transition-colors shrink-0" />
+                <div className="text-left min-w-0">
+                  <h4 className="text-xs font-bold text-slate-900 leading-snug">Возврат и обмен</h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">14 дней на легкий возврат</p>
+                </div>
               </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
           </div>
         </div>
@@ -883,39 +894,41 @@ export default function ProductPage({
       {/* ── Bottom Section with Tabs ── */}
       <div id="tabs-section" className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
         {/* Tab Headers */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50">
+        <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50/50 w-full">
           <button
             type="button"
             onClick={() => setActiveTab('description')}
-            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+            className={`py-3 px-1 font-extrabold text-[11px] sm:text-sm border-b-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
               activeTab === 'description'
                 ? 'border-blue-600 text-blue-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            Описание
+            <span>Описание</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('specs')}
-            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+            className={`py-3 px-1 font-extrabold text-[11px] sm:text-sm border-b-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
               activeTab === 'specs'
                 ? 'border-blue-600 text-blue-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            Характеристики ({parsedSpecs.length})
+            <span>Характеристики</span>
+            <span className="text-[10px] font-bold opacity-70">({parsedSpecs.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('reviews')}
-            className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${
+            className={`py-3 px-1 font-extrabold text-[11px] sm:text-sm border-b-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
               activeTab === 'reviews'
                 ? 'border-blue-600 text-blue-600 bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            Отзывы ({reviewsMeta.total})
+            <span>Отзывы</span>
+            <span className="text-[10px] font-bold opacity-70">({reviewsMeta.total})</span>
           </button>
         </div>
 

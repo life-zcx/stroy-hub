@@ -127,7 +127,7 @@ export default function useCustomerAuth(showToast) {
       if (authTab === 'login') {
         const data = await login(authEmail, authPassword, getAnalyticsSessionId());
         setCustomer(data.user);
-        showToast?.(`👋 Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
+        showToast?.(`Добро пожаловать, ${data.user.name || 'Покупатель'}!`);
         setAuthModalOpen(false);
         resetAuthForm();
       } else if (authTab === 'register') {
@@ -203,7 +203,7 @@ export default function useCustomerAuth(showToast) {
   const handleLogout = () => {
     logout().catch(() => {});
     setCustomer(null);
-    showToast?.('🚪 Вы успешно вышли из профиля.');
+    showToast?.('Вы успешно вышли из профиля');
   };
 
   const openLoginModal = () => {

@@ -8,41 +8,58 @@ export default function Toast({ toast }) {
     ? { message: toast, type: 'success' }
     : toast;
   const type = normalizedToast.type || 'success';
+
+  // Strip leading emoji characters to avoid missing font square glyphs
+  const cleanText = (str) => {
+    if (typeof str !== 'string') return str;
+    return str.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2300}-\u{23FF}\s]+/u, '');
+  };
+
+  const messageText = cleanText(normalizedToast.message);
+  const titleText = cleanText(normalizedToast.title);
+
   const styles = {
     success: {
-      wrapper: 'bg-emerald-50/95 text-emerald-800 border-emerald-200/80',
-      icon: 'bg-emerald-600 text-white',
+      line: 'from-emerald-400 via-emerald-500 to-teal-400 shadow-[0_0_12px_rgba(16,185,129,0.9)]',
+      iconColor: 'text-emerald-400',
       Icon: Check,
     },
     error: {
-      wrapper: 'bg-red-50/95 text-red-800 border-red-200/80',
-      icon: 'bg-red-600 text-white',
+      line: 'from-rose-400 via-rose-500 to-pink-500 shadow-[0_0_12px_rgba(244,63,94,0.9)]',
+      iconColor: 'text-rose-400',
       Icon: AlertTriangle,
     },
     warning: {
-      wrapper: 'bg-amber-50/95 text-amber-900 border-amber-200/80',
-      icon: 'bg-amber-500 text-white',
+      line: 'from-amber-400 via-amber-500 to-orange-400 shadow-[0_0_12px_rgba(245,158,11,0.9)]',
+      iconColor: 'text-amber-400',
       Icon: AlertTriangle,
     },
     info: {
-      wrapper: 'bg-blue-50/95 text-blue-800 border-blue-200/80',
-      icon: 'bg-blue-600 text-white',
+      line: 'from-sky-400 via-sky-500 to-blue-500 shadow-[0_0_12px_rgba(14,165,233,0.9)]',
+      iconColor: 'text-sky-400',
       Icon: Info,
     },
   };
+
   const selectedStyle = styles[type] || styles.success;
   const Icon = selectedStyle.Icon;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-fade-in-up">
-      <div className={`${selectedStyle.wrapper} backdrop-blur-sm px-5 py-3.5 rounded-2xl shadow-xl flex items-start gap-3 border max-w-sm`}>
-        <div className={`${selectedStyle.icon} p-1 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-0.5`}>
-          <Icon className="h-3.5 w-3.5 stroke-[3.5]" />
+    <div className="fixed top-4 left-4 right-4 sm:top-auto sm:bottom-6 sm:left-auto sm:right-6 z-50 animate-fade-in-up sm:max-w-md w-auto">
+      <div className="bg-slate-900/95 backdrop-blur-md text-white px-4 sm:px-5 py-3 rounded-2xl shadow-2xl space-y-2 border border-slate-800/80">
+        <div className="flex items-center gap-2.5">
+          <Icon className={`h-4 w-4 ${selectedStyle.iconColor} shrink-0`} />
+          <div className="space-y-0.5">
+            {titleText && (
+              <div className="text-xs font-bold text-slate-200">{titleText}</div>
+            )}
+            <div className="text-xs font-semibold text-white leading-snug break-words">
+              {messageText}
+            </div>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          {normalizedToast.title && <div className="text-xs font-black leading-normal">{normalizedToast.title}</div>}
-          <div className="text-xs font-bold leading-normal">{normalizedToast.message}</div>
-        </div>
+        {/* Красивая светящаяся полоса снизу */}
+        <div className={`h-0.5 w-full rounded-full bg-gradient-to-r ${selectedStyle.line}`} />
       </div>
     </div>
   );

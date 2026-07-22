@@ -972,16 +972,16 @@ export default function Header({
 
               {/* Cart */}
               <div className="relative group/cart py-1">
-                <Link
+               <Link
                   href="/cart"
                   onClick={onOpenCart}
                   className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
                 >
-                  <div className="relative">
+                  <div className="flex items-center gap-1">
                     <ShoppingCart className="h-5 w-5 mb-0.5" />
                     {cartItemsCount > 0 && (
-                      <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
-                        {cartItemsCount}
+                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
+                        {cartItemsCount > 99 ? '99+' : cartItemsCount}
                       </span>
                     )}
                   </div>
@@ -1101,11 +1101,6 @@ export default function Header({
                 className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
               >
                 <ShoppingCart className="h-5 w-5" />
-                {cartItemsCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[8px] font-black text-white">
-                    {cartItemsCount}
-                  </span>
-                )}
               </button>
 
               <button

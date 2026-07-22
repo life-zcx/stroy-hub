@@ -258,7 +258,7 @@ export default function OrdersPage({
   // Check if any edit changes exist compared to current DB values
   const hasChanges = useMemo(() => {
     if (!selectedOrder) return false;
-    
+
     const currentName = (clientName || '').trim();
     const originalName = (selectedOrder.clientName || '').trim();
     if (currentName !== originalName) return true;
@@ -293,7 +293,7 @@ export default function OrdersPage({
       if (!orig) return true;
       if (parseInt(orig.quantity, 10) !== parseInt(item.quantity, 10)) return true;
     }
-    
+
     return false;
   }, [selectedOrder, clientName, clientPhone, clientAddress, managerNotes, discountAmount, orderItems]);
 
@@ -445,7 +445,7 @@ export default function OrdersPage({
   const handlePrintInvoice = (order) => {
     const printWindow = window.open('', '_blank');
     const supplierGroups = groupItemsBySupplier(order.items);
-    
+
     const htmlContent = `
       <html>
       <head>
@@ -583,89 +583,89 @@ export default function OrdersPage({
       <div className="space-y-6 font-sans text-left animate-fade-in pb-24">
 
 
-      <div className="sticky -top-8 z-30 -mx-8 px-8 py-3 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm mb-6">
-        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                if (hasChanges && !window.confirm('У вас есть несохраненные изменения заказа! Вы уверены, что хотите выйти без сохранения?')) {
-                  return;
-                }
-                setSelectedOrderId(null);
-                window.location.hash = '#orders';
-              }}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors shrink-0"
-              title="Назад к списку"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-xl font-black font-outfit">Заказ №{selectedOrder.id}</h2>
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${getStatusClass(selectedOrder.status)}`}>
-                  {getStatusText(selectedOrder.status)}
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
-                <Calendar className="h-3 w-3" />
-                Оформлен: {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5 flex-wrap">
-            {/* Status Select */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Статус:</span>
-              <select
-                value={selectedOrder.status}
-                onChange={(e) => handleStatusChangeAction(selectedOrder.id, e.target.value)}
-                className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white cursor-pointer focus:ring-2 focus:ring-amber-500/20"
+        <div className="sticky -top-8 z-30 -mx-8 px-8 py-3 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm mb-6">
+          <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (hasChanges && !window.confirm('У вас есть несохраненные изменения заказа! Вы уверены, что хотите выйти без сохранения?')) {
+                    return;
+                  }
+                  setSelectedOrderId(null);
+                  window.location.hash = '#orders';
+                }}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors shrink-0"
+                title="Назад к списку"
               >
-                <option value="pending" className="bg-slate-900 text-white">⏳ В обработке</option>
-                <option value="processing" className="bg-slate-900 text-white">🔧 Сборка</option>
-                <option value="shipped" className="bg-slate-900 text-white">🚚 В доставке</option>
-                <option value="completed" className="bg-slate-900 text-white">✅ Выполнен</option>
-                <option value="cancelled" className="bg-slate-900 text-white">❌ Отменен</option>
-              </select>
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-xl font-black font-outfit">Заказ №{selectedOrder.id}</h2>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${getStatusClass(selectedOrder.status)}`}>
+                    {getStatusText(selectedOrder.status)}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3" />
+                  Оформлен: {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
+                </p>
+              </div>
             </div>
 
-            {/* Print Invoice */}
-            <button
-              onClick={() => handlePrintInvoice(selectedOrder)}
-              className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
-              title="Печать расходной накладной"
-            >
-              <Printer className="h-4.5 w-4.5" />
-            </button>
+            <div className="flex items-center gap-3.5 flex-wrap">
+              {/* Status Select */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Статус:</span>
+                <select
+                  value={selectedOrder.status}
+                  onChange={(e) => handleStatusChangeAction(selectedOrder.id, e.target.value)}
+                  className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white cursor-pointer focus:ring-2 focus:ring-amber-500/20"
+                >
+                  <option value="pending" className="bg-slate-900 text-white">Создан</option>
+                  <option value="processing" className="bg-slate-900 text-white">Сборка</option>
+                  <option value="shipped" className="bg-slate-900 text-white">Доставляется клиенту</option>
+                  <option value="completed" className="bg-slate-900 text-white">Доставлен</option>
+                  <option value="cancelled" className="bg-slate-900 text-white">Отменен</option>
+                </select>
+              </div>
 
-            {/* Unsaved changes control buttons */}
-            {hasChanges && (
-              <>
-                {/* Divider line */}
-                <div className="h-6 w-px bg-slate-800 shrink-0" />
-                <button
-                  onClick={() => fetchSelectedOrderDetails(selectedOrderId)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl border border-slate-700/60 transition-colors"
-                >
-                  Сбросить
-                </button>
-                <button
-                  onClick={handleSaveChanges}
-                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 font-black text-xs rounded-xl text-slate-950 shadow-md transition-all flex items-center gap-1.5"
-                >
-                  <AlertTriangle className="h-4 w-4 text-slate-950 animate-pulse" />
-                  Сохранить
-                </button>
-              </>
-            )}
+              {/* Print Invoice */}
+              <button
+                onClick={() => handlePrintInvoice(selectedOrder)}
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
+                title="Печать расходной накладной"
+              >
+                <Printer className="h-4.5 w-4.5" />
+              </button>
+
+              {/* Unsaved changes control buttons */}
+              {hasChanges && (
+                <>
+                  {/* Divider line */}
+                  <div className="h-6 w-px bg-slate-800 shrink-0" />
+                  <button
+                    onClick={() => fetchSelectedOrderDetails(selectedOrderId)}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl border border-slate-700/60 transition-colors"
+                  >
+                    Сбросить
+                  </button>
+                  <button
+                    onClick={handleSaveChanges}
+                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 font-black text-xs rounded-xl text-slate-950 shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-slate-950 animate-pulse" />
+                    Сохранить
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Form Body layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Main items panel (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-5">
@@ -778,7 +778,7 @@ export default function OrdersPage({
                       </button>
                     )}
                   </div>
-                  
+
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-600/60 h-4 w-4" />
                     <input
@@ -912,7 +912,7 @@ export default function OrdersPage({
 
           {/* Sidebar */}
           <div className="space-y-6">
-            
+
             {/* Recipient card */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -1057,16 +1057,14 @@ export default function OrdersPage({
 
                 {/* Processing */}
                 <div className="relative">
-                  <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${
-                    ['processing', 'shipped', 'completed'].includes(selectedOrder.status)
+                  <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${['processing', 'shipped', 'completed'].includes(selectedOrder.status)
                       ? 'bg-blue-500 text-white'
                       : 'bg-slate-200 text-slate-400'
-                  }`}>
+                    }`}>
                     <Info className="h-3 w-3" />
                   </div>
-                  <span className={`font-black block ${
-                    ['processing', 'shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
-                  }`}>Сборка и комплектация</span>
+                  <span className={`font-black block ${['processing', 'shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
+                    }`}>Сборка и комплектация</span>
                   {['processing', 'shipped', 'completed'].includes(selectedOrder.status) && (
                     <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'processing')}</span>
                   )}
@@ -1074,16 +1072,14 @@ export default function OrdersPage({
 
                 {/* Shipped */}
                 <div className="relative">
-                  <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${
-                    ['shipped', 'completed'].includes(selectedOrder.status)
+                  <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${['shipped', 'completed'].includes(selectedOrder.status)
                       ? 'bg-indigo-500 text-white'
                       : 'bg-slate-200 text-slate-400'
-                  }`}>
+                    }`}>
                     <Truck className="h-3 w-3" />
                   </div>
-                  <span className={`font-black block ${
-                    ['shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
-                  }`}>Сборная доставка в пути</span>
+                  <span className={`font-black block ${['shipped', 'completed'].includes(selectedOrder.status) ? 'text-slate-800' : 'text-slate-400'
+                    }`}>Сборная доставка в пути</span>
                   {['shipped', 'completed'].includes(selectedOrder.status) && (
                     <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'shipped')}</span>
                   )}
@@ -1100,16 +1096,14 @@ export default function OrdersPage({
                   </div>
                 ) : (
                   <div className="relative">
-                    <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${
-                      selectedOrder.status === 'completed'
+                    <div className={`absolute -left-[31px] top-0 p-1 rounded-full border-2 border-white ${selectedOrder.status === 'completed'
                         ? 'bg-emerald-500 text-white'
                         : 'bg-slate-200 text-slate-400'
-                    }`}>
+                      }`}>
                       <ShieldCheck className="h-3 w-3" />
                     </div>
-                    <span className={`font-black block ${
-                      selectedOrder.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
-                    }`}>Доставлен и завершен</span>
+                    <span className={`font-black block ${selectedOrder.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
+                      }`}>Доставлен и завершен</span>
                     {selectedOrder.status === 'completed' && (
                       <span className="text-[10px] text-slate-400">{getStatusChangedAt(selectedOrder, 'completed')}</span>
                     )}
@@ -1180,10 +1174,10 @@ export default function OrdersPage({
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/60 pb-3">
         {[
           { key: 'all', label: 'Все заказы' },
-          { key: 'pending', label: 'В обработке' },
+          { key: 'pending', label: 'Создан' },
           { key: 'processing', label: 'Сборка' },
-          { key: 'shipped', label: 'В доставке' },
-          { key: 'completed', label: 'Выполнен' },
+          { key: 'shipped', label: 'Доставляется клиенту' },
+          { key: 'completed', label: 'Доставлен' },
           { key: 'cancelled', label: 'Отменен' },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
@@ -1191,11 +1185,10 @@ export default function OrdersPage({
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                isActive
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isActive
                   ? 'bg-slate-900 text-white shadow-lg'
                   : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/40'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -1269,11 +1262,11 @@ export default function OrdersPage({
                             onChange={(e) => handleStatusChangeAction(order.id, e.target.value)}
                             className={`appearance-none pl-3.5 pr-6 py-1 text-[10px] font-black uppercase tracking-wider rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all ${getStatusClass(order.status)}`}
                           >
-                            <option value="pending" className="text-slate-800 bg-white">⏳ В обработке</option>
-                            <option value="processing" className="text-slate-800 bg-white">🔧 Сборка</option>
-                            <option value="shipped" className="text-slate-800 bg-white">🚚 В доставке</option>
-                            <option value="completed" className="text-slate-800 bg-white">✅ Выполнен</option>
-                            <option value="cancelled" className="text-slate-800 bg-white">❌ Отменен</option>
+                            <option value="pending" className="text-slate-800 bg-white">Создан</option>
+                            <option value="processing" className="text-slate-800 bg-white">Сборка</option>
+                            <option value="shipped" className="text-slate-800 bg-white">Доставляется клиенту</option>
+                            <option value="completed" className="text-slate-800 bg-white">Доставлен</option>
+                            <option value="cancelled" className="text-slate-800 bg-white">Отменен</option>
                           </select>
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60 text-[7px] text-current">▼</span>
                         </div>
@@ -1316,7 +1309,7 @@ export default function OrdersPage({
               >
                 <ChevronLeft className="h-4 w-4" /> Назад
               </button>
-              
+
               <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                 Страница {currentPage} из {totalPages}
               </span>

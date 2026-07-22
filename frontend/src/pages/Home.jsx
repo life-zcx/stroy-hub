@@ -10,6 +10,7 @@ import { formatPrice } from '../utils/formatPrice';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import ProductCard from '../components/ProductCard';
+import ProductSkeleton from '../components/ProductSkeleton';
 import { getProductImage } from '../utils/productImage';
 
 const THEME_GRADIENTS = {
@@ -281,7 +282,7 @@ export default function Home({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="lg:col-span-8 relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/85 px-5 sm:px-8 md:px-12 py-8 group/hero h-[480px] sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800"
+          className="lg:col-span-8 relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/85 px-4 sm:px-8 md:px-10 py-6 sm:py-8 pb-14 sm:pb-12 group/hero h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800"
         >
           {/* Soft, beautiful ambient glowing spheres (SaaS style) */}
           <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-blue-50/50 blur-[120px] pointer-events-none z-0"></div>
@@ -290,7 +291,7 @@ export default function Home({
           {/* ── Slide 1: Main USP ── */}
           {currentSlide === 0 && (
             <div className="w-full h-full flex-shrink-0 animate-fade-in relative z-10 flex items-center">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full h-full px-8 sm:px-10 md:px-12 py-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-stretch w-full h-full py-2">
                 {/* Left Column: Text Content */}
                 <div className="lg:col-span-12 flex flex-col justify-between text-left h-full w-full">
                   <div className="space-y-3.5">
@@ -312,11 +313,11 @@ export default function Home({
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 mt-6 lg:mt-auto">
+                  <div className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-auto">
                     <Link
                       href={getPageHref('catalog')}
                       onClick={() => onNavigate('catalog')}
-                      className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer border-0"
+                      className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all shadow-md flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer border-0"
                     >
                       <span>Перейти в каталог</span>
                       <ArrowRight className="h-4.5 w-4.5" />
@@ -324,10 +325,10 @@ export default function Home({
                     <Link
                       href={getPageHref('estimate')}
                       onClick={() => onNavigate('estimate')}
-                      className="w-full sm:w-auto justify-center px-6 py-3.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-55 text-slate-700 font-bold rounded-2xl transition-all shadow-sm flex items-center gap-2 transform hover:-translate-y-0.5 text-xs uppercase tracking-wider cursor-pointer"
+                      className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-2xl transition-all flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
                     >
                       <span>Заказ по смете</span>
-                      <ArrowRight className="h-4.5 w-4.5 text-slate-400 group-hover:text-slate-600" />
+                      <ArrowRight className="h-4.5 w-4.5 text-slate-400" />
                     </Link>
                   </div>
                 </div>
@@ -338,7 +339,7 @@ export default function Home({
           {/* ── Slide 2: Loyalty Info (TORMAG Club) ── */}
           {currentSlide === 1 && (
             <div className="w-full h-full flex-shrink-0 animate-fade-in relative z-10 text-slate-800 flex items-center">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full h-full px-8 sm:px-10 md:px-12 py-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-stretch w-full h-full py-2">
                 {/* Left Column */}
                 <div className="lg:col-span-7 flex flex-col justify-between text-left h-full w-full">
                   <div className="space-y-3.5">
@@ -550,7 +551,7 @@ export default function Home({
           </button>
 
           {/* Navigation Dots */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="absolute bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {Array.from({ length: totalSlides }).map((_, idx) => (
               <button
                 key={idx}
@@ -754,25 +755,27 @@ export default function Home({
       </section>
 
       {/* 🔥 POPULAR PRODUCTS / HITS */}
-      {popularProducts.length > 0 && (
-        <section className="space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="text-left space-y-2">
-              <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные товары</h2>
-              <p className="text-slate-500 text-sm">Хиты продаж и востребованные строительные материалы</p>
-            </div>
-            <Link
-              href={getPageHref('catalog')}
-              onClick={() => onNavigate('catalog')}
-              className="flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors"
-            >
-              Смотреть все товары
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+      <section className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="text-left space-y-2">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные товары</h2>
+            <p className="text-slate-500 text-sm">Хиты продаж и востребованные строительные материалы</p>
           </div>
+          <Link
+            href={getPageHref('catalog')}
+            onClick={() => onNavigate('catalog')}
+            className="flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors"
+          >
+            Смотреть все товары
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {popularProducts.map((product) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {productsLoading ? (
+            <ProductSkeleton count={4} />
+          ) : (
+            popularProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -781,10 +784,10 @@ export default function Home({
                 onToggleFavorite={onToggleFavorite}
                 isFavorite={isFavorite ? isFavorite(product) : false}
               />
-            ))}
-          </div>
-        </section>
-      )}
+            ))
+          )}
+        </div>
+      </section>
 
       {/* 🛡️ KEY STRENGTHS (ПРЕИМУЩЕСТВА) */}
       <section className="space-y-8">

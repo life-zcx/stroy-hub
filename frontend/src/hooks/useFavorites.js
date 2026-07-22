@@ -21,10 +21,10 @@ export default function useFavorites(showToast) {
     const isExist = favorites.find(f => f.id === product.id);
     if (isExist) {
       setFavorites(favorites.filter(f => f.id !== product.id));
-      showToast?.('💔 Удалено из избранного');
+      showToast?.('Удалено из избранного');
     } else {
       setFavorites([...favorites, product]);
-      showToast?.('❤️ Добавлено в избранное');
+      showToast?.('Добавлено в избранное');
     }
   };
 
@@ -34,7 +34,7 @@ export default function useFavorites(showToast) {
 
   const clearFavorites = () => {
     setFavorites([]);
-    showToast?.('🧹 Избранное очищено');
+    showToast?.('Избранное очищено');
   };
 
   return {

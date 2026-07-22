@@ -106,7 +106,7 @@ export default function useCart(showToast, customer) {
         setCart(dbCart);
       } catch (err) {
         console.error('Error adding to DB cart:', err);
-        showToast?.('❌ Не удалось добавить товар в корзину');
+        showToast?.('Не удалось добавить товар в корзину');
       }
     } else {
       setCart(prev => {
@@ -119,7 +119,7 @@ export default function useCart(showToast, customer) {
         return [...prev, { ...product, quantity: quantityToAdd }];
       });
     }
-    showToast?.(`🛒 «${product.name}» добавлен в корзину (${quantityToAdd} шт)`);
+    showToast?.(`«${product.name}» добавлен в корзину (${quantityToAdd} шт)`);
   };
 
   const handleUpdateQuantity = async (id, val, isAbsolute = false) => {

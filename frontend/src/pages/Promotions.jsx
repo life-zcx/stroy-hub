@@ -150,41 +150,57 @@ export default function Promotions({
           {selectedPromo.title}
         </h1>
 
-        {/* Big Banner Image */}
-        <div className="aspect-[21/9] w-full overflow-hidden rounded-[2.5rem] border border-slate-200/80 shadow-sm relative bg-slate-100">
+        {/* Big Banner Image / Harmonious Glassmorphic Promo Banner */}
+        <div className="w-full overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-sm relative bg-slate-100">
           {selectedPromo.imageDetail || selectedPromo.image ? (
             <img 
               src={selectedPromo.imageDetail || selectedPromo.image} 
               alt={selectedPromo.title} 
-              className="w-full h-full object-cover"
+              className="w-full h-auto max-h-[350px] object-cover"
             />
           ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(selectedPromo.theme)} flex flex-col items-center justify-center text-white p-6`}>
-              <span className="text-4xl sm:text-6xl font-black font-outfit uppercase tracking-tight drop-shadow-md select-none">
-                -{selectedPromo.discountValue}{selectedPromo.discountType === 'PERCENT' ? '%' : ' ₸'}
-              </span>
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-white/20 px-3.5 py-1.5 rounded-xl mt-3 backdrop-blur-md border border-white/10 select-none">
-                {selectedPromo.badge || (selectedPromo.promoCode ? 'По промокоду' : 'Спецпредложение')}
-              </span>
-            </div>
-          )}
-          {selectedPromo.promoCode && (
-            <div 
-              onClick={() => {
-                navigator.clipboard.writeText(selectedPromo.promoCode);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="absolute top-6 right-6 bg-slate-950/75 backdrop-blur-xl border border-white/10 text-white rounded-[1.5rem] p-4 flex flex-col items-center gap-1.5 shadow-2xl hover:bg-slate-950/85 transition-all duration-300 cursor-pointer select-none active:scale-95"
-              title="Нажмите, чтобы скопировать"
-            >
-              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-350">
-                <TicketPercent className="h-3.5 w-3.5 text-emerald-400" />
-                <span>{copied ? 'Скопировано!' : 'Промокод'}</span>
+            <div className={`w-full bg-gradient-to-br ${getThemeGradient(selectedPromo.theme)} rounded-3xl sm:rounded-[2.5rem] p-8 sm:p-12 text-white flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden space-y-5`}>
+              {/* Subtle Ambient Glow */}
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Big Discount Value */}
+              <div className="space-y-2 z-10">
+                <div className="text-5xl sm:text-7xl font-black font-outfit tracking-tight drop-shadow-md select-none">
+                  -{selectedPromo.discountValue}{selectedPromo.discountType === 'PERCENT' ? '%' : ' ₸'}
+                </div>
+                <div className="inline-block text-[11px] sm:text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/25 select-none shadow-sm">
+                  {selectedPromo.badge || (selectedPromo.promoCode ? 'По промокоду' : 'Спецпредложение')}
+                </div>
               </div>
-              <span className={`font-mono text-sm font-black tracking-widest px-3.5 py-1.5 rounded-xl border transition-all duration-300 ${copied ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400 scale-102' : 'bg-white/10 border-white/5 text-yellow-300'}`}>
-                {selectedPromo.promoCode}
-              </span>
+
+              {/* Harmonious Promo Code Capsule */}
+              {selectedPromo.promoCode && (
+                <div
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedPromo.promoCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="z-10 inline-flex flex-wrap items-center justify-center gap-2.5 bg-slate-950/40 hover:bg-slate-950/50 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl cursor-pointer transition-all duration-200 active:scale-95 shadow-xl group"
+                  title="Нажмите, чтобы скопировать промокод"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <TicketPercent className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span className="text-slate-200">Промокод:</span>
+                    <span className="font-mono font-black text-amber-300 tracking-wider text-sm">
+                      {selectedPromo.promoCode}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-xl transition-all duration-300 border ${
+                    copied 
+                      ? 'bg-emerald-500 text-white border-emerald-400' 
+                      : 'bg-white/15 group-hover:bg-white/25 text-white border-white/20'
+                  }`}>
+                    {copied ? '✓ Скопировано' : 'Копировать'}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -198,7 +214,7 @@ export default function Promotions({
             onClick={onOpenCallback}
             className="w-full md:w-auto px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md text-xs uppercase tracking-wider shrink-0 cursor-pointer"
           >
-            Заказать услугу
+            Получить консультацию
           </button>
         </div>
 

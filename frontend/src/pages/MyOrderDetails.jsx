@@ -141,19 +141,17 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
 
   const handleRepeatOrder = async (ord) => {
     if (!ord.items || ord.items.length === 0) {
-      showToast('⚠️ В заказе нет позиций для копирования.');
+      showToast('В заказе нет позиций для копирования.');
       return;
     }
 
     ord.items.forEach(item => {
       if (item.product) {
-        for (let i = 0; i < item.quantity; i++) {
-          onAddToCart(item.product);
-        }
+        onAddToCart?.(item.product, item.quantity);
       }
     });
 
-    showToast(`🛒 Заказ №${ord.id} успешно добавлен в корзину!`);
+    showToast(`Заказ №${ord.id} успешно добавлен в корзину!`);
     onNavigate('cart');
   };
 
