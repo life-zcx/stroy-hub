@@ -78,31 +78,37 @@ export default function DeliveryTerms() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-8 md:p-12 shadow-sm space-y-6">
+      <div className="bg-white border border-slate-200/60 rounded-3xl md:rounded-[2.5rem] p-6 md:p-12 shadow-sm space-y-6">
         <h3 className="text-lg font-extrabold text-slate-950 font-outfit border-b border-slate-100 pb-3">Доступный грузовой транспорт</h3>
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4 py-2 border-b border-dashed border-slate-100">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 py-3 border-b border-dashed border-slate-100">
+            <div className="space-y-1">
               <span className="block font-bold text-slate-900 text-sm">Малотоннажный транспорт (до 2.5 тонн)</span>
-              <p className="text-slate-400 text-xs font-semibold">Газели, небольшие бортовые грузовики. Подходит для смесей, красок, крепежа.</p>
+              <p className="text-slate-400 text-xs font-semibold leading-relaxed">Газели, небольшие бортовые грузовики. Подходит для смесей, красок, крепежа.</p>
             </div>
-            <span className="font-extrabold text-slate-550 text-xs whitespace-nowrap shrink-0">рассчитывается индивидуально</span>
+            <span className="font-extrabold text-slate-500 text-xs bg-slate-50 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-lg sm:rounded-none shrink-0 self-start sm:self-auto inline-block">
+              рассчитывается индивидуально
+            </span>
           </div>
 
-          <div className="flex items-start justify-between gap-4 py-2 border-b border-dashed border-slate-100">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 py-3 border-b border-dashed border-slate-100">
+            <div className="space-y-1">
               <span className="block font-bold text-slate-900 text-sm">Грузовой транспорт с краном-манипулятором</span>
-              <p className="text-slate-400 text-xs font-semibold">Для транспортировки кирпича, блоков, плит перекрытий. Выполняет автоматическую разгрузку.</p>
+              <p className="text-slate-400 text-xs font-semibold leading-relaxed">Для транспортировки кирпича, блоков, плит перекрытий. Выполняет автоматическую разгрузку.</p>
             </div>
-            <span className="font-extrabold text-slate-550 text-xs whitespace-nowrap shrink-0">рассчитывается индивидуально</span>
+            <span className="font-extrabold text-slate-500 text-xs bg-slate-50 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-lg sm:rounded-none shrink-0 self-start sm:self-auto inline-block">
+              рассчитывается индивидуально
+            </span>
           </div>
 
-          <div className="flex items-start justify-between gap-4 py-2">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 py-3">
+            <div className="space-y-1">
               <span className="block font-bold text-slate-900 text-sm">Тяжелая спецтехника (до 20 тонн)</span>
-              <p className="text-slate-400 text-xs font-semibold">Шаланды, длинномеры, самосвалы под сыпучие материалы.</p>
+              <p className="text-slate-400 text-xs font-semibold leading-relaxed">Шаланды, длинномеры, самосвалы под сыпучие материалы.</p>
             </div>
-            <span className="font-extrabold text-slate-550 text-xs whitespace-nowrap shrink-0">рассчитывается индивидуально</span>
+            <span className="font-extrabold text-slate-500 text-xs bg-slate-50 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-lg sm:rounded-none shrink-0 self-start sm:self-auto inline-block">
+              рассчитывается индивидуально
+            </span>
           </div>
         </div>
       </div>

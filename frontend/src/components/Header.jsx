@@ -546,22 +546,98 @@ export default function Header({
               <Eye className="h-4 w-4 text-emerald-600" />
               <span>Версия для слабовидящих</span>
             </button>
-            {MOBILE_NAV_ITEMS.map(tab => (
-              <Link
-                key={tab.id}
-                href={getPageHref(tab.id)}
-                onClick={() => {
-                  navigateTo(tab.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
-                  ? 'bg-emerald-600/10 text-emerald-700'
-                  : 'text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                {tab.name}
-              </Link>
-            ))}
+
+            {/* Main Shopping Links */}
+            <Link
+              href={getPageHref('catalog')}
+              onClick={() => {
+                navigateTo('catalog');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'catalog'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              Каталог
+            </Link>
+
+            <Link
+              href="/favorites"
+              onClick={() => {
+                onNavigate('favorites');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'favorites'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              <span>Избранное</span>
+              {favoritesCount > 0 && (
+                <span className="text-emerald-700 font-extrabold flex items-center justify-center bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 text-[10px]">
+                  {favoritesCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href={getPageHref('promotions')}
+              onClick={() => {
+                navigateTo('promotions');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'promotions'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              Акции
+            </Link>
+
+            <Link
+              href={getPageHref('services')}
+              onClick={() => {
+                navigateTo('services');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'services'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              Услуги
+            </Link>
+
+            <Link
+              href={getPageHref('estimate')}
+              onClick={() => {
+                navigateTo('estimate');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'estimate'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              Заказ по смете
+            </Link>
+
+            <Link
+              href={getPageHref('advisor')}
+              onClick={() => {
+                navigateTo('advisor');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'advisor'
+                ? 'bg-emerald-600/10 text-emerald-700'
+                : 'text-slate-500 hover:bg-slate-50'
+                }`}
+            >
+              Умный подбор
+            </Link>
+
+            {/* Account Links */}
             {customer && (
               <>
                 <Link
@@ -598,6 +674,35 @@ export default function Header({
                 )}
               </>
             )}
+
+            {/* Informational & Help links */}
+            <div className="border-t border-slate-100 my-1 pt-1" />
+
+            {[
+              { id: 'about', name: 'О компании' },
+              { id: 'delivery', name: 'Доставка и оплата' },
+              { id: 'payment-terms', name: 'Условия оплаты' },
+              { id: 'delivery-terms', name: 'Условия доставки' },
+              { id: 'warranty', name: 'Гарантия на товар' },
+              { id: 'faq', name: 'Вопрос-ответ' },
+              { id: 'requisites', name: 'Реквизиты' },
+              { id: 'partners', name: 'Партнеры' },
+            ].map(tab => (
+              <Link
+                key={tab.id}
+                href={getPageHref(tab.id)}
+                onClick={() => {
+                  navigateTo(tab.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
+                  ? 'bg-emerald-600/10 text-emerald-700'
+                  : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+              >
+                {tab.name}
+              </Link>
+            ))}
           </div>
         </div>
       )}
@@ -827,9 +932,9 @@ export default function Header({
       </div>
 
       {/* Row 2: Premium Main Navigation Header */}
-      <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} ${isScrolled
-        ? 'bg-white/97 backdrop-blur-md shadow-md border-b border-gray-200/50 py-2'
-        : 'bg-white border-b border-gray-100 py-3.5'
+      <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} py-2.5 ${isScrolled
+        ? 'bg-white/97 backdrop-blur-md shadow-md border-b border-gray-200/50'
+        : 'bg-white border-b border-gray-100'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -1094,6 +1199,22 @@ export default function Header({
                 </button>
               )}
 
+              <Link
+                href={getPageHref('favorites')}
+                onClick={() => {
+                  onNavigate?.('favorites');
+                }}
+                aria-label="Избранное"
+                className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
+              >
+                <Heart className="h-5 w-5" />
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm font-mono">
+                    {favoritesCount > 99 ? '99+' : favoritesCount}
+                  </span>
+                )}
+              </Link>
+
               <button
                 type="button"
                 onClick={onOpenCart}
@@ -1101,6 +1222,11 @@ export default function Header({
                 className="relative flex items-center justify-center p-2.5 bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 rounded-xl h-[40px] w-[40px]"
               >
                 <ShoppingCart className="h-5 w-5" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white font-black text-[9px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm font-mono">
+                    {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                  </span>
+                )}
               </button>
 
               <button

@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import { sanitizeOptionalText, sanitizePersonName, sanitizePhone } from '../utils/requestValidation.js';
 import { sendCallbackAlert } from '../utils/telegramBot.js';
+import { broadcastNotification } from '../utils/pushNotifier.js';
 
 export const createCallback = async (req, res) => {
   const { userName, userPhone } = req.body;
@@ -23,6 +24,14 @@ export const createCallback = async (req, res) => {
 
     // Send Telegram Notification asynchronously
     sendCallbackAlert(callback).catch(err => console.error('[TELEGRAM ALERT ERROR] Callback:', err));
+
+    // Send Web Push Notification to Admin devices
+    broadcastNotification({
+      title: `📞 Заявка на звонок: ${safeName}`,
+      body: `Телефон: ${safePhone}`,
+      icon: '/pwa-192x192.png',
+      data: { url: '/admin' }
+    }).catch(() => {});
 
     res.status(201).json(callback);
   } catch (error) {

@@ -15,6 +15,9 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
+      workbox: {
+        importScripts: ['/sw-push.js']
+      },
       includeAssets: ['favicon.png', 'robots.txt', 'apple-touch-icon.png', 'manifest.json'],
       manifest: {
         name: 'TORMAG — Всё для стройки и ремонта',

@@ -1,8 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
-import sharp from 'sharp';
 import { MAX_UPLOAD_SIZE_MB } from './env.js';
+
+let sharp = null;
+try {
+  const sharpModule = await import('sharp');
+  sharp = sharpModule.default || sharpModule;
+} catch (e) {
+  console.warn('[UPLOAD] Optional dependency "sharp" not found in node_modules yet. Fallback to standard file save.');
+}
 
 const uploadDir = './uploads';
 const allowedMimeTypes = new Set([
@@ -39,19 +46,31 @@ async function compressAndSaveImage(file) {
   if (!file || !file.buffer) return;
 
   const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-  const filename = `${uniqueSuffix}.webp`;
-  const filePath = path.join(uploadDir, filename);
+  const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
 
-  // Resize to max 1200px width (keeping aspect ratio) and convert to WebP format with 80% quality
-  await sharp(file.buffer)
-    .resize({ width: 1200, withoutEnlargement: true })
-    .webp({ quality: 80 })
-    .toFile(filePath);
+  if (sharp) {
+    const filename = `${uniqueSuffix}.webp`;
+    const filePath = path.join(uploadDir, filename);
 
-  // Populate filename and path as if saved by diskStorage
-  file.filename = filename;
-  file.path = filePath;
-  file.mimetype = 'image/webp';
+    // Resize to max 1200px width (keeping aspect ratio) and convert to WebP format with 80% quality
+    await sharp(file.buffer)
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filePath);
+
+    file.filename = filename;
+    file.path = filePath;
+    file.mimetype = 'image/webp';
+  } else {
+    // Fallback: save as original format if sharp is not installed
+    const filename = `${uniqueSuffix}${ext}`;
+    const filePath = path.join(uploadDir, filename);
+
+    fs.writeFileSync(filePath, file.buffer);
+
+    file.filename = filename;
+    file.path = filePath;
+  }
 
   // Free memory buffer
   delete file.buffer;
@@ -98,7 +117,7 @@ const allowedExcelMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/csv',
   'application/csv',
-  'application/octet-stream', // some clients send this for csv/xlsx; extension is still checked below
+  'application/octet-stream',
 ]);
 
 function excelFileFilter(req, file, cb) {
@@ -112,10 +131,9 @@ function excelFileFilter(req, file, cb) {
 }
 
 export const excelUpload = multer({
-  storage: multer.memoryStorage(), // spreadsheet files are small and easy to parse in-memory
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit for price lists
+    fileSize: 10 * 1024 * 1024,
   },
   fileFilter: excelFileFilter,
 });
-

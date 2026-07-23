@@ -184,29 +184,40 @@ export default function ProductPage({
       if (metaDesc) {
         metaDesc.setAttribute(
           'content',
-          `Купить ${product.name} по выгодной цене in интернет-магазине TORMAG. Рейтинг: ${product.rating || '4.8'} (${product.reviews || '124'} отзывов). Быстрая доставка по Алматы и области, начисление бонусов!`
+          `Купить ${product.name} по выгодной цене в интернет-магазине TORMAG. Рейтинг: ${product.rating || '4.8'} (${product.reviews || '124'} отзывов). Быстрая доставка по Алматы и Казахстану, начисление бонусов!`
         );
       }
 
-      const oldScript = document.getElementById('jsonld-product-schema');
-      if (oldScript) {
-        oldScript.remove();
-      }
+      // Cleanup old scripts
+      ['jsonld-product-schema', 'jsonld-breadcrumb-schema'].forEach(id => {
+        const old = document.getElementById(id);
+        if (old) old.remove();
+      });
 
       const schemaData = {
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": product.name,
-        "image": product.image,
+        "image": Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.image],
         "description": product.description || `Купить ${product.name} по выгодной цене в TORMAG.`,
-        "sku": `PROD-${product.id}`,
+        "sku": product.article || `PROD-${product.id}`,
+        "mpn": `TORMAG-${product.id}`,
+        "brand": {
+          "@type": "Brand",
+          "name": product.brand || product.supplier?.name || "TORMAG"
+        },
         "offers": {
           "@type": "Offer",
           "url": window.location.href,
           "priceCurrency": "KZT",
           "price": product.price,
+          "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           "itemCondition": "https://schema.org/NewCondition",
-          "availability": "https://schema.org/InStock"
+          "availability": product.inStock === false ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+          "seller": {
+            "@type": "Organization",
+            "name": product.supplier?.name || "TORMAG.KZ"
+          }
         },
         "aggregateRating": {
           "@type": "AggregateRating",
@@ -215,20 +226,59 @@ export default function ProductPage({
         }
       };
 
-      const script = document.createElement('script');
-      script.id = 'jsonld-product-schema';
-      script.type = 'application/ld+json';
-      script.innerHTML = JSON.stringify(schemaData);
-      document.head.appendChild(script);
+      const scriptProduct = document.createElement('script');
+      scriptProduct.id = 'jsonld-product-schema';
+      scriptProduct.type = 'application/ld+json';
+      scriptProduct.innerHTML = JSON.stringify(schemaData);
+      document.head.appendChild(scriptProduct);
+
+      // Breadcrumb Schema
+      if (breadcrumbs && breadcrumbs.length > 0) {
+        const breadcrumbSchema = {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Главная",
+              "item": window.location.origin
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Каталог",
+              "item": `${window.location.origin}/#catalog`
+            },
+            ...breadcrumbs.map((cat, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 3,
+              "name": cat.name,
+              "item": `${window.location.origin}/#category-${cat.slug || cat.id}`
+            })),
+            {
+              "@type": "ListItem",
+              "position": breadcrumbs.length + 3,
+              "name": product.name,
+              "item": window.location.href
+            }
+          ]
+        };
+        const scriptBC = document.createElement('script');
+        scriptBC.id = 'jsonld-breadcrumb-schema';
+        scriptBC.type = 'application/ld+json';
+        scriptBC.innerHTML = JSON.stringify(breadcrumbSchema);
+        document.head.appendChild(scriptBC);
+      }
     }
 
     return () => {
-      const oldScript = document.getElementById('jsonld-product-schema');
-      if (oldScript) {
-        oldScript.remove();
-      }
+      ['jsonld-product-schema', 'jsonld-breadcrumb-schema'].forEach(id => {
+        const old = document.getElementById(id);
+        if (old) old.remove();
+      });
     };
-  }, [product]);
+  }, [product, breadcrumbs]);
 
   useEffect(() => {
     const loadProduct = async () => {

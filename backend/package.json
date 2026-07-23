@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon -L src/server.js",
+    "dev": "nodemon -L --ignore uploads/ src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
@@ -26,6 +26,7 @@
     "nodemailer": "^8.0.10",
     "redis": "^6.0.0",
     "sharp": "^0.33.5",
+    "web-push": "^3.6.7",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "xlsx-populate": "^1.21.0"

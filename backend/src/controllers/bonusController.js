@@ -1,5 +1,6 @@
 import prisma from '../config/db.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
+import { broadcastNotification } from '../utils/pushNotifier.js';
 
 // ─────────────────────────────────────────────
 // Утилитарные функции (переиспользуются в orderController)
@@ -238,6 +239,15 @@ export const manualAdjustBonus = async (req, res) => {
     });
 
     const newBalance = await getAvailableBalance(parseInt(userId));
+
+    broadcastNotification({
+      title: `💰 Бонусы TORMAG`,
+      body: isDeduction 
+        ? `Списано ${Math.abs(parsedAmount).toLocaleString('ru-RU')} ₸. Баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`
+        : `Вам начислено +${Math.abs(parsedAmount).toLocaleString('ru-RU')} ₸ бонусов! Баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`,
+      icon: '/pwa-192x192.png',
+      data: { url: '/cashback' }
+    }).catch(() => {});
 
     res.json({
       transaction,

@@ -3,6 +3,7 @@ import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
 import { sendTelegramNotification } from '../utils/telegram.js';
+import { broadcastNotification } from '../utils/pushNotifier.js';
 import {
   getAvailableBalance,
   createBonusEarned,
@@ -304,6 +305,14 @@ export const createOrder = async (req, res) => {
     // Send Telegram Notification (runs asynchronously in the background)
     sendTelegramNotification(result);
 
+    // Send Web Push Notification
+    broadcastNotification({
+      title: `Новый заказ #${result.id}! 🎉`,
+      body: `Ваш заказ на сумму ${result.totalAmount.toLocaleString('ru-RU')} ₸ принят и отправлен на обработку!`,
+      icon: '/pwa-192x192.png',
+      data: { url: '/cabinet/orders' }
+    }).catch(() => {});
+
     res.status(201).json(result);
   } catch (error) {
     const normalizedMessage = String(error.message || '').toLowerCase();
@@ -514,12 +523,40 @@ export const updateOrderStatus = async (req, res) => {
       // Обновляем бонусы при смене статуса (ВНУТРИ транзакции)
       if (status === 'completed') {
         await activatePendingBonuses(orderId, tx);
+        const earnedTx = await tx.bonusTransaction.findFirst({
+          where: { orderId, type: 'earned' }
+        });
+        const newBalance = await getAvailableBalance(existing.userId, tx);
+        const earnedAmount = earnedTx?.amount || 0;
+        if (earnedAmount > 0) {
+          broadcastNotification({
+            title: `💰 Начислен кешбэк TORMAG!`,
+            body: `Вам начислено +${earnedAmount.toLocaleString('ru-RU')} ₸ бонусов за заказ #${orderId}! Ваш новый баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`,
+            icon: '/pwa-192x192.png',
+            data: { url: '/cashback' }
+          }).catch(() => {});
+        }
       } else if (status === 'cancelled') {
         await cancelBonusesForOrder(orderId, existing.userId, tx);
       }
 
       return order;
     });
+
+    const STATUS_MAP = {
+      pending: 'В обработке',
+      processing: 'Принят в работу',
+      shipped: 'Передан в доставку',
+      completed: 'Выполнен',
+      cancelled: 'Отменен'
+    };
+
+    broadcastNotification({
+      title: `Заказ #${updated.id}`,
+      body: `Статус вашего заказа изменен: ${STATUS_MAP[updated.status] || updated.status}`,
+      icon: '/pwa-192x192.png',
+      data: { url: '/cabinet/orders' }
+    }).catch(() => {});
 
     res.json(updated);
   } catch (error) {
@@ -711,6 +748,21 @@ export const updateOrder = async (req, res) => {
       // Also update bonuses if status changed (ВНУТРИ транзакции)
       if (status === 'completed') {
         await activatePendingBonuses(orderId, tx);
+        if (existingOrder.userId) {
+          const earnedTx = await tx.bonusTransaction.findFirst({
+            where: { orderId, type: 'earned' }
+          });
+          const newBalance = await getAvailableBalance(existingOrder.userId, tx);
+          const earnedAmount = earnedTx?.amount || 0;
+          if (earnedAmount > 0) {
+            broadcastNotification({
+              title: `💰 Начислен кешбэк TORMAG!`,
+              body: `Вам начислено +${earnedAmount.toLocaleString('ru-RU')} ₸ бонусов за заказ #${orderId}! Ваш новый баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`,
+              icon: '/pwa-192x192.png',
+              data: { url: '/cashback' }
+            }).catch(() => {});
+          }
+        }
       } else if (status === 'cancelled') {
         if (existingOrder.userId) {
           await cancelBonusesForOrder(orderId, existingOrder.userId, tx);
@@ -720,9 +772,22 @@ export const updateOrder = async (req, res) => {
       return updatedOrder;
     });
 
-    // Notify the client about order updates (simulated)
-    const phone = clientPhone || existingOrder.clientPhone;
-    console.log(`[CLIENT NOTIFICATION] Sent SMS/Whatsapp notification about order #${orderId} updates to ${phone}`);
+    const STATUS_MAP = {
+      pending: 'В обработке',
+      processing: 'Принят в работу',
+      shipped: 'Передан в доставку',
+      completed: 'Выполнен',
+      cancelled: 'Отменен'
+    };
+
+    if (result && result.status) {
+      broadcastNotification({
+        title: `Заказ #${result.id}`,
+        body: `Обновлен статус заказа: ${STATUS_MAP[result.status] || result.status}`,
+        icon: '/pwa-192x192.png',
+        data: { url: '/cabinet/orders' }
+      }).catch(() => {});
+    }
 
     res.json(result);
   } catch (error) {

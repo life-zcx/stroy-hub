@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { broadcastNotification } from '../utils/pushNotifier.js';
 import {
   buildPromotionSnapshot,
   evaluatePromotion,
@@ -454,6 +455,14 @@ export const createPromotion = async (req, res) => {
     const createdPromotion = await prisma.promotion.create({ data });
     const [serializedPromotion] = await enrichPromotions([createdPromotion]);
     await clearPromotionsCache();
+
+    broadcastNotification({
+      title: `🔥 Акция: ${createdPromotion.title}`,
+      body: createdPromotion.description || 'Новое специальное предложение в TORMAG!',
+      icon: '/pwa-192x192.png',
+      data: { url: '/promotions' }
+    }).catch(() => {});
+
     res.status(201).json(serializedPromotion);
   } catch (error) {
     const statusCode = error.code === 'P2002' ? 400 : 500;
@@ -498,6 +507,16 @@ export const updatePromotion = async (req, res) => {
 
     const [serializedPromotion] = await enrichPromotions([updatedPromotion]);
     await clearPromotionsCache();
+
+    if (updatedPromotion.isActive && updatedPromotion.showOnSite) {
+      broadcastNotification({
+        title: `🔥 Акция: ${updatedPromotion.title}`,
+        body: updatedPromotion.description || 'Новые условия акции в TORMAG!',
+        icon: '/pwa-192x192.png',
+        data: { url: '/promotions' }
+      }).catch(() => {});
+    }
+
     res.json(serializedPromotion);
   } catch (error) {
     const statusCode = error.code === 'P2002' ? 400 : 500;

@@ -237,6 +237,23 @@ export default function App() {
     return () => document.removeEventListener('click', handleGlobalLinkClick);
   }, []);
 
+  // Service Worker push notification listener for active foreground windows
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data && event.data.type === 'TORMAG_PUSH_RECEIVED') {
+        const { title, body } = event.data;
+        showToast(`${title || 'TORMAG'}: ${body || ''}`, 'info');
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, [showToast]);
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -581,7 +598,7 @@ export default function App() {
         currentPage={currentPage}
       />
       <ScrollToTop />
-      <PWAInstallPrompt />
+      <PWAInstallPrompt showToast={showToast} />
       <Toast toast={toast} />
     </div>
   );

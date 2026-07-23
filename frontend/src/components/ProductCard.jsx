@@ -118,6 +118,8 @@ export default function ProductCard({
           <img
             src={imageSrc}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-3/4 h-3/4 object-contain mix-blend-multiply"
             onError={(e) => {
               e.target.onerror = null;

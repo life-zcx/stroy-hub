@@ -4,6 +4,8 @@ import { getProfile, logout as logoutApi } from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,23 @@ export default function App() {
 
   useEffect(() => {
     checkAuth();
+  }, []);
+
+  // Service Worker push notification listener for admin panel
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data && event.data.type === 'TORMAG_PUSH_RECEIVED') {
+        const { title, body } = event.data;
+        showToast(`🔔 ${title || 'Уведомление'}: ${body || ''}`);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+    };
   }, []);
 
   const handleAuthSuccess = (userData) => {
@@ -70,6 +89,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <PWAInstallPrompt />
     </div>
   );
 }
