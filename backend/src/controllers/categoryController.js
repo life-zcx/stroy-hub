@@ -43,7 +43,14 @@ export const getAllCategories = async (req, res) => {
 // Get a category by ID (or slug) with children and breadcrumbs path
 export const getCategoryById = async (req, res) => {
   const { id } = req.params;
+  const cacheKey = `categories:detail:${id}`;
+
   try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+
     let category;
     
     if (isNaN(id)) {
@@ -89,10 +96,13 @@ export const getCategoryById = async (req, res) => {
       }
     }
 
-    res.json({
+    const result = {
       ...category,
       breadcrumbs
-    });
+    };
+
+    await redisClient.set(cacheKey, JSON.stringify(result), { EX: 600 });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка получения категории: ' + error.message });
   }

@@ -69,8 +69,8 @@ export const loginRateLimiter = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('[Login Rate Limiter Error]', error);
-    next();
+    logger.error('[Login Rate Limiter Error] Redis failure during authentication rate limit check', { error, ip });
+    return res.status(503).json({ error: 'Сервис авторизации временно недоступен. Попробуйте повторить попытку позже.' });
   }
 };
 

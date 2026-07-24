@@ -105,6 +105,8 @@ model Product {
   @@index([supplierId])
   @@index([categoryId])
   @@index([price])
+  @@index([categoryId, price])
+  @@index([supplierId, price])
 }
 
 model Category {
@@ -155,6 +157,8 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
 }
 
 model OrderItem {

@@ -29,6 +29,8 @@ import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
 import { startCleanupScheduler } from './utils/cleanup.js';
 import { startTelegramBotListener } from './utils/telegramBot.js';
+import prisma from './config/db.js';
+import redisClient from './config/redis.js';
 
 dotenv.config();
 
@@ -206,8 +208,41 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: isProduction ? 'Внутренняя ошибка сервера.' : 'Внутренняя ошибка сервера: ' + err.message });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`Сервер Tormag запущен на порту ${PORT}`);
   startCleanupScheduler();
   startTelegramBotListener();
 });
+
+const gracefulShutdown = async (signal) => {
+  logger.info(`[SHUTDOWN] Получен сигнал ${signal}. Завершение работы сервера...`);
+
+  server.close(async () => {
+    logger.info('[SHUTDOWN] HTTP сервер остановлен.');
+    try {
+      await prisma.$disconnect();
+      logger.info('[SHUTDOWN] Соединение с PostgreSQL закрыто.');
+    } catch (e) {
+      logger.error('[SHUTDOWN Error] Ошибка закрытия PostgreSQL', { error: e.message });
+    }
+
+    try {
+      if (redisClient.isOpen) {
+        await redisClient.quit();
+        logger.info('[SHUTDOWN] Соединение с Redis закрыто.');
+      }
+    } catch (e) {
+      logger.error('[SHUTDOWN Error] Ошибка закрытия Redis', { error: e.message });
+    }
+
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    logger.error('[SHUTDOWN] Принудительное завершение работы по таймауту 10s.');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
