@@ -20,7 +20,7 @@ function parsePositiveInteger(value, fallback) {
   return parsed;
 }
 
-export const JWT_SECRET = requireEnv('JWT_SECRET');
+export const JWT_SECRET = process.env.JWT_SECRET?.trim() || (process.env.NODE_ENV === 'production' ? requireEnv('JWT_SECRET') : 'tormag_dev_jwt_secret_local');
 export const MAX_UPLOAD_SIZE_MB = parsePositiveInteger(process.env.MAX_UPLOAD_SIZE_MB, '5');
 export const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim() || '';
 export const SMTP_HOST = process.env.SMTP_HOST?.trim() || 'smtp.mail.ru';

@@ -12,6 +12,12 @@ export default function useCustomerAuth(showToast) {
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authAddress, setAuthAddress] = useState('');
+  const [entityType, setEntityType] = useState('PHYSICAL'); // 'PHYSICAL' | 'LEGAL'
+  const [companyBin, setCompanyBin] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [directorName, setDirectorName] = useState('');
+  const [legalAddress, setLegalAddress] = useState('');
+  const [organizationType, setOrganizationType] = useState('');
   const [authResetCode, setAuthResetCode] = useState('');
   const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
@@ -81,6 +87,12 @@ export default function useCustomerAuth(showToast) {
           name: authName,
           phone: authPhone,
           address: authAddress,
+          entityType,
+          companyBin: entityType === 'LEGAL' ? companyBin : null,
+          companyName: entityType === 'LEGAL' ? companyName : null,
+          directorName: entityType === 'LEGAL' ? directorName : null,
+          legalAddress: entityType === 'LEGAL' ? legalAddress : null,
+          organizationType: entityType === 'LEGAL' ? organizationType : null,
         };
         await sendRegisterCode(payload);
         showToast?.('✉️ Код подтверждения отправлен повторно!');
@@ -95,6 +107,13 @@ export default function useCustomerAuth(showToast) {
 
   useEffect(() => {
     const checkCustomerAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setCustomer(null);
+        setIsAuthChecking(false);
+        return;
+      }
+
       try {
         const profile = await getProfile();
         setCustomer(profile);
@@ -114,6 +133,12 @@ export default function useCustomerAuth(showToast) {
     setAuthName('');
     setAuthPhone('');
     setAuthAddress('');
+    setEntityType('PHYSICAL');
+    setCompanyBin('');
+    setCompanyName('');
+    setDirectorName('');
+    setLegalAddress('');
+    setOrganizationType('');
     setAuthResetCode('');
     setAuthError(null);
   };
@@ -154,12 +179,42 @@ export default function useCustomerAuth(showToast) {
           return;
         }
 
+        if (entityType === 'LEGAL') {
+          const binClean = companyBin.replace(/\D/g, '');
+          if (!binClean || binClean.length !== 12) {
+            setAuthError('БИН или ИИН компании должен состоять из 12 цифр');
+            return;
+          }
+          if (!companyName.trim()) {
+            setAuthError('Введите наименование организации');
+            return;
+          }
+          if (!directorName.trim()) {
+            setAuthError('Введите ФИО руководителя');
+            return;
+          }
+          if (!legalAddress.trim()) {
+            setAuthError('Введите юридический адрес');
+            return;
+          }
+          if (!organizationType.trim()) {
+            setAuthError('Выберите тип организации');
+            return;
+          }
+        }
+
         const payload = {
           email: authEmail,
           password: authPassword,
           name: authName,
           phone: authPhone,
           address: authAddress,
+          entityType,
+          companyBin: entityType === 'LEGAL' ? companyBin : null,
+          companyName: entityType === 'LEGAL' ? companyName : null,
+          directorName: entityType === 'LEGAL' ? directorName : null,
+          legalAddress: entityType === 'LEGAL' ? legalAddress : null,
+          organizationType: entityType === 'LEGAL' ? organizationType : null,
         };
         await sendRegisterCode(payload);
         showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
@@ -172,6 +227,12 @@ export default function useCustomerAuth(showToast) {
           name: authName,
           phone: authPhone,
           address: authAddress,
+          entityType,
+          companyBin: entityType === 'LEGAL' ? companyBin : null,
+          companyName: entityType === 'LEGAL' ? companyName : null,
+          directorName: entityType === 'LEGAL' ? directorName : null,
+          legalAddress: entityType === 'LEGAL' ? legalAddress : null,
+          organizationType: entityType === 'LEGAL' ? organizationType : null,
           code: authResetCode,
           sessionId: getAnalyticsSessionId(),
         };
@@ -229,6 +290,18 @@ export default function useCustomerAuth(showToast) {
     handlePhoneChange,
     authAddress,
     setAuthAddress,
+    entityType,
+    setEntityType,
+    companyBin,
+    setCompanyBin,
+    companyName,
+    setCompanyName,
+    directorName,
+    setDirectorName,
+    legalAddress,
+    setLegalAddress,
+    organizationType,
+    setOrganizationType,
     authResetCode,
     setAuthResetCode,
     authError,

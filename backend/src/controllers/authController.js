@@ -14,6 +14,12 @@ const buildUserPayload = (user) => ({
   name: user.name,
   phone: user.phone,
   address: user.address,
+  entityType: user.entityType || 'PHYSICAL',
+  companyBin: user.companyBin || null,
+  companyName: user.companyName || null,
+  directorName: user.directorName || null,
+  legalAddress: user.legalAddress || null,
+  organizationType: user.organizationType || null,
   role: user.role,
   supplierId: user.supplierId,
   supplierName: user.supplier?.name || null,
@@ -36,10 +42,28 @@ const checkPhoneExists = async (phone) => {
 };
 
 export const sendRegisterCode = async (req, res) => {
-  const { email, password, name, phone, address } = req.body;
+  const {
+    email,
+    password,
+    name,
+    phone,
+    address,
+    entityType,
+    companyBin,
+    companyName,
+    directorName,
+    legalAddress,
+    organizationType,
+  } = req.body;
 
   if (!email || !password || !phone || !name) {
     return res.status(400).json({ error: 'Пожалуйста, заполните все обязательные поля (Имя, Почта, Пароль, Телефон)' });
+  }
+
+  if (entityType === 'LEGAL') {
+    if (!companyBin || !companyName || !directorName || !legalAddress || !organizationType) {
+      return res.status(400).json({ error: 'Пожалуйста, заполните все данные юридического лица (БИН/ИИН, Наименование, ФИО руководителя, Юридический адрес, Тип организации)' });
+    }
   }
 
   // Validate email format
@@ -122,10 +146,30 @@ export const sendRegisterCode = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { email, password, name, phone, address, code, sessionId } = req.body;
+  const {
+    email,
+    password,
+    name,
+    phone,
+    address,
+    code,
+    sessionId,
+    entityType,
+    companyBin,
+    companyName,
+    directorName,
+    legalAddress,
+    organizationType,
+  } = req.body;
 
   if (!email || !password || !phone || !name || !code) {
     return res.status(400).json({ error: 'Все поля, включая код подтверждения, обязательны' });
+  }
+
+  if (entityType === 'LEGAL') {
+    if (!companyBin || !companyName || !directorName || !legalAddress || !organizationType) {
+      return res.status(400).json({ error: 'Пожалуйста, заполните все данные юридического лица' });
+    }
   }
 
   // Validate email format
@@ -196,6 +240,12 @@ export const register = async (req, res) => {
         name,
         phone,
         address: address || null,
+        entityType: entityType || 'PHYSICAL',
+        companyBin: companyBin || null,
+        companyName: companyName || null,
+        directorName: directorName || null,
+        legalAddress: legalAddress || null,
+        organizationType: organizationType || null,
         role: 'CUSTOMER',
       },
       include: { supplier: true },
@@ -319,7 +369,19 @@ export const getProfile = async (req, res) => {
 };
 
 export const updateProfile = async (req, res) => {
-  const { name, phone, address, oldPassword, newPassword } = req.body;
+  const {
+    name,
+    phone,
+    address,
+    oldPassword,
+    newPassword,
+    entityType,
+    companyBin,
+    companyName,
+    directorName,
+    legalAddress,
+    organizationType,
+  } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -375,6 +437,12 @@ export const updateProfile = async (req, res) => {
         phone: phone !== undefined ? phone : undefined,
         address: address !== undefined ? address : undefined,
         password: hashedPassword !== undefined ? hashedPassword : undefined,
+        entityType: entityType !== undefined ? entityType : undefined,
+        companyBin: companyBin !== undefined ? companyBin : undefined,
+        companyName: companyName !== undefined ? companyName : undefined,
+        directorName: directorName !== undefined ? directorName : undefined,
+        legalAddress: legalAddress !== undefined ? legalAddress : undefined,
+        organizationType: organizationType !== undefined ? organizationType : undefined,
       },
       include: { supplier: true }
     });

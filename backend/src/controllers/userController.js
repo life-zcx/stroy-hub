@@ -1,3 +1,4 @@
+// Updated Prisma schema bindings for User entity fields
 import bcrypt from 'bcryptjs';
 import prisma from '../config/db.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
@@ -11,6 +12,12 @@ const serializeUser = (user) => ({
   name: user.name,
   phone: user.phone,
   address: user.address,
+  entityType: user.entityType || 'PHYSICAL',
+  companyBin: user.companyBin || null,
+  companyName: user.companyName || null,
+  directorName: user.directorName || null,
+  legalAddress: user.legalAddress || null,
+  organizationType: user.organizationType || null,
   role: user.role,
   supplierId: user.supplierId,
   supplierName: user.supplier?.name || null,
@@ -37,20 +44,20 @@ const validateRole = (role) => {
   return null;
 };
 
-const ensureSupplierExists = async (supplierId) => {
+const ensureSupplierExists = async (supplierId, dbClient = prisma) => {
   if (!supplierId) {
     return null;
   }
 
-  const supplier = await prisma.supplier.findUnique({
+  const supplier = await dbClient.supplier.findUnique({
     where: { id: supplierId },
   });
 
   return supplier;
 };
 
-const ensureNotLastActiveAdmin = async (userId) => {
-  const otherActiveAdmins = await prisma.user.count({
+const ensureNotLastActiveAdmin = async (userId, dbClient = prisma) => {
+  const otherActiveAdmins = await dbClient.user.count({
     where: {
       role: 'ADMIN',
       isBlocked: false,
@@ -80,7 +87,21 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const createUserByAdmin = async (req, res) => {
-  const { email, password, name, phone, address, role = 'CUSTOMER', supplierId } = req.body;
+  const {
+    email,
+    password,
+    name,
+    phone,
+    address,
+    role = 'CUSTOMER',
+    supplierId,
+    entityType,
+    companyBin,
+    companyName,
+    directorName,
+    legalAddress,
+    organizationType,
+  } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email и пароль обязательны.' });
@@ -126,7 +147,13 @@ export const createUserByAdmin = async (req, res) => {
         phone: phone || null,
         address: address || null,
         role,
-        supplierId: role === 'SUPPLIER' ? parsedSupplierId : null,
+        supplier: role === 'SUPPLIER' && parsedSupplierId ? { connect: { id: parsedSupplierId } } : undefined,
+        entityType: entityType || 'PHYSICAL',
+        companyBin: entityType === 'LEGAL' ? (companyBin || null) : null,
+        companyName: entityType === 'LEGAL' ? (companyName || null) : null,
+        directorName: entityType === 'LEGAL' ? (directorName || null) : null,
+        legalAddress: entityType === 'LEGAL' ? (legalAddress || null) : null,
+        organizationType: entityType === 'LEGAL' ? (organizationType || null) : null,
       },
       include: {
         supplier: true,
@@ -144,81 +171,117 @@ export const createUserByAdmin = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const userId = parseInt(req.params.id, 10);
-  const { email, name, phone, address, role, supplierId } = req.body;
+  const {
+    email,
+    name,
+    phone,
+    address,
+    role,
+    supplierId,
+    entityType,
+    companyBin,
+    companyName,
+    directorName,
+    legalAddress,
+    organizationType,
+  } = req.body;
 
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { supplier: true },
-    });
-
-    if (!existingUser) {
-      return res.status(404).json({ error: 'Пользователь не найден.' });
-    }
-
-    if (role && role !== existingUser.role) {
-      const roleError = validateRole(role);
-      if (roleError) {
-        return res.status(400).json({ error: roleError });
-      }
-
-      if (req.user.id === userId && role !== 'ADMIN') {
-        return res.status(400).json({ error: 'Нельзя снять роль администратора у самого себя.' });
-      }
-
-      if (existingUser.role === 'ADMIN' && role !== 'ADMIN') {
-        const hasBackupAdmin = await ensureNotLastActiveAdmin(userId);
-        if (!hasBackupAdmin) {
-          return res.status(400).json({ error: 'Нельзя понизить последнего активного администратора.' });
-        }
-      }
-    }
-
-    if (email && email !== existingUser.email) {
-      const userWithSameEmail = await prisma.user.findUnique({
-        where: { email },
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+        include: { supplier: true },
       });
 
-      if (userWithSameEmail) {
-        return res.status(400).json({ error: 'Пользователь с таким email уже существует.' });
-      }
-    }
-
-    const nextRole = role || existingUser.role;
-    const parsedSupplierId = parseSupplierId(supplierId);
-
-    if (nextRole === 'SUPPLIER') {
-      if (!parsedSupplierId) {
-        return res.status(400).json({ error: 'Для роли поставщика нужно выбрать склад.' });
+      if (!existingUser) {
+        const err = new Error('Пользователь не найден.');
+        err.statusCode = 404;
+        throw err;
       }
 
-      const supplier = await ensureSupplierExists(parsedSupplierId);
-      if (!supplier) {
-        return res.status(400).json({ error: 'Указанный склад не найден.' });
-      }
-    }
+      if (role && role !== existingUser.role) {
+        const roleError = validateRole(role);
+        if (roleError) {
+          const err = new Error(roleError);
+          err.statusCode = 400;
+          throw err;
+        }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        email: email ?? existingUser.email,
-        name: name === undefined ? existingUser.name : (name || null),
-        phone: phone === undefined ? existingUser.phone : (phone || null),
-        address: address === undefined ? existingUser.address : (address || null),
-        role: nextRole,
-        supplierId: nextRole === 'SUPPLIER' ? parsedSupplierId : null,
-      },
-      include: {
-        supplier: true,
-        _count: {
-          select: { orders: true },
+        if (req.user.id === userId && role !== 'ADMIN') {
+          const err = new Error('Нельзя снять роль администратора у самого себя.');
+          err.statusCode = 400;
+          throw err;
+        }
+
+        if (existingUser.role === 'ADMIN' && role !== 'ADMIN') {
+          const hasBackupAdmin = await ensureNotLastActiveAdmin(userId, tx);
+          if (!hasBackupAdmin) {
+            const err = new Error('Нельзя понизить последнего активного администратора.');
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+      }
+
+      if (email && email !== existingUser.email) {
+        const userWithSameEmail = await tx.user.findUnique({
+          where: { email },
+        });
+
+        if (userWithSameEmail) {
+          const err = new Error('Пользователь с таким email уже существует.');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      const nextRole = role || existingUser.role;
+      const parsedSupplierId = parseSupplierId(supplierId);
+
+      if (nextRole === 'SUPPLIER') {
+        if (!parsedSupplierId) {
+          const err = new Error('Для роли поставщика нужно выбрать склад.');
+          err.statusCode = 400;
+          throw err;
+        }
+
+        const supplier = await ensureSupplierExists(parsedSupplierId, tx);
+        if (!supplier) {
+          const err = new Error('Указанный склад не найден.');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      return await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: email ?? existingUser.email,
+          name: name === undefined ? existingUser.name : (name || null),
+          phone: phone === undefined ? existingUser.phone : (phone || null),
+          address: address === undefined ? existingUser.address : (address || null),
+          role: nextRole,
+          supplier: nextRole === 'SUPPLIER' && parsedSupplierId ? { connect: { id: parsedSupplierId } } : { disconnect: true },
+          entityType: entityType !== undefined ? entityType : undefined,
+          companyBin: companyBin !== undefined ? companyBin : undefined,
+          companyName: companyName !== undefined ? companyName : undefined,
+          directorName: directorName !== undefined ? directorName : undefined,
+          legalAddress: legalAddress !== undefined ? legalAddress : undefined,
+          organizationType: organizationType !== undefined ? organizationType : undefined,
         },
-      },
+        include: {
+          supplier: true,
+          _count: {
+            select: { orders: true },
+          },
+        },
+      });
     });
 
     res.json(serializeUser(updatedUser));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления пользователя: ' + error.message });
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message || 'Ошибка обновления пользователя: ' + error.message });
   }
 };
 
@@ -261,48 +324,57 @@ export const updateUserBlockStatus = async (req, res) => {
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        supplier: true,
-        _count: {
-          select: { orders: true },
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { id: userId },
+        include: {
+          supplier: true,
+          _count: {
+            select: { orders: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!existingUser) {
-      return res.status(404).json({ error: 'Пользователь не найден.' });
-    }
-
-    if (req.user.id === userId && isBlocked) {
-      return res.status(400).json({ error: 'Нельзя заблокировать самого себя.' });
-    }
-
-    if (existingUser.role === 'ADMIN' && isBlocked) {
-      const hasBackupAdmin = await ensureNotLastActiveAdmin(userId);
-      if (!hasBackupAdmin) {
-        return res.status(400).json({ error: 'Нельзя заблокировать последнего активного администратора.' });
+      if (!existingUser) {
+        const err = new Error('Пользователь не найден.');
+        err.statusCode = 404;
+        throw err;
       }
-    }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        isBlocked,
-        blockedAt: isBlocked ? new Date() : null,
-      },
-      include: {
-        supplier: true,
-        _count: {
-          select: { orders: true },
+      if (req.user.id === userId && isBlocked) {
+        const err = new Error('Нельзя заблокировать самого себя.');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (existingUser.role === 'ADMIN' && isBlocked) {
+        const hasBackupAdmin = await ensureNotLastActiveAdmin(userId, tx);
+        if (!hasBackupAdmin) {
+          const err = new Error('Нельзя заблокировать последнего активного администратора.');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      return await tx.user.update({
+        where: { id: userId },
+        data: {
+          isBlocked,
+          blockedAt: isBlocked ? new Date() : null,
         },
-      },
+        include: {
+          supplier: true,
+          _count: {
+            select: { orders: true },
+          },
+        },
+      });
     });
 
     res.json(serializeUser(updatedUser));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка изменения статуса блокировки: ' + error.message });
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message || 'Ошибка изменения статуса блокировки: ' + error.message });
   }
 };
 
@@ -327,100 +399,108 @@ export const getUserPortrait = async (req, res) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    const loyalty = await getUserLoyaltyStatus(userId);
-    const availableBalance = await getAvailableBalance(userId);
-    const pendingBalance = await getPendingBalance(userId);
-
-    const earnedAgg = await prisma.bonusTransaction.aggregate({
-      where: { userId, type: { in: ['earned', 'manual'] }, status: { in: ['available', 'used'] } },
-      _sum: { amount: true },
-    });
-    const spentAgg = await prisma.bonusTransaction.aggregate({
-      where: { userId, type: 'spent', status: 'used' },
-      _sum: { amount: true },
-    });
+    const [
+      loyalty,
+      availableBalance,
+      pendingBalance,
+      earnedAgg,
+      spentAgg,
+      orders,
+      allOrders,
+      cartItems,
+      recentlyViewed,
+      recentSearches,
+      bonusTransactions,
+    ] = await Promise.all([
+      getUserLoyaltyStatus(userId),
+      getAvailableBalance(userId),
+      getPendingBalance(userId),
+      prisma.bonusTransaction.aggregate({
+        where: { userId, type: { in: ['earned', 'manual'] }, status: { in: ['available', 'used'] } },
+        _sum: { amount: true },
+      }),
+      prisma.bonusTransaction.aggregate({
+        where: { userId, type: 'spent', status: 'used' },
+        _sum: { amount: true },
+      }),
+      prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: {
+          id: true,
+          status: true,
+          totalAmount: true,
+          paymentMethod: true,
+          createdAt: true,
+        },
+      }),
+      prisma.order.findMany({
+        where: { userId },
+        select: {
+          status: true,
+          totalAmount: true,
+          paymentMethod: true,
+        },
+      }),
+      prisma.cartItem.findMany({
+        where: { userId },
+        include: {
+          product: {
+            select: { id: true, name: true, price: true, image: true, category: true }
+          }
+        }
+      }),
+      prisma.analyticsEvent.findMany({
+        where: { userId, type: 'product_view', productId: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+        include: {
+          product: {
+            select: { id: true, name: true, price: true, image: true, category: true }
+          }
+        }
+      }),
+      prisma.analyticsEvent.findMany({
+        where: { userId, type: 'search', searchQuery: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { searchQuery: true, createdAt: true }
+      }),
+      prisma.bonusTransaction.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        include: {
+          order: {
+            select: { id: true, totalAmount: true }
+          }
+        }
+      })
+    ]);
 
     const totalEarned = earnedAgg._sum.amount || 0;
     const totalSpent = spentAgg._sum.amount || 0;
 
-    const orders = await prisma.order.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 15,
-      select: {
-        id: true,
-        status: true,
-        totalAmount: true,
-        paymentMethod: true,
-        createdAt: true,
-      },
-    });
-
-    const allOrders = await prisma.order.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        totalAmount: true,
-        paymentMethod: true,
-      },
-    });
-
-    const completedOrders = allOrders.filter(o => o.status === 'completed');
-    const totalSpentMoney = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-    const completedCount = completedOrders.length;
-    const cancelledCount = allOrders.filter(o => o.status === 'cancelled').length;
+    const completedOrdersList = allOrders.filter(o => o.status === 'completed');
+    const cancelledOrdersList = allOrders.filter(o => o.status === 'cancelled');
+    const completedCount = completedOrdersList.length;
+    const cancelledCount = cancelledOrdersList.length;
+    const totalSpentMoney = completedOrdersList.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
     const avgOrderValue = completedCount > 0 ? Math.round(totalSpentMoney / completedCount) : 0;
 
-    const paymentMethods = allOrders.map(o => o.paymentMethod);
-    const methodCounts = paymentMethods.reduce((acc, m) => {
-      acc[m] = (acc[m] || 0) + 1;
-      return acc;
-    }, {});
-    let favoritePaymentMethod = 'Не определен';
+    const paymentMethodCounts = {};
+    allOrders.forEach(o => {
+      if (o.paymentMethod) {
+        paymentMethodCounts[o.paymentMethod] = (paymentMethodCounts[o.paymentMethod] || 0) + 1;
+      }
+    });
+    let favoritePaymentMethod = 'Неизвестно';
     let maxCount = 0;
-    for (const [method, count] of Object.entries(methodCounts)) {
+    Object.entries(paymentMethodCounts).forEach(([method, count]) => {
       if (count > maxCount) {
         maxCount = count;
         favoritePaymentMethod = method;
-      }
-    }
-
-    // --- CRM INSIGHTS ---
-    const cartItems = await prisma.cartItem.findMany({
-      where: { userId },
-      include: {
-        product: {
-          select: { id: true, name: true, price: true, image: true, category: true }
-        }
-      }
-    });
-
-    const recentlyViewed = await prisma.analyticsEvent.findMany({
-      where: { userId, type: 'product_view', productId: { not: null } },
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-      include: {
-        product: {
-          select: { id: true, name: true, price: true, image: true, category: true }
-        }
-      }
-    });
-
-    const recentSearches = await prisma.analyticsEvent.findMany({
-      where: { userId, type: 'search', searchQuery: { not: null } },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: { searchQuery: true, createdAt: true }
-    });
-
-    const bonusTransactions = await prisma.bonusTransaction.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 15,
-      include: {
-        order: {
-          select: { id: true, totalAmount: true }
-        }
       }
     });
 
@@ -431,6 +511,12 @@ export const getUserPortrait = async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
+        entityType: user.entityType || 'PHYSICAL',
+        companyBin: user.companyBin || null,
+        companyName: user.companyName || null,
+        directorName: user.directorName || null,
+        legalAddress: user.legalAddress || null,
+        organizationType: user.organizationType || null,
         role: user.role,
         supplierName: user.supplier?.name || null,
         isBlocked: user.isBlocked,

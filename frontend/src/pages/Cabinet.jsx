@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  User, ClipboardList, Tag, LogOut, Edit3, Check, X,
+  User, Building2, ClipboardList, Tag, LogOut, Edit3, Check, X,
   Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift,
 } from 'lucide-react';
 import { updateProfile, forgotPassword, resetPassword } from '../services/api';
@@ -17,6 +17,11 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
     name: customer?.name || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
+    companyBin: customer?.companyBin || '',
+    companyName: customer?.companyName || '',
+    directorName: customer?.directorName || '',
+    legalAddress: customer?.legalAddress || '',
+    organizationType: customer?.organizationType || '',
   });
 
   const [changingPassword, setChangingPassword] = useState(false);
@@ -30,7 +35,16 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   const [savingPwd, setSavingPwd] = useState(false);
 
   useEffect(() => {
-    setForm({ name: customer?.name || '', phone: customer?.phone || '', address: customer?.address || '' });
+    setForm({
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      address: customer?.address || '',
+      companyBin: customer?.companyBin || '',
+      companyName: customer?.companyName || '',
+      directorName: customer?.directorName || '',
+      legalAddress: customer?.legalAddress || '',
+      organizationType: customer?.organizationType || '',
+    });
   }, [customer]);
 
   const handleSave = async () => {
@@ -49,7 +63,16 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   };
 
   const handleCancel = () => {
-    setForm({ name: customer?.name || '', phone: customer?.phone || '', address: customer?.address || '' });
+    setForm({
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      address: customer?.address || '',
+      companyBin: customer?.companyBin || '',
+      companyName: customer?.companyName || '',
+      directorName: customer?.directorName || '',
+      legalAddress: customer?.legalAddress || '',
+      organizationType: customer?.organizationType || '',
+    });
     setEditing(false);
   };
 
@@ -114,10 +137,27 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
               <User className="h-7 w-7 text-slate-500" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate leading-tight">{customer?.name || 'Покупатель'}</h2>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate leading-tight">
+                {customer?.entityType === 'LEGAL' && customer?.companyName 
+                  ? customer.companyName 
+                  : (customer?.name || 'Покупатель')}
+              </h2>
               <p className="text-xs sm:text-sm text-slate-500 font-semibold truncate mt-0.5">{customer?.email}</p>
 
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200 whitespace-nowrap">
+                  {customer?.entityType === 'LEGAL' ? (
+                    <>
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      <span>Юридическое лицо</span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="h-3 w-3 shrink-0" />
+                      <span>Физическое лицо</span>
+                    </>
+                  )}
+                </span>
                 {customer?.role && customer.role !== 'CUSTOMER' && (
                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 whitespace-nowrap">
                     <ShieldCheck className="h-3 w-3" />
@@ -167,11 +207,84 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
 
       {/* Form fields */}
       <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Личные данные</h3>
+        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+          {customer?.entityType === 'LEGAL' ? 'Данные организации' : 'Личные данные'}
+        </h3>
+
+        {/* Legal entity specific profile fields */}
+        {customer?.entityType === 'LEGAL' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">БИН или ИИН</label>
+              {editing ? (
+                <input type="text" value={form.companyBin} onChange={e => setForm(f => ({ ...f, companyBin: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition" />
+              ) : (
+                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-800">
+                  {customer?.companyBin || '—'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Наименование организации</label>
+              {editing ? (
+                <input type="text" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition" />
+              ) : (
+                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-800">
+                  {customer?.companyName || '—'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ФИО руководителя</label>
+              {editing ? (
+                <input type="text" value={form.directorName} onChange={e => setForm(f => ({ ...f, directorName: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition" />
+              ) : (
+                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-800">
+                  {customer?.directorName || '—'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Тип организации</label>
+              {editing ? (
+                <select value={form.organizationType} onChange={e => setForm(f => ({ ...f, organizationType: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition">
+                  <option value="ТОО">ТОО</option>
+                  <option value="ИП">ИП</option>
+                  <option value="АО">АО</option>
+                </select>
+              ) : (
+                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-800">
+                  {customer?.organizationType || '—'}
+                </div>
+              )}
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Юридический адрес</label>
+              {editing ? (
+                <input type="text" value={form.legalAddress} onChange={e => setForm(f => ({ ...f, legalAddress: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition" />
+              ) : (
+                <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-800">
+                  {customer?.legalAddress || '—'}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Name */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Имя</label>
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            {customer?.entityType === 'LEGAL' ? 'ФИО контактного лица' : 'Имя'}
+          </label>
           {editing ? (
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
@@ -405,17 +518,32 @@ export default function Cabinet({
 
   if (!customer) {
     return (
-      <section className="max-w-md mx-auto py-20 text-center">
-        <div className="bg-white rounded-3xl border border-slate-200 p-10 shadow-sm">
-          <User className="mx-auto mb-4 h-14 w-14 text-slate-300" />
-          <h2 className="text-xl font-black text-slate-900 mb-2">Войдите в аккаунт</h2>
-          <p className="text-sm text-slate-500 mb-6">Для доступа к личному кабинету необходимо авторизоваться.</p>
-          <button type="button" onClick={onOpenAuth}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all">
-            Войти
+      <div className="mx-auto max-w-xl my-8 sm:my-16 p-8 sm:p-12 rounded-[2.5rem] bg-white border border-slate-200/80 shadow-xl text-center space-y-7 animate-fade-in-up relative overflow-hidden">
+        {/* Badge Icon */}
+        <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-100/80 flex items-center justify-center text-emerald-600 shadow-xl shadow-emerald-500/10 mx-auto">
+          <User className="h-10 w-10 stroke-[2.2]" />
+        </div>
+
+        <div className="space-y-2.5">
+          <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Личный кабинет
+          </h1>
+          <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto leading-relaxed font-medium">
+            Для просмотра истории заказов, использования бонусов и управления профилем необходимо авторизоваться.
+          </p>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={onOpenAuth}
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold px-8 py-4 rounded-2xl transition-all duration-200 text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/25 border border-emerald-500/30 cursor-pointer"
+          >
+            <User className="h-4 w-4 shrink-0" />
+            <span>Войти в аккаунт</span>
           </button>
         </div>
-      </section>
+      </div>
     );
   }
 

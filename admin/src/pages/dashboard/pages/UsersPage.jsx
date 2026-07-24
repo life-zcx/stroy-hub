@@ -4,6 +4,8 @@ import {
   Search as SearchIcon,
   ShieldAlert as ShieldAlertIcon,
   ShieldCheck as ShieldCheckIcon,
+  Pencil as PencilIcon,
+  User as UserIcon,
 } from 'lucide-react';
 import UserModal from '../modals/UserModal';
 
@@ -65,6 +67,13 @@ export default function UsersPage({
     setIsModalOpen(true);
   };
 
+  const openEditModal = (user, e) => {
+    e?.stopPropagation();
+    setSelectedUser(user);
+    setActionError('');
+    setIsModalOpen(true);
+  };
+
   const handleModalSubmit = async (formData) => {
     if (selectedUser) {
       await onUpdateUser(selectedUser.id, {
@@ -74,6 +83,12 @@ export default function UsersPage({
         address: formData.address,
         role: formData.role,
         supplierId: formData.supplierId,
+        entityType: formData.entityType,
+        companyBin: formData.companyBin,
+        companyName: formData.companyName,
+        directorName: formData.directorName,
+        legalAddress: formData.legalAddress,
+        organizationType: formData.organizationType,
       });
 
       if (formData.password) {
@@ -94,7 +109,9 @@ export default function UsersPage({
       const matchesSearch = !query || 
         (user.name || '').toLowerCase().includes(query) ||
         (user.email || '').toLowerCase().includes(query) ||
-        (user.phone || '').toLowerCase().includes(query);
+        (user.phone || '').toLowerCase().includes(query) ||
+        (user.companyName || '').toLowerCase().includes(query) ||
+        (user.companyBin || '').toLowerCase().includes(query);
 
       // 2. Role Filter
       const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
@@ -143,7 +160,7 @@ export default function UsersPage({
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Поиск по имени, email, телефону..."
+            placeholder="Поиск по имени, email, телефону, БИН/ИИН, названию..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:border-slate-900 focus:outline-none transition-all shadow-sm"
@@ -182,11 +199,12 @@ export default function UsersPage({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-gray-150 text-slate-400 font-bold uppercase text-[9px] tracking-wider bg-slate-50/50">
-                  <th className="px-5 py-2.5 w-[35%]">Пользователь</th>
-                  <th className="px-4 py-2.5 w-[20%]">Роль</th>
-                  <th className="px-4 py-2.5 w-[20%]">Связь</th>
-                  <th className="px-4 py-2.5 w-[15%]">Статус</th>
-                  <th className="px-5 py-2.5 w-[10%] text-center">Заказы</th>
+                  <th className="px-5 py-2.5 w-[30%]">Пользователь</th>
+                  <th className="px-4 py-2.5 w-[18%]">Роль</th>
+                  <th className="px-4 py-2.5 w-[18%]">Связь</th>
+                  <th className="px-4 py-2.5 w-[14%]">Статус</th>
+                  <th className="px-5 py-2.5 w-[8%] text-center">Заказы</th>
+                  <th className="px-4 py-2.5 w-[12%] text-right">Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,8 +220,15 @@ export default function UsersPage({
                     >
                       <td className="px-5 py-2.5">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
-                            {user.name || 'Без имени'}
+                          <span className="font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                            {user.entityType === 'LEGAL' && user.companyName
+                              ? `${user.organizationType ? user.organizationType + ' ' : ''}${user.companyName}`
+                              : (user.name || 'Без имени')}
+                            {user.entityType === 'LEGAL' && (
+                              <span className="bg-slate-100 text-slate-600 text-[9px] px-1.5 py-0.2 rounded font-mono font-bold">
+                                ЮР
+                              </span>
+                            )}
                           </span>
                           <span className="text-slate-550 text-[11px]">{user.email}</span>
                           <span className="text-[10px] text-slate-400">
@@ -247,6 +272,26 @@ export default function UsersPage({
                       </td>
                       <td className="px-5 py-2.5 text-center">
                         <span className="text-base font-extrabold text-slate-900 font-outfit">{user.orderCount}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={(e) => openEditModal(user, e)}
+                            title="Редактировать пользователя"
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all border border-slate-200 bg-white shadow-xs"
+                          >
+                            <PencilIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => window.location.hash = `user-portrait/${user.id}`}
+                            title="Открыть портрет пользователя"
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-200 bg-white shadow-xs"
+                          >
+                            <UserIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

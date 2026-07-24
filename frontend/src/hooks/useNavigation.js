@@ -70,7 +70,13 @@ const getInitialPage = () => {
     return { page: path, productId: null, categorySlug: null, orderId: null };
   }
 
-  return { page: 'home', productId: null, categorySlug: null, orderId: null };
+  // Root path '/' — home page
+  if (path === '') {
+    return { page: 'home', productId: null, categorySlug: null, orderId: null };
+  }
+
+  // Everything else — 404
+  return { page: '404', productId: null, categorySlug: null, orderId: null };
 };
 
 export default function useNavigation() {

@@ -20,7 +20,8 @@ import {
   Globe2,
   Gift,
   Shield,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 
 const tabIcons = {
@@ -41,6 +42,7 @@ const tabIcons = {
   returns: RefreshCw,
   'warranty-rules': Shield,
   settings: Settings,
+  changelog: Sparkles,
 };
 
 const tabLabels = {
@@ -61,6 +63,7 @@ const tabLabels = {
   returns: 'Возвраты',
   'warranty-rules': 'Правила гарантии',
   settings: 'Настройки сайта',
+  changelog: 'Обновления',
 };
 
 export default function Sidebar({ activePage, onPageChange, pages, counts, user, onLogout, onReload, loading, isOpen, onClose, isCollapsed }) {

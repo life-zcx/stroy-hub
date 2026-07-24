@@ -23,6 +23,7 @@ import ReturnsPage from './dashboard/pages/ReturnsPage';
 import WarrantyRulesPage from './dashboard/pages/WarrantyRulesPage';
 import CashbackSettingsPage from './dashboard/pages/CashbackSettingsPage';
 import SettingsPage from './dashboard/pages/SettingsPage';
+import ChangelogPage from './dashboard/pages/ChangelogPage';
 import PromotionModal from './dashboard/modals/PromotionModal';
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
@@ -35,7 +36,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users', 'user-portrait', 'settings'];
+const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users', 'user-portrait', 'settings', 'changelog'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -57,6 +58,7 @@ const pageTitles = {
   cashback: 'Управление кешбэком',
   'user-portrait': 'Портрет пользователя',
   settings: 'Настройки сайта',
+  changelog: 'Журнал обновлений',
 };
 
 function getPageFromHash(hash, allowedPages) {
@@ -365,6 +367,10 @@ export default function Dashboard({ user, onLogout, showToast }) {
       case 'settings':
         return isSupplier ? null : (
           <SettingsPage showToast={showToast} />
+        );
+      case 'changelog':
+        return isSupplier ? null : (
+          <ChangelogPage />
         );
       case 'user-portrait':
         const hashParts = window.location.hash.split('/');

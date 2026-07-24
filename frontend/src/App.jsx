@@ -21,6 +21,8 @@ import CashbackPage from './pages/CashbackPage';
 import TransactionsHistoryPage from './pages/TransactionsHistoryPage';
 import Cabinet from './pages/Cabinet';
 import CartPage from './pages/CartPage';
+import NotFoundPage from './pages/NotFoundPage';
+import BlockedPage from './pages/BlockedPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -61,6 +63,7 @@ export default function App() {
   const { toast, showToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
   const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
+  const isNotFound = currentPage === '404';
   const catalog = useCatalog(showToast, currentCategorySlug || 'all');
   const auth = useCustomerAuth(showToast);
   const cart = useCart(showToast, auth.customer);
@@ -122,7 +125,8 @@ export default function App() {
       'delivery-terms': "TORMAG - Условия доставки",
       warranty: "TORMAG - Гарантия на товар",
       cart: "TORMAG - Корзина",
-      'order-detail': "TORMAG - Детали заказа"
+      'order-detail': "TORMAG - Детали заказа",
+      changelog: "TORMAG - Обновления платформы"
     };
 
     const pageDescriptions = {
@@ -142,7 +146,8 @@ export default function App() {
       'cabinet/cashback': "Бонусный баланс и история кешбэка TORMAG.",
       estimate: "Удобная загрузка смет в формате Excel/CSV для автоматического подбора материалов в TORMAG.",
       'cashback/history': "История начисления и списания бонусных баллов кешбэка TORMAG.",
-      legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG."
+      legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG.",
+      changelog: "История релизов, новых функций, оптимизаций и исправлений на строительной платформе TORMAG.KZ."
     };
 
     // Dynamic page title/description updates (skip product and catalog to let their subcomponents handle it when data loads)
@@ -529,6 +534,20 @@ export default function App() {
             onAddToCart={cart.handleAddToCart}
           />
         )}
+
+        {/* Blocked user screen */}
+        {auth.customer?.isBlocked && (
+          <BlockedPage
+            user={auth.customer}
+            onLogout={handleLogout}
+            onOpenCallback={() => setIsCallbackModalOpen(true)}
+          />
+        )}
+
+        {/* 404 Not Found */}
+        {isNotFound && !auth.isAuthChecking && (
+          <NotFoundPage onNavigate={setCurrentPage} />
+        )}
       </main>
 
       <Footer
@@ -557,6 +576,18 @@ export default function App() {
         handlePhoneChange={auth.handlePhoneChange}
         authAddress={auth.authAddress}
         setAuthAddress={auth.setAuthAddress}
+        entityType={auth.entityType}
+        setEntityType={auth.setEntityType}
+        companyBin={auth.companyBin}
+        setCompanyBin={auth.setCompanyBin}
+        companyName={auth.companyName}
+        setCompanyName={auth.setCompanyName}
+        directorName={auth.directorName}
+        setDirectorName={auth.setDirectorName}
+        legalAddress={auth.legalAddress}
+        setLegalAddress={auth.setLegalAddress}
+        organizationType={auth.organizationType}
+        setOrganizationType={auth.setOrganizationType}
         authResetCode={auth.authResetCode}
         setAuthResetCode={auth.setAuthResetCode}
         authError={auth.authError}

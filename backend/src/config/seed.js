@@ -102,7 +102,7 @@ async function main() {
   // 4. Покупатель (Customer)
   await prisma.user.create({
     data: {
-      email: 'customer@test.com',
+      email: 'customer.com',
       password: customerPassword,
       name: 'Алексей Кузнецов',
       phone: '+7 (707) 111-22-33',
@@ -505,5 +505,5 @@ main()
     await prisma.$disconnect();
     try {
       await redisClient.quit();
-    } catch (err) {}
+    } catch (err) { }
   });

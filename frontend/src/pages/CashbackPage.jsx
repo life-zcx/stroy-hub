@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ShoppingBag,
   Percent,
+  User,
 } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -143,24 +144,32 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
   // ── Auth gate ──
   if (!customer) {
     return (
-      <section className="mx-auto max-w-2xl py-20 px-4 text-center space-y-6 animate-fade-in-up">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-200 mx-auto">
-          <Gift className="h-9 w-9" />
+      <div className="mx-auto max-w-xl my-8 sm:my-16 p-8 sm:p-12 rounded-[2.5rem] bg-white border border-slate-200/80 shadow-xl text-center space-y-7 animate-fade-in-up relative overflow-hidden">
+        {/* Badge Icon */}
+        <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-100/80 flex items-center justify-center text-emerald-600 shadow-xl shadow-emerald-500/10 mx-auto">
+          <Gift className="h-10 w-10 stroke-[2.2]" />
         </div>
-        <div>
-          <h1 className="font-outfit text-3xl font-black text-slate-950">Программа кешбэка</h1>
-          <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            Войдите в аккаунт, чтобы видеть свой кешбэк-баланс и историю начислений.
+
+        <div className="space-y-2.5">
+          <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Программа кешбэка
+          </h1>
+          <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto leading-relaxed font-medium">
+            Войдите в свой личный кабинет, чтобы просматривать накопленный кешбэк-баланс и историю всех начислений.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onOpenAuth}
-          className="bg-slate-950 hover:bg-amber-500 text-white font-black px-8 py-3.5 rounded-xl transition-all text-sm uppercase tracking-wider shadow-sm active:scale-95"
-        >
-          Войти в аккаунт
-        </button>
-      </section>
+
+        <div>
+          <button
+            type="button"
+            onClick={onOpenAuth}
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold px-8 py-4 rounded-2xl transition-all duration-200 text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/25 border border-emerald-500/30 cursor-pointer"
+          >
+            <User className="h-4 w-4 shrink-0" />
+            <span>Войти в аккаунт</span>
+          </button>
+        </div>
+      </div>
     );
   }
 

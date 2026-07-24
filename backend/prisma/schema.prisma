@@ -36,6 +36,12 @@ model User {
   name       String?
   phone      String?
   address    String?
+  entityType String    @default("PHYSICAL")
+  companyBin String?
+  companyName String?
+  directorName String?
+  legalAddress String?
+  organizationType String?
   role       Role      @default(CUSTOMER)
   supplierId Int?
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)

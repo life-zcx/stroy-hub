@@ -248,40 +248,42 @@ function isSupplierUser(req) {
 }
 
 async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
-  let rootCategory;
-  
-  if (isNaN(categorySlugOrId)) {
-    rootCategory = await prisma.category.findUnique({
-      where: { slug: categorySlugOrId },
-      include: { children: true }
-    });
-  } else {
-    rootCategory = await prisma.category.findUnique({
-      where: { id: parseInt(categorySlugOrId) },
-      include: { children: true }
-    });
-  }
+  const allCategories = await prisma.category.findMany({
+    select: { id: true, slug: true, parentId: true }
+  });
+
+  const parsedId = !isNaN(categorySlugOrId) ? parseInt(categorySlugOrId, 10) : null;
+  const rootCategory = allCategories.find(c => 
+    parsedId !== null ? c.id === parsedId : c.slug === categorySlugOrId
+  );
 
   if (!rootCategory) {
     return { slugs: [categorySlugOrId], ids: [] };
   }
 
+  // Build parentId -> children list map in memory
+  const childrenMap = new Map();
+  for (const cat of allCategories) {
+    if (cat.parentId !== null) {
+      if (!childrenMap.has(cat.parentId)) {
+        childrenMap.set(cat.parentId, []);
+      }
+      childrenMap.get(cat.parentId).push(cat);
+    }
+  }
+
   const slugs = [rootCategory.slug];
   const ids = [rootCategory.id];
-  const queue = [...rootCategory.children];
+  const queue = childrenMap.get(rootCategory.id) || [];
 
   while (queue.length > 0) {
     const current = queue.shift();
     slugs.push(current.slug);
     ids.push(current.id);
 
-    const withChildren = await prisma.category.findUnique({
-      where: { id: current.id },
-      include: { children: true }
-    });
-
-    if (withChildren && withChildren.children.length > 0) {
-      queue.push(...withChildren.children);
+    const children = childrenMap.get(current.id);
+    if (children && children.length > 0) {
+      queue.push(...children);
     }
   }
 
