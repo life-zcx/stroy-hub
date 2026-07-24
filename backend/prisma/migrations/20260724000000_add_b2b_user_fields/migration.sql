@@ -1,4 +1,4 @@
--- AlterTable: add B2B / legal entity fields to User
+-- AddColumns: B2B / legal entity fields to User
 ALTER TABLE "User"
   ADD COLUMN IF NOT EXISTS "entityType"       TEXT NOT NULL DEFAULT 'PHYSICAL',
   ADD COLUMN IF NOT EXISTS "companyBin"       TEXT,
