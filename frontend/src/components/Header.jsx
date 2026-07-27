@@ -1105,7 +1105,7 @@ export default function Header({
                       {/* Items List */}
                       <div className="flex flex-col gap-3 max-h-56 overflow-y-auto pr-1 divide-y divide-slate-100">
                         {cart.map((item) => (
-                          <div key={item.id} className="flex gap-3 pt-3 first:pt-0 items-center justify-between group/item">
+                          <div key={`${item.id}-${item.selectedOption || ''}`} className="flex gap-3 pt-3 first:pt-0 items-center justify-between group/item">
                             <Link
                               href={`/product/${item.id}`}
                               onClick={() => onNavigate?.('product', item.id)}
@@ -1123,6 +1123,11 @@ export default function Header({
                                 <h4 className="text-xs font-bold text-slate-800 truncate leading-snug group-hover/item:text-blue-600 transition-colors" title={item.name}>
                                   {item.name}
                                 </h4>
+                                {item.selectedOption && (
+                                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
+                                    {item.selectedOption}
+                                  </span>
+                                )}
                                 <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
                                   {item.quantity} шт × {formatPrice(item.price)}
                                 </p>
@@ -1134,7 +1139,7 @@ export default function Header({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onRemoveFromCart?.(item.id);
+                                  onRemoveFromCart?.(item.id, item.selectedOption);
                                 }}
                                 className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1 rounded-full transition-colors cursor-pointer border-0 bg-transparent"
                                 title="Удалить"

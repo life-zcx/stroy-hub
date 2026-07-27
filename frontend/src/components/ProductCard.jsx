@@ -58,6 +58,20 @@ export default function ProductCard({
     }
   };
 
+  const firstOption = React.useMemo(() => {
+    if (product.options && typeof product.options === 'object' && Array.isArray(product.options.items) && product.options.items.length > 0) {
+      return product.options.items.find(i => i.available) || product.options.items[0];
+    }
+    return null;
+  }, [product]);
+
+  const displayPrice = React.useMemo(() => {
+    if (firstOption && firstOption.price && !isNaN(parseFloat(firstOption.price))) {
+      return parseFloat(firstOption.price);
+    }
+    return product.price;
+  }, [firstOption, product.price]);
+
   return (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col relative overflow-hidden text-slate-800">
 
@@ -70,7 +84,7 @@ export default function ProductCard({
         )}
         {product.oldPrice && (
           <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-sm">
-            −{formatPrice(product.oldPrice - product.price)}
+            −{formatPrice(product.oldPrice - displayPrice)}
           </span>
         )}
         {product.activePromotion && (
@@ -147,11 +161,16 @@ export default function ProductCard({
             )}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-baseline gap-1 text-xl font-extrabold text-slate-900 leading-none">
-                {formatPrice(product.price)}
+                {formatPrice(displayPrice)}
                 <span className="text-xs font-normal text-slate-400">/ шт</span>
               </div>
+              {firstOption && (
+                <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 leading-none">
+                  {firstOption.value}
+                </span>
+              )}
               <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md inline-flex items-center gap-0.5 border border-emerald-100/50 leading-none" title="Бонусы за покупку">
-                +{formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100))}
+                +{formatPrice(Math.round(displayPrice * (product.cashbackPercent ?? 3) / 100))}
               </span>
             </div>
           </div>

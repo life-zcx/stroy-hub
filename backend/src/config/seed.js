@@ -54,7 +54,7 @@ async function main() {
   // Создаем пользователей
   console.log('Создание тестовых учетных записей...');
 
-  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'dev-password-change-me';
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || '123';
   if (!process.env.SEED_DEFAULT_PASSWORD) {
     console.warn('SEED_DEFAULT_PASSWORD не задан. Используется dev-only пароль для локальной разработки.');
   }

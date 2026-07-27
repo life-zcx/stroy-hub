@@ -44,7 +44,10 @@ export function getTokenFromRequest(req) {
   if (bearerToken) return bearerToken;
 
   const cookies = parseCookieHeader(req.headers?.cookie || '');
-  return cookies[getCookieName(req)] || null;
+  const preferredName = getCookieName(req);
+  if (cookies[preferredName]) return cookies[preferredName];
+
+  return cookies[ADMIN_AUTH_COOKIE_NAME] || cookies[AUTH_COOKIE_NAME] || null;
 }
 
 export function setAuthCookie(req, res, token) {

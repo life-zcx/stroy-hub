@@ -14,19 +14,6 @@ import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import InfoModals from '../components/InfoModals';
 import CityModal from '../components/CityModal';
 
-const CATEGORY_LABELS = {
-  mixes: 'Сухие смеси',
-  lumber: 'Пиломатериалы',
-  tools: 'Инструменты',
-  paints: 'Краски',
-  hardware: 'Крепеж',
-};
-
-const KAZAKHSTAN_CITIES = [
-  'Алматы', 'Астана', 'Шымкент', 'Караганда', 'Тараз', 'Павлодар',
-  'Кызылорда', 'Актобе', 'Усть-Каменогорск', 'Семей', 'Атырау', 'Актау', 'Уральск'
-];
-
 const splitLines = (value) => {
   return value ? value.split('\n').map(line => line.trim()).filter(Boolean) : [];
 };
@@ -35,65 +22,6 @@ const getProductOptions = (product) => {
   if (!product) return null;
   if (product.options && typeof product.options === 'object' && product.options.label && Array.isArray(product.options.items) && product.options.items.length > 0) {
     return product.options;
-  }
-  const productName = typeof product === 'string' ? product : (product.name || '');
-  const nameLower = productName.toLowerCase();
-  if (nameLower.includes('цемент')) {
-    return {
-      label: 'Фасовка:',
-      items: [
-        { value: '50 кг', available: true },
-        { value: '25 кг', available: false, reason: 'Нет в наличии' },
-        { value: '10 кг', available: false, reason: 'Под заказ' }
-      ]
-    };
-  }
-  if (nameLower.includes('штукатурка') || nameLower.includes('ротбанд')) {
-    return {
-      label: 'Фасовка:',
-      items: [
-        { value: '30 кг', available: true },
-        { value: '10 кг', available: false, reason: 'Нет в наличии' },
-        { value: '5 кг', available: false, reason: 'Под заказ' }
-      ]
-    };
-  }
-  if (nameLower.includes('краска') || nameLower.includes('тиккурила')) {
-    return {
-      label: 'Объем:',
-      items: [
-        { value: '9 л', available: true },
-        { value: '2.7 л', available: false, reason: 'Нет в наличии' },
-        { value: '0.9 л', available: false, reason: 'Нет в наличии' }
-      ]
-    };
-  }
-  if (nameLower.includes('перфоратор')) {
-    return {
-      label: 'Модель:',
-      items: [
-        { value: 'GBH 2-28', available: true },
-        { value: 'GBH 2-26', available: false, reason: 'Нет в наличии' }
-      ]
-    };
-  }
-  if (nameLower.includes('шуруповерт')) {
-    return {
-      label: 'Напряжение:',
-      items: [
-        { value: '18V', available: true },
-        { value: '12V', available: false, reason: 'Нет в наличии' }
-      ]
-    };
-  }
-  if (nameLower.includes('саморезы') || nameLower.includes('анкерный') || nameLower.includes('пеноплекс')) {
-    return {
-      label: 'Фасовка / Размер:',
-      items: [
-        { value: 'Стандарт', available: true },
-        { value: 'Увеличенный', available: false, reason: 'Под заказ' }
-      ]
-    };
   }
   return null;
 };
@@ -383,7 +311,7 @@ export default function ProductPage({
         });
         try {
           const viewed = JSON.parse(localStorage.getItem('tormag_recently_viewed') || '[]');
-          const filtered = viewed.filter(p => p.id !== data.id);
+          const filtered = viewed.filter(p => String(p.id) !== String(data.id));
           filtered.unshift({
             id: data.id,
             name: data.name,
@@ -392,7 +320,8 @@ export default function ProductPage({
             image: data.image,
             category: data.category,
             supplier: data.supplier,
-            isHit: data.isHit
+            isHit: data.isHit,
+            options: data.options,
           });
           localStorage.setItem('tormag_recently_viewed', JSON.stringify(filtered.slice(0, 10)));
         } catch (e) {
@@ -1069,8 +998,8 @@ export default function ProductPage({
                     <button
                       type="button"
                       onClick={() => {
-                        if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0);
-                        else onUpdateCartQuantity?.(product.id, cartQty - 1);
+                        if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0, false, selectedOption);
+                        else onUpdateCartQuantity?.(product.id, cartQty - 1, false, selectedOption);
                       }}
                       className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
                     >
@@ -1087,7 +1016,7 @@ export default function ProductPage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onUpdateCartQuantity?.(product.id, cartQty + 1)}
+                      onClick={() => onUpdateCartQuantity?.(product.id, cartQty + 1, false, selectedOption)}
                       className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
                     >
                       +

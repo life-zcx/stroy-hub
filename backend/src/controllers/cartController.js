@@ -1,4 +1,35 @@
 import prisma from '../config/db.js';
+import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
+
+// Format the cart items to include variant options and custom variant prices with retail markups
+const formatCartItems = async (cartItems) => {
+  const settings = readPricingSettings();
+  const allCats = await prisma.category.findMany();
+  const categoryMap = new Map(allCats.map(c => [c.id, c]));
+  const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+
+  return cartItems.map(item => {
+    const pricedProduct = applyRetailPricingToProduct(item.product, settings, categoryMap, categorySlugMap);
+    let effectivePrice = pricedProduct.price;
+
+    if (item.selectedOption && pricedProduct.options && typeof pricedProduct.options === 'object') {
+      const opts = pricedProduct.options;
+      if (Array.isArray(opts.items)) {
+        const targetOpt = String(item.selectedOption).trim();
+        const matchedOpt = opts.items.find(o => String(o.value || '').trim() === targetOpt);
+        if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null && !isNaN(parseFloat(matchedOpt.price))) {
+          effectivePrice = parseFloat(matchedOpt.price);
+        }
+      }
+    }
+    return {
+      ...pricedProduct,
+      price: effectivePrice,
+      quantity: item.quantity,
+      selectedOption: item.selectedOption || undefined
+    };
+  });
+};
 
 // Get user's cart items
 export const getCart = async (req, res) => {
@@ -19,13 +50,7 @@ export const getCart = async (req, res) => {
       }
     });
 
-    // Format the items to match the structure expected by the frontend cart hook
-    const formattedCart = cartItems.map(item => ({
-      ...item.product,
-      quantity: item.quantity
-    }));
-
-    res.status(200).json(formattedCart);
+    res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
     console.error('[GET CART ERROR]', error);
     res.status(500).json({ error: 'Не удалось загрузить корзину.' });
@@ -36,10 +61,11 @@ export const getCart = async (req, res) => {
 export const addToCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId, quantity } = req.body;
+    const { productId, quantity, selectedOption } = req.body;
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
     const prodId = parseInt(productId, 10);
+    const selOpt = selectedOption ? String(selectedOption).trim() : null;
 
     if (isNaN(prodId)) {
       return res.status(400).json({ error: 'Некорректный ID товара.' });
@@ -54,45 +80,31 @@ export const addToCart = async (req, res) => {
       return res.status(404).json({ error: 'Товар не найден.' });
     }
 
-    // Upsert cart item with race condition resilience
-    try {
-      await prisma.cartItem.upsert({
-        where: {
-          userId_productId: {
-            userId,
-            productId: prodId
-          }
-        },
-        update: {
-          quantity: {
-            increment: qty
-          }
-        },
-        create: {
-          userId,
-          productId: prodId,
-          quantity: qty
+    // Add or increment cart item safely
+    const existingCartItem = await prisma.cartItem.findFirst({
+      where: {
+        userId,
+        productId: prodId,
+        selectedOption: selOpt
+      }
+    });
+
+    if (existingCartItem) {
+      await prisma.cartItem.update({
+        where: { id: existingCartItem.id },
+        data: {
+          quantity: existingCartItem.quantity + qty
         }
       });
-    } catch (upsertError) {
-      if (upsertError.code === 'P2002') {
-        // Fallback update in case concurrent requests triggered the race condition
-        await prisma.cartItem.update({
-          where: {
-            userId_productId: {
-              userId,
-              productId: prodId
-            }
-          },
-          data: {
-            quantity: {
-              increment: qty
-            }
-          }
-        });
-      } else {
-        throw upsertError;
-      }
+    } else {
+      await prisma.cartItem.create({
+        data: {
+          userId,
+          productId: prodId,
+          quantity: qty,
+          selectedOption: selOpt
+        }
+      });
     }
 
     // Retrieve full updated cart
@@ -110,12 +122,7 @@ export const addToCart = async (req, res) => {
       }
     });
 
-    const formattedCart = cartItems.map(item => ({
-      ...item.product,
-      quantity: item.quantity
-    }));
-
-    res.status(200).json(formattedCart);
+    res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
     console.error('[ADD TO CART ERROR]', error);
     res.status(500).json({ error: 'Не удалось добавить товар в корзину.' });
@@ -127,25 +134,37 @@ export const updateCartItem = async (req, res) => {
   try {
     const userId = req.user.id;
     const productId = parseInt(req.params.productId, 10);
-    const { quantity } = req.body;
+    const { quantity, selectedOption } = req.body;
 
     if (isNaN(productId)) {
       return res.status(400).json({ error: 'Некорректный ID товара.' });
     }
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
+    const selOpt = selectedOption !== undefined ? (selectedOption ? String(selectedOption).trim() : null) : undefined;
 
-    await prisma.cartItem.update({
-      where: {
-        userId_productId: {
+    if (selOpt !== undefined) {
+      await prisma.cartItem.updateMany({
+        where: {
+          userId,
+          productId,
+          selectedOption: selOpt
+        },
+        data: {
+          quantity: qty
+        }
+      });
+    } else {
+      await prisma.cartItem.updateMany({
+        where: {
           userId,
           productId
+        },
+        data: {
+          quantity: qty
         }
-      },
-      data: {
-        quantity: qty
-      }
-    });
+      });
+    }
 
     // Retrieve full updated cart
     const cartItems = await prisma.cartItem.findMany({
@@ -162,12 +181,7 @@ export const updateCartItem = async (req, res) => {
       }
     });
 
-    const formattedCart = cartItems.map(item => ({
-      ...item.product,
-      quantity: item.quantity
-    }));
-
-    res.status(200).json(formattedCart);
+    res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
     console.error('[UPDATE CART ERROR]', error);
     res.status(500).json({ error: 'Не удалось обновить корзину.' });
@@ -179,19 +193,30 @@ export const removeFromCart = async (req, res) => {
   try {
     const userId = req.user.id;
     const productId = parseInt(req.params.productId, 10);
+    const selectedOption = req.query.selectedOption || req.body?.selectedOption;
 
     if (isNaN(productId)) {
       return res.status(400).json({ error: 'Некорректный ID товара.' });
     }
 
-    await prisma.cartItem.delete({
-      where: {
-        userId_productId: {
+    const selOpt = selectedOption !== undefined && selectedOption !== null ? (String(selectedOption).trim() || null) : undefined;
+
+    if (selOpt !== undefined) {
+      await prisma.cartItem.deleteMany({
+        where: {
+          userId,
+          productId,
+          selectedOption: selOpt
+        }
+      });
+    } else {
+      await prisma.cartItem.deleteMany({
+        where: {
           userId,
           productId
         }
-      }
-    });
+      });
+    }
 
     // Retrieve full updated cart
     const cartItems = await prisma.cartItem.findMany({
@@ -208,12 +233,7 @@ export const removeFromCart = async (req, res) => {
       }
     });
 
-    const formattedCart = cartItems.map(item => ({
-      ...item.product,
-      quantity: item.quantity
-    }));
-
-    res.status(200).json(formattedCart);
+    res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
     console.error('[REMOVE FROM CART ERROR]', error);
     res.status(500).json({ error: 'Не удалось удалить товар из корзины.' });
@@ -224,7 +244,7 @@ export const removeFromCart = async (req, res) => {
 export const syncCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { items } = req.body; // Array of { id, quantity }
+    const { items } = req.body; // Array of { productId/id, quantity, selectedOption }
 
     if (!Array.isArray(items)) {
       return res.status(400).json({ error: 'Некорректный формат данных.' });
@@ -237,33 +257,26 @@ export const syncCart = async (req, res) => {
       return !isNaN(prodId);
     });
 
-    if (validItems.length > 0) {
-      await prisma.$transaction(
-        validItems.map(item => {
-          const targetId = item.productId !== undefined ? item.productId : item.id;
-          const prodId = parseInt(targetId, 10);
-          const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+    for (const item of validItems) {
+      const targetId = item.productId !== undefined ? item.productId : item.id;
+      const prodId = parseInt(targetId, 10);
+      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+      const selOpt = item.selectedOption ? String(item.selectedOption).trim() : null;
 
-          return prisma.cartItem.upsert({
-            where: {
-              userId_productId: {
-                userId,
-                productId: prodId
-              }
-            },
-            update: {
-              quantity: {
-                increment: qty
-              }
-            },
-            create: {
-              userId,
-              productId: prodId,
-              quantity: qty
-            }
-          });
-        })
-      );
+      const existing = await prisma.cartItem.findFirst({
+        where: { userId, productId: prodId, selectedOption: selOpt }
+      });
+
+      if (existing) {
+        await prisma.cartItem.update({
+          where: { id: existing.id },
+          data: { quantity: existing.quantity + qty }
+        });
+      } else {
+        await prisma.cartItem.create({
+          data: { userId, productId: prodId, quantity: qty, selectedOption: selOpt }
+        });
+      }
     }
 
     // Retrieve full updated cart
@@ -281,12 +294,7 @@ export const syncCart = async (req, res) => {
       }
     });
 
-    const formattedCart = updatedCartItems.map(item => ({
-      ...item.product,
-      quantity: item.quantity
-    }));
-
-    res.status(200).json(formattedCart);
+    res.status(200).json(await formatCartItems(updatedCartItems));
   } catch (error) {
     console.error('[SYNC CART ERROR]', error);
     res.status(500).json({ error: 'Не удалось синхронизировать корзину.' });

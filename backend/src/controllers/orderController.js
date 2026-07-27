@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
@@ -98,18 +99,24 @@ export const createOrder = async (req, res) => {
 
   try {
     // 1. Verify that all products in the order exist in the database
-    const productIds = items.map(item => parseInt(item.productId));
-    const existingProducts = await prisma.product.findMany({
+    const uniqueProductIds = [...new Set(items.map(item => parseInt(item.productId, 10)).filter(Boolean))];
+    const rawProducts = await prisma.product.findMany({
       where: {
-        id: { in: productIds }
+        id: { in: uniqueProductIds }
       }
     });
 
-    if (existingProducts.length !== productIds.length) {
+    if (rawProducts.length !== uniqueProductIds.length) {
       return res.status(400).json({ 
         error: 'Некоторые товары из вашей корзины устарели или больше не существуют (база данных была обновлена). Пожалуйста, очистите корзину и добавьте актуальные товары.' 
       });
     }
+
+    const settings = readPricingSettings();
+    const allCats = await prisma.category.findMany();
+    const categoryMap = new Map(allCats.map(c => [c.id, c]));
+    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+    const existingProducts = rawProducts.map(p => applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap));
 
     let normalizedItems = [];
 
@@ -126,18 +133,32 @@ export const createOrder = async (req, res) => {
         return res.status(400).json({ error: 'Один из товаров не найден в базе данных.' });
       }
 
+      let itemPrice = product.price;
+      const selectedOption = item.selectedOption ? String(item.selectedOption).trim() : null;
+      if (selectedOption && product.options && typeof product.options === 'object') {
+        const opts = product.options;
+        if (Array.isArray(opts.items)) {
+          const matchedOpt = opts.items.find(o => String(o.value || '').trim() === selectedOption);
+          if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null && !isNaN(parseFloat(matchedOpt.price))) {
+            itemPrice = parseFloat(matchedOpt.price);
+          }
+        }
+      }
+
       normalizedItems.push({
         productId,
         quantity,
-        price: product.price,
+        price: itemPrice,
+        selectedOption,
       });
     }
 
     const evaluationContext = await buildEvaluationContext(normalizedItems);
-    normalizedItems = evaluationContext.items.map((item) => ({
+    normalizedItems = evaluationContext.items.map((item, idx) => ({
       productId: item.productId,
       quantity: item.quantity,
       price: item.price,
+      selectedOption: normalizedItems[idx]?.selectedOption || null,
     }));
     const subtotalAmount = evaluationContext.subtotalAmount;
 
@@ -257,6 +278,7 @@ export const createOrder = async (req, res) => {
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,
+              selectedOption: item.selectedOption || null,
             }))
           }
         },
@@ -660,30 +682,52 @@ export const updateOrder = async (req, res) => {
         }
 
         // 1. Verify products exist
-        const productIds = items.map((item) => parseInt(item.productId, 10));
-        const existingProducts = await tx.product.findMany({
-          where: { id: { in: productIds } },
+        const uniqueProductIds = [...new Set(items.map((item) => parseInt(item.productId, 10)).filter(Boolean))];
+        const rawProducts = await tx.product.findMany({
+          where: { id: { in: uniqueProductIds } },
         });
 
-        if (existingProducts.length !== productIds.length) {
+        if (rawProducts.length !== uniqueProductIds.length) {
           throw new Error('Некоторые товары не найдены в базе данных.');
         }
 
+        const settings = readPricingSettings();
+        const allCats = await tx.category.findMany();
+        const categoryMap = new Map(allCats.map(c => [c.id, c]));
+        const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+        const existingProducts = rawProducts.map(p => applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap));
+
         let normalizedItems = items.map((item) => {
           const product = existingProducts.find((p) => p.id === parseInt(item.productId, 10));
+          let itemPrice = product.price;
+          const selectedOption = item.selectedOption ? String(item.selectedOption).trim() : null;
+          if (selectedOption && product.options && typeof product.options === 'object') {
+            const opts = product.options;
+            if (Array.isArray(opts.items)) {
+              const matchedOpt = opts.items.find(o => o.value === selectedOption);
+              if (matchedOpt && matchedOpt.price && !isNaN(parseFloat(matchedOpt.price))) {
+                itemPrice = parseFloat(matchedOpt.price);
+              }
+            }
+          }
+          if (item.price && !isNaN(parseFloat(item.price))) {
+            itemPrice = parseFloat(item.price);
+          }
           return {
             productId: product.id,
             quantity: parseInt(item.quantity, 10),
-            price: product.price,
+            price: itemPrice,
+            selectedOption,
           };
         });
 
         // Recalculate price details
         const evaluationContext = await buildEvaluationContext(normalizedItems);
-        normalizedItems = evaluationContext.items.map((item) => ({
+        normalizedItems = evaluationContext.items.map((item, idx) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
+          selectedOption: normalizedItems[idx]?.selectedOption || null,
         }));
         const subtotalAmount = evaluationContext.subtotalAmount;
 
@@ -734,6 +778,7 @@ export const updateOrder = async (req, res) => {
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
+            selectedOption: item.selectedOption || null,
           })),
         });
       }

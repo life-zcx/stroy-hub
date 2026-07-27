@@ -7,7 +7,9 @@
     "paints": 18,
     "hardware": 34
   },
-  "overrides": {},
+  "overrides": {
+    "11": 30
+  },
   "logisticsPercent": 5,
   "acquiringPercent": 2,
   "cashbackPercent": 3,

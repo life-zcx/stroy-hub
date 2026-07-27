@@ -181,13 +181,29 @@ async function buildEvaluationContext(items, subtotalAmount) {
       continue;
     }
 
-    const lineTotal = product.price * quantity;
+    let unitPrice = product.price;
+    const selectedOpt = item.selectedOption ? String(item.selectedOption).trim() : null;
+    if (selectedOpt && product.options && typeof product.options === 'object') {
+      const opts = product.options;
+      if (Array.isArray(opts.items)) {
+        const matchedOpt = opts.items.find(o => String(o.value || '').trim() === selectedOpt);
+        if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null && !isNaN(parseFloat(matchedOpt.price))) {
+          unitPrice = parseFloat(matchedOpt.price);
+        }
+      }
+    }
+    if (item.price && !isNaN(parseFloat(item.price))) {
+      unitPrice = parseFloat(item.price);
+    }
+
+    const lineTotal = unitPrice * quantity;
     computedSubtotalAmount += lineTotal;
 
     evaluationItems.push({
       productId,
       quantity,
-      price: product.price,
+      price: unitPrice,
+      selectedOption: selectedOpt,
       lineTotal,
       categoryId: product.categoryId,
       category: product.category,

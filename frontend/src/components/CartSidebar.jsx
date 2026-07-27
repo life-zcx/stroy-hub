@@ -253,6 +253,7 @@ export default function CartSidebar({
           productId: item.id,
           quantity: item.quantity,
           price: item.price,
+          selectedOption: item.selectedOption || null,
         })),
       };
 
@@ -520,11 +521,11 @@ export default function CartSidebar({
               <ul className="space-y-4">
                 {cart.map((item) => (
                   <li
-                    key={item.id}
+                    key={`${item.id}-${item.selectedOption || ''}`}
                     className="flex gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative group"
                   >
                     <button
-                      onClick={() => onRemoveFromCart(item.id)}
+                      onClick={() => onRemoveFromCart(item.id, item.selectedOption)}
                       className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all"
                       title="Удалить из корзины"
                     >
@@ -546,6 +547,11 @@ export default function CartSidebar({
                       <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-tight mb-1 pr-4">
                         {item.name}
                       </h3>
+                      {item.selectedOption && (
+                        <div className="text-[11px] font-bold text-blue-600 bg-blue-50/80 border border-blue-100 px-2 py-0.5 rounded-md w-fit mb-1">
+                          {item.selectedOption}
+                        </div>
+                      )}
                       <div className="text-[10px] text-slate-500 mb-3 flex items-center gap-1">
                         <ShieldCheck className="h-3 w-3 text-blue-500" /> {item.supplier?.name || 'Официальный склад'}
                       </div>
@@ -553,17 +559,17 @@ export default function CartSidebar({
                       <div className="flex items-end justify-between mt-auto">
                         <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                           <button
-                            onClick={() => onUpdateQuantity(item.id, -1)}
+                            onClick={() => onUpdateQuantity(item.id, -1, false, item.selectedOption)}
                             className="p-1 hover:bg-white rounded-md transition-colors text-slate-600 shadow-sm"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
                           <QuantityInput
                             value={item.quantity}
-                            onChange={(val) => onUpdateQuantity(item.id, val, true)}
+                            onChange={(val) => onUpdateQuantity(item.id, val, true, item.selectedOption)}
                           />
                           <button
-                            onClick={() => onUpdateQuantity(item.id, 1)}
+                            onClick={() => onUpdateQuantity(item.id, 1, false, item.selectedOption)}
                             className="p-1 hover:bg-white rounded-md transition-colors text-slate-600 shadow-sm"
                           >
                             <Plus className="h-3.5 w-3.5" />

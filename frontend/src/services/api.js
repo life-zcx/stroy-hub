@@ -215,18 +215,20 @@ export const getCartApi = async () => {
   return response.data;
 };
 
-export const addToCartApi = async (productId, quantity) => {
-  const response = await api.post('/cart', { productId, quantity });
+export const addToCartApi = async (productId, quantity, selectedOption) => {
+  const response = await api.post('/cart', { productId, quantity, selectedOption });
   return response.data;
 };
 
-export const updateCartItemApi = async (productId, quantity) => {
-  const response = await api.put(`/cart/${productId}`, { quantity });
+export const updateCartItemApi = async (productId, quantity, selectedOption) => {
+  const response = await api.put(`/cart/${productId}`, { quantity, selectedOption });
   return response.data;
 };
 
-export const removeFromCartApi = async (productId) => {
-  const response = await api.delete(`/cart/${productId}`);
+export const removeFromCartApi = async (productId, selectedOption) => {
+  const response = await api.delete(`/cart/${productId}`, {
+    params: { selectedOption }
+  });
   return response.data;
 };
 

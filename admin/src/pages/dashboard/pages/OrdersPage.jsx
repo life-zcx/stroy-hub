@@ -160,7 +160,8 @@ export default function OrdersPage({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
-          product: item.product
+          product: item.product,
+          selectedOption: item.selectedOption || null
         })));
       }
     } catch (err) {
@@ -351,7 +352,8 @@ export default function OrdersPage({
       discountAmount: parseFloat(discountAmount) || 0,
       items: orderItems.map(item => ({
         productId: item.productId,
-        quantity: item.quantity
+        quantity: item.quantity,
+        selectedOption: item.selectedOption || null
       }))
     };
 
@@ -521,7 +523,10 @@ export default function OrdersPage({
               <tbody>
                 ${group.items.map(item => `
                   <tr>
-                    <td>${item.product?.name || 'Товар удален'}</td>
+                    <td>
+                      ${item.product?.name || 'Товар удален'}
+                      ${item.selectedOption ? `<br/><small style="color: #2563eb; font-weight: bold;">Вариант: ${item.selectedOption}</small>` : ''}
+                    </td>
                     <td class="text-right">${formatPrice(item.price)}</td>
                     <td class="text-right">${item.quantity} шт</td>
                     <td class="text-right">${formatPrice(item.quantity * item.price)}</td>
@@ -704,7 +709,12 @@ export default function OrdersPage({
                                 <span className="text-xs font-bold text-slate-800 block truncate max-w-[220px]" title={productObj.name}>
                                   {productObj.name}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-medium block">
+                                {item.selectedOption && (
+                                  <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
+                                    Вариант: {item.selectedOption}
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
                                   Артикул: {productObj.article || '—'}
                                 </span>
                               </div>

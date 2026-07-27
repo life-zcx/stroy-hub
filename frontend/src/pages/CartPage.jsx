@@ -19,7 +19,7 @@ import {
   ShoppingBag,
   ArrowRight,
 } from 'lucide-react';
-import { createOrder, validatePromotionCode, getProducts } from '../services/api';
+import { createOrder, validatePromotionCode, getProducts, getProductById } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
@@ -140,7 +140,16 @@ export default function CartPage({
         }
         try {
           const viewed = JSON.parse(localStorage.getItem('tormag_recently_viewed') || '[]');
-          setRecentlyViewed(viewed);
+          const uniqueViewed = [];
+          const seenIds = new Set();
+          for (const item of viewed) {
+            const strId = String(item.id);
+            if (item && item.id && !seenIds.has(strId)) {
+              seenIds.add(strId);
+              uniqueViewed.push(item);
+            }
+          }
+          setRecentlyViewed(uniqueViewed);
         } catch (e) {
           console.error('Error loading recently viewed products:', e);
         }
@@ -416,6 +425,7 @@ export default function CartPage({
           productId: item.id,
           quantity: item.quantity,
           price: item.price,
+          selectedOption: item.selectedOption || null,
         })),
       };
 
@@ -669,10 +679,27 @@ export default function CartPage({
                     <div className="mt-auto pt-2 flex items-center justify-between">
                       <span className="text-sm font-black text-slate-900 font-outfit">{formatPrice(prod.price)}</span>
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (onAddToCart) {
-                            onAddToCart(prod);
-                            showToast?.(`«${prod.name}» добавлен в корзину`);
+                            let itemToAdd = prod;
+                            if (!prod.options) {
+                              try {
+                                const fullProd = await getProductById(prod.id);
+                                if (fullProd) itemToAdd = fullProd;
+                              } catch (e) {
+                                setRecentlyViewed(prev => {
+                                  const updated = prev.filter(p => String(p.id) !== String(prod.id));
+                                  try {
+                                    localStorage.setItem('tormag_recently_viewed', JSON.stringify(updated));
+                                  } catch (err) {}
+                                  return updated;
+                                });
+                                showToast?.('Этот товар больше не доступен');
+                                return;
+                              }
+                            }
+                            onAddToCart(itemToAdd);
+                            showToast?.(`«${itemToAdd.name}» добавлен в корзину`);
                           } else {
                             onUpdateQuantity?.(prod.id, 1);
                           }
@@ -743,7 +770,7 @@ export default function CartPage({
             <ul className="divide-y divide-slate-100">
               {cart.map((item) => (
                 <li
-                  key={item.id}
+                  key={`${item.id}-${item.selectedOption || ''}`}
                   className="flex gap-4 sm:gap-6 py-6 first:pt-0 last:pb-0 relative group"
                 >
                   <Link
@@ -764,18 +791,25 @@ export default function CartPage({
 
                   <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex justify-between items-start gap-2">
-                      <Link
-                        href={getPageHref('product', item.id)}
-                        onClick={() => onNavigate('product', item.id)}
-                        className="hover:text-emerald-700 transition-colors cursor-pointer text-left block flex-1 min-w-0"
-                      >
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight">
-                          {item.name}
-                        </h3>
-                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={getPageHref('product', item.id)}
+                          onClick={() => onNavigate('product', item.id)}
+                          className="hover:text-emerald-700 transition-colors cursor-pointer text-left block"
+                        >
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight">
+                            {item.name}
+                          </h3>
+                        </Link>
+                        {item.selectedOption && (
+                          <div className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-1">
+                            Вариант: {item.selectedOption}
+                          </div>
+                        )}
+                      </div>
                       <button
                         type="button"
-                        onClick={() => onRemoveFromCart(item.id)}
+                        onClick={() => onRemoveFromCart(item.id, item.selectedOption)}
                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer mt-0.5"
                         title="Удалить из корзины"
                       >
@@ -791,7 +825,7 @@ export default function CartPage({
                       <div className="flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
                         <button
                           type="button"
-                          onClick={() => onUpdateQuantity(item.id, -1)}
+                          onClick={() => onUpdateQuantity(item.id, -1, false, item.selectedOption)}
                           disabled={item.quantity <= 1}
                           className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                         >
@@ -799,11 +833,11 @@ export default function CartPage({
                         </button>
                         <QuantityInput
                           value={item.quantity}
-                          onChange={(val) => onUpdateQuantity(item.id, val, true)}
+                          onChange={(val) => onUpdateQuantity(item.id, val, true, item.selectedOption)}
                         />
                         <button
                           type="button"
-                          onClick={() => onUpdateQuantity(item.id, 1)}
+                          onClick={() => onUpdateQuantity(item.id, 1, false, item.selectedOption)}
                           className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-600 cursor-pointer"
                         >
                           <Plus className="h-3.5 w-3.5" />

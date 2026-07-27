@@ -163,14 +163,29 @@ export const createAnalyticsEvent = async (req, res) => {
     const userId = getUserIdFromToken(req);
     const region = truncate(req.headers['cf-ipcity'] || 'Almaty', MAX_LOCATION_LENGTH);
 
+    const parsedProdId = Number.parseInt(productId, 10);
+    const parsedOrderId = Number.parseInt(orderId, 10);
+
+    let validProdId = null;
+    if (Number.isInteger(parsedProdId)) {
+      const exists = await prisma.product.findUnique({ where: { id: parsedProdId }, select: { id: true } });
+      if (exists) validProdId = parsedProdId;
+    }
+
+    let validOrderId = null;
+    if (Number.isInteger(parsedOrderId)) {
+      const exists = await prisma.order.findUnique({ where: { id: parsedOrderId }, select: { id: true } });
+      if (exists) validOrderId = parsedOrderId;
+    }
+
     await prisma.analyticsEvent.create({
       data: {
         type: truncate(type, MAX_EVENT_TYPE_LENGTH),
         path: path ? truncate(path, MAX_PATH_LENGTH) : null,
         sessionId: sessionId ? truncate(sessionId, MAX_SESSION_ID_LENGTH) : null,
         userId,
-        productId: productId ? parseInt(productId, 10) : null,
-        orderId: orderId ? parseInt(orderId, 10) : null,
+        productId: validProdId,
+        orderId: validOrderId,
         searchQuery: searchQuery ? truncate(searchQuery, MAX_SEARCH_QUERY_LENGTH) : null,
         value: value ? parseFloat(value) : null,
         metadata: metadata || null,
@@ -195,7 +210,8 @@ export const createAnalyticsEvent = async (req, res) => {
 
     res.status(201).json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка записи аналитического события: ' + error.message });
+    console.error('Analytics event error:', error);
+    res.status(200).json({ ok: false });
   }
 };
 

@@ -26,8 +26,6 @@ export default function useCart(showToast, customer) {
   // Track previous customer state to detect login/logout transitions
   const prevCustomerRef = useRef(customer);
 
-  // (removed: localStorage read is now done in useState lazy initializer above)
-
   // Sync state & handle login/logout transitions
   useEffect(() => {
     const prevCustomer = prevCustomerRef.current;
@@ -47,17 +45,18 @@ export default function useCart(showToast, customer) {
               .filter(item => !(typeof item.id === 'string' && item.id.startsWith('temp_')))
               .map(item => ({
                 productId: item.id,
-                quantity: item.quantity
+                quantity: item.quantity,
+                selectedOption: item.selectedOption || null,
               }));
             
-            // Sync with backend — returns flat [{...product, quantity}]
+            // Sync with backend — returns flat [{...product, quantity, selectedOption}]
             const dbCart = await syncCartApi(itemsToSync);
             setCart(dbCart);
             
             // Clear local storage cart since it's merged
             localStorage.removeItem('tormag_cart');
           } else {
-            // Fetch DB cart — returns flat [{...product, quantity}]
+            // Fetch DB cart — returns flat [{...product, quantity, selectedOption}]
             const dbCart = await getCartApi();
             setCart(dbCart);
           }
@@ -95,6 +94,14 @@ export default function useCart(showToast, customer) {
 
   const handleAddToCart = async (product, quantity = 1) => {
     const quantityToAdd = Math.max(1, Number.parseInt(quantity, 10) || 1);
+    let selectedOpt = product.selectedOption || undefined;
+
+    if (!selectedOpt && product?.options && typeof product.options === 'object' && Array.isArray(product.options.items) && product.options.items.length > 0) {
+      const firstAvailable = product.options.items.find(i => i.available) || product.options.items[0];
+      if (firstAvailable && firstAvailable.value) {
+        selectedOpt = firstAvailable.value;
+      }
+    }
 
     trackEvent('add_to_cart', {
       productId: product.id,
@@ -103,6 +110,7 @@ export default function useCart(showToast, customer) {
         name: product.name,
         category: product.category,
         quantity: quantityToAdd,
+        selectedOption: selectedOpt,
       },
     });
 
@@ -110,8 +118,7 @@ export default function useCart(showToast, customer) {
 
     if (customer && !isTempProduct) {
       try {
-        // Backend returns flat [{...product, quantity}]
-        const dbCart = await addToCartApi(product.id, quantityToAdd);
+        const dbCart = await addToCartApi(product.id, quantityToAdd, selectedOpt);
         setCart(dbCart);
       } catch (err) {
         console.error('Error adding to DB cart:', err);
@@ -119,35 +126,42 @@ export default function useCart(showToast, customer) {
       }
     } else {
       setCart(prev => {
-        const exists = prev.find(item => item.id === product.id);
+        const exists = prev.find(
+          item => item.id === product.id && (item.selectedOption || '') === (selectedOpt || '')
+        );
         if (exists) {
           return prev.map(item =>
-            item.id === product.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
+            item.id === product.id && (item.selectedOption || '') === (selectedOpt || '')
+              ? { ...item, quantity: item.quantity + quantityToAdd }
+              : item
           );
         }
-        return [...prev, { ...product, quantity: quantityToAdd }];
+        return [...prev, { ...product, selectedOption: selectedOpt, quantity: quantityToAdd }];
       });
     }
-    showToast?.(`«${product.name}» добавлен в корзину (${quantityToAdd} шт)`);
+    const optionNotice = selectedOpt ? ` (${selectedOpt})` : '';
+    showToast?.(`«${product.name}»${optionNotice} добавлен в корзину (${quantityToAdd} шт)`);
   };
 
-  const handleUpdateQuantity = async (id, val, isAbsolute = false) => {
-    const existingItem = cart.find(item => item.id === id);
+  const handleUpdateQuantity = async (id, val, isAbsolute = false, selectedOption = undefined) => {
+    const existingItem = cart.find(
+      item => item.id === id && (selectedOption === undefined || (item.selectedOption || '') === (selectedOption || ''))
+    );
     if (!existingItem) return;
     
+    const targetOption = selectedOption !== undefined ? selectedOption : existingItem.selectedOption;
     const newQty = isAbsolute ? Math.max(1, val) : Math.max(1, existingItem.quantity + val);
 
     if (customer) {
       try {
-        // Backend returns flat [{...product, quantity}]
-        const dbCart = await updateCartItemApi(id, newQty);
+        const dbCart = await updateCartItemApi(id, newQty, targetOption);
         setCart(dbCart);
       } catch (err) {
         console.error('Error updating DB cart quantity:', err);
       }
     } else {
       setCart(prev => prev.map(item => {
-        if (item.id === id) {
+        if (item.id === id && (item.selectedOption || '') === (targetOption || '')) {
           return { ...item, quantity: newQty };
         }
         return item;
@@ -155,17 +169,21 @@ export default function useCart(showToast, customer) {
     }
   };
 
-  const handleRemoveFromCart = async (id) => {
+  const handleRemoveFromCart = async (id, selectedOption = undefined) => {
+    const targetItem = cart.find(
+      item => item.id === id && (selectedOption === undefined || (item.selectedOption || '') === (selectedOption || ''))
+    );
+    const targetOption = selectedOption !== undefined ? selectedOption : targetItem?.selectedOption;
+
     if (customer) {
       try {
-        // Backend returns flat [{...product, quantity}]
-        const dbCart = await removeFromCartApi(id);
+        const dbCart = await removeFromCartApi(id, targetOption);
         setCart(dbCart);
       } catch (err) {
         console.error('Error removing from DB cart:', err);
       }
     } else {
-      setCart(prev => prev.filter(item => item.id !== id));
+      setCart(prev => prev.filter(item => !(item.id === id && (targetOption === undefined || (item.selectedOption || '') === (targetOption || '')))));
     }
   };
 
@@ -183,11 +201,11 @@ export default function useCart(showToast, customer) {
   };
 
   // Set exact quantity; if qty=0 — remove from cart
-  const handleSetCartQuantity = async (id, qty) => {
+  const handleSetCartQuantity = async (id, qty, selectedOption = undefined) => {
     if (qty <= 0) {
-      await handleRemoveFromCart(id);
+      await handleRemoveFromCart(id, selectedOption);
     } else {
-      await handleUpdateQuantity(id, qty, true);
+      await handleUpdateQuantity(id, qty, true, selectedOption);
     }
   };
 

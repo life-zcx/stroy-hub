@@ -107,13 +107,6 @@ export default function useCustomerAuth(showToast) {
 
   useEffect(() => {
     const checkCustomerAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setCustomer(null);
-        setIsAuthChecking(false);
-        return;
-      }
-
       try {
         const profile = await getProfile();
         setCustomer(profile);

@@ -235,6 +235,11 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                       >
                         {item.product?.name || 'Товар удален'}
                       </Link>
+                      {item.selectedOption && (
+                        <div className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-1">
+                          {item.selectedOption}
+                        </div>
+                      )}
                       <p className="mt-1 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
                     </div>
                     <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end">

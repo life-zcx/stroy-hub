@@ -19,7 +19,7 @@ export default function Login({ onAuthSuccess }) {
     setError(null);
     try {
       const data = await login(email, password);
-      
+
       // Allow only ADMIN or SUPPLIER to enter admin panel
       if (data.user.role !== 'ADMIN' && data.user.role !== 'SUPPLIER') {
         throw new Error('Доступ запрещен. У вас нет прав администратора или дистрибьютора.');
@@ -42,7 +42,7 @@ export default function Login({ onAuthSuccess }) {
 
       {/* Main Double-Sided Container Card */}
       <div className="w-full max-w-4xl bg-white border border-slate-200/60 rounded-[2.5rem] shadow-[0_24px_80px_-40px_rgba(15,23,42,0.15)] overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[580px] relative z-10 animate-fade-in-up">
-        
+
         {/* Left Column: Premium Rebranded Corporate Showcase */}
         <div className="md:col-span-6 bg-slate-50/70 border-b md:border-b-0 md:border-r border-slate-200/50 p-8 sm:p-12 flex flex-col justify-between text-left relative overflow-hidden">
           {/* Subtle geometric line drawing backdrops */}
@@ -70,7 +70,7 @@ export default function Login({ onAuthSuccess }) {
               администратора <br />
               <span className="text-blue-600">и поставщика</span>
             </h2>
-            
+
             <div className="pt-4 border-t border-slate-200/80 w-12">
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function Login({ onAuthSuccess }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="admin@tormag.kz"
+                    placeholder="user@tormag.kz"
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-600/50 text-sm text-slate-800 transition-all font-semibold outline-none"
                   />
                 </div>

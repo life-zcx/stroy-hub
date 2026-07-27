@@ -856,7 +856,14 @@ export default function UserPortraitPage({ userId, onBack, showToast }) {
                               <div className="w-8 h-8 rounded bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                                 {item.image ? <img src={item.image} alt={item.name} className="object-cover w-full h-full" /> : <span>📦</span>}
                               </div>
-                              <span className="truncate max-w-[220px]" title={item.name}>{item.name}</span>
+                              <div>
+                                <span className="truncate max-w-[220px] block" title={item.name}>{item.name}</span>
+                                {item.selectedOption && (
+                                  <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
+                                    Вариант: {item.selectedOption}
+                                  </span>
+                                )}
+                              </div>
                             </td>
 
                             <td className="px-4 py-3 text-slate-500 font-bold">
@@ -1323,7 +1330,14 @@ export default function UserPortraitPage({ userId, onBack, showToast }) {
                               {item.product?.image && (
                                 <img src={item.product.image} alt={item.product.name} className="w-6 h-6 object-cover rounded bg-slate-50 border" />
                               )}
-                              <span className="truncate max-w-[240px]" title={item.product?.name}>{item.product?.name || 'Товар'}</span>
+                              <div>
+                                <span className="truncate max-w-[240px] block" title={item.product?.name}>{item.product?.name || 'Товар'}</span>
+                                {item.selectedOption && (
+                                  <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
+                                    Вариант: {item.selectedOption}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-2.5 text-center font-bold text-slate-800">{item.quantity} шт</td>
                             <td className="px-4 py-2.5 text-slate-500 font-medium">{item.price.toLocaleString('ru-RU')} ₸</td>
