@@ -50,21 +50,29 @@ export function getTokenFromRequest(req) {
   return cookies[ADMIN_AUTH_COOKIE_NAME] || cookies[AUTH_COOKIE_NAME] || null;
 }
 
-export function setAuthCookie(req, res, token) {
-  res.cookie(getCookieName(req), token, {
+function getCookieOptions(req) {
+  const options = {
     httpOnly: true,
     secure: isProduction(),
-    sameSite: 'lax',
+    sameSite: isProduction() ? 'none' : 'lax',
     maxAge: AUTH_TOKEN_MAX_AGE_MS,
     path: '/',
-  });
+  };
+
+  const domain = process.env.COOKIE_DOMAIN;
+  if (isProduction() && domain) {
+    options.domain = domain;
+  }
+
+  return options;
+}
+
+export function setAuthCookie(req, res, token) {
+  res.cookie(getCookieName(req), token, getCookieOptions(req));
 }
 
 export function clearAuthCookie(req, res) {
-  res.clearCookie(getCookieName(req), {
-    httpOnly: true,
-    secure: isProduction(),
-    sameSite: 'lax',
-    path: '/',
-  });
+  const options = getCookieOptions(req);
+  delete options.maxAge;
+  res.clearCookie(getCookieName(req), options);
 }
