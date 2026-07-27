@@ -4,14 +4,15 @@ import { getPageHref } from '../utils/navigationHelper';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
-  ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins, RotateCcw
+  ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins, RotateCcw, Zap
 } from 'lucide-react';
-import { getProductById, getProductReviews, getProductStats } from '../services/api';
+import { getProductById, getProductReviews, getProductStats, getSystemSettings } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import InfoModals from '../components/InfoModals';
+import CityModal from '../components/CityModal';
 
 const CATEGORY_LABELS = {
   mixes: 'Сухие смеси',
@@ -21,11 +22,21 @@ const CATEGORY_LABELS = {
   hardware: 'Крепеж',
 };
 
+const KAZAKHSTAN_CITIES = [
+  'Алматы', 'Астана', 'Шымкент', 'Караганда', 'Тараз', 'Павлодар',
+  'Кызылорда', 'Актобе', 'Усть-Каменогорск', 'Семей', 'Атырау', 'Актау', 'Уральск'
+];
+
 const splitLines = (value) => {
   return value ? value.split('\n').map(line => line.trim()).filter(Boolean) : [];
 };
 
-const getProductOptions = (productName) => {
+const getProductOptions = (product) => {
+  if (!product) return null;
+  if (product.options && typeof product.options === 'object' && product.options.label && Array.isArray(product.options.items) && product.options.items.length > 0) {
+    return product.options;
+  }
+  const productName = typeof product === 'string' ? product : (product.name || '');
   const nameLower = productName.toLowerCase();
   if (nameLower.includes('цемент')) {
     return {
@@ -147,6 +158,8 @@ export default function ProductPage({
   productId,
   onBackToCatalog,
   onAddToCart,
+  onUpdateCartQuantity,
+  cart = [],
   showToast,
   onNavigate,
   categories = [],
@@ -175,6 +188,67 @@ export default function ProductPage({
   // Stats state
   const [stats, setStats] = useState({ views: 0, watching: 0 });
   const [activeInfoModal, setActiveInfoModal] = useState(null);
+
+  // Delivery & City selector state
+  const [userCity, setUserCity] = useState(() => {
+    try {
+      return localStorage.getItem('tormag_user_city') || 'Алматы';
+    } catch {
+      return 'Алматы';
+    }
+  });
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
+  const [systemSettings, setSystemSettings] = useState(null);
+
+  useEffect(() => {
+    getSystemSettings().then(res => {
+      if (res) setSystemSettings(res);
+    }).catch(() => {});
+  }, []);
+
+  const deliveryInfo = useMemo(() => {
+    const routes = systemSettings?.deliveryRoutes || [];
+    const warehouseCity = systemSettings?.defaultWarehouseCity || 'Алматы';
+    if (userCity.toLowerCase() === warehouseCity.toLowerCase()) {
+      return { days: 1, label: '1 день (Завтра)' };
+    }
+    const matched = routes.find(r => r.to?.toLowerCase() === userCity.toLowerCase());
+    const days = matched ? matched.days : 3;
+    const daysWord = days === 1 ? 'день' : (days >= 2 && days <= 4 ? 'дня' : 'дней');
+    return { days, label: `${days} ${daysWord}` };
+  }, [userCity, systemSettings]);
+
+  const estimatedDeliveryDateStr = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + deliveryInfo.days);
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    return `до ${d.getDate()} ${months[d.getMonth()]}`;
+  }, [deliveryInfo.days]);
+
+  const breadcrumbs = useMemo(() => {
+    if (!product || !categories || categories.length === 0) return [];
+    
+    let currentCat = categories.find(c => c.id === product.categoryId || c.slug === product.category);
+    
+    if (!currentCat && product.categoryRelation) {
+      currentCat = categories.find(c => c.id === product.categoryRelation.id);
+    }
+    
+    if (!currentCat) return [];
+
+    const path = [];
+    let temp = currentCat;
+    while (temp) {
+      path.unshift(temp);
+      if (temp.parentId) {
+        const parent = categories.find(c => c.id === temp.parentId);
+        temp = parent;
+      } else {
+        temp = null;
+      }
+    }
+    return path;
+  }, [product, categories]);
 
   useEffect(() => {
     if (product) {
@@ -293,7 +367,7 @@ export default function ProductPage({
         setProduct(data);
         
         // Initialize default option
-        const options = getProductOptions(data.name);
+        const options = getProductOptions(data);
         if (options && options.items.length > 0) {
           const firstAvailable = options.items.find(i => i.available) || options.items[0];
           setSelectedOption(firstAvailable.value);
@@ -393,52 +467,93 @@ export default function ProductPage({
     }
   };
 
-  const breadcrumbs = useMemo(() => {
-    if (!product || !categories || categories.length === 0) return [];
-    
-    let currentCat = categories.find(c => c.id === product.categoryId || c.slug === product.category);
-    
-    if (!currentCat && product.categoryRelation) {
-      currentCat = categories.find(c => c.id === product.categoryRelation.id);
-    }
-    
-    if (!currentCat) return [];
-
-    const path = [];
-    let temp = currentCat;
-    while (temp) {
-      path.unshift(temp);
-      if (temp.parentId) {
-        const parent = categories.find(c => c.id === temp.parentId);
-        temp = parent;
-      } else {
-        temp = null;
-      }
-    }
-    return path;
-  }, [product, categories]);
-
   const parsedSpecs = useMemo(() => {
     if (!product?.specifications) return [];
-    const lines = product.specifications.split(/\r?\n/);
-    const result = [];
-    lines.forEach(line => {
-      if (!line.trim()) return;
-      const parts = line.includes(';') ? line.split(';') : [line];
-      parts.forEach(part => {
-        if (!part.trim()) return;
-        const colonIdx = part.indexOf(':');
-        if (colonIdx !== -1) {
-          const key = part.substring(0, colonIdx).trim();
-          const val = part.substring(colonIdx + 1).trim();
-          if (key && val) {
-            result.push({ label: key, value: val });
-          }
-        } else {
-          result.push({ label: part.trim(), value: '' });
-        }
+    let text = String(product.specifications);
+
+    // Remove glued table header titles
+    text = text.replace(/^Технические характеристикиПараметрЗначение/gi, '');
+    text = text.replace(/^ХарактеристикиПараметрЗначение/gi, '');
+    text = text.replace(/^ПараметрЗначение/gi, '');
+
+    // List of common keys to split on if text is glued together (longest keys first!)
+    const knownKeys = [
+      'Коэффициент теплопроводности',
+      'Предел прочности на сжатие',
+      'Температурный диапазон эксплуатации',
+      'Количество в упаковке',
+      'Площадь в упаковке',
+      'Страна-производитель',
+      'Страна производства',
+      'Группа горючести',
+      'Тип кромки',
+      'Срок хранения',
+      'Плотность',
+      'Толщина',
+      'Ширина',
+      'Длина',
+      'Высота',
+      'Объем',
+      'Размер',
+      'Бренд',
+      'Страна',
+      'Назначение',
+      'Состав',
+      'Материал',
+      'Цвет',
+      'Мощность',
+      'Напряжение',
+      'Емкость',
+      'Диаметр',
+      'Фракция',
+      'Упаковка',
+      'Вид',
+      'Тип',
+      'Вес'
+    ];
+
+    // If the text has no newlines, auto-insert newlines and colons before known keys
+    if (!text.includes('\n')) {
+      knownKeys.forEach(k => {
+        const regex = new RegExp(`(${k})`, 'gi');
+        text = text.replace(regex, '\n$1: ');
       });
+    }
+
+    const lines = text.split(/\r?\n/);
+    const result = [];
+
+    lines.forEach(line => {
+      let l = line.trim().replace(/^ПараметрЗначение/gi, '').trim();
+      if (!l) return;
+
+      // Check if line starts with any known key (longest key checked first)
+      const matchedKey = knownKeys.find(k => l.toLowerCase().startsWith(k.toLowerCase()));
+      if (matchedKey) {
+        let rest = l.substring(matchedKey.length).trim();
+        if (rest.startsWith(':')) rest = rest.substring(1).trim();
+        rest = rest.replace(/^[\s;,-]+/, '').trim();
+        if (rest) {
+          result.push({ label: matchedKey, value: rest });
+          return;
+        }
+      }
+
+      // Fallback colon split
+      const colonIdx = l.indexOf(':');
+      if (colonIdx !== -1) {
+        const key = l.substring(0, colonIdx).replace(/^[\s;,-]+/, '').trim();
+        const val = l.substring(colonIdx + 1).replace(/^[\s;,-]+/, '').trim();
+        if (key && val) {
+          result.push({ label: key, value: val });
+        } else if (key) {
+          result.push({ label: key, value: '' });
+        }
+      } else {
+        result.push({ label: l, value: '' });
+      }
     });
+
     return result;
   }, [product?.specifications]);
 
@@ -448,7 +563,7 @@ export default function ProductPage({
     const groups = {
       'Основные характеристики': ['бренд', 'страна', 'производитель', 'назначение', 'тип', 'состав', 'вид'],
       'Физические свойства': ['цвет', 'фракция', 'вес', 'объем', 'размер', 'толщина', 'ширина', 'длина', 'высота', 'плотность'],
-      'Технические параметры': ['мощность', 'напряжение', 'аккумулятор', 'сила удара', 'обороты', 'частота', 'емкость', 'диаметр']
+      'Технические параметры': ['мощность', 'напряжение', 'аккумулятор', 'сила удара', 'обороты', 'частота', 'емкость', 'диаметр', 'коэффициент', 'горючести', 'температурный', 'прочности']
     };
 
     const result = {};
@@ -491,14 +606,103 @@ export default function ProductPage({
     return list.length > 0 ? list : [FALLBACK_PRODUCT_IMAGE];
   }, [product]);
 
+  const optionsConfig = useMemo(() => {
+    return getProductOptions(product);
+  }, [product]);
+
+  const selectedOptionItem = useMemo(() => {
+    if (!optionsConfig || !optionsConfig.items) return null;
+    return optionsConfig.items.find(i => i.value === selectedOption) || null;
+  }, [optionsConfig, selectedOption]);
+
+  const activePromotion = useMemo(() => {
+    if (!product) return null;
+    return product.activePromotion || (product.promotions && product.promotions.length > 0 ? product.promotions[0] : null);
+  }, [product]);
+
+  // После activePromotion — считаем кол-во из корзины для этого товара (с учётом варианта)
+  const cartItemForProduct = useMemo(() => {
+    if (!product) return null;
+    return cart.find(i => {
+      if (i.id !== product.id) return false;
+      // если есть варианты — ищем точное совпадение
+      if (selectedOption) return (i.selectedOption || '') === selectedOption;
+      return true;
+    }) || null;
+  }, [cart, product, selectedOption]);
+
+  const cartQty = cartItemForProduct?.quantity || 0;
+  const inCart = cartQty > 0;
+  // displayQty: пока товар в корзине — считаем по кол-ву из корзины; иначе — по локальному селектору
+  const displayQty = inCart ? cartQty : quantity;
+
+  const promoDiscountPercentage = useMemo(() => {
+    if (!activePromotion) return 0;
+    const tiers = activePromotion.quantityTiers || [];
+    if (tiers.length > 0) {
+      const matched = tiers.reduce((best, t) => (displayQty >= t.minQuantity ? t : best), null);
+      if (matched) return matched.discountValue;
+      return 0;
+    }
+    if (activePromotion.minQuantity && displayQty >= activePromotion.minQuantity) {
+      return activePromotion.discountValue || 0;
+    }
+    return 0;
+  }, [activePromotion, displayQty]);
+
+  const basePriceBeforePromo = useMemo(() => {
+    if (selectedOptionItem && selectedOptionItem.price && !isNaN(parseFloat(selectedOptionItem.price))) {
+      return parseFloat(selectedOptionItem.price);
+    }
+    return product?.price || 0;
+  }, [selectedOptionItem, product?.price]);
+
+  const effectivePrice = useMemo(() => {
+    let price = basePriceBeforePromo;
+    if (promoDiscountPercentage > 0) {
+      if (activePromotion?.discountType === 'PERCENT') {
+        price = Math.round(price * (1 - promoDiscountPercentage / 100));
+      } else {
+        price = Math.max(0, price - promoDiscountPercentage);
+      }
+    }
+    return price;
+  }, [basePriceBeforePromo, promoDiscountPercentage, activePromotion?.discountType]);
+
+  const unitOldPrice = useMemo(() => {
+    if (promoDiscountPercentage > 0 && effectivePrice < basePriceBeforePromo) {
+      return product?.oldPrice && product.oldPrice > basePriceBeforePromo ? product.oldPrice : basePriceBeforePromo;
+    }
+    return product?.oldPrice || null;
+  }, [product?.oldPrice, basePriceBeforePromo, promoDiscountPercentage, effectivePrice]);
+
+  const totalMainPrice = useMemo(() => effectivePrice * displayQty, [effectivePrice, displayQty]);
+  const totalOldPrice = useMemo(() => unitOldPrice ? unitOldPrice * displayQty : null, [unitOldPrice, displayQty]);
+  const showStrikethroughOldPrice = useMemo(() => totalOldPrice !== null && totalOldPrice > totalMainPrice, [totalOldPrice, totalMainPrice]);
+
   const handleShare = () => {
     setActiveInfoModal('share');
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    onAddToCart(product, quantity);
+    const itemToAdd = {
+      ...product,
+      price: effectivePrice,
+      selectedOption: selectedOption || undefined,
+    };
+    onAddToCart(itemToAdd, quantity);
     onNavigate?.('cart');
+  };
+
+  const handleAddToCartWithOption = () => {
+    if (!product) return;
+    const itemToAdd = {
+      ...product,
+      price: effectivePrice,
+      selectedOption: selectedOption || undefined,
+    };
+    onAddToCart(itemToAdd, quantity);
   };
 
   const scrollToSection = (id) => {
@@ -538,7 +742,6 @@ export default function ProductPage({
   const activeImage = allImages[activeImageIndex] || allImages[0];
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : null;
   const isFav = isFavorite ? isFavorite(product.id) : false;
-  const optionsConfig = getProductOptions(product.name);
 
   // Articles generated or fetched
   const articleNum = product.article || `2989${10 + product.id}`;
@@ -648,9 +851,11 @@ export default function ProductPage({
               <div>
                 {/* Rating & Review counter */}
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center text-amber-400 gap-0.5">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    <span className="text-sm font-bold text-slate-800 ml-1">{product.rating || '4.8'}</span>
+                  <div className="flex items-center gap-0.5">
+                    <Star className={`h-4 w-4 ${reviewsMeta.total > 0 || (product.reviews > 0 && product.rating > 0) ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-300'}`} />
+                    <span className="text-sm font-bold text-slate-800 ml-1">
+                      {reviewsMeta.total > 0 || (product.reviews > 0 && product.rating > 0) ? product.rating : '0.0'}
+                    </span>
                   </div>
                   <span className="h-3 w-px bg-slate-200" />
                   <button
@@ -658,7 +863,17 @@ export default function ProductPage({
                     onClick={() => scrollToSection('reviews-section')}
                     className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
                   >
-                    {reviewsMeta.total} отзывов
+                    {reviewsMeta.total || product.reviews || 0} {
+                      (() => {
+                        const cnt = reviewsMeta.total !== undefined ? reviewsMeta.total : (product.reviews || 0);
+                        const m10 = cnt % 10;
+                        const m100 = cnt % 100;
+                        if (cnt === 0) return 'отзывов';
+                        if (m10 === 1 && m100 !== 11) return 'отзыв';
+                        if ([2, 3, 4].includes(m10) && ![12, 13, 14].includes(m100)) return 'отзыва';
+                        return 'отзывов';
+                      })()
+                    }
                   </button>
                 </div>
 
@@ -693,7 +908,12 @@ export default function ProductPage({
                         }`}
                         title={opt.reason || ''}
                       >
-                        {opt.value}
+                        <span>{opt.value}</span>
+                        {opt.price && parseFloat(opt.price) !== product.price && (
+                          <span className={`block text-[10px] font-extrabold mt-0.5 ${selectedOption === opt.value ? 'text-blue-700' : 'text-slate-500'}`}>
+                            {formatPrice(parseFloat(opt.price))}
+                          </span>
+                        )}
                         {!opt.available && opt.reason && (
                           <span className="block text-[8px] font-medium text-slate-400 mt-0.5">
                             {opt.reason}
@@ -712,11 +932,15 @@ export default function ProductPage({
                     Характеристики:
                   </h3>
                   <div className="space-y-2.5">
-                    {parsedSpecs.slice(0, 4).map((item, index) => (
-                      <div key={index} className="flex items-end text-xs font-semibold leading-relaxed w-full">
-                        <span className="text-slate-400 shrink-0 pr-1">{item.label}</span>
-                        <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[10px]"></span>
-                        <span className="text-slate-800 font-bold pl-1 shrink-0 break-all max-w-[60%]">{item.value}</span>
+                    {parsedSpecs.slice(0, 5).map((item, index) => (
+                      <div key={index} className="flex items-baseline text-xs font-semibold leading-relaxed w-full min-w-0">
+                        <span className="text-slate-400 shrink-0 pr-1 max-w-[50%] truncate" title={item.label}>{item.label}</span>
+                        {item.value ? (
+                          <>
+                            <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[10px]"></span>
+                            <span className="text-slate-800 font-bold pl-1 shrink-0 break-words text-right max-w-[50%]">{item.value}</span>
+                          </>
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -754,95 +978,183 @@ export default function ProductPage({
         </div>
 
         {/* BLOCK 2: Sticky Buy Box (3 cols on lg) */}
-        <div className="lg:col-span-3 bg-white border border-slate-100 rounded-3xl shadow-sm p-5 space-y-4 h-full">
+        <div className="lg:col-span-3 bg-white border border-slate-100 rounded-3xl shadow-sm p-5 space-y-4 self-start lg:sticky lg:top-4">
           {/* Guarantee Label */}
           <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-extrabold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100/50">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>Гарантия низкой цены</span>
           </div>
 
+          {/* Active Promotion Banner */}
+          {activePromotion && (
+            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-slate-900 font-extrabold">
+                <Tag className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                <span className="truncate">{activePromotion.title}</span>
+              </div>
+
+              {activePromotion.quantityTiers?.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {activePromotion.quantityTiers.map((tier, idx) => (
+                    <span
+                      key={idx}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border transition-all ${
+                        displayQty >= tier.minQuantity
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : 'bg-white text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      от {tier.minQuantity} шт: -{activePromotion.discountType === 'PERCENT' ? `${tier.discountValue}%` : formatPrice(tier.discountValue)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] font-medium text-slate-600 leading-tight">
+                  Скидка <strong className="font-extrabold text-slate-900">-{activePromotion.discountType === 'PERCENT' ? `${activePromotion.discountValue}%` : formatPrice(activePromotion.discountValue)}</strong> при заказе от <strong className="font-extrabold text-slate-900">{activePromotion.minQuantity || 1} шт.</strong>
+                </div>
+              )}
+
+              {promoDiscountPercentage > 0 ? (
+                <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-700 bg-emerald-50/80 border border-emerald-200/80 px-2.5 py-1.5 rounded-lg">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span>Скидка -{activePromotion.discountType === 'PERCENT' ? `${promoDiscountPercentage}%` : formatPrice(promoDiscountPercentage)} применена</span>
+                </div>
+              ) : activePromotion.minQuantity > displayQty ? (
+                <div className="text-[10px] font-semibold text-slate-500 pt-0.5">
+                  Добавьте ещё {activePromotion.minQuantity - displayQty} шт для активации скидки
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* Pricing block */}
           <div>
-            {product.oldPrice && (
-              <div className="text-xs text-slate-400 line-through mb-0.5">
-                {formatPrice(product.oldPrice * quantity)}
+            {showStrikethroughOldPrice && (
+              <div className="text-xs text-slate-400 line-through mb-0.5 font-medium">
+                {formatPrice(totalOldPrice)}
               </div>
             )}
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-slate-900 font-outfit">
-                {formatPrice(product.price * quantity)}
+                {formatPrice(totalMainPrice)}
               </span>
-              <span className="text-xs text-slate-400">
-                {quantity > 1 ? `за ${quantity} шт` : '/ шт'}
+              <span className="text-xs text-slate-400 font-semibold">
+                {displayQty > 1 ? `за ${displayQty} шт` : '/ шт'}
               </span>
             </div>
 
             {/* Cashback computation */}
             <div className="inline-flex items-center gap-1 mt-2 text-[10px] font-black text-emerald-700 bg-emerald-50/50 border border-emerald-100 px-2 py-0.5 rounded-md">
               <Tag className="h-3 w-3" />
-              <span>+ {formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100) * quantity)} бонусов</span>
+              <span>+ {formatPrice(Math.round(effectivePrice * (product.cashbackPercent ?? 3) / 100) * displayQty)} бонусов</span>
             </div>
           </div>
 
-          {/* Quantity selector */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl h-11 p-1 justify-between shadow-sm">
-            <button
-              type="button"
-              onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              className="w-10 h-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-bold rounded-lg transition-all text-lg"
-            >
-              -
-            </button>
-            <QuantityInput value={quantity} onChange={setQuantity} />
-            <button
-              type="button"
-              onClick={() => setQuantity(q => q + 1)}
-              className="w-10 h-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-bold rounded-lg transition-all text-lg"
-            >
-              +
-            </button>
-          </div>
+          {/* Quantity selector + action buttons */}
+          {(() => {
+            const inCart = cartQty > 0;
 
-          {/* Action buttons */}
-          <div className="space-y-2 pt-1">
-            <button
-              type="button"
-              onClick={() => onAddToCart(product, quantity)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold h-11 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
-            >
-              <ShoppingCart className="h-4.5 w-4.5" />
-              В корзину
-            </button>
-            <button
-              type="button"
-              onClick={handleBuyNow}
-              className="w-full border border-blue-600 hover:bg-blue-50 text-blue-600 font-extrabold h-11 rounded-xl transition-all flex items-center justify-center"
-            >
-              Купить сейчас
-            </button>
-          </div>
+            if (inCart) {
+              // ─── Товар уже в корзине: степпер + кнопка "Перейти" ───
+              return (
+                <div className="space-y-2">
+                  {/* Если есть вариант — показываем какой именно есть в корзине */}
+                  {cartItemForProduct?.selectedOption && (
+                    <div className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+                      В корзине: <span className="text-slate-900">{cartItemForProduct.selectedOption}</span>
+                    </div>
+                  )}
+                  {/* Stepper */}
+                  <div className="flex items-center bg-slate-900 rounded-xl h-12 px-1 justify-between shadow-md">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0);
+                        else onUpdateCartQuantity?.(product.id, cartQty - 1);
+                      }}
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('cart')}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold hover:bg-white/5 rounded-lg transition-all"
+                    >
+                      <ShoppingCart className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span className="text-base">{cartQty}</span>
+                      <span className="text-white/40 text-xs font-normal">шт</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateCartQuantity?.(product.id, cartQty + 1)}
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Go to cart */}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate?.('cart')}
+                    className="w-full border-2 border-blue-600 hover:bg-blue-50 text-blue-600 font-extrabold h-11 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    Перейти в корзину
+                  </button>
+                </div>
+              );
+            }
+
+            // ─── Товара нет в корзине: только кнопка "В корзину" ───
+            return (
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleAddToCartWithOption}
+                  className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold h-12 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm text-base"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  В корзину
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="w-full border border-blue-600 hover:bg-blue-50 text-blue-600 font-extrabold h-11 rounded-xl transition-all flex items-center justify-center"
+                >
+                  Купить сейчас
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Shipping info */}
-          <div className="border-t border-slate-100 pt-3 space-y-2.5 text-xs">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-              <div>
-                <span className="text-slate-400 font-medium">Продавец: </span>
-                <span className="font-bold text-slate-800 block sm:inline">{product.supplier?.name || 'TORMAG.KZ'}</span>
-              </div>
+          <div className="border-t border-slate-100 pt-3.5 space-y-3 text-xs">
+            {/* City Selector Line */}
+            <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
+              <span>Ваш город:</span>
+              <button
+                type="button"
+                onClick={() => setIsCityModalOpen(true)}
+                className="inline-flex items-center gap-1 text-blue-600 font-extrabold text-sm hover:underline cursor-pointer focus:outline-none"
+              >
+                <span>{userCity}</span>
+                <ChevronDown className="h-4 w-4 text-blue-600 shrink-0 stroke-[2.5]" />
+              </button>
             </div>
-            <div className="flex items-start gap-2">
-              <Clock className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="text-slate-400 font-medium">Доставка: </span>
-                <span className="font-bold text-slate-800">{product.supplier?.delivery || '1-2 дня'}</span>
+
+            {/* Delivery Line */}
+            <div className="flex items-start gap-3 pt-1">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                <Truck className="h-5 w-5 text-blue-600" />
               </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-slate-455 shrink-0 mt-0.5" />
-              <div>
-                <span className="text-slate-400 font-medium">Склад: </span>
-                <span className="font-bold text-slate-800">Алматы, РК</span>
+              <div className="flex flex-col">
+                <span className="text-blue-600 font-extrabold text-sm leading-tight">
+                  Доставка
+                </span>
+                <span className="text-slate-600 font-bold text-xs mt-0.5">
+                  {deliveryInfo.days === 1 ? 'Завтра' : `${estimatedDeliveryDateStr} (${deliveryInfo.label})`}
+                </span>
               </div>
             </div>
           </div>
@@ -1008,23 +1320,27 @@ export default function ProductPage({
 
           {/* TAB 2: FULL SPECS */}
           {activeTab === 'specs' && (
-            <div className="max-w-3xl space-y-6">
+            <div className="w-full space-y-6">
               <h3 className="text-base font-extrabold text-slate-900 font-outfit mb-4">Технические характеристики</h3>
               {Object.keys(groupedSpecs).length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-6 w-full">
                   {Object.entries(groupedSpecs).map(([groupName, items]) => (
-                    <div key={groupName} className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-6 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                    <div key={groupName} className="flex flex-col sm:flex-row gap-2 sm:gap-8 border-b border-slate-100 pb-5 last:border-0 last:pb-0 w-full">
                       {/* Left Column: Group Header */}
-                      <div className="text-slate-400 font-extrabold text-xs uppercase tracking-wider md:pt-1">
+                      <div className="text-slate-400 font-extrabold text-xs uppercase tracking-wider sm:w-56 shrink-0 sm:pt-1">
                         {groupName}
                       </div>
                       {/* Right Column: Dotted list of specs */}
-                      <div className="md:col-span-2 space-y-3">
+                      <div className="flex-1 w-full space-y-3">
                         {items.map((item, idx) => (
-                          <div key={idx} className="flex items-end text-xs font-semibold leading-relaxed w-full">
-                            <span className="text-slate-500 shrink-0 pr-1">{item.label}</span>
-                            <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[10px]"></span>
-                            <span className="text-slate-800 font-bold pl-1 shrink-0 break-all max-w-[60%]">{item.value}</span>
+                          <div key={idx} className="flex items-baseline text-xs font-semibold leading-relaxed w-full min-w-0">
+                            <span className="text-slate-500 shrink-0 pr-1 max-w-[45%] truncate" title={item.label}>{item.label}</span>
+                            {item.value ? (
+                              <>
+                                <span className="border-b border-dotted border-slate-200 flex-grow mb-1 min-w-[20px]"></span>
+                                <span className="text-slate-800 font-bold pl-1 shrink-0 break-words text-right max-w-[55%]">{item.value}</span>
+                              </>
+                            ) : null}
                           </div>
                         ))}
                       </div>
@@ -1140,6 +1456,14 @@ export default function ProductPage({
         type={activeInfoModal}
         onClose={() => setActiveInfoModal(null)}
         showToast={showToast}
+      />
+
+      {/* City Selection Modal */}
+      <CityModal
+        isOpen={isCityModalOpen}
+        onClose={() => setIsCityModalOpen(false)}
+        currentCity={userCity}
+        onSelectCity={setUserCity}
       />
     </div>
   );

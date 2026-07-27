@@ -41,6 +41,8 @@ export default function Storefront({
   total,
   onLoadMore,
   onAddToCart,
+  onUpdateCartQuantity,
+  cart = [],
   onOpenProduct,
   onToggleFavorite,
   isFavorite,
@@ -374,7 +376,7 @@ export default function Storefront({
                   </div>
                </div>
 
-               <div className="flex items-center gap-3">
+               <div className="hidden md:flex items-center gap-3">
                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Вид:</span>
                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 h-[32px]">
                    <button
@@ -440,9 +442,12 @@ export default function Storefront({
                   key={product.id}
                   product={product}
                   onAddToCart={onAddToCart}
+                  onUpdateQuantity={onUpdateCartQuantity}
+                  cartQuantity={cart.find(i => i.id === product.id)?.quantity || 0}
                   onOpenDetails={onOpenProduct}
                   onToggleFavorite={onToggleFavorite}
                   isFavorite={isFavorite?.(product.id)}
+                  onNavigate={onNavigate}
                 />
               ))}
             </div>
@@ -470,33 +475,43 @@ export default function Storefront({
                     <Zap className="h-3 w-3 fill-current" /> Хит
                   </span>
                 )}
-                <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-full object-contain p-2 mix-blend-multiply" 
-                    onError={(e) => { e.target.src = 'https://placehold.co/128x128'; }} 
-                  />
-                </div>
-                <div className="flex-grow space-y-2 min-w-0 w-full py-1">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{categories.find(c => c.slug === product.category)?.name || product.category}</span>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 break-words">{product.name}</h3>
+                
+                {/* Clickable Area -> Link to product details */}
+                <Link 
+                  href={getPageHref('product', product.id)}
+                  onClick={() => onOpenProduct?.(product.id)}
+                  className="flex-grow flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-w-0 w-full cursor-pointer"
+                >
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-full h-full object-contain p-2 mix-blend-multiply" 
+                      onError={(e) => { e.target.src = 'https://placehold.co/128x128'; }} 
+                    />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Цена</span>
-                      <p className="text-lg sm:text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
+                  <div className="flex-grow space-y-2 min-w-0 w-full py-1">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{categories.find(c => c.slug === product.category)?.name || product.category}</span>
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 break-words">{product.name}</h3>
                     </div>
-                    {product.bulkDiscount && (
-                       <div className="bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
-                         <Tag className="h-3 w-3 text-emerald-600" />
-                         <span className="text-[10px] font-bold text-emerald-700 uppercase">Оптом дешевле</span>
-                       </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Цена</span>
+                        <p className="text-lg sm:text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
+                      </div>
+                      {product.activePromotion && (
+                        <div className="bg-blue-50 text-blue-700 border border-blue-200/80 px-2.5 py-1 rounded-xl inline-flex items-center gap-1 text-[10px] font-black leading-none self-center mt-1">
+                          <Tag className="h-3 w-3 text-blue-600 shrink-0" />
+                          <span>{product.activePromotion.badgeText || product.activePromotion.title}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-col items-stretch sm:items-center gap-2.5 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-0 border-slate-100" onClick={(e) => e.stopPropagation()}>
+                </Link>
+
+                {/* Actions Zone OUTSIDE Link */}
+                <div className="flex flex-col sm:flex-col items-stretch sm:items-center gap-2.5 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-0 border-slate-100 shrink-0">
                   <div className="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-xl h-10 p-0.5 w-full sm:w-28 shadow-inner">
                     <button
                       type="button"
@@ -517,6 +532,7 @@ export default function Storefront({
                     </button>
                   </div>
                   <button 
+                    type="button"
                     onClick={() => onAddToCart(product, getQuantity(product.id))}
                     className="w-full sm:w-28 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 shrink-0"
                   >

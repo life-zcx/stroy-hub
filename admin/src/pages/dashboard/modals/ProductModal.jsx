@@ -112,7 +112,8 @@ export default function ProductModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Цена (₸) *</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Оптовая цена (₸) *</label>
+                <p className="text-[10px] text-slate-400 font-medium mb-1.5 leading-tight">Розничная цена рассчитывается автоматически с маржой категории</p>
                 <input
                   type="number"
                   name="price"
@@ -125,7 +126,8 @@ export default function ProductModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Старая цена (₸)</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Оптовая старая цена (₸)</label>
+                <p className="text-[10px] text-slate-400 font-medium mb-1.5 leading-tight">Для показа зачёркнутой скидочной цены</p>
                 <input
                   type="number"
                   name="oldPrice"
@@ -186,30 +188,153 @@ export default function ProductModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Кешбэк (%)</label>
+              <input
+                type="number"
+                name="cashbackPercent"
+                value={productForm.cashbackPercent}
+                onChange={onFormChange}
+                placeholder="По умолчанию (3%)"
+                min="0"
+                max="100"
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm"
+              />
+            </div>
+
+            {/* Options (Фасовка / Размер / Модели) */}
+            <div className="border border-slate-200 p-4 rounded-xl space-y-3 bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <span className="block text-xs font-bold text-slate-700 uppercase">Варианты товара (Фасовка / Размер / Модель)</span>
+                <span className="text-[10px] text-slate-400">Опционально</span>
+              </div>
+              
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Условия опта</label>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Название блока вариантов</label>
                 <input
                   type="text"
-                  name="bulkDiscount"
-                  value={productForm.bulkDiscount}
-                  onChange={onFormChange}
-                  placeholder="от 50 шт: 2300 ₸"
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm"
+                  placeholder="Например: Фасовка / Размер:"
+                  value={productForm.options?.label || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onFormChange({
+                      target: {
+                        name: 'options',
+                        value: { ...productForm.options, label: val, items: productForm.options?.items || [] }
+                      }
+                    });
+                  }}
+                  className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Кешбэк (%)</label>
-                <input
-                  type="number"
-                  name="cashbackPercent"
-                  value={productForm.cashbackPercent}
-                  onChange={onFormChange}
-                  placeholder="По умолчанию (3%)"
-                  min="0"
-                  max="100"
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/50 text-sm"
-                />
+
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-slate-500">Список вариантов:</label>
+                {(productForm.options?.items || []).map((item, idx) => (
+                  <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <input
+                      type="text"
+                      placeholder="Значение (50 кг / Стандарт)"
+                      value={item.value || ''}
+                      onChange={(e) => {
+                        const newItems = [...(productForm.options?.items || [])];
+                        newItems[idx] = { ...newItems[idx], value: e.target.value };
+                        onFormChange({
+                          target: {
+                            name: 'options',
+                            value: { ...productForm.options, items: newItems }
+                          }
+                        });
+                      }}
+                      className="flex-1 min-w-[120px] p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Опт. цена ₸"
+                      value={item.price || ''}
+                      onChange={(e) => {
+                        const newItems = [...(productForm.options?.items || [])];
+                        newItems[idx] = { ...newItems[idx], price: e.target.value };
+                        onFormChange({
+                          target: {
+                            name: 'options',
+                            value: { ...productForm.options, items: newItems }
+                          }
+                        });
+                      }}
+                      className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      title="Оптовая цена для этого варианта. Маржа категории, логистика и эквайринг применятся автоматически."
+                    />
+                    <label className="flex items-center gap-1.5 cursor-pointer shrink-0 text-xs text-slate-600 font-semibold select-none">
+                      <input
+                        type="checkbox"
+                        checked={item.available ?? true}
+                        onChange={(e) => {
+                          const newItems = [...(productForm.options?.items || [])];
+                          newItems[idx] = { ...newItems[idx], available: e.target.checked };
+                          onFormChange({
+                            target: {
+                              name: 'options',
+                              value: { ...productForm.options, items: newItems }
+                            }
+                          });
+                        }}
+                        className="rounded text-amber-500 focus:ring-amber-500"
+                      />
+                      В наличии
+                    </label>
+                    {!item.available && (
+                      <input
+                        type="text"
+                        placeholder="Причина (Под заказ)"
+                        value={item.reason || ''}
+                        onChange={(e) => {
+                          const newItems = [...(productForm.options?.items || [])];
+                          newItems[idx] = { ...newItems[idx], reason: e.target.value };
+                          onFormChange({
+                            target: {
+                              name: 'options',
+                              value: { ...productForm.options, items: newItems }
+                            }
+                          });
+                        }}
+                        className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newItems = (productForm.options?.items || []).filter((_, i) => i !== idx);
+                        onFormChange({
+                          target: {
+                            name: 'options',
+                            value: { ...productForm.options, items: newItems }
+                          }
+                        });
+                      }}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg shrink-0 transition-colors"
+                      title="Удалить вариант"
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newItems = [...(productForm.options?.items || []), { value: '', available: true, reason: '' }];
+                    onFormChange({
+                      target: {
+                        name: 'options',
+                        value: { ...productForm.options, label: productForm.options?.label || 'Фасовка / Размер:', items: newItems }
+                      }
+                    });
+                  }}
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 pt-1"
+                >
+                  + Добавить вариант
+                </button>
               </div>
             </div>
 

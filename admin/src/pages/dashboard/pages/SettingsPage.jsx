@@ -5,6 +5,7 @@ import { getSystemSettings, saveSystemSettings } from '../../../services/api';
 export default function SettingsPage({ showToast }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cityFilter, setCityFilter] = useState('');
   const [settings, setSettings] = useState({
     comingSoonModalEnabled: false,
     comingSoonTitle: '',
@@ -133,6 +134,132 @@ export default function SettingsPage({ showToast }) {
                 </div>
               </div>
             )}
+
+            {/* Delivery Routes Settings Section */}
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <div className="flex items-center gap-2">
+                <LayoutTemplate className="h-5 w-5 text-blue-600" />
+                <span className="font-black text-slate-900 uppercase tracking-widest text-xs">Межгородская доставка по Казахстану</span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Настройте город центрального склада и стандартное время доставки в регионы Казахстана.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                    Город отправки (Склад)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.defaultWarehouseCity || 'Алматы'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, defaultWarehouseCity: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Delivery Routes Table */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                    Сроки доставки по всем 89 городам Казахстана (дней)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Быстрый поиск города..."
+                      value={cityFilter}
+                      onChange={(e) => setCityFilter(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none w-48 focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Новый город..."
+                      id="newCityNameInput"
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none w-32 focus:border-blue-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Дней"
+                      id="newCityDaysInput"
+                      min="1"
+                      defaultValue="3"
+                      className="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none w-16 text-center focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cityInput = document.getElementById('newCityNameInput');
+                        const daysInput = document.getElementById('newCityDaysInput');
+                        const cityName = cityInput?.value?.trim();
+                        const daysVal = parseInt(daysInput?.value, 10) || 3;
+                        if (!cityName) return;
+                        setSettings(prev => {
+                          const routes = [...(prev.deliveryRoutes || [])];
+                          const existingIdx = routes.findIndex(r => r.to?.toLowerCase() === cityName.toLowerCase());
+                          if (existingIdx !== -1) {
+                            routes[existingIdx] = { ...routes[existingIdx], days: daysVal };
+                          } else {
+                            routes.push({ from: prev.defaultWarehouseCity || 'Алматы', to: cityName, days: daysVal });
+                          }
+                          return { ...prev, deliveryRoutes: routes };
+                        });
+                        if (cityInput) cityInput.value = '';
+                      }}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase cursor-pointer transition-colors shrink-0"
+                    >
+                      + Добавить
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-1">
+                  {(settings.deliveryRoutes || [])
+                    .filter(r => !cityFilter || r.to?.toLowerCase().includes(cityFilter.toLowerCase()))
+                    .map((route, idx) => {
+                      const originalIdx = (settings.deliveryRoutes || []).findIndex(r => r.to === route.to);
+                      return (
+                        <div key={route.to || idx} className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 text-xs">
+                          <span className="font-extrabold text-slate-800 truncate">{route.to}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={route.days}
+                              onChange={(e) => {
+                                const newDays = parseInt(e.target.value, 10) || 1;
+                                setSettings(prev => {
+                                  const routes = [...(prev.deliveryRoutes || [])];
+                                  const targetIdx = originalIdx !== -1 ? originalIdx : idx;
+                                  routes[targetIdx] = { ...routes[targetIdx], days: newDays };
+                                  return { ...prev, deliveryRoutes: routes };
+                                });
+                              }}
+                              className="w-12 px-2 py-1 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-900 outline-none focus:border-blue-500"
+                            />
+                            <span className="text-[10px] text-slate-500 font-bold">дн.</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSettings(prev => ({
+                                  ...prev,
+                                  deliveryRoutes: (prev.deliveryRoutes || []).filter(r => r.to !== route.to)
+                                }));
+                              }}
+                              className="text-slate-400 hover:text-red-500 text-xs font-bold px-1"
+                              title="Удалить город"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Form Actions Footer */}

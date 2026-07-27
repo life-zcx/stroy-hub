@@ -88,7 +88,11 @@ const PROMOTIONS_CACHE_KEY_HOME = 'promotions:home';
 const clearPromotionsCache = async () => {
   try {
     await redisClient.del([PROMOTIONS_CACHE_KEY_PUBLIC, PROMOTIONS_CACHE_KEY_HOME]);
-    logger.info('Cleared promotions cache');
+    const pKeys = await redisClient.keys('products:*');
+    if (pKeys.length > 0) {
+      await redisClient.del(pKeys);
+    }
+    logger.info('Cleared promotions and products cache');
   } catch (err) {
     logger.error('Error clearing promotions cache:', err);
   }

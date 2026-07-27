@@ -62,6 +62,7 @@ function createEmptyProductForm({ categories, suppliers, isSupplier, user }) {
     imageUrl: '',
     images: [],
     article: '',
+    options: { label: '', items: [] },
   };
 }
 
@@ -392,11 +393,11 @@ export function useDashboardData({ user, showToast }) {
     if (productForm.article) formData.append('article', productForm.article);
     formData.append('isHit', productForm.isHit);
 
-    formData.append('images', JSON.stringify(productForm.images || []));
-
-    additionalImageFiles.forEach(file => {
-      formData.append('additionalImageFiles', file);
-    });
+    if (productForm.options && productForm.options.label && productForm.options.items?.length > 0) {
+      formData.append('options', JSON.stringify(productForm.options));
+    } else {
+      formData.append('options', 'null');
+    }
 
     if (imageFile) {
       formData.append('imageFile', imageFile);
@@ -473,7 +474,7 @@ export function useDashboardData({ user, showToast }) {
       category: product.category || '',
       categoryId: finalCategoryId || '',
       price: product.wholesalePrice || product.price || '',
-      oldPrice: product.oldPrice || '',
+      oldPrice: product.wholesaleOldPrice !== undefined && product.wholesaleOldPrice !== null ? product.wholesaleOldPrice : (product.oldPrice || ''),
       bulkDiscount: product.bulkDiscount || '',
       cashbackPercent: product.cashbackPercent || '',
       isHit: product.isHit || false,
@@ -481,6 +482,7 @@ export function useDashboardData({ user, showToast }) {
       imageUrl: product.image || '',
       images: Array.isArray(product.images) ? product.images : [],
       article: product.article || '',
+      options: product.options && typeof product.options === 'object' && product.options.label ? product.options : { label: '', items: [] },
     });
     setImageFile(null);
     setAdditionalImageFiles([]);

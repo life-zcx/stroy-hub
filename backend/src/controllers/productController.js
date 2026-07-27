@@ -1,4 +1,6 @@
 import prisma from '../config/db.js';
+import { Prisma } from '@prisma/client';
+import { attachActivePromotionsToProduct } from '../utils/promotionUtils.js';
 import XlsxPopulate from 'xlsx-populate';
 import fs from 'fs';
 import path from 'path';
@@ -321,12 +323,58 @@ export function applyRetailPricingToProduct(product, settings, categoryMap, cate
   const retailPrice = calculatePriceBottomUp(wholesalePrice, activeMarkup, settings);
   const effectiveCashback = product.cashbackPercent ?? product.categoryRelation?.cashbackPercent ?? 3;
 
+  let mappedOptions = product.options;
+  if (product.options && typeof product.options === 'object' && Array.isArray(product.options.items)) {
+    const items = product.options.items.map(item => {
+      if (item.price !== undefined && item.price !== null && item.price !== '' && !isNaN(parseFloat(item.price))) {
+        const itemWholesale = parseFloat(item.price);
+        const itemRetail = calculatePriceBottomUp(itemWholesale, activeMarkup, settings);
+        return {
+          ...item,
+          wholesalePrice: itemWholesale,
+          price: itemRetail
+        };
+      }
+      return item;
+    });
+    mappedOptions = {
+      ...product.options,
+      items
+    };
+  }
+
+  const wholesaleOldPrice = product.oldPrice;
+  const retailOldPrice = product.oldPrice ? calculatePriceBottomUp(product.oldPrice, activeMarkup, settings) : null;
+
   return {
     ...product,
     wholesalePrice,
+    wholesaleOldPrice,
     price: retailPrice,
-    oldPrice: product.oldPrice ? calculatePriceBottomUp(product.oldPrice, activeMarkup, settings) : null,
+    oldPrice: retailOldPrice,
     cashbackPercent: effectiveCashback,
+    options: mappedOptions,
+  };
+}
+
+export function computeRealReviewStats(product) {
+  if (!product) return product;
+  const approvedReviews = Array.isArray(product.reviewsList) ? product.reviewsList : [];
+  if (approvedReviews.length === 0) {
+    return {
+      ...product,
+      rating: 0,
+      reviews: 0,
+      reviewsList: undefined
+    };
+  }
+  const sum = approvedReviews.reduce((acc, r) => acc + Number(r.rating || 0), 0);
+  const avg = parseFloat((sum / approvedReviews.length).toFixed(1));
+  return {
+    ...product,
+    rating: avg,
+    reviews: approvedReviews.length,
+    reviewsList: undefined
   };
 }
 
@@ -409,7 +457,14 @@ export const getAllProducts = async (req, res) => {
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
-        include: { supplier: true, categoryRelation: true },
+        include: {
+          supplier: true,
+          categoryRelation: true,
+          reviewsList: {
+            where: { isApproved: true },
+            select: { rating: true }
+          }
+        },
         orderBy,
         skip,
         take: limitNum,
@@ -422,7 +477,15 @@ export const getAllProducts = async (req, res) => {
     const categoryMap = new Map(allCats.map(c => [c.id, c]));
     const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
 
-    const mappedProducts = products.map((product) => applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap));
+    const activePromos = await prisma.promotion.findMany({
+      where: { isActive: true }
+    });
+
+    const mappedProducts = products.map((product) => {
+      const realStats = computeRealReviewStats(product);
+      const priced = applyRetailPricingToProduct(realStats, settings, categoryMap, categorySlugMap);
+      return attachActivePromotionsToProduct(priced, activePromos);
+    });
 
     const result = {
       data:       mappedProducts,
@@ -455,7 +518,11 @@ export const getProductById = async (req, res) => {
       where: { id: parseInt(id) },
       include: { 
         supplier: true,
-        categoryRelation: true
+        categoryRelation: true,
+        reviewsList: {
+          where: { isApproved: true },
+          select: { rating: true }
+        }
       }
     });
     if (!product) {
@@ -467,7 +534,13 @@ export const getProductById = async (req, res) => {
     const categoryMap = new Map(allCats.map(c => [c.id, c]));
     const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
 
-    const mappedProduct = applyRetailPricingToProduct(product, settings, categoryMap, categorySlugMap);
+    const activePromos = await prisma.promotion.findMany({
+      where: { isActive: true }
+    });
+
+    const realStats = computeRealReviewStats(product);
+    let mappedProduct = applyRetailPricingToProduct(realStats, settings, categoryMap, categorySlugMap);
+    mappedProduct = attachActivePromotionsToProduct(mappedProduct, activePromos);
 
     await redisClient.set(cacheKey, JSON.stringify(mappedProduct), { EX: 1800 });
     res.json(mappedProduct);
@@ -480,7 +553,7 @@ export const createProduct = async (req, res) => {
   console.log('[DEBUG createProduct] Received body:', req.body);
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options
   } = req.body;
   const requestedSupplierId = parseId(supplierId);
   const requesterSupplierId = getRequesterSupplierId(req);
@@ -553,6 +626,20 @@ export const createProduct = async (req, res) => {
       finalImages.push(`/uploads/${file.filename}`);
     });
 
+    let parsedOptions = Prisma.DbNull;
+    if (options) {
+      if (typeof options === 'object') {
+        parsedOptions = (options.label && options.items?.length > 0) ? options : Prisma.DbNull;
+      } else if (typeof options === 'string' && options.trim() !== '' && options !== 'null') {
+        try {
+          const parsed = JSON.parse(options);
+          parsedOptions = (parsed && parsed.label && parsed.items?.length > 0) ? parsed : Prisma.DbNull;
+        } catch {
+          parsedOptions = Prisma.DbNull;
+        }
+      }
+    }
+
     const newProduct = await prisma.product.create({
       data: {
         name,
@@ -572,7 +659,8 @@ export const createProduct = async (req, res) => {
         bulkDiscount: bulkDiscount || null,
         supplierId: effectiveSupplierId,
         cashbackPercent: cashbackPercent !== undefined && cashbackPercent !== '' ? parseInt(cashbackPercent) : null,
-        article: article || null
+        article: article || null,
+        options: parsedOptions
       },
       include: {
         supplier: true
@@ -591,7 +679,7 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options
   } = req.body;
   const requesterSupplierId = getRequesterSupplierId(req);
   const requestedSupplierId = supplierId === undefined ? undefined : parseId(supplierId);
@@ -654,6 +742,21 @@ export const updateProduct = async (req, res) => {
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
     if (cashbackPercent !== undefined) data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
     if (article !== undefined) data.article = article || null;
+
+    if (options !== undefined) {
+      if (options === null || options === '' || options === 'null') {
+        data.options = Prisma.DbNull;
+      } else if (typeof options === 'object') {
+        data.options = options;
+      } else if (typeof options === 'string') {
+        try {
+          const parsed = JSON.parse(options);
+          data.options = (parsed && parsed.label && parsed.items?.length > 0) ? parsed : Prisma.DbNull;
+        } catch {
+          data.options = Prisma.DbNull;
+        }
+      }
+    }
 
     let finalImages = [];
     if (images !== undefined) {

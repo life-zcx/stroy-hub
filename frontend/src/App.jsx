@@ -364,6 +364,8 @@ export default function App() {
             categories={catalog.categories}
             setSearchQuery={catalog.setSearchQuery}
             onAddToCart={cart.handleAddToCart}
+            onUpdateCartQuantity={cart.handleSetCartQuantity}
+            cart={cart.cart}
             onToggleFavorite={favorites.toggleFavorite}
             isFavorite={favorites.isFavorite}
             onOpenDetails={openProductPage}
@@ -394,6 +396,8 @@ export default function App() {
             onlyBulk={catalog.onlyBulk}
             setOnlyBulk={catalog.setOnlyBulk}
             onAddToCart={cart.handleAddToCart}
+            onUpdateCartQuantity={cart.handleSetCartQuantity}
+            cart={cart.cart}
             onRefresh={catalog.loadProducts}
             onLoadMore={catalog.loadMoreProducts}
             onOpenProduct={openProductPage}
@@ -437,6 +441,8 @@ export default function App() {
             promotionId={currentProductId}
             onNavigate={setCurrentPage}
             onAddToCart={cart.handleAddToCart}
+            onUpdateCartQuantity={cart.handleSetCartQuantity}
+            cart={cart.cart}
             onToggleFavorite={favorites.toggleFavorite}
             isFavorite={favorites.isFavorite}
             onOpenCallback={() => setIsCallbackModalOpen(true)}
@@ -500,6 +506,8 @@ export default function App() {
               setCurrentPage('catalog');
             }}
             onAddToCart={cart.handleAddToCart}
+            onUpdateCartQuantity={cart.handleSetCartQuantity}
+            cart={cart.cart}
             onNavigate={setCurrentPage}
             categories={catalog.categories}
             setSelectedCategory={handleSetCategory}

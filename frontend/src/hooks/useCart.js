@@ -10,20 +10,23 @@ import {
 } from '../services/api';
 
 export default function useCart(showToast, customer) {
-  const [cart, setCart] = useState([]);
+  // Lazy initializer: immediately reads localStorage so cart is never empty on first render
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('tormag_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   
   // Track previous customer state to detect login/logout transitions
   const prevCustomerRef = useRef(customer);
 
-  // Initialize cart from localStorage on mount (as a guest)
-  useEffect(() => {
-    if (!customer) {
-      const saved = localStorage.getItem('tormag_cart');
-      setCart(saved ? JSON.parse(saved) : []);
-    }
-  }, []);
+  // (removed: localStorage read is now done in useState lazy initializer above)
 
   // Sync state & handle login/logout transitions
   useEffect(() => {
@@ -77,12 +80,18 @@ export default function useCart(showToast, customer) {
     syncUserCart();
   }, [customer]);
 
-  // Sync guest cart to local storage when it changes
+  // Mark as initialized after first customer resolution
   useEffect(() => {
-    if (!customer) {
+    if (!initialized) setInitialized(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer]);
+
+  // Sync guest cart to local storage when it changes (only after initialization)
+  useEffect(() => {
+    if (!customer && initialized) {
       localStorage.setItem('tormag_cart', JSON.stringify(cart));
     }
-  }, [cart, customer]);
+  }, [cart, customer, initialized]);
 
   const handleAddToCart = async (product, quantity = 1) => {
     const quantityToAdd = Math.max(1, Number.parseInt(quantity, 10) || 1);
@@ -173,6 +182,15 @@ export default function useCart(showToast, customer) {
     }
   };
 
+  // Set exact quantity; if qty=0 — remove from cart
+  const handleSetCartQuantity = async (id, qty) => {
+    if (qty <= 0) {
+      await handleRemoveFromCart(id);
+    } else {
+      await handleUpdateQuantity(id, qty, true);
+    }
+  };
+
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartItemsCount = cart.reduce((count, item) => count + item.quantity, 0);
 
@@ -184,6 +202,7 @@ export default function useCart(showToast, customer) {
     cartItemsCount,
     handleAddToCart,
     handleUpdateQuantity,
+    handleSetCartQuantity,
     handleRemoveFromCart,
     handleClearCart,
     loading

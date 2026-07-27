@@ -225,3 +225,68 @@ export function evaluatePromotion(promotion, context, now = new Date()) {
     tiers,
   };
 }
+
+export function attachActivePromotionsToProduct(product, activePromotions) {
+  if (!product) return product;
+  const list = Array.isArray(activePromotions) ? activePromotions : [];
+  if (list.length === 0) {
+    return { ...product, promotions: [] };
+  }
+
+  const matched = list.filter(promo => {
+    if (!isPromotionCurrentlyActive(promo)) return false;
+
+    // Exclude general ORDER level promotions and order-threshold (minOrderAmount) promotions from individual product cards
+    if (promo.scope === 'ORDER' || (promo.minOrderAmount && promo.minOrderAmount > 0)) {
+      return false;
+    }
+
+    if (promo.scope === 'PRODUCT') {
+      const targetIds = Array.isArray(promo.targetProductIds) ? promo.targetProductIds.map(Number) : [];
+      return targetIds.includes(Number(product.id));
+    }
+
+    if (promo.scope === 'CATEGORY') {
+      const targetIds = Array.isArray(promo.targetCategoryIds) ? promo.targetCategoryIds.map(Number) : [];
+      const prodCatId = product.categoryId || (product.categoryRelation ? product.categoryRelation.id : null);
+      return targetIds.includes(Number(prodCatId));
+    }
+
+    return false;
+  }).map(promo => {
+    const tiers = parsePromotionTiers(promo.quantityTiers);
+    let badgeText = promo.title;
+    let minQuantity = promo.minQuantity || 1;
+
+    if (tiers.length > 0) {
+      const firstTier = tiers[0];
+      minQuantity = firstTier.minQuantity;
+      const formattedVal = promo.discountType === 'PERCENT' ? `${firstTier.discountValue}%` : `${firstTier.discountValue.toLocaleString()} ₸`;
+      badgeText = `от ${firstTier.minQuantity} шт: -${formattedVal}`;
+    } else if (promo.minQuantity && promo.minQuantity > 1) {
+      const formattedVal = promo.discountType === 'PERCENT' ? `${promo.discountValue}%` : `${promo.discountValue.toLocaleString()} ₸`;
+      badgeText = `от ${promo.minQuantity} шт: -${formattedVal}`;
+    } else if (promo.discountValue) {
+      const formattedVal = promo.discountType === 'PERCENT' ? `${promo.discountValue}%` : `${promo.discountValue.toLocaleString()} ₸`;
+      badgeText = `Скидка -${formattedVal}`;
+    }
+
+    return {
+      id: promo.id,
+      title: promo.title,
+      badgeText,
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      minQuantity,
+      quantityTiers: tiers,
+      promoCode: promo.promoCode,
+      scope: promo.scope,
+    };
+  });
+
+  return {
+    ...product,
+    promotions: matched,
+    activePromotion: matched.length > 0 ? matched[0] : null,
+  };
+}

@@ -31,6 +31,8 @@ export default function Home({
   setSelectedCategory,
   categories = [],
   onAddToCart,
+  onUpdateCartQuantity,
+  cart = [],
   onToggleFavorite,
   isFavorite,
   onOpenDetails,
@@ -780,9 +782,12 @@ export default function Home({
                 key={product.id}
                 product={product}
                 onAddToCart={onAddToCart}
+                onUpdateQuantity={onUpdateCartQuantity}
+                cartQuantity={cart.find(i => i.id === product.id)?.quantity || 0}
                 onOpenDetails={onOpenDetails}
                 onToggleFavorite={onToggleFavorite}
                 isFavorite={isFavorite ? isFavorite(product) : false}
+                onNavigate={onNavigate}
               />
             ))
           )}

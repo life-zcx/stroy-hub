@@ -105,6 +105,7 @@ model Product {
   reviewsList    Review[]
   cashbackPercent Int?
   article        String?
+  options        Json?
   returnRequests ReturnRequest[]
   cartItems      CartItem[]
 

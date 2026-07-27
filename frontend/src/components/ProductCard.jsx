@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Zap, ShieldCheck, Clock, MapPin, ArrowRight, Heart } from 'lucide-react';
+import { ShoppingCart, Zap, Heart, Tag, Minus, Plus } from 'lucide-react';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
 import Link from './Link';
 import { getPageHref } from '../utils/navigationHelper';
@@ -7,73 +7,56 @@ import { getPageHref } from '../utils/navigationHelper';
 const formatPrice = (price) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
 
-const QuantityInput = ({ value, onChange }) => {
-  const [localVal, setLocalVal] = useState(value);
-
-  React.useEffect(() => {
-    setLocalVal(value);
-  }, [value]);
-
-  const handleChange = (e) => {
-    const valStr = e.target.value;
-    if (valStr.length > 5) return;
-    setLocalVal(valStr);
-    const parsed = parseInt(valStr, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      onChange(parsed);
-    }
-  };
-
-  const handleBlur = () => {
-    const parsed = parseInt(localVal, 10);
-    if (isNaN(parsed) || parsed < 1) {
-      setLocalVal(value);
-      onChange(value);
-    } else {
-      const clamped = Math.min(99999, parsed);
-      setLocalVal(clamped);
-      onChange(clamped);
-    }
-  };
-
-  const inputLength = localVal ? localVal.toString().length : 1;
-
-  return (
-    <>
-      <style>{`
-        .no-spinner::-webkit-outer-spin-button,
-        .no-spinner::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        .no-spinner {
-          -moz-appearance: textfield;
-        }
-      `}</style>
-      <input
-        type="number"
-        min="1"
-        max="99999"
-        value={localVal}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className="no-spinner flex-grow text-center text-xs font-black text-slate-850 bg-transparent focus:outline-none font-mono"
-        style={{ width: `${Math.max(2, inputLength + 1.2)}ch`, maxWidth: '5.5ch' }}
-      />
-    </>
-  );
-};
-
 export default function ProductCard({ 
   product, 
-  onAddToCart, 
+  onAddToCart,
+  onUpdateQuantity,   // (id, newQty) — обновить кол-во в корзине
+  cartQuantity = 0,   // текущее кол-во этого товара в корзине (0 = нет)
   onOpenModal, 
   onOpenDetails,
   onToggleFavorite,
+  onNavigate,
   isFavorite = false
 }) {
-  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(false);
   const imageSrc = getProductImage(product);
+
+  const inCart = cartQuantity > 0;
+
+  const handleAdd = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onAddToCart?.(product, 1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDecrement = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (cartQuantity === 1) {
+        // Убрать из корзины
+        await onUpdateQuantity?.(product.id, 0);
+      } else {
+        await onUpdateQuantity?.(product.id, cartQuantity - 1);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleIncrement = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onUpdateQuantity?.(product.id, cartQuantity + 1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col relative overflow-hidden text-slate-800">
@@ -88,6 +71,12 @@ export default function ProductCard({
         {product.oldPrice && (
           <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-sm">
             −{formatPrice(product.oldPrice - product.price)}
+          </span>
+        )}
+        {product.activePromotion && (
+          <span className="bg-blue-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-2xs flex items-center gap-1">
+            <Tag className="h-2.5 w-2.5 fill-current shrink-0" />
+            <span>{product.activePromotion.badgeText || product.activePromotion.title}</span>
           </span>
         )}
       </div>
@@ -113,14 +102,14 @@ export default function ProductCard({
         className="flex flex-col flex-1 cursor-pointer min-w-0 w-full"
         onClick={() => onOpenDetails && onOpenDetails(product.id)}
       >
-        {/* ── Image zone (fixed height) ── */}
-        <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative">
+        {/* ── Image zone ── */}
+        <div className="h-56 sm:h-60 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative p-4">
           <img
             src={imageSrc}
             alt={product.name}
             loading="lazy"
             decoding="async"
-            className="w-3/4 h-3/4 object-contain mix-blend-multiply"
+            className="w-full h-full object-contain mix-blend-multiply"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = FALLBACK_PRODUCT_IMAGE;
@@ -133,44 +122,35 @@ export default function ProductCard({
           {/* Rating row */}
           <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
             <span className="flex items-center text-emerald-500 font-semibold">
-              <Zap className="h-3 w-3 fill-current mr-0.5" />{product.rating}
+              <Zap className="h-3 w-3 fill-current mr-0.5" />
+              {product.rating && product.rating > 0 ? product.rating : '0.0'}
             </span>
             <span className="text-slate-200">•</span>
-            <span>{product.reviews} отзывов</span>
+            <span>
+              {product.reviews && product.reviews > 0
+                ? `${product.reviews} ${product.reviews % 10 === 1 && product.reviews % 100 !== 11 ? 'отзыв' : [2,3,4].includes(product.reviews % 10) && ![12,13,14].includes(product.reviews % 100) ? 'отзыва' : 'отзывов'}`
+                : '0 отзывов'}
+            </span>
           </div>
 
-          {/* Name (2 lines fixed) */}
-          <h3 className="text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-3 min-h-[2.5rem] break-words">
+          {/* Name — flex-grow pushes price to bottom */}
+          <h3 className="text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-3 break-words flex-grow">
             {product.name}
           </h3>
 
-          {/* Supplier info */}
-          <div className="bg-slate-50 rounded-xl p-2.5 mb-4 space-y-1.5 border border-slate-100 text-[11px] text-slate-655">
-            <div className="flex items-center gap-1.5 leading-tight">
-              <ShieldCheck className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-              <span className="truncate font-medium">{product.supplier?.name || 'Официальный склад'}</span>
-            </div>
-            <div className="flex items-center gap-1.5 leading-tight">
-              <Clock className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
-              <span>Доставка: {product.supplier?.delivery || '1–2 дня'}</span>
-            </div>
-            <div className="flex items-center gap-1.5 leading-tight border-t border-slate-200/50 pt-1.5">
-              <MapPin className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-              <span>Склад: <strong className="text-slate-700">Алматы</strong> · РК <span className="text-emerald-600 font-bold">✓</span></span>
-            </div>
-          </div>
-
-          {/* Price */}
-          <div className="mb-3">
-            {product.oldPrice && (
-              <div className="text-xs text-slate-400 line-through mb-0.5">{formatPrice(product.oldPrice)}</div>
+          {/* Price — always at bottom */}
+          <div className="mb-3 space-y-1">
+            {product.oldPrice ? (
+              <div className="text-xs text-slate-400 line-through leading-none">{formatPrice(product.oldPrice)}</div>
+            ) : (
+              <div className="text-xs leading-none invisible select-none">-</div>
             )}
-            <div className="text-xl font-extrabold text-slate-900 flex items-center gap-2 flex-wrap">
-              <div className="flex items-baseline gap-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-baseline gap-1 text-xl font-extrabold text-slate-900 leading-none">
                 {formatPrice(product.price)}
                 <span className="text-xs font-normal text-slate-400">/ шт</span>
               </div>
-              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-emerald-100/50" title="Бонусы за покупку">
+              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md inline-flex items-center gap-0.5 border border-emerald-100/50 leading-none" title="Бонусы за покупку">
                 +{formatPrice(Math.round(product.price * (product.cashbackPercent ?? 3) / 100))}
               </span>
             </div>
@@ -178,34 +158,50 @@ export default function ProductCard({
         </div>
       </Link>
 
-      {/* ── Interactive Actions Zone (outside Link to prevent navigation) ── */}
-      <div className="p-4 pt-0">
-        <div className="flex flex-col sm:grid sm:grid-cols-[90px_1fr] gap-2">
-          <div className="flex items-center justify-between bg-slate-100 border border-slate-200/60 rounded-xl h-[40px] p-0.5 shadow-inner w-full">
+      {/* ── Actions Zone ── */}
+      <div className="p-4 pt-2">
+        {inCart ? (
+          /* ── Степпер когда товар в корзине ── */
+          <div className="flex items-center justify-between bg-slate-900 rounded-xl h-[44px] px-1 shadow-md overflow-hidden">
             <button
               type="button"
-              onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+              onClick={handleDecrement}
+              disabled={loading}
+              className="w-10 h-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
             >
-              -
+              <Minus className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            <QuantityInput value={quantity} onChange={setQuantity} />
+
             <button
               type="button"
-              onClick={() => setQuantity(q => q + 1)}
-              className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+              onClick={() => onNavigate?.('cart')}
+              className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold text-sm hover:bg-white/5 transition-all rounded-lg"
             >
-              +
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <span>{cartQuantity}</span>
+              <span className="text-white/50 text-[10px] font-normal">шт</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleIncrement}
+              disabled={loading}
+              className="w-10 h-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
             </button>
           </div>
+        ) : (
+          /* ── Кнопка "В корзину" когда товара нет ── */
           <button
-            onClick={() => onAddToCart(product, quantity)}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-[40px] rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-md active:scale-95 text-xs uppercase tracking-wider shrink-0"
+            onClick={handleAdd}
+            disabled={loading}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-[44px] rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md active:scale-95 text-xs uppercase tracking-wider disabled:opacity-60"
           >
             <ShoppingCart className="h-4 w-4 shrink-0" />
             <span>В корзину</span>
           </button>
-        </div>
+        )}
       </div>
     </div>
   );

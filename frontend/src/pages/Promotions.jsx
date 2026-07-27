@@ -68,6 +68,8 @@ export default function Promotions({
   promotionId,
   onNavigate,
   onAddToCart,
+  onUpdateCartQuantity,
+  cart = [],
   onToggleFavorite,
   isFavorite,
   onOpenCallback
@@ -243,9 +245,12 @@ export default function Promotions({
                 key={product.id}
                 product={product}
                 onAddToCart={onAddToCart}
+                onUpdateQuantity={onUpdateCartQuantity}
+                cartQuantity={cart.find(i => i.id === product.id)?.quantity || 0}
                 onOpenDetails={(id) => onNavigate('product', id)}
                 onToggleFavorite={onToggleFavorite}
                 isFavorite={isFavorite?.(product.id)}
+                onNavigate={onNavigate}
               />
             ))}
           </div>
