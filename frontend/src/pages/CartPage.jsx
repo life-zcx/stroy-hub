@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import AddressMapPicker from '../components/AddressMapPicker';
 import {
   CheckCircle2,
   ChevronRight,
@@ -18,8 +20,13 @@ import {
   History,
   ShoppingBag,
   ArrowRight,
+  Truck,
+  MapPin,
+  Edit3,
+  Star,
+  Trash2,
 } from 'lucide-react';
-import { createOrder, validatePromotionCode, getProducts, getProductById } from '../services/api';
+import { createOrder, validatePromotionCode, getProducts, getProductById, getSystemSettings, updateProfile } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
@@ -28,6 +35,12 @@ import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
+
+const KAZAKHSTAN_CITIES = [
+  'Алматы', 'Астана', 'Шымкент', 'Караганда', 'Тараз', 'Павлодар', 'Кызылорда', 'Актобе',
+  'Усть-Каменогорск', 'Семей', 'Атырау', 'Актау', 'Уральск', 'Костанай', 'Петропавловск',
+  'Темиртау', 'Туркестан', 'Кокшетау', 'Талдыкорган', 'Экибастуз', 'Рудный', 'Жанаозен'
+];
 
 const QuantityInput = ({ value, onChange }) => {
   const [localVal, setLocalVal] = useState(value);
@@ -95,19 +108,18 @@ export default function CartPage({
   onClearCart,
   showToast,
   customer,
+  onCustomerUpdate,
   onOpenAuth,
   onNavigate,
   bonuses,
   onAddToCart,
+  currentPage = 'cart',
 }) {
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
     clientAddress: '',
     paymentMethod: 'cash',
-    deliveryDate: 'today', // today, tomorrow, custom
-    customDeliveryDate: '',
-    deliveryTimeSlot: '14:00-18:00', // 09:00-13:00, 14:00-18:00, 19:00-22:00
     companyName: '',
     companyBin: '',
   });
@@ -120,13 +132,91 @@ export default function CartPage({
   const [bonusInput, setBonusInput] = useState('');
   const [appliedBonuses, setAppliedBonuses] = useState(0);
 
+  // Address selection & city delivery settings state
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [systemSettings, setSystemSettings] = useState(null);
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [editingAddrId, setEditingAddrId] = useState(null);
+  const [newAddrForm, setNewAddrForm] = useState({
+    city: 'Алматы',
+    street: '',
+    details: '',
+    isDefault: false,
+  });
+  const [savingNewAddr, setSavingNewAddr] = useState(false);
+
   // Recommendations state
   const [hits, setHits] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [successOrder, setSuccessOrder] = useState(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const [step, setStep] = useState('cart'); // 'cart' or 'checkout'
+  const [step, setStep] = useState(() => currentPage === 'checkout' ? 'checkout' : 'cart');
   const [termsError, setTermsError] = useState(false);
+
+  useEffect(() => {
+    if (currentPage === 'checkout') {
+      setStep('checkout');
+    } else if (currentPage === 'cart') {
+      setStep('cart');
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step, successOrder]);
+
+  // Fetch system settings for city delivery routes
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await getSystemSettings();
+        setSystemSettings(data);
+      } catch (e) {
+        console.error('Failed to load system settings in cart:', e);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Compute available user addresses
+  const userAddresses = useMemo(() => {
+    if (customer?.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
+      return customer.addresses;
+    }
+    if (customer?.address) {
+      return [{
+        id: 'legacy_1',
+        city: 'Алматы',
+        street: customer.address,
+        details: '',
+        isDefault: true,
+      }];
+    }
+    return [];
+  }, [customer]);
+
+  // Auto-select default address
+  useEffect(() => {
+    if (userAddresses.length > 0) {
+      const defaultAddr = userAddresses.find(a => a.isDefault) || userAddresses[0];
+      if (defaultAddr && (!selectedAddressId || !userAddresses.some(a => a.id === selectedAddressId))) {
+        setSelectedAddressId(defaultAddr.id);
+      }
+    }
+  }, [userAddresses, selectedAddressId]);
+
+  const activeAddress = useMemo(() => {
+    return userAddresses.find(a => a.id === selectedAddressId) || userAddresses[0] || null;
+  }, [userAddresses, selectedAddressId]);
+
+  // Calculate delivery days for selected city
+  const deliveryDays = useMemo(() => {
+    if (!activeAddress) return 1;
+    const city = activeAddress.city || 'Алматы';
+    const routes = systemSettings?.deliveryRoutes || [];
+    const matched = routes.find(r => r.to?.toLowerCase() === city.toLowerCase());
+    return matched?.days ?? 1;
+  }, [activeAddress, systemSettings]);
 
   // Load recommendations when cart is empty
   useEffect(() => {
@@ -169,122 +259,123 @@ export default function CartPage({
         ...prev,
         clientName: customer.name || '',
         clientPhone: customer.phone || '',
-        clientAddress: customer.address || '',
       }));
     }
   }, [customer]);
 
-  // Интеграция Яндекс.Карт для выбора адреса
-  useEffect(() => {
-    if (step !== 'checkout') return undefined;
+  const handleOpenAddModal = () => {
+    setEditingAddrId(null);
+    setNewAddrForm({
+      city: 'Алматы',
+      street: '',
+      details: '',
+      isDefault: userAddresses.length === 0,
+    });
+    setShowAddAddressModal(true);
+  };
 
-    let mapInstance = null;
-    let placemarkInstance = null;
+  const handleEditAddress = (addr) => {
+    setEditingAddrId(addr.id);
+    setNewAddrForm({
+      city: addr.city || 'Алматы',
+      street: addr.street || '',
+      details: addr.details || '',
+      isDefault: !!addr.isDefault,
+    });
+    setShowAddAddressModal(true);
+  };
 
-    const initMap = () => {
-      const container = document.getElementById('checkout-map');
-      if (!container || mapInstance) return;
+  const handleSetDefaultAddress = async (id) => {
+    try {
+      const updatedList = userAddresses.map(a => ({ ...a, isDefault: a.id === id }));
+      const defaultAddrObj = updatedList.find(a => a.isDefault) || updatedList[0];
+      const defaultAddrStr = defaultAddrObj
+        ? `г. ${defaultAddrObj.city}, ${defaultAddrObj.street}${defaultAddrObj.details ? `, ${defaultAddrObj.details}` : ''}`
+        : '';
 
-      const ymaps = window.ymaps;
-      
-      mapInstance = new ymaps.Map('checkout-map', {
-        center: [43.238949, 76.889709], // Алматы
-        zoom: 12,
-        controls: ['zoomControl', 'searchControl']
+      const updatedCustomer = await updateProfile({
+        addresses: updatedList,
+        address: defaultAddrStr
       });
-
-      const updateMarker = (coords, address) => {
-        if (placemarkInstance) {
-          placemarkInstance.geometry.setCoordinates(coords);
-          placemarkInstance.properties.set('iconCaption', address);
-        } else {
-          placemarkInstance = new ymaps.Placemark(coords, {
-            iconCaption: address
-          }, {
-            preset: 'islands#emeraldDotIconWithCaption',
-            draggable: true
-          });
-          mapInstance.geoObjects.add(placemarkInstance);
-          
-          placemarkInstance.events.add('dragend', () => {
-            getAddress(placemarkInstance.geometry.getCoordinates());
-          });
-        }
-      };
-
-      const getAddress = (coords) => {
-        ymaps.geocode(coords).then((res) => {
-          const firstGeoObject = res.geoObjects.get(0);
-          if (firstGeoObject) {
-            const address = firstGeoObject.getAddressLine();
-            setFormData(prev => ({ ...prev, clientAddress: address }));
-            updateMarker(coords, address);
-          } else {
-            throw new Error("No geo object found");
-          }
-        }).catch((err) => {
-          console.warn("Yandex geocoding failed, trying OpenStreetMap Nominatim...", err);
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords[0]}&lon=${coords[1]}&accept-language=ru`)
-            .then(res => {
-              if (!res.ok) throw new Error("OSM Nominatim response error");
-              return res.json();
-            })
-            .then(data => {
-              if (data && data.display_name) {
-                const address = data.display_name;
-                setFormData(prev => ({ ...prev, clientAddress: address }));
-                updateMarker(coords, address);
-              } else {
-                throw new Error("No address returned from OSM Nominatim");
-              }
-            })
-            .catch(osmErr => {
-              console.error("OSM Nominatim geocoding failed:", osmErr);
-              const fallback = `Координаты: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
-              setFormData(prev => ({ ...prev, clientAddress: fallback }));
-              updateMarker(coords, fallback);
-            });
-        });
-      };
-
-      mapInstance.events.add('click', (e) => {
-        const coords = e.get('coords');
-        getAddress(coords);
-      });
-
-      const searchControl = mapInstance.controls.get('searchControl');
-      searchControl.events.add('resultselect', (e) => {
-        const index = e.get('index');
-        searchControl.getResult(index).then((res) => {
-          const address = res.properties.get('text') || res.properties.get('displayName');
-          const coords = res.geometry.getCoordinates();
-          setFormData(prev => ({ ...prev, clientAddress: address }));
-          updateMarker(coords, address);
-        }).catch((err) => {
-          console.error("Yandex search result extraction failed:", err);
-        });
-      });
-    };
-
-    if (window.ymaps) {
-      window.ymaps.ready(initMap);
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
-      script.type = 'text/javascript';
-      script.onload = () => {
-        window.ymaps.ready(initMap);
-      };
-      document.body.appendChild(script);
+      onCustomerUpdate?.(updatedCustomer);
+      showToast?.('Основной адрес обновлен');
+    } catch (err) {
+      console.error(err);
     }
+  };
 
-    return () => {
-      if (mapInstance) {
-        mapInstance.destroy();
-        mapInstance = null;
+  const handleDeleteAddress = async (id) => {
+    try {
+      const updatedList = userAddresses.filter(a => a.id !== id);
+      if (updatedList.length > 0 && !updatedList.some(a => a.isDefault)) {
+        updatedList[0].isDefault = true;
       }
-    };
-  }, [step]);
+
+      const defaultAddrObj = updatedList[0] || null;
+      const defaultAddrStr = defaultAddrObj
+        ? `г. ${defaultAddrObj.city}, ${defaultAddrObj.street}${defaultAddrObj.details ? `, ${defaultAddrObj.details}` : ''}`
+        : '';
+
+      const updatedCustomer = await updateProfile({
+        addresses: updatedList,
+        address: defaultAddrStr
+      });
+      onCustomerUpdate?.(updatedCustomer);
+      if (selectedAddressId === id) {
+        setSelectedAddressId(updatedList[0]?.id || null);
+      }
+      showToast?.('Адрес удален');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddNewAddress = async (e) => {
+    e.preventDefault();
+    if (!newAddrForm.street.trim()) {
+      alert('Укажите улицу и дом');
+      return;
+    }
+    setSavingNewAddr(true);
+    try {
+      let updatedList = [];
+      let targetId = editingAddrId;
+
+      if (editingAddrId) {
+        updatedList = userAddresses.map(a => a.id === editingAddrId ? { ...newAddrForm, id: editingAddrId } : a);
+      } else {
+        targetId = 'addr_' + Date.now();
+        const isFirst = userAddresses.length === 0;
+        const newObj = { ...newAddrForm, id: targetId, isDefault: newAddrForm.isDefault || isFirst };
+        updatedList = [...userAddresses, newObj];
+      }
+
+      if (newAddrForm.isDefault) {
+        updatedList = updatedList.map(a => ({ ...a, isDefault: a.id === targetId }));
+      }
+
+      const defaultAddrObj = updatedList.find(a => a.isDefault) || updatedList[0];
+      const defaultAddrStr = defaultAddrObj
+        ? `г. ${defaultAddrObj.city}, ${defaultAddrObj.street}${defaultAddrObj.details ? `, ${defaultAddrObj.details}` : ''}`
+        : '';
+
+      const updatedCustomer = await updateProfile({
+        addresses: updatedList,
+        address: defaultAddrStr
+      });
+
+      onCustomerUpdate?.(updatedCustomer);
+      setSelectedAddressId(targetId);
+      setShowAddAddressModal(false);
+      setNewAddrForm({ city: 'Алматы', street: '', details: '', isDefault: false });
+      showToast?.(editingAddrId ? 'Адрес обновлен!' : 'Новый адрес добавлен!');
+    } catch (err) {
+      console.error(err);
+      alert('Не удалось сохранить адрес');
+    } finally {
+      setSavingNewAddr(false);
+    }
+  };
 
   // Загружаем summary при открытии корзины
   useEffect(() => {
@@ -380,8 +471,13 @@ export default function CartPage({
       return;
     }
 
-    if (!formData.clientName || !formData.clientPhone || !formData.clientAddress) {
-      alert('Пожалуйста, заполните все обязательные поля!');
+    if (!formData.clientName || !formData.clientPhone) {
+      alert('Пожалуйста, заполните все обязательные поля (Имя и Телефон)!');
+      return;
+    }
+
+    if (!activeAddress && !formData.clientAddress) {
+      alert('Пожалуйста, выберите или укажите адрес доставки!');
       return;
     }
 
@@ -398,28 +494,27 @@ export default function CartPage({
 
     setIsSubmitting(true);
     try {
-      let deliveryDateString = '';
-      if (formData.deliveryDate === 'today') {
-        deliveryDateString = 'Сегодня (экспресс)';
-      } else if (formData.deliveryDate === 'tomorrow') {
-        deliveryDateString = 'Завтра';
-      } else {
-        deliveryDateString = formData.customDeliveryDate || 'Выбранная дата';
-      }
+      const fullAddressStr = activeAddress
+        ? `г. ${activeAddress.city || 'Алматы'}, ${activeAddress.street}${activeAddress.details ? `, ${activeAddress.details}` : ''}`
+        : formData.clientAddress;
+
+      const deliveryTimeframeText = activeAddress
+        ? `Доставка ~${deliveryDays} дн. (г. ${activeAddress.city || 'Алматы'})`
+        : 'Доставка по согласованию';
 
       let finalComment = formData.comment || '';
 
       const orderPayload = {
         clientName: formData.clientName,
         clientPhone: formData.clientPhone,
-        clientAddress: formData.clientAddress,
+        clientAddress: fullAddressStr,
         paymentMethod: formData.paymentMethod,
         companyName: formData.paymentMethod === 'invoice' ? formData.companyName : null,
         companyBin: formData.paymentMethod === 'invoice' ? formData.companyBin : null,
         promoCode: promoPreview.valid ? appliedPromotion?.promoCode : null,
         useBonuses: bonusDiscount > 0 ? bonusDiscount : false,
-        deliveryDate: deliveryDateString,
-        deliveryTime: formData.deliveryTimeSlot,
+        deliveryDate: deliveryTimeframeText,
+        deliveryTime: 'С 09:00 до 18:00',
         comment: finalComment,
         items: cart.map((item) => ({
           productId: item.id,
@@ -877,9 +972,10 @@ export default function CartPage({
                       onOpenAuth?.();
                     } else {
                       setStep('checkout');
+                      onNavigate?.('checkout');
                     }
                   }}
-                  className="bg-slate-950 hover:bg-emerald-650 text-white font-extrabold py-3.5 px-7 rounded-xl shadow-md transition-all flex items-center gap-2 transform active:scale-95 text-sm cursor-pointer"
+                  className="bg-slate-950 hover:bg-slate-800 text-white font-extrabold py-3.5 px-7 rounded-2xl shadow-md shadow-slate-950/20 transition-all flex items-center gap-2 transform active:scale-95 text-sm cursor-pointer"
                 >
                   <span>Перейти к оформлению</span>
                   <ChevronRight className="h-4.5 w-4.5" />
@@ -893,7 +989,10 @@ export default function CartPage({
             <div className="bg-white rounded-[2rem] border border-slate-150 p-6 sm:p-8 shadow-sm">
               <button
                 type="button"
-                onClick={() => setStep('cart')}
+                onClick={() => {
+                  setStep('cart');
+                  onNavigate?.('cart');
+                }}
                 className="mb-6 flex items-center gap-2 text-xs font-bold text-slate-550 hover:text-slate-900 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-0 p-0"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -901,7 +1000,7 @@ export default function CartPage({
               </button>
 
               <h2 className="text-xl font-black text-slate-950 mb-6 flex items-center gap-2">
-                <ShieldCheck className="h-6 w-6 text-emerald-600" />
+                <ShieldCheck className="h-6 w-6 text-slate-900" />
                 Оформление заказа
               </h2>
 
@@ -915,7 +1014,7 @@ export default function CartPage({
                 <button
                   type="button"
                   onClick={onOpenAuth}
-                  className="bg-slate-900 hover:bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+                  className="bg-slate-950 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
                 >
                   Войти или зарегистрироваться
                 </button>
@@ -923,10 +1022,126 @@ export default function CartPage({
             ) : (
               <form onSubmit={handleCheckoutSubmit} className="space-y-8">
                 
-                {/* Шаг 1: Контактные данные получателя */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">1</span>
+                {/* Шаг 1: Адрес доставки */}
+                <div className="space-y-4 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">1</span>
+                    Адрес
+                  </h3>
+
+                  <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+                    <span className="text-xs font-bold text-slate-700">Адрес доставки (магазин):</span>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddModal}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-900 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      Добавить новый адрес
+                    </button>
+                  </div>
+
+                  {/* List of user addresses */}
+                  {userAddresses.length === 0 ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-3">
+                      <MapPin className="h-8 w-8 text-slate-400 mx-auto" />
+                      <p className="text-xs font-bold text-slate-700">У вас пока нет сохраненных адресов</p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="bg-slate-950 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Указать адрес доставки
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 border-t border-b border-slate-100">
+                      {userAddresses.map((addr) => {
+                        const isSelected = selectedAddressId === addr.id;
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => setSelectedAddressId(addr.id)}
+                            className="py-3.5 flex items-center justify-between gap-3 group cursor-pointer"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="mt-0.5 shrink-0">
+                                {isSelected ? (
+                                  <div className="w-5 h-5 rounded-full border-2 border-slate-950 bg-slate-950 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-white group-hover:border-slate-400" />
+                                )}
+                              </div>
+                              <div className="text-left space-y-0.5 min-w-0">
+                                <p className="text-sm font-semibold text-slate-900 truncate">
+                                  {addr.city ? `${addr.city}, ` : ''}{addr.street}
+                                </p>
+                                {addr.details && (
+                                  <p className="text-xs font-normal text-slate-500 truncate">
+                                    {addr.details}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => handleSetDefaultAddress(addr.id)}
+                                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                title={addr.isDefault ? "Основной адрес" : "Сделать основным"}
+                              >
+                                <Star className={`w-4 h-4 ${addr.isDefault ? 'text-amber-500 fill-amber-500' : 'text-slate-400 hover:text-slate-600'}`} />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleEditAddress(addr)}
+                                className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                title="Редактировать"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAddress(addr.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                title="Удалить"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Dynamic delivery duration banner calculated from city delivery settings */}
+                  {activeAddress && (
+                    <div className="mt-4 bg-slate-100 border border-slate-200 rounded-2xl p-4 flex items-center gap-3.5 text-slate-900 animate-fade-in">
+                      <div className="p-2.5 bg-slate-200 text-slate-900 rounded-xl shrink-0">
+                        <Truck className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-0.5 text-xs text-left">
+                        <div className="font-extrabold uppercase tracking-wider text-[10px] text-slate-600">
+                          РАСЧЕТНЫЙ СРОК ДОСТАВКИ В Г. {(activeAddress.city || 'Алматы').toUpperCase()}
+                        </div>
+                        <p className="font-bold text-slate-900 text-xs sm:text-sm">
+                          ~ {deliveryDays} {deliveryDays === 1 ? 'день' : deliveryDays < 5 ? 'дня' : 'дней'} (по индивидуальному графику для вашего города)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Шаг 2: Данные получателя */}
+                <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">2</span>
                     Данные получателя
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -939,7 +1154,7 @@ export default function CartPage({
                         onChange={handleInputChange}
                         required
                         placeholder="Александр"
-                        className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none font-semibold text-slate-900"
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-slate-950 transition-all text-sm outline-none font-semibold text-slate-900"
                       />
                     </div>
                     <div>
@@ -951,80 +1166,16 @@ export default function CartPage({
                         onChange={handleInputChange}
                         required
                         placeholder="+7 (707) 123-45-67"
-                        className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none font-semibold text-slate-900"
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-slate-950 transition-all text-sm outline-none font-semibold text-slate-900"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Шаг 2: Способ и параметры доставки */}
-                <div className="border-t border-slate-100 pt-6 space-y-5">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">2</span>
-                    Параметры доставки
-                  </h3>
-                  
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Адрес доставки *</label>
-                    <textarea
-                      name="clientAddress"
-                      value={formData.clientAddress}
-                      onChange={handleInputChange}
-                      required
-                      rows="2"
-                      placeholder="Город Алматы, улица Абая, дом 10, кв 15"
-                      className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none resize-none font-semibold text-slate-900"
-                    />
-                    
-                    {/* Yandex Map for Address Selection */}
-                    <div className="mt-3">
-                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Или укажите адрес на карте (кликните или введите адрес в поиск карт):</span>
-                      <div id="checkout-map" className="w-full h-64 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative z-10" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2.5">Формат доставки *</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[
-                        { value: 'today', label: 'Сегодня (экспресс)' },
-                        { value: 'tomorrow', label: 'Завтра' },
-                        { value: 'custom', label: 'Выбрать дату' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, deliveryDate: opt.value }))}
-                          className={`p-3.5 rounded-xl text-xs font-bold transition-all border text-center cursor-pointer ${
-                            formData.deliveryDate === opt.value
-                              ? 'bg-slate-900 border-slate-900 text-white shadow-md transform scale-[1.01]'
-                              : 'bg-slate-50 border-slate-150 text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {formData.deliveryDate === 'custom' && (
-                    <div className="animate-fade-in space-y-2">
-                      <label className="block text-[10px] font-black text-slate-555 uppercase tracking-wider">Дата доставки *</label>
-                      <input
-                        type="date"
-                        name="customDeliveryDate"
-                        value={formData.customDeliveryDate}
-                        onChange={handleInputChange}
-                        required={formData.deliveryDate === 'custom'}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none font-semibold text-slate-900"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="border-t border-slate-100 pt-6 space-y-3">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">3</span>
+                {/* Шаг 3: Комментарий к заказу */}
+                <div className="border-t border-slate-100 pt-6 space-y-3 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">3</span>
                     Комментарий к заказу
                   </h3>
                   <textarea
@@ -1033,80 +1184,81 @@ export default function CartPage({
                     onChange={handleInputChange}
                     rows="2"
                     placeholder="Например: позвонить за час до доставки, кодовый замок..."
-                    className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none resize-none font-semibold text-slate-900"
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-slate-950 transition-all text-sm outline-none resize-none font-semibold text-slate-900"
                   />
                 </div>
 
-                {/* Шаг 4: Оплата */}
-                <div className="border-t border-slate-100 pt-6 space-y-3">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">4</span>
-                    Оплата
+                {/* Шаг 4: Состав заказа */}
+                <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">4</span>
+                    Состав заказа ({cart.length})
                   </h3>
-                  <select
-                    name="paymentMethod"
-                    value={formData.paymentMethod}
-                    onChange={handleInputChange}
-                    className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm outline-none font-semibold text-slate-900 cursor-pointer"
-                  >
-                    <option value="cash">Наличными при получении</option>
-                    <option value="kaspi">Kaspi QR / Kaspi Red (курьеру при получении)</option>
-                    <option value="invoice">Безналичный расчет (B2B юр. лица - ТОО/ИП)</option>
-                  </select>
 
-                  {formData.paymentMethod === 'invoice' && (
-                    <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-4 animate-fade-in mt-3">
-                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Реквизиты организации для выставления счета</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[9px] font-bold text-slate-500 mb-1">Наименование компании (ТОО / ИП) *</label>
-                          <input
-                            type="text"
-                            name="companyName"
-                            value={formData.companyName || ''}
-                            onChange={handleInputChange}
-                            required={formData.paymentMethod === 'invoice'}
-                            placeholder="ТОО СтройСервис"
-                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[9px] font-bold text-slate-500 mb-1">БИН / ИИН (12 цифр) *</label>
-                          <input
-                            type="text"
-                            name="companyBin"
-                            value={formData.companyBin || ''}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
-                              setFormData(prev => ({ ...prev, companyBin: val }));
-                            }}
-                            required={formData.paymentMethod === 'invoice'}
-                            placeholder="123456789012"
-                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-xs outline-none font-semibold text-slate-900"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="py-3.5 px-4">Наименование</th>
+                          <th className="py-3.5 px-4">Артикул</th>
+                          <th className="py-3.5 px-4 text-center">Кол-во</th>
+                          <th className="py-3.5 px-4 text-right">Цена</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {cart.map((item, idx) => {
+                          const sku = item.article || item.product?.article || item.product?.sku || item.sku || `ART-${item.id}`;
+                          return (
+                            <tr key={`${item.id}_${item.selectedOption || 'def'}_${idx}`} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3 min-w-[200px]">
+                                  {item.image && (
+                                    <img src={item.image} alt={item.title} className="w-10 h-10 object-contain rounded-lg border border-slate-100 bg-slate-50 shrink-0" />
+                                  )}
+                                  <div>
+                                    <span className="font-bold text-slate-900 line-clamp-2">{item.title}</span>
+                                    {item.selectedOption && (
+                                      <span className="inline-block text-[10px] font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded mt-0.5">
+                                        Вариант: {item.selectedOption}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-500">
+                                {sku}
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-800">
+                                {item.quantity} шт
+                              </td>
+                              <td className="py-3 px-4 text-right font-black text-slate-900 font-outfit">
+                                {formatPrice(item.price * item.quantity)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Шаг 5: Скидки и Бонусы */}
-                <div className="border-t border-slate-100 pt-6 space-y-4">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">5</span>
-                    Скидки и Бонусы
+                <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">5</span>
+                    Скидка и бонусы
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Bonuses input */}
                     {customer && (
-                      <div className="bg-white border border-slate-150 rounded-2xl p-5 space-y-3 flex flex-col justify-center min-h-[120px] shadow-sm">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 flex flex-col justify-center min-h-[120px] shadow-sm">
                         <div className="flex justify-between items-center">
                           <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Списать бонусы (до {maxBonusPaymentPercent}%)</label>
                           <span className="text-[10px] font-bold text-slate-500">Доступно: {formatPrice(availableBonusPoints)}</span>
                         </div>
                         {appliedBonuses > 0 ? (
-                          <div className="rounded-xl bg-emerald-50/50 border border-emerald-100 p-3 flex items-center justify-between text-xs h-[46px]">
+                          <div className="rounded-xl bg-slate-100 border border-slate-200 p-3 flex items-center justify-between text-xs h-[46px]">
                             <div>
                               <span className="font-bold text-slate-900">Бонусы списаны</span>
                               <span className="block text-[10px] text-slate-500 font-mono">Сумма: -{formatPrice(appliedBonuses)}</span>
@@ -1117,7 +1269,7 @@ export default function CartPage({
                                 setAppliedBonuses(0);
                                 setBonusInput('');
                               }}
-                              className="text-xs font-bold text-rose-650 hover:text-rose-800 cursor-pointer"
+                              className="text-xs font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
                             >
                               Убрать
                             </button>
@@ -1140,7 +1292,7 @@ export default function CartPage({
                                 }
                               }}
                               placeholder="Количество бонусов"
-                              className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-emerald-550 transition-all"
+                              className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-slate-950 transition-all"
                             />
                             <button
                               type="button"
@@ -1152,7 +1304,7 @@ export default function CartPage({
                                 }
                               }}
                               disabled={!bonusInput || parseInt(bonusInput) <= 0}
-                              className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                              className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                             >
                               Использовать
                             </button>
@@ -1162,10 +1314,10 @@ export default function CartPage({
                     )}
 
                     {/* Promo input */}
-                    <div className="bg-white border border-slate-150 rounded-2xl p-5 space-y-3 flex flex-col justify-center min-h-[120px] shadow-sm">
-                      <label className="block text-[10px] font-black text-slate-555 uppercase tracking-wider">Промокод на скидку</label>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 flex flex-col justify-center min-h-[120px] shadow-sm">
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Промокод на скидку</label>
                       {appliedPromotion ? (
-                        <div className="rounded-xl bg-emerald-50/50 border border-emerald-100 p-3 flex items-center justify-between text-xs h-[46px]">
+                        <div className="rounded-xl bg-slate-100 border border-slate-200 p-3 flex items-center justify-between text-xs h-[46px]">
                           <div>
                             <span className="font-bold text-slate-900 truncate max-w-[120px] block">{appliedPromotion.title}</span>
                             <span className="block text-[10px] text-slate-500 font-mono">Код: {appliedPromotion.promoCode}</span>
@@ -1173,7 +1325,7 @@ export default function CartPage({
                           <button
                             type="button"
                             onClick={handleRemovePromoCode}
-                            className="text-xs font-bold text-rose-650 hover:text-rose-800 cursor-pointer"
+                            className="text-xs font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
                           >
                             Убрать
                           </button>
@@ -1185,51 +1337,104 @@ export default function CartPage({
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                             placeholder="TORMAG10"
-                            className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold uppercase outline-none focus:bg-white focus:border-emerald-550 transition-all"
+                            className="w-full min-w-0 flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase outline-none focus:bg-white focus:border-slate-950 transition-all"
                           />
                           <button
                             type="button"
                             onClick={handleApplyPromoCode}
                             disabled={promoLoading}
-                            className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                            className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                           >
                             {promoLoading ? '...' : 'Использовать'}
                           </button>
                         </div>
                       )}
-                      {promoError && <p className="text-[11px] text-rose-650 font-semibold">{promoError}</p>}
+                      {promoError && <p className="text-[11px] text-rose-600 font-semibold">{promoError}</p>}
                     </div>
                   </div>
                 </div>
 
-                {/* Шаг 6: Детали заказа */}
-                <div className="border-t border-slate-100 pt-6 space-y-4">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold font-mono">6</span>
+                {/* Шаг 6: Оплата */}
+                <div className="border-t border-slate-100 pt-6 space-y-3 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">6</span>
+                    Оплата
+                  </h3>
+                  <select
+                    name="paymentMethod"
+                    value={formData.paymentMethod}
+                    onChange={handleInputChange}
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-slate-950 transition-all text-sm outline-none font-semibold text-slate-900 cursor-pointer"
+                  >
+                    <option value="cash">Наличными при получении</option>
+                    <option value="kaspi">Kaspi QR / Kaspi Red (курьеру при получении)</option>
+                    <option value="invoice">Безналичный расчет (B2B юр. лица - ТОО/ИП)</option>
+                  </select>
+
+                  {formData.paymentMethod === 'invoice' && (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 animate-fade-in mt-3">
+                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Реквизиты организации для выставления счета</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">Наименование компании (ТОО / ИП) *</label>
+                          <input
+                            type="text"
+                            name="companyName"
+                            value={formData.companyName || ''}
+                            onChange={handleInputChange}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="ТОО СтройСервис"
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:border-slate-950 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-500 mb-1">БИН / ИИН (12 цифр) *</label>
+                          <input
+                            type="text"
+                            name="companyBin"
+                            value={formData.companyBin || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                              setFormData(prev => ({ ...prev, companyBin: val }));
+                            }}
+                            required={formData.paymentMethod === 'invoice'}
+                            placeholder="123456789012"
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:border-slate-950 transition-all text-xs outline-none font-semibold text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Шаг 7: Детали заказа */}
+                <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-950 text-white text-xs flex items-center justify-center font-bold font-mono shrink-0 shadow-xs">7</span>
                     Детали заказа
                   </h3>
 
-                  <div className="bg-slate-50 border border-slate-150 rounded-[2rem] p-6 space-y-4">
+                  <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-6 space-y-4">
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between text-slate-500 font-semibold">
                         <span>Товары ({cartItemsCount})</span>
                         <span>{formatPrice(cartTotal)}</span>
                       </div>
                       {promoPreview.valid && (
-                        <div className="flex justify-between text-emerald-600 font-semibold">
+                        <div className="flex justify-between text-slate-900 font-semibold">
                           <span>Скидка по промокоду</span>
                           <span>- {formatPrice(promoPreview.discountAmount)}</span>
                         </div>
                       )}
                       {bonusDiscount > 0 && (
-                        <div className="flex justify-between text-blue-600 font-semibold">
+                        <div className="flex justify-between text-slate-900 font-semibold">
                           <span>Списание бонусов</span>
                           <span>- {formatPrice(bonusDiscount)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-slate-500 font-semibold">
                         <span>Доставка</span>
-                        <span className={cartTotal >= FREE_DELIVERY_THRESHOLD ? 'text-green-600 font-bold' : 'font-semibold'}>
+                        <span className={cartTotal >= FREE_DELIVERY_THRESHOLD ? 'text-slate-900 font-bold' : 'font-semibold'}>
                           {cartTotal >= FREE_DELIVERY_THRESHOLD ? 'Бесплатно' : 'По тарифам складов'}
                         </span>
                       </div>
@@ -1239,15 +1444,15 @@ export default function CartPage({
                           {(promoPreview.valid || bonusDiscount > 0) && (
                             <span className="block text-xs text-slate-400 line-through mb-0.5">{formatPrice(cartTotal)}</span>
                           )}
-                          <span className="text-2xl font-black text-emerald-600 font-outfit">{formatPrice(finalTotal)}</span>
+                          <span className="text-2xl font-black text-slate-950 font-outfit">{formatPrice(finalTotal)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Шаг 7: Подтверждение и согласие */}
-                <div className="border-t border-slate-100 pt-6 space-y-4">
+                {/* Подтверждение оферты и кнопка "Оформить заказ" */}
+                <div className="border-t border-slate-100 pt-6 space-y-4 text-left">
                   <label className="flex items-start gap-3 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -1256,10 +1461,10 @@ export default function CartPage({
                         setFormData(prev => ({ ...prev, agreeToTerms: e.target.checked }));
                         if (e.target.checked) setTermsError(false);
                       }}
-                      className="mt-1 h-4 w-4 text-emerald-600 border-slate-355 rounded focus:ring-emerald-500 cursor-pointer"
+                      className="mt-1 h-4 w-4 text-slate-950 border-slate-300 rounded focus:ring-slate-950 cursor-pointer"
                     />
-                    <span className="text-xs text-slate-550 leading-relaxed font-semibold">
-                      Я согласен с <button type="button" onClick={() => onNavigate('legal')} className="text-emerald-600 hover:underline font-bold bg-transparent border-0 p-0 inline cursor-pointer">условиями публичной оферты</button> и обработки персональных данных *
+                    <span className="text-xs text-slate-600 leading-relaxed font-semibold">
+                      Я согласен с <button type="button" onClick={() => onNavigate('legal')} className="text-slate-950 hover:underline font-bold bg-transparent border-0 p-0 inline cursor-pointer">условиями публичной оферты</button> и обработки персональных данных *
                     </span>
                   </label>
 
@@ -1272,7 +1477,7 @@ export default function CartPage({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-slate-950 hover:bg-emerald-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 border border-transparent text-white font-extrabold py-4 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base font-outfit cursor-pointer mt-4"
+                    className="w-full bg-slate-950 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 border border-transparent text-white font-extrabold py-4 px-6 rounded-2xl shadow-xl shadow-slate-950/20 transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg font-outfit cursor-pointer mt-4"
                   >
                     {isSubmitting ? (
                       <Clock className="h-5 w-5 animate-spin" />
@@ -1291,6 +1496,124 @@ export default function CartPage({
         )}
       </div>
 
+
+      {/* Fullscreen modal to quick add new address during checkout */}
+      {showAddAddressModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-6 relative border border-slate-100 my-auto text-left">
+            <button
+              type="button"
+              onClick={() => setShowAddAddressModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
+              <MapPin className="h-6 w-6 text-[#1b5fc1] shrink-0" />
+              <h3 className="text-lg font-black text-slate-900 font-outfit">
+                {editingAddrId ? 'Редактировать адрес' : 'Добавить новый адрес'}
+              </h3>
+            </div>
+
+            <form onSubmit={handleAddNewAddress} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                {/* Left Column: Interactive Map */}
+                <div className="space-y-2">
+                  <AddressMapPicker
+                    initialCity={newAddrForm.city || 'Алматы'}
+                    initialStreet={newAddrForm.street || ''}
+                    onSelectAddress={({ city, street }) => {
+                      setNewAddrForm(f => ({
+                        ...f,
+                        city: city || f.city,
+                        street: street || ''
+                      }));
+                    }}
+                  />
+                </div>
+
+                {/* Right Column: Inputs & Form Controls */}
+                <div className="space-y-4 flex flex-col justify-between h-full">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Город *</label>
+                      <input
+                        type="text"
+                        list="city-options-list-cart-modal"
+                        value={newAddrForm.city}
+                        onChange={e => setNewAddrForm(f => ({ ...f, city: e.target.value }))}
+                        placeholder="Алматы"
+                        required
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-[#1b5fc1]"
+                      />
+                      <datalist id="city-options-list-cart-modal">
+                        {KAZAKHSTAN_CITIES.map(c => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Улица и дом *</label>
+                      <input
+                        type="text"
+                        value={newAddrForm.street}
+                        onChange={e => setNewAddrForm(f => ({ ...f, street: e.target.value }))}
+                        placeholder="пр. Абая, д. 150"
+                        required
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-[#1b5fc1]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Квартира / офис / комментарий</label>
+                      <input
+                        type="text"
+                        value={newAddrForm.details}
+                        onChange={e => setNewAddrForm(f => ({ ...f, details: e.target.value }))}
+                        placeholder="кв. 42, 5 этаж, код 123"
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-[#1b5fc1]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="modalIsDefaultCheck"
+                        checked={newAddrForm.isDefault}
+                        onChange={e => setNewAddrForm(f => ({ ...f, isDefault: e.target.checked }))}
+                        className="h-4 w-4 text-[#1b5fc1] rounded border-slate-300 focus:ring-[#1b5fc1] cursor-pointer"
+                      />
+                      <label htmlFor="modalIsDefaultCheck" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                        Сделать основным адресом
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="submit"
+                      disabled={savingNewAddr}
+                      className="flex-1 py-3.5 bg-slate-950 hover:bg-[#1b5fc1] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center"
+                    >
+                      {savingNewAddr ? 'Сохранение...' : 'Сохранить и выбрать'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddAddressModal(false)}
+                      className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
 
       </div>
     </div>

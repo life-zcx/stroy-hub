@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 const KNOWN_PAGES = [
   'catalog', 'advisor', 'estimate', 'delivery', 'about', 'legal', 'favorites',
-  'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions', 'my-promotions', 'cart', 'cashback', 'cashback/history',
+  'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions', 'my-promotions', 'cart', 'checkout', 'cashback', 'cashback/history',
   'cabinet', 'cabinet/orders', 'cabinet/cashback', 'cabinet/promotions',
 ];
 
@@ -112,7 +112,7 @@ export default function useNavigation() {
     }
 
     window.history.pushState({}, '', path);
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openProductPage = (productId) => {

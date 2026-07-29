@@ -117,19 +117,21 @@ export default function ProductCard({
         onClick={() => onOpenDetails && onOpenDetails(product.id)}
       >
         {/* ── Image zone ── */}
-        <div className="h-56 sm:h-60 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative p-4">
+        <div className="aspect-square bg-slate-50/80 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative p-3 sm:p-4">
           <img
             src={imageSrc}
             alt={product.name}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-contain mix-blend-multiply"
+            className="w-full h-full object-contain"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = FALLBACK_PRODUCT_IMAGE;
             }}
           />
         </div>
+
+
 
         {/* ── Content ── */}
         <div className="flex flex-col flex-1 p-4 pb-0 min-w-0 w-full">

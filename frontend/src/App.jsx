@@ -528,7 +528,7 @@ export default function App() {
           />
         )}
 
-        {currentPage === 'cart' && (
+        {(currentPage === 'cart' || currentPage === 'checkout') && (
           <CartPage
             cart={cart.cart}
             onUpdateQuantity={cart.handleUpdateQuantity}
@@ -536,10 +536,12 @@ export default function App() {
             onClearCart={cart.handleClearCart}
             showToast={showToast}
             customer={auth.customer}
+            onCustomerUpdate={handleCustomerUpdate}
             onOpenAuth={() => auth.setAuthModalOpen(true)}
             onNavigate={setCurrentPage}
             bonuses={bonuses}
             onAddToCart={cart.handleAddToCart}
+            currentPage={currentPage}
           />
         )}
 

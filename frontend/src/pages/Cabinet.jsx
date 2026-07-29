@@ -1,13 +1,332 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, Building2, ClipboardList, Tag, LogOut, Edit3, Check, X,
-  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift,
+  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift, Plus, Trash2, CheckCircle2, Star,
 } from 'lucide-react';
 import { updateProfile, forgotPassword, resetPassword } from '../services/api';
 import { CABINET_TAB_PATHS } from '../hooks/useNavigation';
 import MyOrders from './MyOrders';
 import MyPromotions from './MyPromotions';
 import { formatPrice } from '../utils/formatPrice';
+import AddressMapPicker from '../components/AddressMapPicker';
+
+// ─── Kazakhstan cities for profile addresses ──────────────────────────────────
+const KAZAKHSTAN_CITIES = [
+  'Алматы', 'Астана', 'Шымкент', 'Караганда', 'Тараз', 'Павлодар', 'Кызылорда', 'Актобе',
+  'Усть-Каменогорск', 'Семей', 'Атырау', 'Актау', 'Уральск', 'Костанай', 'Петропавловск',
+  'Темиртау', 'Туркестан', 'Кокшетау', 'Талдыкорган', 'Экибастуз', 'Рудный', 'Жанаозен'
+];
+
+// ─── User Addresses Section ───────────────────────────────────────────────────
+function UserAddressesSection({ customer, showToast, onCustomerUpdate }) {
+  const [addresses, setAddresses] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    city: 'Алматы',
+    street: '',
+    details: '',
+    isDefault: false
+  });
+
+  useEffect(() => {
+    if (customer?.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
+      setAddresses(customer.addresses);
+    } else if (customer?.address) {
+      setAddresses([{
+        id: 'legacy_1',
+        city: 'Алматы',
+        street: customer.address,
+        details: '',
+        isDefault: true
+      }]);
+    } else {
+      setAddresses([]);
+    }
+  }, [customer]);
+
+  const saveAddressesToBackend = async (newAddresses) => {
+    setSaving(true);
+    try {
+      const defaultAddrObj = newAddresses.find(a => a.isDefault) || newAddresses[0];
+      const defaultAddrStr = defaultAddrObj 
+        ? `г. ${defaultAddrObj.city ? defaultAddrObj.city : ''}, ${defaultAddrObj.street}${defaultAddrObj.details ? `, ${defaultAddrObj.details}` : ''}`
+        : '';
+      
+      const updated = await updateProfile({
+        addresses: newAddresses,
+        address: defaultAddrStr
+      });
+      onCustomerUpdate?.(updated);
+      showToast?.('Адреса сохранены');
+      setShowAddForm(false);
+      setEditingId(null);
+      setAddressForm({ city: 'Алматы', street: '', details: '', isDefault: false });
+    } catch (err) {
+      showToast?.('Ошибка сохранения адреса');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSetDefault = (id) => {
+    const updated = addresses.map(a => ({
+      ...a,
+      isDefault: a.id === id
+    }));
+    setAddresses(updated);
+    saveAddressesToBackend(updated);
+  };
+
+  const handleDelete = (id) => {
+    const updated = addresses.filter(a => a.id !== id);
+    if (updated.length > 0 && !updated.some(a => a.isDefault)) {
+      updated[0].isDefault = true;
+    }
+    setAddresses(updated);
+    saveAddressesToBackend(updated);
+  };
+
+  const handleSaveForm = (e) => {
+    e.preventDefault();
+    if (!addressForm.street.trim()) {
+      showToast?.('Укажите улицу и дом');
+      return;
+    }
+
+    let updated = [];
+    if (editingId) {
+      updated = addresses.map(a => a.id === editingId ? { ...addressForm, id: editingId } : a);
+    } else {
+      const newId = 'addr_' + Date.now();
+      const isFirst = addresses.length === 0;
+      const shouldBeDefault = addressForm.isDefault || isFirst;
+      updated = [...addresses, { ...addressForm, id: newId, isDefault: shouldBeDefault }];
+    }
+
+    if (addressForm.isDefault) {
+      const activeId = editingId || updated[updated.length - 1].id;
+      updated = updated.map(a => ({
+        ...a,
+        isDefault: a.id === activeId
+      }));
+    }
+
+    setAddresses(updated);
+    saveAddressesToBackend(updated);
+  };
+
+  const handleStartEdit = (addr) => {
+    setEditingId(addr.id);
+    setAddressForm({
+      city: addr.city || 'Алматы',
+      street: addr.street || '',
+      details: addr.details || '',
+      isDefault: !!addr.isDefault
+    });
+    setShowAddForm(true);
+  };
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2.5">
+          <MapPin className="h-5 w-5 text-[#1b5fc1]" />
+          <div className="text-left">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Адреса доставки</h3>
+            <p className="text-xs text-slate-400 font-medium">Управляйте сохраненными адресами доставки для быстрой покупки</p>
+          </div>
+        </div>
+        {!showAddForm && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditingId(null);
+              setAddressForm({
+                city: 'Алматы',
+                street: '',
+                details: '',
+                isDefault: addresses.length === 0
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center gap-1.5 bg-[#ecf3fe] hover:bg-[#deebff] text-[#1b5fc1] px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Добавить адрес
+          </button>
+        )}
+      </div>
+
+      {showAddForm && (
+        <form onSubmit={handleSaveForm} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 animate-fade-in text-left">
+          <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+            {editingId ? 'Редактирование адреса' : 'Новый адрес доставки'}
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            {/* Map Address Picker */}
+            <div>
+              <AddressMapPicker
+                initialCity={addressForm.city || 'Алматы'}
+                initialStreet={addressForm.street || ''}
+                onSelectAddress={({ city, street }) => {
+                  setAddressForm(f => ({
+                    ...f,
+                    city: city || f.city,
+                    street: street || ''
+                  }));
+                }}
+              />
+            </div>
+
+            {/* Inputs */}
+            <div className="space-y-4 flex flex-col justify-between h-full">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Город *</label>
+                  <input
+                    type="text"
+                    list="city-options-list-cab"
+                    value={addressForm.city}
+                    onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Алматы"
+                    required
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#1b5fc1]"
+                  />
+                  <datalist id="city-options-list-cab">
+                    {KAZAKHSTAN_CITIES.map(c => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Улица и дом *</label>
+                  <input
+                    type="text"
+                    value={addressForm.street}
+                    onChange={e => setAddressForm(f => ({ ...f, street: e.target.value }))}
+                    placeholder="пр. Абая, д. 150"
+                    required
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#1b5fc1]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Квартира / офис, этаж, подъезд (опционально)</label>
+                  <input
+                    type="text"
+                    value={addressForm.details}
+                    onChange={e => setAddressForm(f => ({ ...f, details: e.target.value }))}
+                    placeholder="кв. 42, 5 этаж, код 123"
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-[#1b5fc1]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="isDefaultAddrCheck"
+                    checked={addressForm.isDefault}
+                    onChange={e => setAddressForm(f => ({ ...f, isDefault: e.target.checked }))}
+                    className="h-4 w-4 text-[#1b5fc1] rounded border-slate-300 focus:ring-[#1b5fc1] cursor-pointer"
+                  />
+                  <label htmlFor="isDefaultAddrCheck" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    Сделать основным адресом для заказов
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Сохранить адрес
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingId(null);
+                  }}
+                  className="px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* Address cards list */}
+      <div className="divide-y divide-slate-100 border-t border-b border-slate-100 text-left">
+        {addresses.length === 0 && !showAddForm && (
+          <div className="py-6 text-center text-slate-400 text-xs font-medium">
+            У вас пока нет сохраненных адресов. Нажмите «Добавить адрес», чтобы создать ваш адрес доставки.
+          </div>
+        )}
+
+        {addresses.map((addr) => (
+          <div
+            key={addr.id}
+            className="py-3.5 flex items-center justify-between gap-3 group"
+          >
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="mt-0.5 shrink-0">
+                <MapPin className="w-5 h-5 text-slate-400" />
+              </div>
+              <div className="text-left space-y-0.5 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">
+                  {addr.city ? `${addr.city}, ` : ''}{addr.street}
+                </p>
+                {addr.details && (
+                  <p className="text-xs font-normal text-slate-500 truncate">
+                    {addr.details}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSetDefault(addr.id)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                title={addr.isDefault ? "Основной адрес" : "Сделать основным"}
+              >
+                <Star className={`w-4 h-4 ${addr.isDefault ? 'text-[#1b5fc1] fill-[#1b5fc1]' : 'text-slate-400 hover:text-slate-600'}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleStartEdit(addr)}
+                className="p-1.5 text-slate-400 hover:text-[#1b5fc1] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                title="Редактировать"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDelete(addr.id)}
+                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                title="Удалить"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ─── Profile edit tab ─────────────────────────────────────────────────────────
 function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
@@ -16,7 +335,6 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
   const [form, setForm] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
-    address: customer?.address || '',
     companyBin: customer?.companyBin || '',
     companyName: customer?.companyName || '',
     directorName: customer?.directorName || '',
@@ -38,7 +356,6 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
     setForm({
       name: customer?.name || '',
       phone: customer?.phone || '',
-      address: customer?.address || '',
       companyBin: customer?.companyBin || '',
       companyName: customer?.companyName || '',
       directorName: customer?.directorName || '',
@@ -66,7 +383,6 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
     setForm({
       name: customer?.name || '',
       phone: customer?.phone || '',
-      address: customer?.address || '',
       companyBin: customer?.companyBin || '',
       companyName: customer?.companyName || '',
       directorName: customer?.directorName || '',
@@ -186,7 +502,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto justify-center inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-100 whitespace-nowrap text-center cursor-pointer"
+                className="w-full sm:w-auto justify-center inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white bg-slate-950 hover:bg-slate-800 px-4 py-2.5 rounded-xl transition-all shadow-md whitespace-nowrap text-center cursor-pointer"
               >
                 Панель управления
               </a>
@@ -321,25 +637,10 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
           )}
         </div>
 
-        {/* Address */}
-        <div>
-          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Адрес доставки</label>
-          {editing ? (
-            <textarea value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-              rows={2} placeholder="г. Алматы, ул. ..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition resize-none" />
-          ) : (
-            <div className="flex items-start gap-3 px-4 py-3 bg-slate-50 rounded-xl border border-slate-100">
-              <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-              <span className="text-sm font-semibold text-slate-800">{customer?.address || 'Не указан'}</span>
-            </div>
-          )}
-        </div>
-
         {editing && (
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md">
+              className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 disabled:opacity-60 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer">
               {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
@@ -351,6 +652,13 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
           </div>
         )}
       </div>
+
+      {/* User Addresses Card */}
+      <UserAddressesSection
+        customer={customer}
+        showToast={showToast}
+        onCustomerUpdate={onCustomerUpdate}
+      />
 
       {/* Change Password Card */}
       <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
@@ -387,7 +695,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                     type="button"
                     onClick={handleSendCode}
                     disabled={sendingCode}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                    className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 disabled:opacity-60 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
                   >
                     {sendingCode ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                     {sendingCode ? 'Отправка...' : 'Получить код на email'}
@@ -411,7 +719,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                     type="text"
                     value={pwdForm.code}
                     onChange={e => setPwdForm(p => ({ ...p, code: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-950/30 focus:border-slate-950 transition"
                     placeholder="Введите 6-значный код"
                   />
                 </div>
@@ -423,7 +731,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                     type="password"
                     value={pwdForm.newPassword}
                     onChange={e => setPwdForm(p => ({ ...p, newPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-950/30 focus:border-slate-950 transition"
                     placeholder="Минимум 6 символов"
                   />
                 </div>
@@ -435,7 +743,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                     type="password"
                     value={pwdForm.confirmPassword}
                     onChange={e => setPwdForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-950/30 focus:border-slate-950 transition"
                     placeholder="Повторите новый пароль"
                   />
                 </div>
@@ -446,7 +754,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
                     type="button"
                     onClick={handleSavePassword}
                     disabled={savingPwd}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                    className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 disabled:opacity-60 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
                   >
                     {savingPwd ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     {savingPwd ? 'Сохранение...' : 'Обновить пароль'}

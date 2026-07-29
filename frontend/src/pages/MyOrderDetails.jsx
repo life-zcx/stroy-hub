@@ -65,7 +65,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
         <button
           type="button"
           onClick={onOpenAuth}
-          className="mt-6 rounded-xl bg-slate-950 px-6 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600"
+          className="mt-6 rounded-xl bg-slate-950 px-6 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-slate-800"
         >
           Войти в аккаунт
         </button>
@@ -90,7 +90,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
         <button
           type="button"
           onClick={() => onNavigate('orders')}
-          className="mt-6 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600"
+          className="mt-6 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-slate-800"
         >
           Вернуться к списку
         </button>
@@ -256,7 +256,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                             <button
                               type="button"
                               onClick={() => setSelectedProductForReview(item.product)}
-                              className="px-3.5 py-2 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                              className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
                             >
                               Оценить товар
                             </button>
@@ -356,13 +356,13 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
               )}
               <div className="flex justify-between gap-4 border-t border-slate-100 pt-3.5 text-base">
                 <span className="font-black text-slate-950">К оплате</span>
-                <span className="font-outfit font-black text-blue-600 text-lg">{formatPrice(order.totalAmount)}</span>
+                <span className="font-outfit font-black text-slate-950 text-lg">{formatPrice(order.totalAmount)}</span>
               </div>
               
               <button
                 type="button"
                 onClick={() => handleRepeatOrder(order)}
-                className="w-full mt-5 px-4 py-3.5 bg-slate-950 hover:bg-blue-600 text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
+                className="w-full mt-5 px-4 py-3.5 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
               >
                 <Repeat className="h-4 w-4" />
                 Повторить заказ

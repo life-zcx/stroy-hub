@@ -11,8 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       devOptions: {
-        enabled: true
+        enabled: false
       },
+
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'TORMAG Admin — Панель управления',
