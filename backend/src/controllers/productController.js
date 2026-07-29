@@ -7,6 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+
 
 // Helper to clear products cache
 const clearProductsCache = async () => {
@@ -596,11 +598,18 @@ export const createProduct = async (req, res) => {
 
     // Determine image path: uploaded file or external URL
     let finalImage = 'https://placehold.co/400x300/f8fafc/475569?text=Tormag';
-    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : null;
+    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : (req.file || null);
+    const productFolderId = article || 'catalog';
+
     if (mainFile) {
-      finalImage = `/uploads/${mainFile.filename}`;
-    } else if (req.file) {
-      finalImage = `/uploads/${req.file.filename}`;
+      const uploadRes = await processAndUploadMedia({
+        buffer: mainFile.buffer,
+        filePath: mainFile.path,
+        originalname: mainFile.originalname,
+        folder: 'products',
+        entityId: productFolderId
+      });
+      finalImage = uploadRes.url;
     } else if (imageUrl) {
       finalImage = imageUrl;
     }
@@ -622,9 +631,17 @@ export const createProduct = async (req, res) => {
     }
 
     const additionalFiles = req.files && req.files['additionalImageFiles'] ? req.files['additionalImageFiles'] : [];
-    additionalFiles.forEach(file => {
-      finalImages.push(`/uploads/${file.filename}`);
-    });
+    for (const file of additionalFiles) {
+      const uploadRes = await processAndUploadMedia({
+        buffer: file.buffer,
+        filePath: file.path,
+        originalname: file.originalname,
+        folder: 'products',
+        entityId: productFolderId
+      });
+      finalImages.push(uploadRes.url);
+    }
+
 
     let parsedOptions = Prisma.DbNull;
     if (options) {
@@ -716,11 +733,18 @@ export const updateProduct = async (req, res) => {
     }
 
     let finalImage = existing.image;
-    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : null;
+    const mainFile = req.files && req.files['imageFile'] ? req.files['imageFile'][0] : (req.file || null);
+    const productFolderId = article || existing.article || id;
+
     if (mainFile) {
-      finalImage = `/uploads/${mainFile.filename}`;
-    } else if (req.file) {
-      finalImage = `/uploads/${req.file.filename}`;
+      const uploadRes = await processAndUploadMedia({
+        buffer: mainFile.buffer,
+        filePath: mainFile.path,
+        originalname: mainFile.originalname,
+        folder: 'products',
+        entityId: productFolderId
+      });
+      finalImage = uploadRes.url;
     } else if (imageUrl !== undefined) {
       finalImage = imageUrl;
     }
@@ -781,11 +805,19 @@ export const updateProduct = async (req, res) => {
     }
 
     const additionalFiles = req.files && req.files['additionalImageFiles'] ? req.files['additionalImageFiles'] : [];
-    additionalFiles.forEach(file => {
-      finalImages.push(`/uploads/${file.filename}`);
-    });
+    for (const file of additionalFiles) {
+      const uploadRes = await processAndUploadMedia({
+        buffer: file.buffer,
+        filePath: file.path,
+        originalname: file.originalname,
+        folder: 'products',
+        entityId: productFolderId
+      });
+      finalImages.push(uploadRes.url);
+    }
 
     data.images = { set: finalImages };
+
 
     if (requestedSupplierId !== undefined) {
       if (requestedSupplierId === null) {

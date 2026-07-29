@@ -1,6 +1,8 @@
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+
 
 // Helper to clear categories cache
 const clearCategoriesCache = async () => {
@@ -118,10 +120,18 @@ export const createCategory = async (req, res) => {
   // Determine image path: uploaded file or external URL
   let finalImage = null;
   if (req.file) {
-    finalImage = `/uploads/${req.file.filename}`;
+    const uploadRes = await processAndUploadMedia({
+      buffer: req.file.buffer,
+      filePath: req.file.path,
+      originalname: req.file.originalname,
+      folder: 'categories',
+      entityId: slug || name
+    });
+    finalImage = uploadRes.url;
   } else if (image) {
     finalImage = image;
   }
+
 
   // Simple cyrillic-to-latin/safe characters slugifier
   const categorySlug = slug || name
@@ -163,10 +173,18 @@ export const updateCategory = async (req, res) => {
 
     let finalImage = existing.image;
     if (req.file) {
-      finalImage = `/uploads/${req.file.filename}`;
+      const uploadRes = await processAndUploadMedia({
+        buffer: req.file.buffer,
+        filePath: req.file.path,
+        originalname: req.file.originalname,
+        folder: 'categories',
+        entityId: slug || existing.slug || id
+      });
+      finalImage = uploadRes.url;
     } else if (image !== undefined) {
       finalImage = image || null;
     }
+
 
     const data = {};
     if (name) data.name = name;

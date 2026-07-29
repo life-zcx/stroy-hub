@@ -42,57 +42,37 @@ const memoryUpload = multer({
   fileFilter,
 });
 
+import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+
 async function compressAndSaveImage(file) {
-  if (!file || !file.buffer) return;
+  if (!file || (!file.buffer && !file.path)) return;
 
-  // Magic Bytes validation for common image signatures
-  const buf = file.buffer;
-  const isJpeg = buf.length >= 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
-  const isPng = buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
-  const isGif = buf.length >= 4 && buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38;
-  const isWebp = buf.length >= 12 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
+  if (file.buffer) {
+    // Magic Bytes validation for common image signatures
+    const buf = file.buffer;
+    const isJpeg = buf.length >= 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+    const isPng = buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+    const isGif = buf.length >= 4 && buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38;
+    const isWebp = buf.length >= 12 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
 
-  if (!isJpeg && !isPng && !isGif && !isWebp) {
-    throw new Error('Недопустимый формат файла. Бинарная сигнатура файла не совпадает с изображением.');
-  }
-
-  const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-  const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-
-  if (sharp) {
-    // Validate image integrity with sharp
-    try {
-      await sharp(file.buffer).metadata();
-    } catch (err) {
-      throw new Error('Файл поврежден или не является действительным изображением.');
+    if (!isJpeg && !isPng && !isGif && !isWebp) {
+      throw new Error('Недопустимый формат файла. Бинарная сигнатура файла не совпадает с изображением.');
     }
-
-    const filename = `${uniqueSuffix}.webp`;
-    const filePath = path.join(uploadDir, filename);
-
-    // Resize to max 1200px width (keeping aspect ratio) and convert to WebP format with 80% quality
-    await sharp(file.buffer)
-      .resize({ width: 1200, withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toFile(filePath);
-
-    file.filename = filename;
-    file.path = filePath;
-    file.mimetype = 'image/webp';
-  } else {
-    // Fallback: save as original format if sharp is not installed
-    const filename = `${uniqueSuffix}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-
-    fs.writeFileSync(filePath, file.buffer);
-
-    file.filename = filename;
-    file.path = filePath;
   }
 
-  // Free memory buffer
-  delete file.buffer;
+  const result = await processAndUploadMedia({
+    buffer: file.buffer,
+    filePath: file.path,
+    originalname: file.originalname || 'image.jpg',
+    folder: 'general',
+  });
+
+  file.filename = path.basename(result.key || result.url);
+  file.path = result.url;
+  file.url = result.url;
+  file.mimetype = 'image/webp';
 }
+
 
 const wrapMiddleware = (middleware) => {
   return [

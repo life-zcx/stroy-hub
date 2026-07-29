@@ -14,9 +14,18 @@ const clearBrandsCache = async () => {
   }
 };
 
-function buildLogoPath(req, existingLogo = null) {
+import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+
+async function buildLogoPath(req, existingLogo = null, brandName = null) {
   if (req.file) {
-    return `/uploads/${req.file.filename}`;
+    const uploadRes = await processAndUploadMedia({
+      buffer: req.file.buffer,
+      filePath: req.file.path,
+      originalname: req.file.originalname,
+      folder: 'brands',
+      entityId: brandName || req.body.name
+    });
+    return uploadRes.url;
   }
 
   if (req.body.logo !== undefined) {
@@ -25,6 +34,7 @@ function buildLogoPath(req, existingLogo = null) {
 
   return existingLogo;
 }
+
 
 function normalizeBrandData(body) {
   const name = String(body.name || '').trim();
@@ -95,13 +105,14 @@ export const createBrand = async (req, res) => {
   }
 
   try {
+    const logoUrl = await buildLogoPath(req, null, name);
     const brand = await prisma.brand.create({
       data: {
         name,
         description,
         isActive,
         sortOrder,
-        logo: buildLogoPath(req),
+        logo: logoUrl,
       },
     });
 
@@ -132,12 +143,14 @@ export const updateBrand = async (req, res) => {
       return res.status(404).json({ error: 'Бренд не найден.' });
     }
 
+    const logoUrl = await buildLogoPath(req, existingBrand.logo, name || existingBrand.name);
     const data = {
       description,
       isActive,
       sortOrder,
-      logo: buildLogoPath(req, existingBrand.logo),
+      logo: logoUrl,
     };
+
 
     if (name) {
       data.name = name;

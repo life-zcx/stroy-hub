@@ -448,9 +448,19 @@ export const getAllPromotions = async (req, res) => {
     res.status(500).json({ error: 'Ошибка получения списка акций: ' + error.message });
   }
 };
-function extractImagePath(req, fieldName, bodyValue, existingImage = null) {
+import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+
+async function extractImagePath(req, fieldName, bodyValue, existingImage = null) {
   if (req.files && req.files[fieldName] && req.files[fieldName][0]) {
-    return `/uploads/${req.files[fieldName][0].filename}`;
+    const file = req.files[fieldName][0];
+    const uploadRes = await processAndUploadMedia({
+      buffer: file.buffer,
+      filePath: file.path,
+      originalname: file.originalname,
+      folder: 'promotions',
+      entityId: req.body.promoCode || 'promo'
+    });
+    return uploadRes.url;
   }
 
   if (bodyValue !== undefined) {
@@ -460,9 +470,10 @@ function extractImagePath(req, fieldName, bodyValue, existingImage = null) {
   return existingImage;
 }
 
+
 export const createPromotion = async (req, res) => {
-  const imageCard = extractImagePath(req, 'imageCardFile', req.body.imageCard);
-  const imageDetail = extractImagePath(req, 'imageDetailFile', req.body.imageDetail);
+  const imageCard = await extractImagePath(req, 'imageCardFile', req.body.imageCard);
+  const imageDetail = await extractImagePath(req, 'imageDetailFile', req.body.imageDetail);
   const image = imageCard || imageDetail || null;
 
   const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
@@ -510,9 +521,10 @@ export const updatePromotion = async (req, res) => {
       return res.status(404).json({ error: 'Акция не найдена.' });
     }
 
-    const imageCard = extractImagePath(req, 'imageCardFile', req.body.imageCard, existingPromotion.imageCard);
-    const imageDetail = extractImagePath(req, 'imageDetailFile', req.body.imageDetail, existingPromotion.imageDetail);
+    const imageCard = await extractImagePath(req, 'imageCardFile', req.body.imageCard, existingPromotion.imageCard);
+    const imageDetail = await extractImagePath(req, 'imageDetailFile', req.body.imageDetail, existingPromotion.imageDetail);
     const image = imageCard || imageDetail || null;
+
 
     const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
 
