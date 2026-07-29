@@ -69,6 +69,12 @@ services:
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-5}
       REDIS_URL: redis://redis:6379
       TELEGRAM_API_BASE: http://telegram-bot-api:8081
+      R2_ENDPOINT: ${R2_ENDPOINT:-https://c76de101549eefb8d4eb446071ee06c8.r2.cloudflarestorage.com}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-62222d2b93963f0c90bd347e91de6a21}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-9f1555ccb0637c53d221868e20175b90653c4891f010ee20f3053850f6e41dd8}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-tormag-media}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-https://media.tormag.kz}
+
     ports:
       - "5000:5000"
     volumes:

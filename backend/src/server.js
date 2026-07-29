@@ -33,6 +33,8 @@ import prisma from './config/db.js';
 import redisClient from './config/redis.js';
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
