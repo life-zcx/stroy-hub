@@ -14,6 +14,7 @@ const buildUserPayload = (user) => ({
   name: user.name,
   phone: user.phone,
   address: user.address,
+  addresses: user.addresses || [],
   entityType: user.entityType || 'PHYSICAL',
   companyBin: user.companyBin || null,
   companyName: user.companyName || null,
@@ -373,6 +374,7 @@ export const updateProfile = async (req, res) => {
     name,
     phone,
     address,
+    addresses,
     oldPassword,
     newPassword,
     entityType,
@@ -392,16 +394,23 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    // Optional phone validation if phone is provided
-    if (phone) {
+    // Optional phone validation and normalization if phone is provided
+    let processedPhone = phone;
+    if (processedPhone && typeof processedPhone === 'string' && processedPhone.trim()) {
+      let rawDigits = processedPhone.replace(/[^\d]/g, '');
+      if (rawDigits.length === 11 && (rawDigits.startsWith('8') || rawDigits.startsWith('7'))) {
+        const last10 = rawDigits.slice(1);
+        processedPhone = `+7 (${last10.slice(0,3)}) ${last10.slice(3,6)}-${last10.slice(6,8)}-${last10.slice(8,10)}`;
+        rawDigits = '7' + last10;
+      }
+
       const phoneRegex = /^\+7\s\(\d{3}\)\s\d{3}-\d{2}-\d{2}$/;
-      if (!phoneRegex.test(phone)) {
+      if (!phoneRegex.test(processedPhone)) {
         return res.status(400).json({ error: 'Неверный формат номера телефона. Используйте шаблон +7 (707) 123-45-67' });
       }
 
       // Check if phone is already taken by another user
-      const digits = phone.replace(/[^\d]/g, '');
-      const last10Digits = digits.slice(-10);
+      const last10Digits = rawDigits.slice(-10);
       const otherMatched = await prisma.$queryRaw`
         SELECT id FROM "User" 
         WHERE "id" != ${req.user.id}
@@ -409,8 +418,7 @@ export const updateProfile = async (req, res) => {
           AND RIGHT(REGEXP_REPLACE("phone", '[^\d]', '', 'g'), 10) = ${last10Digits}
         LIMIT 1
       `;
-      const phoneTaken = otherMatched.length > 0;
-      if (phoneTaken) {
+      if (otherMatched.length > 0) {
         return res.status(400).json({ error: 'Пользователь с таким номером телефона уже зарегистрирован' });
       }
     }
@@ -434,8 +442,9 @@ export const updateProfile = async (req, res) => {
       where: { id: req.user.id },
       data: {
         name: name !== undefined ? name : undefined,
-        phone: phone !== undefined ? phone : undefined,
+        phone: processedPhone !== undefined ? processedPhone : undefined,
         address: address !== undefined ? address : undefined,
+        addresses: addresses !== undefined ? addresses : undefined,
         password: hashedPassword !== undefined ? hashedPassword : undefined,
         entityType: entityType !== undefined ? entityType : undefined,
         companyBin: companyBin !== undefined ? companyBin : undefined,

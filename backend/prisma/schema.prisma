@@ -36,6 +36,7 @@ model User {
   name       String?
   phone      String?
   address    String?
+  addresses  Json?
   entityType String    @default("PHYSICAL")
   companyBin String?
   companyName String?
