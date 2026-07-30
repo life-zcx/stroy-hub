@@ -384,7 +384,7 @@ export default function Header({
     e.preventDefault();
     if (activeSuggestionIndex >= 0 && matchedProducts[activeSuggestionIndex]) {
       const selectedProduct = matchedProducts[activeSuggestionIndex];
-      onNavigate('product', selectedProduct.id);
+      onNavigate('product', selectedProduct.slug || selectedProduct.id);
       setLocalSearchQuery('');
       setIsSearchFocused(false);
       setActiveSuggestionIndex(-1);
@@ -505,9 +505,9 @@ export default function Header({
                 {matchedProducts.map((p, idx) => (
                   <Link
                     key={p.id}
-                    href={getPageHref('product', p.id)}
+                    href={getPageHref('product', p.slug || p.id)}
                     onClick={() => {
-                      onNavigate('product', p.id);
+                      onNavigate('product', p.slug || p.id);
                       setSearchQuery('');
                       setIsSearchFocused(false);
                       setIsMobileMenuOpen(false);
@@ -990,9 +990,9 @@ export default function Header({
                     {matchedProducts.map((p, idx) => (
                       <Link
                         key={p.id}
-                        href={getPageHref('product', p.id)}
+                        href={getPageHref('product', p.slug || p.id)}
                         onClick={() => {
-                          onNavigate('product', p.id);
+                          onNavigate('product', p.slug || p.id);
                           setLocalSearchQuery('');
                           setIsSearchFocused(false);
                         }}

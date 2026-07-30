@@ -80,9 +80,13 @@ export const getProductReviews = async (req, res) => {
   const { productId } = req.params;
 
   try {
-    const parsedProductId = parseInt(productId, 10);
+    let parsedProductId = parseInt(productId, 10);
     if (isNaN(parsedProductId)) {
-      return res.status(400).json({ error: 'Неверный идентификатор товара.' });
+      const p = await prisma.product.findFirst({ where: { slug: productId }, select: { id: true } });
+      if (!p) {
+        return res.status(404).json({ error: 'Товар не найден.' });
+      }
+      parsedProductId = p.id;
     }
 
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
@@ -155,9 +159,13 @@ export const createProductReview = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const parsedProductId = parseInt(productId, 10);
+    let parsedProductId = parseInt(productId, 10);
     if (isNaN(parsedProductId)) {
-      return res.status(400).json({ error: 'Неверный идентификатор товара.' });
+      const p = await prisma.product.findFirst({ where: { slug: productId }, select: { id: true } });
+      if (!p) {
+        return res.status(404).json({ error: 'Товар не найден.' });
+      }
+      parsedProductId = p.id;
     }
 
     const parsedRating = parseInt(rating, 10);

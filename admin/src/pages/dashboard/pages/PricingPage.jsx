@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import {
   Sparkles, DollarSign, TrendingUp, SlidersHorizontal, Info,
-  RefreshCw, Save, Percent, Star,
+  RefreshCw, Save, Percent, Star, History,
   Search as SearchIcon, ChevronLeft, ChevronRight, ChevronDown
 } from 'lucide-react';
-import { getProductsPaged, getPricingSettings, savePricingSettings, getCategories } from '../../../services/api';
+import { getProductsPaged, getPricingSettings, savePricingSettings, getCategories, getPriceLogs } from '../../../services/api';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(price);
@@ -68,6 +68,32 @@ export default function PricingPage({ showToast }) {
 
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
+
+  /* ─── Price Change Logs Modal State ─────────────────────────────── */
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [priceLogs, setPriceLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+
+  const fetchPriceLogs = useCallback(async (p = 1) => {
+    setLogsLoading(true);
+    try {
+      const res = await getPriceLogs({ page: p, limit: 20 });
+      setPriceLogs(res.data || []);
+      setLogsPage(res.page || 1);
+      setLogsTotalPages(res.totalPages || 1);
+    } catch (err) {
+      console.error('Failed to load price logs:', err);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, []);
+
+  const handleOpenLogsModal = () => {
+    setIsLogsModalOpen(true);
+    fetchPriceLogs(1);
+  };
 
   /* ─── Database Categories & Expanded state ──────────────────────── */
   const [dbCategories, setDbCategories] = useState([]);
@@ -386,6 +412,13 @@ export default function PricingPage({ showToast }) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={handleOpenLogsModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm cursor-pointer border-0 font-sans"
+          >
+            <History className="h-4 w-4 text-slate-500" />
+            История цен
+          </button>
+          <button
             onClick={() => setIsCostModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm cursor-pointer border-0 font-sans"
           >
@@ -460,10 +493,10 @@ export default function PricingPage({ showToast }) {
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Поиск..."
+                  placeholder="Поиск по названию, ID, артикулу..."
                   value={search}
                   onChange={handleSearchChange}
-                  className="pl-8 pr-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 w-40 transition-all"
+                  className="pl-8 pr-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 w-64 sm:w-72 transition-all"
                 />
               </div>
               <span className="text-xs font-bold text-slate-500 bg-slate-100 py-1 px-3 rounded-full shrink-0">
@@ -843,6 +876,120 @@ export default function PricingPage({ showToast }) {
                 Сохранить настройки
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ─── Price Change Logs Modal ───────────────────────────────── */}
+      {isLogsModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsLogsModalOpen(false)}>
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-slate-800" />
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 font-outfit uppercase tracking-wider">История изменений цен</h3>
+                  <p className="text-xs text-slate-400 font-medium">Журнал всех изменений розничных и оптовых цен</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsLogsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition-all border-0 cursor-pointer font-sans"
+              >
+                ✕ Закрыть
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {logsLoading ? (
+                <div className="py-16 flex flex-col items-center justify-center text-slate-400">
+                  <RefreshCw className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Загрузка журнала цен...</p>
+                </div>
+              ) : priceLogs.length === 0 ? (
+                <div className="py-16 text-center text-slate-400">
+                  <p className="text-xs font-bold uppercase tracking-widest">Записи изменений цен пока отсутствуют</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-150 rounded-2xl">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-150 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <th className="py-3 px-4">Дата и время</th>
+                        <th className="py-3 px-4">Тип действия</th>
+                        <th className="py-3 px-4">Товар / Детали</th>
+                        <th className="py-3 px-4 text-right">Было (₸)</th>
+                        <th className="py-3 px-4 text-right">Стало (₸)</th>
+                        <th className="py-3 px-4">Кто изменил</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                      {priceLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3 px-4 text-slate-450 font-medium text-[11px]">
+                            {new Date(log.createdAt).toLocaleDateString('ru-RU')} {new Date(log.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                              log.changeType === 'PRODUCT_UPDATE'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : log.changeType === 'MARKUP_CHANGE'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {log.changeType === 'PRODUCT_UPDATE' ? 'Товар' : log.changeType === 'MARKUP_CHANGE' ? 'Наценки' : log.changeType}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-extrabold text-slate-900">{log.productName || 'Реестр цен'}</div>
+                            {log.details && <div className="text-[10px] text-slate-400 font-normal mt-0.5">{log.details}</div>}
+                          </td>
+                          <td className="py-3 px-4 text-right text-slate-450 font-mono">
+                            {log.oldPrice !== null ? formatPrice(log.oldPrice) : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-right font-black text-slate-900 font-mono">
+                            {log.newPrice !== null ? formatPrice(log.newPrice) : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                            {log.changedBy || 'Администратор'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {logsTotalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Страница <b className="text-slate-800">{logsPage}</b> из <b className="text-slate-800">{logsTotalPages}</b>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fetchPriceLogs(logsPage - 1)}
+                      disabled={logsPage <= 1 || logsLoading}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 border-0 cursor-pointer"
+                    >
+                      ← Назад
+                    </button>
+                    <button
+                      onClick={() => fetchPriceLogs(logsPage + 1)}
+                      disabled={logsPage >= logsTotalPages || logsLoading}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 disabled:opacity-40 border-0 cursor-pointer"
+                    >
+                      Вперед →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>,
         document.body

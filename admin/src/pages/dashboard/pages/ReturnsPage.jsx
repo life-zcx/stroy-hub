@@ -9,6 +9,12 @@ import {
   Eye
 } from 'lucide-react';
 
+const formatPhotoUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return url.startsWith('/') ? url : `/${url}`;
+};
+
 export default function ReturnsPage({
   returns = [],
   onUpdateStatus,
@@ -196,10 +202,18 @@ export default function ReturnsPage({
               <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm space-y-3">
                 <h5 className="text-xs font-black uppercase tracking-wider text-slate-400">Прикрепленное фото</h5>
                 <div 
-                  className="relative w-48 h-48 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer group shadow-sm hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedPhoto(ret.photoUrl)}
+                  className="relative w-48 h-48 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer group shadow-sm hover:shadow-md transition-shadow bg-slate-50"
+                  onClick={() => setSelectedPhoto(formatPhotoUrl(ret.photoUrl))}
                 >
-                  <img src={ret.photoUrl} className="w-full h-full object-cover" alt="Attached return product" />
+                  <img 
+                    src={formatPhotoUrl(ret.photoUrl)} 
+                    className="w-full h-full object-cover" 
+                    alt="Attached return product"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://placehold.co/400x400?text=Ошибка+загрузки+фото';
+                    }}
+                  />
                   <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                     <Eye className="h-5 w-5" />
                   </div>

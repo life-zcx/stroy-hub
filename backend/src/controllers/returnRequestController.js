@@ -97,10 +97,9 @@ export const createReturnRequest = async (req, res) => {
       });
     }
 
-    // Get photo path
     let photoUrl = null;
     if (req.file) {
-      photoUrl = `/uploads/${req.file.filename}`;
+      photoUrl = req.file.url || req.file.path || (req.file.filename ? `/uploads/${req.file.filename}` : null);
     }
 
     // 4. Create return request

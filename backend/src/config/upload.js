@@ -44,7 +44,7 @@ const memoryUpload = multer({
 
 import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
 
-async function compressAndSaveImage(file) {
+async function compressAndSaveImage(file, folderName = 'general') {
   if (!file || (!file.buffer && !file.path)) return;
 
   if (file.buffer) {
@@ -64,7 +64,7 @@ async function compressAndSaveImage(file) {
     buffer: file.buffer,
     filePath: file.path,
     originalname: file.originalname || 'image.jpg',
-    folder: 'general',
+    folder: folderName,
   });
 
   file.filename = path.basename(result.key || result.url);
@@ -74,23 +74,23 @@ async function compressAndSaveImage(file) {
 }
 
 
-const wrapMiddleware = (middleware) => {
+const wrapMiddleware = (middleware, folderName = 'general') => {
   return [
     middleware,
     async (req, res, next) => {
       try {
         if (req.file) {
-          await compressAndSaveImage(req.file);
+          await compressAndSaveImage(req.file, folderName);
         }
         if (req.files) {
           if (Array.isArray(req.files)) {
             for (const file of req.files) {
-              await compressAndSaveImage(file);
+              await compressAndSaveImage(file, folderName);
             }
           } else {
             for (const field of Object.keys(req.files)) {
               for (const file of req.files[field]) {
-                await compressAndSaveImage(file);
+                await compressAndSaveImage(file, folderName);
               }
             }
           }
@@ -103,13 +103,16 @@ const wrapMiddleware = (middleware) => {
   ];
 };
 
-export const imageUpload = {
-  single: (field) => wrapMiddleware(memoryUpload.single(field)),
-  array: (field, maxCount) => wrapMiddleware(memoryUpload.array(field, maxCount)),
-  fields: (fields) => wrapMiddleware(memoryUpload.fields(fields)),
+export const createImageUploader = (folderName = 'general') => ({
+  single: (field) => wrapMiddleware(memoryUpload.single(field), folderName),
+  array: (field, maxCount) => wrapMiddleware(memoryUpload.array(field, maxCount), folderName),
+  fields: (fields) => wrapMiddleware(memoryUpload.fields(fields), folderName),
   none: () => memoryUpload.none(),
-  any: () => wrapMiddleware(memoryUpload.any()),
-};
+  any: () => wrapMiddleware(memoryUpload.any(), folderName),
+});
+
+export const imageUpload = createImageUploader('products');
+export const returnImageUpload = createImageUploader('returns');
 
 const allowedExcelMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

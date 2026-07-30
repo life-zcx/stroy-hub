@@ -69,6 +69,10 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
+      '/_ipx': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+      },
       '/api': {
         target: apiProxyTarget,
         changeOrigin: true,

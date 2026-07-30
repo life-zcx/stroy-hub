@@ -6,12 +6,12 @@ import {
   updateReturnRequestStatus
 } from '../controllers/returnRequestController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
-import { imageUpload } from '../config/upload.js';
+import { returnImageUpload } from '../config/upload.js';
 
 const router = express.Router();
 
 // Client routes
-router.post('/', verifyToken, imageUpload.single('photoFile'), createReturnRequest);
+router.post('/', verifyToken, returnImageUpload.single('photoFile'), createReturnRequest);
 router.get('/my', verifyToken, getMyReturnRequests);
 
 // Admin routes

@@ -74,6 +74,11 @@ export const savePricingSettings = async (settings) => {
   return response.data;
 };
 
+export const getPriceLogs = async (params = {}) => {
+  const response = await api.get('/products/pricing/logs', { params });
+  return response.data;
+};
+
 export const createProduct = async (formData) => {
   const response = await api.post('/products', formData, {
     headers: {

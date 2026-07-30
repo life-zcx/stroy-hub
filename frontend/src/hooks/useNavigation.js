@@ -38,9 +38,9 @@ const getInitialPage = () => {
   }
 
   // Product page check
-  const productMatch = path.match(/^product\/(\d+)$/);
+  const productMatch = path.match(/^product\/(.+)$/);
   if (productMatch) {
-    return { page: 'product', productId: productMatch[1], categorySlug: null, orderId: null };
+    return { page: 'product', productId: decodeURIComponent(productMatch[1]), categorySlug: null, orderId: null };
   }
 
   // Promotions detail route check

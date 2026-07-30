@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import {
   ArrowLeft, ShoppingCart, ShieldCheck, Clock, MapPin, Star,
-  Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight,
+  Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight, ChevronLeft, X, ZoomIn, Maximize2,
   ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins, RotateCcw, Zap
 } from 'lucide-react';
 import { getProductById, getProductReviews, getProductStats, getSystemSettings } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
-import { FALLBACK_PRODUCT_IMAGE, getProductImage } from '../utils/productImage';
+import { FALLBACK_PRODUCT_IMAGE, getProductImage, getIpxImageUrl } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import InfoModals from '../components/InfoModals';
@@ -103,9 +104,43 @@ export default function ProductPage({
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [thumbnailOffset, setThumbnailOffset] = useState(0);
   const THUMBS_VISIBLE = 5;
+  const thumbsRef = useRef(null);
+
+  const scrollThumbs = (dir) => {
+    if (thumbsRef.current) {
+      thumbsRef.current.scrollBy({ left: dir === 'left' ? -220 : 220, behavior: 'smooth' });
+    }
+  };
+
+  const openZoomModal = (initialIndex = activeImageIndex) => {
+    setModalImageIndex(initialIndex);
+    setIsZoomOpen(true);
+  };
+
+  const closeZoomModal = () => {
+    setActiveImageIndex(modalImageIndex);
+    setIsZoomOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isZoomOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeZoomModal();
+      } else if (e.key === 'ArrowLeft') {
+        setModalImageIndex(prev => (prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setModalImageIndex(prev => (prev < 99 ? prev + 1 : prev));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomOpen, modalImageIndex]);
 
   // Variant selector state
   const [selectedOption, setSelectedOption] = useState('');
@@ -283,7 +318,40 @@ export default function ProductPage({
   }, [product, breadcrumbs]);
 
   useEffect(() => {
-    const loadProduct = async () => {
+    const loadReviews = async (idToUse = productId) => {
+      setLoadingReviews(true);
+      try {
+        const res = await getProductReviews(idToUse, { page: 1, limit: 10 });
+        if (res && res.data) {
+          setReviews(res.data);
+          setReviewsMeta({
+            page: res.page || 1,
+            hasMore: res.hasMore || false,
+            total: res.total || res.data.length
+          });
+        } else if (Array.isArray(res)) {
+          setReviews(res);
+          setReviewsMeta({ page: 1, hasMore: false, total: res.length });
+        }
+      } catch (err) {
+        console.error('Error loading product reviews:', err);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    const loadStats = async (idToUse = productId) => {
+      try {
+        const statsData = await getProductStats(idToUse);
+        if (statsData) {
+          setStats(statsData);
+        }
+      } catch (err) {
+        console.error('Error loading product stats:', err);
+      }
+    };
+
+    const initProductData = async () => {
       setLoading(true);
       setError(null);
       setActiveImageIndex(0);
@@ -294,6 +362,12 @@ export default function ProductPage({
         const data = await getProductById(productId);
         setProduct(data);
         
+        // Auto-update browser address bar from old numeric ID to new official product slug URL
+        if (data.slug && productId !== data.slug) {
+          const canonicalHref = getPageHref('product', data.slug);
+          window.history.replaceState(null, '', canonicalHref);
+        }
+
         // Initialize default option
         const options = getProductOptions(data);
         if (options && options.items.length > 0) {
@@ -327,6 +401,10 @@ export default function ProductPage({
         } catch (e) {
           console.error('Error saving recently viewed product:', e);
         }
+
+        // Fetch reviews and stats with resolved numeric ID
+        loadReviews(data.id);
+        loadStats(data.id);
       } catch (err) {
         console.error(err);
         setError(getFriendlyErrorMessage(err));
@@ -335,43 +413,8 @@ export default function ProductPage({
       }
     };
 
-    const loadReviews = async () => {
-      setLoadingReviews(true);
-      try {
-        const res = await getProductReviews(productId, { page: 1, limit: 10 });
-        if (res && res.data) {
-          setReviews(res.data);
-          setReviewsMeta({
-            page: res.page || 1,
-            hasMore: res.hasMore || false,
-            total: res.total || res.data.length
-          });
-        } else if (Array.isArray(res)) {
-          setReviews(res);
-          setReviewsMeta({ page: 1, hasMore: false, total: res.length });
-        }
-      } catch (err) {
-        console.error('Error loading product reviews:', err);
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
-
-    const loadStats = async () => {
-      try {
-        const statsData = await getProductStats(productId);
-        if (statsData) {
-          setStats(statsData);
-        }
-      } catch (err) {
-        console.error('Error loading product stats:', err);
-      }
-    };
-
     if (productId) {
-      loadProduct();
-      loadReviews();
-      loadStats();
+      initProductData();
     }
   }, [productId]);
 
@@ -724,7 +767,9 @@ export default function ProductPage({
             {/* COLUMN 1: IMAGE GALLERY */}
             <div className="md:col-span-7 flex flex-col justify-between">
               <div className="flex flex-col space-y-4">
-                <div className="relative border border-slate-150 bg-slate-50/40 rounded-2xl p-2 sm:p-4 flex items-center justify-center aspect-[4/3] sm:aspect-square max-h-[380px] overflow-hidden shadow-xs">
+                <div 
+                  className="relative border border-slate-200/80 bg-white rounded-3xl p-3 sm:p-5 flex items-center justify-center aspect-square w-full overflow-hidden shadow-sm"
+                >
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
                     {product.isHit && (
@@ -739,37 +784,86 @@ export default function ProductPage({
                     )}
                   </div>
 
+                  {/* Zoom button hint */}
+                  <button
+                    type="button"
+                    onClick={() => openZoomModal(activeImageIndex)}
+                    className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200/80 text-slate-700 hover:bg-blue-600 hover:text-white transition-all shadow-sm z-10 cursor-pointer"
+                    title="Увеличить фото на весь экран"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </button>
+
                   {/* Main Image */}
                   <img
-                    src={activeImage}
+                    src={getIpxImageUrl(activeImage, '800x800')}
                     alt={product.name}
-                    className="w-full h-full object-contain drop-shadow-sm rounded-xl"
-                    onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                    className="w-full h-full object-contain cursor-pointer"
+                    onClick={() => openZoomModal(activeImageIndex)}
+                    onError={(e) => {
+                      if (e.target.src !== activeImage && activeImage) {
+                        e.target.src = activeImage;
+                      } else {
+                        e.target.onerror = null;
+                        e.target.src = FALLBACK_PRODUCT_IMAGE;
+                      }
+                    }}
                   />
                 </div>
 
-                {/* Thumbnails strip */}
+                {/* Thumbnails strip with horizontal scroll controls */}
                 {allImages.length > 1 && (
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                    {allImages.map((img, i) => (
+                  <div className="relative flex items-center group/thumbs">
+                    {allImages.length > 4 && (
                       <button
-                        key={i}
                         type="button"
-                        onClick={() => setActiveImageIndex(i)}
-                        className={`w-[60px] h-[60px] rounded-xl border bg-white overflow-hidden p-1 transition-all shrink-0 hover:border-blue-500 ${
-                          activeImageIndex === i
-                            ? 'border-blue-600 ring-2 ring-blue-100'
-                            : 'border-slate-200'
-                        }`}
+                        onClick={() => scrollThumbs('left')}
+                        className="absolute -left-2.5 z-10 p-1.5 rounded-full bg-white border border-slate-200 shadow-md text-slate-700 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+                        title="Прокрутить влево"
                       >
-                        <img
-                          src={img}
-                          alt={`${product.name} - фото ${i + 1}`}
-                          className="w-full h-full object-contain"
-                          onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
-                        />
+                        <ChevronLeft className="h-4 w-4" />
                       </button>
-                    ))}
+                    )}
+
+                    <div ref={thumbsRef} className="flex items-center gap-2.5 overflow-x-auto py-1 px-1 scroll-smooth hide-scrollbar w-full">
+                      {allImages.map((img, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setActiveImageIndex(i)}
+                          className={`w-16 h-16 sm:w-18 sm:h-18 rounded-2xl border bg-white overflow-hidden p-1.5 transition-all shrink-0 cursor-pointer ${
+                            activeImageIndex === i
+                              ? 'border-blue-600 ring-2 ring-blue-500/20 shadow-sm'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <img
+                            src={getIpxImageUrl(img, '200x200')}
+                            alt={`${product.name} - фото ${i + 1}`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              if (e.target.src !== img && img) {
+                                e.target.src = img;
+                              } else {
+                                e.target.onerror = null;
+                                e.target.src = FALLBACK_PRODUCT_IMAGE;
+                              }
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    {allImages.length > 4 && (
+                      <button
+                        type="button"
+                        onClick={() => scrollThumbs('right')}
+                        className="absolute -right-2.5 z-10 p-1.5 rounded-full bg-white border border-slate-200 shadow-md text-slate-700 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+                        title="Прокрутить вправо"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -998,17 +1092,18 @@ export default function ProductPage({
                     <button
                       type="button"
                       onClick={() => {
-                        if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0, false, selectedOption);
-                        else onUpdateCartQuantity?.(product.id, cartQty - 1, false, selectedOption);
+                        const optToUse = cartItemForProduct?.selectedOption || selectedOption;
+                        if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0, optToUse);
+                        else onUpdateCartQuantity?.(product.id, cartQty - 1, optToUse);
                       }}
-                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer"
                     >
                       −
                     </button>
                     <button
                       type="button"
                       onClick={() => onNavigate?.('cart')}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold hover:bg-white/5 rounded-lg transition-all"
+                      className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold hover:bg-white/5 rounded-lg transition-all cursor-pointer"
                     >
                       <ShoppingCart className="h-4 w-4 text-emerald-400 shrink-0" />
                       <span className="text-base">{cartQty}</span>
@@ -1016,8 +1111,11 @@ export default function ProductPage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onUpdateCartQuantity?.(product.id, cartQty + 1, false, selectedOption)}
-                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold"
+                      onClick={() => {
+                        const optToUse = cartItemForProduct?.selectedOption || selectedOption;
+                        onUpdateCartQuantity?.(product.id, cartQty + 1, optToUse);
+                      }}
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer"
                     >
                       +
                     </button>
@@ -1394,6 +1492,127 @@ export default function ProductPage({
         currentCity={userCity}
         onSelectCity={setUserCity}
       />
+
+      {/* Fullscreen Photo Lightbox / Zoom Modal */}
+      {isZoomOpen && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] bg-slate-950/90 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-fade-in select-none"
+          onClick={closeZoomModal}
+        >
+          {/* Top Bar */}
+          <div className="flex items-center justify-between z-30 text-white px-2 py-1" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <span className="text-sm sm:text-base font-extrabold text-slate-100 tracking-wider">
+                {modalImageIndex + 1} / {allImages.length}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen?.();
+                  } else {
+                    document.exitFullscreen?.();
+                  }
+                }}
+                className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                title="Полноэкранный режим"
+              >
+                <Maximize2 className="h-5 w-5" />
+              </button>
+              
+              <button
+                type="button"
+                onClick={closeZoomModal}
+                className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                title="Закрыть (Esc)"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Left Arrow Button */}
+          {allImages.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalImageIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+              }}
+              className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-all cursor-pointer backdrop-blur-sm"
+              title="Предыдущее фото (←)"
+            >
+              <ChevronLeft className="h-8 w-8 sm:h-10 sm:w-10" />
+            </button>
+          )}
+
+          {/* Center Main Large Image in White Card */}
+          <div className="flex-1 flex flex-col items-center justify-center relative my-auto p-2" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl p-3 sm:p-5 max-w-[85vw] max-h-[60vh] sm:max-h-[68vh] aspect-square flex items-center justify-center shadow-2xl overflow-hidden">
+              <img
+                src={getIpxImageUrl(allImages[modalImageIndex] || activeImage, '1200x1200')}
+                alt={product?.name}
+                className="max-w-full max-h-full object-contain transition-all duration-300"
+                onError={(e) => {
+                  const targetImg = allImages[modalImageIndex] || activeImage;
+                  if (e.target.src !== targetImg && targetImg) {
+                    e.target.src = targetImg;
+                  } else {
+                    e.target.onerror = null;
+                    e.target.src = FALLBACK_PRODUCT_IMAGE;
+                  }
+                }}
+              />
+            </div>
+            <p className="text-white/70 text-xs font-semibold mt-3 text-center truncate max-w-lg">
+              {product?.name}
+            </p>
+          </div>
+
+          {/* Right Arrow Button */}
+          {allImages.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalImageIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+              }}
+              className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-all cursor-pointer backdrop-blur-sm"
+              title="Следующее фото (→)"
+            >
+              <ChevronRight className="h-8 w-8 sm:h-10 sm:w-10" />
+            </button>
+          )}
+
+          {/* Bottom Thumbnails Strip in Lightbox (Exact yellow frame style for active) */}
+          {allImages.length > 1 && (
+            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-30 hide-scrollbar w-full max-w-4xl mx-auto" onClick={(e) => e.stopPropagation()}>
+              {allImages.map((img, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setModalImageIndex(i)}
+                  className={`w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-lg overflow-hidden p-1 transition-all shrink-0 border-2 cursor-pointer ${
+                    modalImageIndex === i
+                      ? 'border-yellow-400 ring-2 ring-yellow-400/40 shadow-lg scale-105'
+                      : 'border-slate-300/80 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={getIpxImageUrl(img, '200x200')}
+                    alt={`фото ${i + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

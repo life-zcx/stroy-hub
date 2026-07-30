@@ -32,9 +32,12 @@ export const LOYALTY_TIERS = {
  */
 export async function getCompletedSpentThisYear(userId) {
   const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
+  const uid = parseInt(userId, 10);
+  if (isNaN(uid)) return 0;
+
   const aggregate = await prisma.order.aggregate({
     where: {
-      userId: parseInt(userId, 10),
+      userId: uid,
       status: 'completed',
       createdAt: { gte: currentYearStart },
     },
@@ -42,7 +45,39 @@ export async function getCompletedSpentThisYear(userId) {
       totalAmount: true,
     },
   });
-  return aggregate._sum.totalAmount || 0;
+  const totalOrderAmount = aggregate._sum.totalAmount || 0;
+
+  // Subtract net paid amount of approved return requests
+  const approvedReturns = await prisma.returnRequest.findMany({
+    where: {
+      userId: uid,
+      status: 'approved',
+      createdAt: { gte: currentYearStart },
+    },
+    include: {
+      order: {
+        include: {
+          items: true
+        }
+      }
+    }
+  });
+
+  let totalReturnedAmount = 0;
+  for (const ret of approvedReturns) {
+    if (ret.order && ret.order.items) {
+      const orderItem = ret.order.items.find(item => item.productId === ret.productId);
+      if (orderItem) {
+        const itemTotal = orderItem.price * ret.quantity;
+        const subtotal = ret.order.subtotalAmount || 1;
+        const discount = ret.order.discountAmount || 0;
+        const paidForItem = Math.max(0, itemTotal - (discount * (itemTotal / subtotal)));
+        totalReturnedAmount += paidForItem;
+      }
+    }
+  }
+
+  return Math.max(0, totalOrderAmount - totalReturnedAmount);
 }
 
 /**

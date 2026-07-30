@@ -1,7 +1,7 @@
 {
   "markups": {
     "1": 21,
-    "37": 13,
+    "37": 14,
     "mixes": 26,
     "lumber": 12,
     "tools": 0,
@@ -9,8 +9,7 @@
     "hardware": 34
   },
   "overrides": {
-    "11": 30,
-    "720": 14
+    "11": 30
   },
   "logisticsPercent": 5,
   "acquiringPercent": 2,

@@ -106,6 +106,7 @@ model Product {
   reviewsList    Review[]
   cashbackPercent Int?
   article        String?
+  slug           String?     @unique
   options        Json?
   returnRequests ReturnRequest[]
   cartItems      CartItem[]
@@ -113,6 +114,7 @@ model Product {
   @@index([supplierId])
   @@index([categoryId])
   @@index([price])
+  @@index([slug])
   @@index([categoryId, price])
   @@index([supplierId, price])
 }
@@ -379,4 +381,21 @@ model CartItem {
 
   @@unique([userId, productId, selectedOption])
   @@index([userId])
+}
+
+model PriceLog {
+  id          Int      @id @default(autoincrement())
+  productId   Int?
+  productName String?
+  oldPrice    Float?
+  newPrice    Float?
+  oldMarkup   Float?
+  newMarkup   Float?
+  changeType  String   // 'PRODUCT_UPDATE', 'MARKUP_CHANGE', 'OVERRIDE_CHANGE', 'EXCEL_IMPORT'
+  details     String?
+  changedBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
 }

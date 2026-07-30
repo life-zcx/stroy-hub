@@ -575,7 +575,7 @@ export default function Home({
           onTouchStart={handleDealTouchStart}
           onTouchMove={handleDealTouchMove}
           onTouchEnd={() => handleDealTouchEnd(Math.min(popularProducts.slice(0, 3).length, 3))}
-          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 relative overflow-hidden shadow-sm min-h-[380px] lg:min-h-full text-slate-800"
+          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 relative overflow-hidden shadow-sm h-full text-slate-800"
         >
           {(() => {
             const deals = popularProducts.slice(0, 3);
@@ -608,7 +608,7 @@ export default function Home({
                     <div className="flex flex-col justify-between flex-grow h-full text-slate-850 z-10 relative">
                       
                       {/* Product Image zone with navigation chevrons and Favorite heart */}
-                      <div className="relative h-44 flex items-center justify-center bg-transparent rounded-2xl w-full mb-3 overflow-hidden">
+                      <div className="relative h-44 sm:h-48 flex items-center justify-center bg-transparent rounded-2xl w-full mb-3 overflow-hidden">
                         
                         {/* Favorite button */}
                         <button
@@ -647,29 +647,29 @@ export default function Home({
                         )}
 
                         <Link
-                          href={getPageHref('product', product.id)}
-                          onClick={() => onOpenDetails?.(product.id)}
-                          className="w-full h-full flex items-center justify-center cursor-pointer"
+                          href={getPageHref('product', product.slug || product.id)}
+                          onClick={() => onOpenDetails?.(product.slug || product.id)}
+                          className="w-full h-full flex items-center justify-center cursor-pointer p-1"
                         >
                           <img 
                             src={imageSrc} 
                             alt={product.name} 
-                            className="h-3/4 object-contain mix-blend-multiply transition-transform duration-300" 
+                            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" 
                           />
                         </Link>
                       </div>
 
                       {/* Product details (Title and Price left-aligned) */}
                       <Link
-                        href={getPageHref('product', product.id)}
-                        onClick={() => onOpenDetails?.(product.id)}
-                        className="flex flex-col text-left group/deal cursor-pointer flex-grow"
+                        href={getPageHref('product', product.slug || product.id)}
+                        onClick={() => onOpenDetails?.(product.slug || product.id)}
+                        className="flex flex-col text-left group/deal cursor-pointer justify-end mb-2"
                       >
-                        <h4 className="text-slate-700 text-xs leading-relaxed group-hover/deal:text-emerald-700 transition-colors line-clamp-3 min-h-[3rem] mb-2 font-medium">
+                        <h4 className="text-slate-700 text-xs sm:text-sm leading-snug group-hover/deal:text-emerald-700 transition-colors line-clamp-2 mb-1.5 font-medium">
                           {product.name}
                         </h4>
 
-                        <div className="mb-4">
+                        <div>
                           <span className="text-xl font-extrabold text-slate-900 font-sans tracking-tight">
                             {formatPrice(product.price)}
                           </span>
@@ -685,7 +685,7 @@ export default function Home({
                       </button>
 
                       {/* Indicators at the bottom */}
-                      <div className="flex justify-center gap-1.5 mt-3">
+                      <div className="flex justify-center gap-1.5 pt-2">
                         {deals.map((_, idx) => (
                           <span
                             key={idx}

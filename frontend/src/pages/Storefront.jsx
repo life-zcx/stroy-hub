@@ -478,8 +478,8 @@ export default function Storefront({
                 
                 {/* Clickable Area -> Link to product details */}
                 <Link 
-                  href={getPageHref('product', product.id)}
-                  onClick={() => onOpenProduct?.(product.id)}
+                  href={getPageHref('product', product.slug || product.id)}
+                  onClick={() => onOpenProduct?.(product.slug || product.id)}
                   className="flex-grow flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-w-0 w-full cursor-pointer"
                 >
                   <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">

@@ -88,9 +88,9 @@ export async function activatePendingBonuses(orderId, tx = prisma) {
  * 2. Возвращаем потраченные бонусы обратно (если были).
  */
 export async function cancelBonusesForOrder(orderId, userId, tx = prisma) {
-  // 1. Отменяем pending earned
+  // 1. Отменяем начисления (pending И available) по этому заказу
   await tx.bonusTransaction.updateMany({
-    where: { orderId, type: 'earned', status: 'pending' },
+    where: { orderId, type: 'earned', status: { in: ['pending', 'available'] } },
     data: { status: 'cancelled' },
   });
 
@@ -99,18 +99,29 @@ export async function cancelBonusesForOrder(orderId, userId, tx = prisma) {
     where: { orderId, type: 'spent', status: 'used' },
   });
 
-  // 3. Возвращаем бонусы через новую manual-транзакцию
+  // 3. Возвращаем бонусы через новую manual-транзакцию (с защитой от дублей)
   for (const spent of spentTxs) {
-    await tx.bonusTransaction.create({
-      data: {
+    const existingRefund = await tx.bonusTransaction.findFirst({
+      where: {
         userId,
         orderId,
         type: 'manual',
-        status: 'available',
-        amount: spent.amount,
-        description: `Возврат бонусов по отменённому заказу #${orderId}`,
+        description: { contains: `отменённому заказу #${orderId}` },
       },
     });
+
+    if (!existingRefund) {
+      await tx.bonusTransaction.create({
+        data: {
+          userId,
+          orderId,
+          type: 'manual',
+          status: 'available',
+          amount: spent.amount,
+          description: `Возврат бонусов по отменённому заказу #${orderId}`,
+        },
+      });
+    }
   }
 }
 

@@ -295,10 +295,27 @@ export default function ReturnRequestModal({
                                 −
                               </button>
                               <input
-                                type="text"
-                                readOnly
-                                value={selectedProducts[item.productId]}
-                                className="w-8 text-center text-xs text-slate-900 outline-none font-bold pointer-events-none"
+                                type="number"
+                                min="1"
+                                max={item.availableQty}
+                                value={selectedProducts[item.productId] ?? 1}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  if (raw === '') {
+                                    setSelectedProducts(prev => ({ ...prev, [item.productId]: '' }));
+                                    return;
+                                  }
+                                  const val = parseInt(raw, 10);
+                                  if (!isNaN(val)) {
+                                    handleQtyChange(item.productId, val, item.availableQty);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (!selectedProducts[item.productId] || selectedProducts[item.productId] < 1) {
+                                    handleQtyChange(item.productId, 1, item.availableQty);
+                                  }
+                                }}
+                                className="w-10 text-center text-xs text-slate-900 outline-none font-bold border-0 p-0 focus:ring-1 focus:ring-emerald-500 rounded font-sans bg-transparent"
                               />
                               <button
                                 type="button"

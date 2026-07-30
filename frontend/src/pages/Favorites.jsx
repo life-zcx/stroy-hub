@@ -95,8 +95,8 @@ export default function FavoritesPage({
 
               {/* Image Section */}
               <Link
-                href={getPageHref('product', product.id)}
-                onClick={() => onOpenProduct?.(product.id)}
+                href={getPageHref('product', product.slug || product.id)}
+                onClick={() => onOpenProduct?.(product.slug || product.id)}
                 className="w-full aspect-square bg-slate-50/50 rounded-[2rem] flex items-center justify-center overflow-hidden mb-5 p-4 cursor-pointer group-hover:scale-[1.02] transition-transform duration-500 block"
               >
                 <img
@@ -119,8 +119,8 @@ export default function FavoritesPage({
                 </div>
 
                 <Link
-                  href={getPageHref('product', product.id)}
-                  onClick={() => onOpenProduct?.(product.id)}
+                  href={getPageHref('product', product.slug || product.id)}
+                  onClick={() => onOpenProduct?.(product.slug || product.id)}
                   className="font-black text-slate-800 text-sm leading-tight mb-3 group-hover:text-emerald-700 transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem] font-outfit block"
                 >
                   {product.name}

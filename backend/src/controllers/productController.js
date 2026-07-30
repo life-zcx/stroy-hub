@@ -8,6 +8,34 @@ import { fileURLToPath } from 'url';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
+import { slugify } from '../utils/slugify.js';
+
+export async function ensureProductSlug(product) {
+  if (!product || product.slug) return product;
+  const baseSlug = slugify(product.name) || 'product';
+  let candidate = baseSlug;
+  let suffix = 1;
+
+  while (true) {
+    const existing = await prisma.product.findFirst({
+      where: { slug: candidate, id: { not: product.id } },
+      select: { id: true }
+    });
+    if (!existing) break;
+    candidate = `${baseSlug}-${suffix++}`;
+  }
+
+  try {
+    const updated = await prisma.product.update({
+      where: { id: product.id },
+      data: { slug: candidate }
+    });
+    return { ...product, slug: updated.slug };
+  } catch (err) {
+    logger.warn(`Could not save slug for product ${product.id}: ${err.message}`);
+    return { ...product, slug: candidate };
+  }
+}
 
 
 // Helper to clear products cache
@@ -26,8 +54,9 @@ const clearProductsCache = async () => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Helper path to store pricing settings
-const pricingSettingsPath = path.join(__dirname, '..', 'config', 'pricing_settings.json');
+// Helper path to store pricing settings (stored outside src/ so nodemon does not restart on save)
+const pricingSettingsPath = path.join(process.cwd(), 'config', 'pricing_settings.json');
+const legacyPricingSettingsPath = path.join(__dirname, '..', 'config', 'pricing_settings.json');
 
 function normalizeSpreadsheetCell(value) {
   if (value === null || value === undefined) return null;
@@ -142,8 +171,9 @@ const DEFAULT_PRICING_SETTINGS = {
 
 export function readPricingSettings() {
   try {
-    if (fs.existsSync(pricingSettingsPath)) {
-      const data = fs.readFileSync(pricingSettingsPath, 'utf8');
+    const targetPath = fs.existsSync(pricingSettingsPath) ? pricingSettingsPath : legacyPricingSettingsPath;
+    if (fs.existsSync(targetPath)) {
+      const data = fs.readFileSync(targetPath, 'utf8');
       const parsed = JSON.parse(data);
       return {
         ...DEFAULT_PRICING_SETTINGS,
@@ -181,6 +211,71 @@ export const getPricingSettings = async (req, res) => {
   }
 };
 
+export const logPriceChange = async ({
+  productId,
+  productName,
+  oldPrice,
+  newPrice,
+  oldMarkup,
+  newMarkup,
+  changeType,
+  details,
+  changedBy
+}) => {
+  try {
+    await prisma.priceLog.create({
+      data: {
+        productId: productId ? parseInt(productId) : null,
+        productName: productName || null,
+        oldPrice: oldPrice !== undefined && oldPrice !== null ? parseFloat(oldPrice) : null,
+        newPrice: newPrice !== undefined && newPrice !== null ? parseFloat(newPrice) : null,
+        oldMarkup: oldMarkup !== undefined && oldMarkup !== null ? parseFloat(oldMarkup) : null,
+        newMarkup: newMarkup !== undefined && newMarkup !== null ? parseFloat(newMarkup) : null,
+        changeType: changeType || 'PRODUCT_UPDATE',
+        details: details || null,
+        changedBy: changedBy || 'Администратор',
+      }
+    });
+  } catch (err) {
+    console.error('Failed to log price change:', err.message);
+  }
+};
+
+export const getPriceLogs = async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit, 10) || 20);
+    const skip = (page - 1) * limit;
+    const productId = req.query.productId ? parseInt(req.query.productId, 10) : undefined;
+    const changeType = req.query.changeType || undefined;
+
+    const where = {};
+    if (productId) where.productId = productId;
+    if (changeType) where.changeType = changeType;
+
+    const [logs, total] = await Promise.all([
+      prisma.priceLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.priceLog.count({ where }),
+    ]);
+
+    res.json({
+      data: logs,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка получения истории цен: ' + error.message });
+  }
+};
+
 export const savePricingSettings = async (req, res) => {
   const {
     markups,
@@ -196,7 +291,9 @@ export const savePricingSettings = async (req, res) => {
     return res.status(400).json({ error: 'Необходимо передать markups и overrides' });
   }
   try {
-    const success = writePricingSettings({
+    const oldSettings = readPricingSettings();
+
+    const newSettings = {
       markups,
       overrides,
       logisticsPercent: logisticsPercent !== undefined ? parseFloat(logisticsPercent) : 5,
@@ -205,9 +302,102 @@ export const savePricingSettings = async (req, res) => {
       promoCoveragePercent: promoCoveragePercent !== undefined ? parseFloat(promoCoveragePercent) : 30,
       promoDiscountPercent: promoDiscountPercent !== undefined ? parseFloat(promoDiscountPercent) : 10,
       taxPercent: taxPercent !== undefined ? parseFloat(taxPercent) : 3
-    });
+    };
+
+    const success = writePricingSettings(newSettings);
+
     if (success) {
       await clearProductsCache();
+      const adminName = req.user?.name || req.user?.email || 'Администратор';
+
+      if (oldSettings) {
+        // 1. Log category markup changes
+        if (oldSettings.markups) {
+          Object.keys(markups).forEach(cat => {
+            if (oldSettings.markups[cat] !== markups[cat]) {
+              const catName = cat === 'mixes' ? 'Сухие смеси' : cat === 'lumber' ? 'Пиломатериалы' : cat === 'tools' ? 'Инструменты' : cat === 'paints' ? 'Краски' : cat === 'hardware' ? 'Крепеж' : cat;
+              logPriceChange({
+                changeType: 'MARKUP_CHANGE',
+                productName: `Категория "${catName}"`,
+                oldMarkup: oldSettings.markups[cat] ?? 0,
+                newMarkup: markups[cat],
+                details: `Изменена базовая наценка категории: ${oldSettings.markups[cat] ?? 0}% → ${markups[cat]}%`,
+                changedBy: adminName
+              });
+            }
+          });
+        }
+
+        // 2. Log individual product override changes with exact retail price calculations (Было ₸ / Стало ₸)
+        const oldOverrides = oldSettings.overrides || {};
+        const newOverrides = overrides || {};
+        const allOverrideKeys = Array.from(new Set([...Object.keys(oldOverrides), ...Object.keys(newOverrides)]));
+        const changedOverrideIds = [];
+
+        allOverrideKeys.forEach(prodId => {
+          if (oldOverrides[prodId] !== newOverrides[prodId]) {
+            const idNum = parseInt(prodId, 10);
+            if (!isNaN(idNum)) changedOverrideIds.push(idNum);
+          }
+        });
+
+        if (changedOverrideIds.length > 0) {
+          const changedProds = await prisma.product.findMany({
+            where: { id: { in: changedOverrideIds } },
+            select: { id: true, name: true, price: true, category: true, categoryId: true }
+          });
+
+          // Fetch categories to resolve default markup
+          const allCats = await prisma.category.findMany();
+          const categoryMap = new Map(allCats.map(c => [c.id, c]));
+          const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+
+          for (const prod of changedProds) {
+            const defaultMarkup = resolveCategoryMarkup(prod, oldSettings.markups || {}, categoryMap, categorySlugMap);
+            const oldMarkupVal = oldOverrides[prod.id] !== undefined ? oldOverrides[prod.id] : defaultMarkup;
+            const newMarkupVal = newOverrides[prod.id] !== undefined ? newOverrides[prod.id] : defaultMarkup;
+
+            const oldRetail = calculatePriceBottomUp(prod.price, oldMarkupVal, oldSettings);
+            const newRetail = calculatePriceBottomUp(prod.price, newMarkupVal, newSettings);
+
+            const oldLabel = oldOverrides[prod.id] !== undefined ? `${oldOverrides[prod.id]}%` : `${defaultMarkup}% (категорийная)`;
+            const newLabel = newOverrides[prod.id] !== undefined ? `${newOverrides[prod.id]}%` : `${defaultMarkup}% (категорийная)`;
+
+            await logPriceChange({
+              productId: prod.id,
+              productName: prod.name,
+              oldPrice: oldRetail,
+              newPrice: newRetail,
+              oldMarkup: oldMarkupVal,
+              newMarkup: newMarkupVal,
+              changeType: 'MARKUP_CHANGE',
+              details: `Изменена наценка товара: ${oldLabel} → ${newLabel}`,
+              changedBy: adminName
+            });
+          }
+        }
+
+        // 3. Log cost structure changes
+        const structureChanges = [];
+        if (oldSettings.logisticsPercent !== newSettings.logisticsPercent) {
+          structureChanges.push(`Логистика: ${oldSettings.logisticsPercent}% → ${newSettings.logisticsPercent}%`);
+        }
+        if (oldSettings.acquiringPercent !== newSettings.acquiringPercent) {
+          structureChanges.push(`Эквайринг: ${oldSettings.acquiringPercent}% → ${newSettings.acquiringPercent}%`);
+        }
+        if (oldSettings.taxPercent !== newSettings.taxPercent) {
+          structureChanges.push(`Налоги: ${oldSettings.taxPercent}% → ${newSettings.taxPercent}%`);
+        }
+
+        if (structureChanges.length > 0) {
+          await logPriceChange({
+            changeType: 'MARKUP_CHANGE',
+            productName: 'Структура расходов',
+            details: structureChanges.join('; '),
+            changedBy: adminName
+          });
+        }
+      }
       res.json({ message: 'Настройки ценообразования успешно сохранены' });
     } else {
       res.status(500).json({ error: 'Не удалось записать файл настроек' });
@@ -400,8 +590,20 @@ export const getAllProducts = async (req, res) => {
 
   const where = {};
 
-  if (search) {
-    where.name = { contains: search, mode: 'insensitive' };
+  if (search && search.trim() !== '') {
+    const q = search.trim();
+    const searchConditions = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { article: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+    ];
+
+    const searchId = parseInt(q, 10);
+    if (!isNaN(searchId) && String(searchId) === q) {
+      searchConditions.push({ id: searchId });
+    }
+
+    where.OR = searchConditions;
   }
 
   if (supplierId) {
@@ -438,7 +640,16 @@ export const getAllProducts = async (req, res) => {
     }
   })();
 
-  const cacheKey = `products:all:${JSON.stringify(req.query)}`;
+  const normalizedQuery = { ...req.query };
+  if (normalizedQuery.category) {
+    try {
+      let cat = decodeURIComponent(normalizedQuery.category);
+      if (cat.includes('%')) cat = decodeURIComponent(cat);
+      normalizedQuery.category = cat;
+    } catch {}
+  }
+
+  const cacheKey = `products:all:${JSON.stringify(normalizedQuery)}`;
 
   try {
     const cached = await redisClient.get(cacheKey);
@@ -448,7 +659,15 @@ export const getAllProducts = async (req, res) => {
     }
 
     if (category && category !== 'all') {
-      const { slugs, ids } = await getDescendantCategorySlugsAndIds(category);
+      let rawCategory = category;
+      try {
+        rawCategory = decodeURIComponent(category);
+        if (rawCategory.includes('%')) {
+          rawCategory = decodeURIComponent(rawCategory);
+        }
+      } catch {}
+
+      const { slugs, ids } = await getDescendantCategorySlugsAndIds(rawCategory);
       where.OR = [
         { category: { in: slugs } },
         { categoryId: { in: ids } },
@@ -516,8 +735,11 @@ export const getProductById = async (req, res) => {
       return res.json(JSON.parse(cached));
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) },
+    const parsedId = parseInt(id, 10);
+    const isNumeric = !isNaN(parsedId) && String(parsedId) === String(id);
+
+    let product = await prisma.product.findFirst({
+      where: isNumeric ? { id: parsedId } : { slug: id },
       include: { 
         supplier: true,
         categoryRelation: true,
@@ -527,9 +749,26 @@ export const getProductById = async (req, res) => {
         }
       }
     });
+
+    if (!product && isNumeric) {
+      product = await prisma.product.findFirst({
+        where: { slug: id },
+        include: {
+          supplier: true,
+          categoryRelation: true,
+          reviewsList: {
+            where: { isApproved: true },
+            select: { rating: true }
+          }
+        }
+      });
+    }
+
     if (!product) {
       return res.status(404).json({ error: 'Товар не найден' });
     }
+
+    product = await ensureProductSlug(product);
 
     const settings = readPricingSettings();
     const allCats = await prisma.category.findMany();
@@ -552,10 +791,9 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  console.log('[DEBUG createProduct] Received body:', req.body);
   const {
     name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options
+    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options, slug
   } = req.body;
   const requestedSupplierId = parseId(supplierId);
   const requesterSupplierId = getRequesterSupplierId(req);
@@ -657,9 +895,19 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    let finalSlug = slugify(slug || name) || 'product';
+    let candidateSlug = finalSlug;
+    let slugSuffix = 1;
+    while (true) {
+      const existingSlug = await prisma.product.findFirst({ where: { slug: candidateSlug }, select: { id: true } });
+      if (!existingSlug) break;
+      candidateSlug = `${finalSlug}-${slugSuffix++}`;
+    }
+
     const newProduct = await prisma.product.create({
       data: {
         name,
+        slug: candidateSlug,
         description: description || null,
         details: details || null,
         specifications: specifications || null,
@@ -692,12 +940,11 @@ export const createProduct = async (req, res) => {
 };
 
 export const updateProduct = async (req, res) => {
-  console.log('[DEBUG updateProduct] Received body:', req.body);
   const { id } = req.params;
-  const {
-    name, description, details, specifications, usage, category, price, oldPrice,
-    rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options
-  } = req.body;
+    const {
+      name, description, details, specifications, usage, category, price, oldPrice,
+      rating, reviews, isHit, bulkDiscount, supplierId, imageUrl, images, categoryId, cashbackPercent, article, options, slug
+    } = req.body;
   const requesterSupplierId = getRequesterSupplierId(req);
   const requestedSupplierId = supplierId === undefined ? undefined : parseId(supplierId);
 
@@ -765,7 +1012,22 @@ export const updateProduct = async (req, res) => {
     if (isHit !== undefined) data.isHit = isHit === 'true' || isHit === true;
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
     if (cashbackPercent !== undefined) data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
-    if (article !== undefined) data.article = article || null;
+    if (slug || name || !existing.slug) {
+      let desiredSlug = slugify(slug || name || existing.name) || 'product';
+      if (desiredSlug !== existing.slug) {
+        let candidateSlug = desiredSlug;
+        let slugSuffix = 1;
+        while (true) {
+          const existingSlug = await prisma.product.findFirst({
+            where: { slug: candidateSlug, id: { not: parseInt(id) } },
+            select: { id: true }
+          });
+          if (!existingSlug) break;
+          candidateSlug = `${desiredSlug}-${slugSuffix++}`;
+        }
+        data.slug = candidateSlug;
+      }
+    }
 
     if (options !== undefined) {
       if (options === null || options === '' || options === 'null') {
@@ -843,6 +1105,19 @@ export const updateProduct = async (req, res) => {
       include: { supplier: true }
     });
 
+    if (existing.price !== updated.price || existing.oldPrice !== updated.oldPrice) {
+      const adminName = req.user?.name || req.user?.email || 'Администратор';
+      await logPriceChange({
+        productId: updated.id,
+        productName: updated.name,
+        oldPrice: existing.price,
+        newPrice: updated.price,
+        changeType: 'PRODUCT_UPDATE',
+        details: `Обновлена цена товара "${updated.name}" (#${updated.id}): ${existing.price} ₸ → ${updated.price} ₸`,
+        changedBy: adminName
+      });
+    }
+
     await clearProductsCache();
     res.json(updated);
   } catch (error) {
@@ -872,9 +1147,16 @@ export const deleteProduct = async (req, res) => {
       }
     }
     
-    await prisma.product.delete({
-      where: { id: parseInt(id) }
-    });
+    const targetId = parseInt(id, 10);
+
+    await prisma.$transaction([
+      prisma.cartItem.deleteMany({ where: { productId: targetId } }),
+      prisma.analyticsEvent.deleteMany({ where: { productId: targetId } }),
+      prisma.review.deleteMany({ where: { productId: targetId } }),
+      prisma.returnRequest.deleteMany({ where: { productId: targetId } }),
+      prisma.orderItem.deleteMany({ where: { productId: targetId } }),
+      prisma.product.delete({ where: { id: targetId } }),
+    ]);
     
     await clearProductsCache();
     res.json({ message: 'Товар успешно удален' });
@@ -943,13 +1225,14 @@ export const importProductsXlsx = async (req, res) => {
       const brandName = getVal(row, ['бренд', 'brand']);
       const articleVal = getVal(row, ['артикул', 'код', 'article', 'sku', 'code']);
 
-      const description = getVal(row, ['описание', 'description']) || null;
-      const details = getVal(row, ['детали', 'details']) || null;
+      const description = getVal(row, ['краткое описание', 'описание', 'description']) || null;
+      const details = getVal(row, ['подробное описание', 'детали', 'details']) || null;
       const specifications = getVal(row, ['характеристики', 'спецификация', 'specifications', 'specs']) || null;
-      const usage = getVal(row, ['применение', 'usage']) || null;
-      const bulkDiscount = getVal(row, ['скидка', 'оптовая скидка', 'bulk discount', 'discount']) || null;
+      const usage = getVal(row, ['инструкция', 'применение', 'usage', 'instruction']) || null;
+      const bulkDiscount = getVal(row, ['оптовая скидка', 'скидка', 'bulk discount', 'discount']) || null;
       const isHitVal = getVal(row, ['хит', 'популярный', 'is hit', 'hit']);
       const oldPriceVal = getVal(row, ['старая цена', 'old price', 'oldprice']);
+      const slugVal = getVal(row, ['чпу slug', 'чпу', 'slug']);
 
       if (!name) {
         errors.push({ row: rowNum, error: 'Отсутствует название товара' });
@@ -1013,7 +1296,8 @@ export const importProductsXlsx = async (req, res) => {
         bulkDiscount: bulkDiscount ? bulkDiscount.toString().trim() : null,
         supplierId: effectiveSupplierId,
         image: 'https://placehold.co/400x300/f8fafc/475569?text=Tormag',
-        article: articleVal ? articleVal.toString().trim() : null
+        article: articleVal ? articleVal.toString().trim() : null,
+        slug: slugVal ? slugVal.toString().trim() : null
       });
     });
 
@@ -1291,22 +1575,36 @@ export const matchEstimateXlsx = async (req, res) => {
 
 export const getProductStats = async (req, res) => {
   const { id } = req.params;
-  const productId = parseInt(id, 10);
-  if (isNaN(productId)) {
-    return res.status(400).json({ error: 'Недопустимый ID товара' });
-  }
 
   try {
-    const productPath = `/product/${productId}`;
+    let parsedProductId = parseInt(id, 10);
+    let targetSlug = id;
+
+    if (isNaN(parsedProductId)) {
+      const p = await prisma.product.findFirst({ where: { slug: id }, select: { id: true, slug: true } });
+      if (p) {
+        parsedProductId = p.id;
+        targetSlug = p.slug;
+      } else {
+        return res.status(404).json({ error: 'Товар не найден' });
+      }
+    } else {
+      const p = await prisma.product.findUnique({ where: { id: parsedProductId }, select: { slug: true } });
+      if (p && p.slug) {
+        targetSlug = p.slug;
+      }
+    }
+
+    const possiblePaths = [`/product/${parsedProductId}`, `/product/${targetSlug}`];
     
     const pageViewsCount = await prisma.pageView.count({
-      where: { path: productPath }
+      where: { path: { in: possiblePaths } }
     });
 
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     const activeSessions = await prisma.pageView.findMany({
       where: {
-        path: productPath,
+        path: { in: possiblePaths },
         createdAt: { gte: fifteenMinutesAgo }
       },
       distinct: ['sessionId'],

@@ -2,7 +2,7 @@ import express from 'express';
 import { 
   getAllProducts, getProductById, createProduct, updateProduct, deleteProduct,
   getPricingSettings, savePricingSettings, importProductsXlsx, matchEstimateXlsx,
-  getProductStats
+  getProductStats, getPriceLogs
 } from '../controllers/productController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
 import { estimateUploadRateLimiter } from '../middleware/rateLimiter.js';
@@ -10,9 +10,10 @@ import { imageUpload, excelUpload } from '../config/upload.js';
 
 const router = express.Router();
 
-// Pricing settings routes (Must be registered BEFORE /:id)
+// Pricing settings & logs routes (Must be registered BEFORE /:id)
 router.get('/pricing/settings', verifyToken, requireRoles(['ADMIN']), getPricingSettings);
 router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePricingSettings);
+router.get('/pricing/logs', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), getPriceLogs);
 
 // Public endpoints
 router.get('/', getAllProducts);

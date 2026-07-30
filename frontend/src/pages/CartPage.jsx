@@ -748,8 +748,8 @@ export default function CartPage({
                     className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm hover:shadow-md transition-all duration-300 w-64 flex-shrink-0 group flex flex-col snap-start snap-always text-slate-800"
                   >
                     <Link
-                      href={getPageHref('product', prod.id)}
-                      onClick={() => onNavigate('product', prod.id)}
+                      href={getPageHref('product', prod.slug || prod.id)}
+                      onClick={() => onNavigate('product', prod.slug || prod.id)}
                       className="h-32 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden relative mb-3 block"
                     >
                       {prod.isHit && (
@@ -765,8 +765,8 @@ export default function CartPage({
                       />
                     </Link>
                     <Link
-                      href={getPageHref('product', prod.id)}
-                      onClick={() => onNavigate('product', prod.id)}
+                      href={getPageHref('product', prod.slug || prod.id)}
+                      onClick={() => onNavigate('product', prod.slug || prod.id)}
                       className="text-xs font-bold text-slate-800 line-clamp-2 min-h-[2rem] leading-snug hover:text-emerald-600 transition-colors mb-2 block"
                     >
                       {prod.name}
@@ -869,8 +869,8 @@ export default function CartPage({
                   className="flex gap-4 sm:gap-6 py-6 first:pt-0 last:pb-0 relative group"
                 >
                   <Link
-                    href={getPageHref('product', item.id)}
-                    onClick={() => onNavigate('product', item.id)}
+                    href={getPageHref('product', item.slug || item.id)}
+                    onClick={() => onNavigate('product', item.slug || item.id)}
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-emerald-500/30 transition-all"
                   >
                     <img
@@ -888,8 +888,8 @@ export default function CartPage({
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <Link
-                          href={getPageHref('product', item.id)}
-                          onClick={() => onNavigate('product', item.id)}
+                          href={getPageHref('product', item.slug || item.id)}
+                          onClick={() => onNavigate('product', item.slug || item.id)}
                           className="hover:text-emerald-700 transition-colors cursor-pointer text-left block"
                         >
                           <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight">

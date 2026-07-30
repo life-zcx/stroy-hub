@@ -62,6 +62,7 @@ function createEmptyProductForm({ categories, suppliers, isSupplier, user }) {
     imageUrl: '',
     images: [],
     article: '',
+    slug: '',
     options: { label: '', items: [] },
   };
 }
@@ -166,6 +167,7 @@ export function useDashboardData({ user, showToast }) {
   const [returns, setReturns] = useState([]);
   const [warrantyRules, setWarrantyRules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isProductSubmitting, setIsProductSubmitting] = useState(false);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -391,6 +393,7 @@ export function useDashboardData({ user, showToast }) {
     if (productForm.bulkDiscount) formData.append('bulkDiscount', productForm.bulkDiscount);
     if (productForm.cashbackPercent) formData.append('cashbackPercent', productForm.cashbackPercent);
     if (productForm.article) formData.append('article', productForm.article);
+    if (productForm.slug) formData.append('slug', productForm.slug);
     formData.append('isHit', productForm.isHit);
 
     if (productForm.options && productForm.options.label && productForm.options.items?.length > 0) {
@@ -405,6 +408,17 @@ export function useDashboardData({ user, showToast }) {
       formData.append('imageUrl', productForm.imageUrl);
     }
 
+    if (Array.isArray(productForm.images)) {
+      formData.append('images', JSON.stringify(productForm.images));
+    }
+
+    if (additionalImageFiles && additionalImageFiles.length > 0) {
+      additionalImageFiles.forEach((file) => {
+        formData.append('additionalImageFiles', file);
+      });
+    }
+
+    setIsProductSubmitting(true);
     try {
       if (editingProduct) {
         await updateProduct(editingProduct.id, formData);
@@ -420,6 +434,8 @@ export function useDashboardData({ user, showToast }) {
     } catch (error) {
       console.error(error);
       alert('Ошибка сохранения товара: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsProductSubmitting(false);
     }
   };
 
@@ -482,6 +498,7 @@ export function useDashboardData({ user, showToast }) {
       imageUrl: product.image || '',
       images: Array.isArray(product.images) ? product.images : [],
       article: product.article || '',
+      slug: product.slug || '',
       options: product.options && typeof product.options === 'object' && product.options.label ? product.options : { label: '', items: [] },
     });
     setImageFile(null);
@@ -1194,5 +1211,6 @@ export function useDashboardData({ user, showToast }) {
     warrantyRules,
     handleCreateWarrantyRule,
     handleDeleteWarrantyRule,
+    isProductSubmitting,
   };
 }

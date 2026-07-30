@@ -169,6 +169,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     removeAdditionalFile,
     removeSavedImage,
     clearMainImage,
+    isProductSubmitting,
   } = useDashboardData({ user, showToast });
 
   const allowedPages = useMemo(
@@ -541,6 +542,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
         onRemoveAdditionalFile={removeAdditionalFile}
         onRemoveSavedImage={removeSavedImage}
         onClearMainImage={clearMainImage}
+        isSubmitting={isProductSubmitting}
       />
 
       <CategoryModal

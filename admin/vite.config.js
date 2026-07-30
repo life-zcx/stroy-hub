@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://backend:5000';
+const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:5000';
 
 export default defineConfig({
   plugins: [
@@ -65,6 +65,10 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
+      '/_ipx': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+      },
       '/api': {
         target: apiProxyTarget,
         changeOrigin: true,

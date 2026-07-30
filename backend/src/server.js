@@ -24,6 +24,7 @@ import ogRoutes from './routes/ogRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
+import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
@@ -94,6 +95,10 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// IPX dynamic image optimization endpoint
+app.get('/_ipx/*', handleIpxImageRequest);
+app.get('/api/img', handleIpxImageRequest);
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

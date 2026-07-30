@@ -19,7 +19,7 @@ export default function ProductCard({
   isFavorite = false
 }) {
   const [loading, setLoading] = useState(false);
-  const imageSrc = getProductImage(product);
+  const imageSrc = getProductImage(product, '600x600');
 
   const inCart = cartQuantity > 0;
 
@@ -112,9 +112,9 @@ export default function ProductCard({
 
       {/* ── Link wrapper for clickable product area ── */}
       <Link
-        href={getPageHref('product', product.id)}
+        href={getPageHref('product', product.slug || product.id)}
         className="flex flex-col flex-1 cursor-pointer min-w-0 w-full"
-        onClick={() => onOpenDetails && onOpenDetails(product.id)}
+        onClick={() => onOpenDetails && onOpenDetails(product.slug || product.id)}
       >
         {/* ── Image zone ── */}
         <div className="aspect-square bg-slate-50/80 flex items-center justify-center overflow-hidden flex-shrink-0 w-full relative p-3 sm:p-4">
@@ -125,8 +125,12 @@ export default function ProductCard({
             decoding="async"
             className="w-full h-full object-contain"
             onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = FALLBACK_PRODUCT_IMAGE;
+              if (e.target.src !== product.image && product.image) {
+                e.target.src = product.image;
+              } else {
+                e.target.onerror = null;
+                e.target.src = FALLBACK_PRODUCT_IMAGE;
+              }
             }}
           />
         </div>
