@@ -86,8 +86,18 @@ app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
 
   res.json = (body) => {
-    if (isProduction && res.statusCode >= 500 && body && typeof body === 'object' && 'error' in body) {
-      return originalJson({ error: 'Внутренняя ошибка сервера.' });
+    if (res.statusCode >= 500) {
+      const errorMsg = body && typeof body === 'object' && body.error ? body.error : JSON.stringify(body);
+      logger.error(`[HTTP 500] ${req.method} ${req.originalUrl}: ${errorMsg}`, {
+        ip: req.ip || req.socket?.remoteAddress,
+        userId: req.user?.id || null,
+        method: req.method,
+        url: req.originalUrl,
+      });
+
+      if (isProduction && body && typeof body === 'object' && 'error' in body) {
+        return originalJson({ error: 'Внутренняя ошибка сервера.' });
+      }
     }
 
     return originalJson(body);
