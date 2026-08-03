@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # Dev container: regenerate client, sync schema, then start watcher
-CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm run dev"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push --accept-data-loss && npm run dev"]

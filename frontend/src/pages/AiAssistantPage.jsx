@@ -9,16 +9,18 @@ import { getPageHref } from '../utils/navigationHelper';
 const INITIAL_MESSAGE = {
   id: 1,
   role: 'assistant',
-  text: 'Здравствуйте! Я ваш Ai помощник. Что вы хотите найти?',
+  text: 'Здравствуйте! Я TORMAG AI — ваш умный помощник. Готов ответить абсолютно на любые вопросы: найти информацию, помочь с выбором или сделать сложные расчеты. Что вас интересует?',
   products: []
 };
 
 const QUICK_PROMPTS = [
-  { label: 'Подобрать штукатурку для санузла', text: 'Какая штукатурка лучше подходит для выравнивания стен во влажном санузле?' },
-  { label: 'Расчет штукатурки на 40 м²', text: 'У меня 40 м² стены, толщина слоя 10 мм. Сколько мешков Ротбанда нужно купить?' },
-  { label: 'Расход наливного пола на 25 м²', text: 'Сколько кг наливного пола нужно на 25 кв метров при толщине 5 мм?' },
-  { label: 'Доставка по Алматы и оплата', text: 'Как у вас работает доставка по Алматы и можно ли оплатить курьеру через Kaspi QR?' },
-  { label: 'Подбор фасадной краски', text: 'Посоветуйте стойкую фасадную краску для наружных работ.' }
+  { label: 'Подобрать материалы', text: 'Помогите подобрать материалы для моего ремонта' },
+  { label: 'Расчет объема', text: 'Как правильно рассчитать нужное количество стройматериалов?' },
+  { label: 'Сроки доставки', text: 'Расскажи про условия доставки собственным транспортом и варианты оплаты' },
+  { label: 'Помощь с разгрузкой', text: 'Предоставляете ли вы грузчиков при доставке?' },
+  { label: 'Возврат товара', text: 'Можно ли вернуть неиспользованные остатки материалов?' },
+  { label: 'Наличие на складе', text: 'Как узнать, есть ли нужный товар в наличии прямо сейчас?' },
+  { label: 'Подобрать аналоги', text: 'Помогите найти более бюджетные аналоги материалов' }
 ];
 
 export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) {
@@ -48,8 +50,29 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
 
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const LOADING_STEPS = [
+    'Анализирую склад TORMAG...',
+    'Подбираю лучшую продукцию...',
+    'Рассчитываю расход материалов...',
+    'Формирую выгодный вариант...'
+  ];
+  const [loadingStepIdx, setLoadingStepIdx] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      setLoadingStepIdx(0);
+      interval = setInterval(() => {
+        setLoadingStepIdx(prev => (prev + 1) % LOADING_STEPS.length);
+      }, 1400);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
+
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const recognitionRef = useRef(null);
 
   // Active Session Helper
@@ -179,7 +202,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
     };
 
     const updatedMessages = [...messages, userMsg];
-    
+
     let newTitle = currentSession.title;
     if (messages.length <= 1) {
       newTitle = query.length > 24 ? query.substring(0, 24) + '...' : query;
@@ -211,7 +234,8 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
         id: Date.now() + 1,
         role: 'assistant',
         text: (response.reply || 'Простите, не удалось сформировать ответ.').replace(/\*\*/g, ''),
-        products: response.recommendedProducts || []
+        products: response.recommendedProducts || [],
+        options: response.quickOptions || []
       };
 
       setSessions(prev => prev.map(s => {
@@ -250,19 +274,19 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
 
   return (
     <div className="h-full flex flex-col font-sans text-slate-800 text-left overflow-hidden">
-      
+
       {/* Top Header Row with Breadcrumbs & Actions (Desktop only) */}
       <div className="hidden sm:flex items-center justify-between gap-4 shrink-0 pt-5 pb-2">
         <nav className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-          <Link 
+          <Link
             href={getPageHref('home')}
-            onClick={() => onNavigate?.('home')} 
+            onClick={() => onNavigate?.('home')}
             className="hover:text-blue-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500"
           >
             Главная
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-slate-900 font-bold">Тормаг AI</span>
+          <span className="text-slate-900 font-bold">TORMAG AI</span>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -287,12 +311,12 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
         </div>
       </div>
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 overflow-hidden lg:h-[calc(100vh-10rem)]">
-        
+      {/* Main Grid Layout - Fixed Viewport Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 overflow-hidden h-[calc(100vh-11rem)] min-h-[580px] max-h-[820px]">
+
         {/* Left Sidebar: Saved Chat Sessions & Quick Prompts */}
         <div className="hidden lg:flex lg:col-span-4 flex-col gap-3 overflow-hidden">
-          
+
           {/* Chat Sessions List */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 shrink-0">
             <div className="flex items-center justify-between">
@@ -314,11 +338,10 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                 <div
                   key={sess.id}
                   onClick={() => setActiveSessionId(sess.id)}
-                  className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${
-                    sess.id === activeSessionId
-                      ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-sm'
-                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-medium'
-                  }`}
+                  className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${sess.id === activeSessionId
+                    ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-sm'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-medium'
+                    }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${sess.id === activeSessionId ? 'text-blue-400' : 'text-slate-400'}`} />
@@ -328,9 +351,8 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                   <button
                     type="button"
                     onClick={(e) => handleDeleteChat(sess.id, e)}
-                    className={`p-1 rounded-lg transition-colors border-0 cursor-pointer ${
-                      sess.id === activeSessionId ? 'hover:bg-slate-800 text-slate-400 hover:text-red-400' : 'hover:bg-slate-200 text-slate-400 hover:text-red-600'
-                    }`}
+                    className={`p-1 rounded-lg transition-colors border-0 cursor-pointer ${sess.id === activeSessionId ? 'hover:bg-slate-800 text-slate-400 hover:text-red-400' : 'hover:bg-slate-200 text-slate-400 hover:text-red-600'
+                      }`}
                     title="Удалить чат"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -369,7 +391,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
 
         {/* Right Main Chat Window */}
         <div className="lg:col-span-8 bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-2xl shadow-none sm:shadow-sm h-full flex flex-col overflow-hidden">
-          
+
           {/* Mobile Toolbar (Visible on Mobile only) */}
           <div className="sm:hidden bg-white px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200 shrink-0 shadow-sm">
             <div className="flex items-center gap-2">
@@ -406,14 +428,40 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-1.5`}
               >
                 <div
-                  className={`max-w-[85%] sm:max-w-[78%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-slate-900 text-white rounded-br-none shadow-sm font-medium'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-sm'
-                  }`}
+                  className={`max-w-[85%] sm:max-w-[78%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${msg.role === 'user'
+                    ? 'bg-slate-900 text-white rounded-br-none shadow-sm font-medium'
+                    : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-sm'
+                    }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.text.replace(/\*\*/g, '')}</p>
                 </div>
+
+                {/* Kasper Interactive Options Buttons */}
+                {Array.isArray(msg.options) && msg.options.length > 0 && (
+                  <div className="w-full max-w-[85%] sm:max-w-[78%] flex flex-wrap gap-2 pt-1">
+                    {msg.options.map((optionText, optIdx) => (
+                      <button
+                        key={optIdx}
+                        type="button"
+                        onClick={() => {
+                          if (optionText.includes('Другое')) {
+                            setInputMessage('Мне нужно ');
+                            inputRef.current?.focus();
+                          } else {
+                            handleSendMessage(optionText);
+                          }
+                        }}
+                        disabled={loading}
+                        className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm cursor-pointer border-0 flex items-center gap-1.5 ${optionText.includes('Другое')
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80'
+                          : 'bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200'
+                          }`}
+                      >
+                        <span>{optionText}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Recommended Products Grid */}
                 {Array.isArray(msg.products) && msg.products.length > 0 && (
@@ -458,11 +506,11 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </div>
             ))}
 
-            {/* Typing indicator */}
+            {/* Typing indicator (Dynamic Kasper Style) */}
             {loading && (
-              <div className="flex items-center gap-2 text-slate-500 bg-white border border-slate-200 p-3 rounded-xl w-fit text-xs shadow-sm">
-                <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                <span>Расчет материалов...</span>
+              <div className="flex items-center gap-2 text-slate-600 bg-white border border-slate-200 p-3 rounded-xl w-fit text-xs font-semibold shadow-sm animate-pulse">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-600 shrink-0" />
+                <span>{LOADING_STEPS[loadingStepIdx]}</span>
               </div>
             )}
 
@@ -479,6 +527,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               className="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-slate-400 focus-within:bg-white rounded-2xl p-1 transition-all"
             >
               <input
+                ref={inputRef}
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -496,11 +545,10 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                 <button
                   type="button"
                   onClick={handleVoiceInput}
-                  className={`p-2 rounded-xl transition-all border-0 cursor-pointer ${
-                    isListening
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
-                  }`}
+                  className={`p-2 rounded-xl transition-all border-0 cursor-pointer ${isListening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
+                    }`}
                   title={isListening ? 'Слушаю... Нажмите для отмены' : 'Голосовой ввод'}
                 >
                   {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}

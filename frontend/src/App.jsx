@@ -234,12 +234,12 @@ export default function App() {
     const handleGlobalLinkClick = (e) => {
       const anchor = e.target.closest('a');
       if (!anchor) return;
-      
+
       const href = anchor.getAttribute('href');
       // If it's an internal link starting with '/' and not external http/tel/mailto
       if (href && href.startsWith('/') && !href.startsWith('//')) {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-        
+
         e.preventDefault();
         window.history.pushState({}, '', href);
         window.dispatchEvent(new PopStateEvent('popstate'));
@@ -272,7 +272,7 @@ export default function App() {
       try {
         const data = await getSystemSettings();
         setComingSoonSettings(data);
-        
+
         const wasDismissed = sessionStorage.getItem('tormag_coming_soon_dismissed') === 'true';
         if (data.comingSoonModalEnabled && !wasDismissed) {
           setIsComingSoonModalOpen(true);
@@ -364,7 +364,7 @@ export default function App() {
         bonuses={bonuses}
       />
 
-      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:px-6 lg:px-8 sm:py-6 overflow-hidden sm:overflow-auto flex flex-col flex-1 min-h-0 sm:min-h-screen sm:block' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
+      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-90px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
         {currentPage === 'home' && (
           <HomePage
             onNavigate={setCurrentPage}

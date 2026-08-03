@@ -15,7 +15,8 @@ export const handleAiChat = async (req, res) => {
 
     res.json({
       reply: result.reply,
-      recommendedProducts: result.recommendedProducts || []
+      recommendedProducts: result.recommendedProducts || [],
+      quickOptions: result.quickOptions || []
     });
   } catch (error) {
     console.error('[AI CONTROLLER ERROR]', error);
