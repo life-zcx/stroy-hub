@@ -1605,6 +1605,14 @@ export default function ProductPage({
                     src={getIpxImageUrl(img, '200x200')}
                     alt={`фото ${i + 1}`}
                     className="w-full h-full object-contain"
+                    onError={(e) => {
+                      if (e.target.src !== img && img) {
+                        e.target.src = img;
+                      } else {
+                        e.target.onerror = null;
+                        e.target.src = FALLBACK_PRODUCT_IMAGE;
+                      }
+                    }}
                   />
                 </button>
               ))}

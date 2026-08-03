@@ -26,6 +26,7 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
+import { getGoogleMerchantFeed } from './controllers/feedController.js';
 import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
 import { startCleanupScheduler } from './utils/cleanup.js';
@@ -144,6 +145,8 @@ app.use((req, res, next) => {
 
 // Routes
 app.get('/sitemap.xml', getDynamicSitemap);
+app.get('/feed/google.xml', getGoogleMerchantFeed);
+app.get('/api/feed/google.xml', getGoogleMerchantFeed);
 app.use('/api', globalRateLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
