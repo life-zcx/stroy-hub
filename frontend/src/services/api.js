@@ -247,4 +247,10 @@ export const getSystemSettings = async () => {
   return response.data;
 };
 
+// AI Chatbot Assistant API
+export const sendAiChatMessage = async (message, history = []) => {
+  const response = await api.post('/ai/chat', { message, history });
+  return response.data;
+};
+
 export default api;

@@ -399,3 +399,15 @@ model PriceLog {
   @@index([productId])
   @@index([createdAt])
 }
+
+model AiChatLog {
+  id                  Int      @id @default(autoincrement())
+  prompt              String   @db.Text
+  reply               String   @db.Text
+  recommendedProdIds Int[]    @default([])
+  ip                  String?  @db.VarChar(45)
+  userId              Int?
+  createdAt           DateTime @default(now())
+
+  @@index([createdAt])
+}

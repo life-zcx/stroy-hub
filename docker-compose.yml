@@ -74,6 +74,9 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-9f1555ccb0637c53d221868e20175b90653c4891f010ee20f3053850f6e41dd8}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-tormag-media}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-https://media.tormag.kz}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      AI_SERVICE_URL: http://ai-service:5005
 
     ports:
       - "5000:5000"
@@ -118,6 +121,22 @@ services:
     volumes:
       - ./admin:/app
       - /app/node_modules
+    depends_on:
+      - backend
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: tormag_ai_service
+    restart: always
+    ports:
+      - "5005:5005"
+    environment:
+      PORT: 5005
+      BACKEND_API_URL: http://backend:5000
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     depends_on:
       - backend
 

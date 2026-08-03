@@ -435,6 +435,37 @@ html {
 }
 
 /* ==========================================================================
+   AI Assistant Page — Mobile PWA Full-Screen Chat Layout
+   ========================================================================== */
+
+/* Only lock height/scroll on mobile. Desktop works as a normal scrollable page. */
+@media (max-width: 639px) {
+  .ai-assistant-root {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Fallback for browsers that don't support dvh yet */
+  @supports not (height: 100dvh) {
+    .ai-assistant-root {
+      height: 100vh;
+      min-height: 100vh;
+      max-height: 100vh;
+    }
+  }
+}
+
+/* On iOS PWA / standalone mode the safe-area insets ensure content is
+   not hidden behind the home indicator bar at the bottom. */
+.ai-chat-input-bar {
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+}
+
+/* ==========================================================================
    Accessibility Styles (Версия для слабовидящих)
    ========================================================================== */
 

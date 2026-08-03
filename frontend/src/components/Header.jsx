@@ -933,7 +933,7 @@ export default function Header({
 
       {/* Row 2: Premium Main Navigation Header */}
       <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} py-2.5 ${isScrolled
-        ? 'bg-white/97 backdrop-blur-md shadow-md border-b border-gray-200/50'
+        ? 'bg-white shadow-md border-b border-gray-200/50'
         : 'bg-white border-b border-gray-100'
         }`}
       >

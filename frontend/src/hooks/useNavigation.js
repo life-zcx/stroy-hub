@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 const KNOWN_PAGES = [
   'catalog', 'advisor', 'estimate', 'delivery', 'about', 'legal', 'favorites',
   'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions', 'my-promotions', 'cart', 'checkout', 'cashback', 'cashback/history',
-  'cabinet', 'cabinet/orders', 'cabinet/cashback', 'cabinet/promotions',
+  'cabinet', 'cabinet/orders', 'cabinet/cashback', 'cabinet/promotions', 'ai-assistant',
 ];
 
 // Cabinet tab → URL sub-path mapping

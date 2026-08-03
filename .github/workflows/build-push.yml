@@ -42,7 +42,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 2. Build and Push Gateway Image (Nginx + static frontend/admin)
+      # 2. Build and Push AI Service Image
+      - name: Build and push AI Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-service
+          file: ./ai-service/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/${{ env.REPOSITORY_LC }}/ai-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 3. Build and Push Gateway Image (Nginx + static frontend/admin)
       - name: Build and push Gateway image
         uses: docker/build-push-action@v5
         with:

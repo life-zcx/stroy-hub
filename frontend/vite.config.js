@@ -23,7 +23,7 @@ export default defineConfig({
         name: 'TORMAG — Всё для стройки и ремонта',
         short_name: 'TORMAG',
         description: 'Купить качественные строительные материалы оптом и в розницу в Казахстане.',
-        theme_color: '#0062BE',
+        theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

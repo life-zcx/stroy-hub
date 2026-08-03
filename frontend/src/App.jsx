@@ -23,6 +23,7 @@ import Cabinet from './pages/Cabinet';
 import CartPage from './pages/CartPage';
 import NotFoundPage from './pages/NotFoundPage';
 import BlockedPage from './pages/BlockedPage';
+import AiAssistantPage from './pages/AiAssistantPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -46,9 +47,16 @@ import { PATH_TO_CABINET_TAB } from './hooks/useNavigation';
 import { getSystemSettings } from './services/api';
 import ComingSoonModal from './components/ComingSoonModal';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import AiAssistantWidget from './components/AiAssistantWidget';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Detect PWA standalone mode (installed app) — hide footer there
+  const isPwa = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
@@ -324,7 +332,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans">
+    <div className={`min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans ${currentPage === 'ai-assistant' ? 'ai-assistant-root overflow-hidden' : ''}`}>
       <Header
         isScrolled={isScrolled}
         currentRegion={region.currentRegion}
@@ -356,7 +364,7 @@ export default function App() {
         bonuses={bonuses}
       />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:px-6 lg:px-8 sm:py-6 overflow-hidden sm:overflow-auto flex flex-col flex-1 min-h-0 sm:min-h-screen sm:block' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
         {currentPage === 'home' && (
           <HomePage
             onNavigate={setCurrentPage}
@@ -545,6 +553,15 @@ export default function App() {
           />
         )}
 
+        {currentPage === 'ai-assistant' && (
+          <AiAssistantPage
+            onAddToCart={cart.handleAddToCart}
+            showToast={showToast}
+            onNavigate={setCurrentPage}
+            onOpenCallback={() => setIsCallbackModalOpen(true)}
+          />
+        )}
+
         {/* Blocked user screen */}
         {auth.customer?.isBlocked && (
           <BlockedPage
@@ -560,13 +577,16 @@ export default function App() {
         )}
       </main>
 
-      <Footer
-        customer={auth.customer}
-        onOpenAuth={auth.openLoginModal}
-        onNavigate={setCurrentPage}
-        setSelectedCategory={handleSetCategory}
-        setLegalTab={setLegalTab}
-      />
+      {/* Footer: hidden on mobile AI page and in PWA; shown on desktop even for AI page */}
+      {(currentPage !== 'ai-assistant' || typeof window !== 'undefined' && window.innerWidth >= 640) && !isPwa && (
+        <Footer
+          customer={auth.customer}
+          onOpenAuth={auth.openLoginModal}
+          onNavigate={setCurrentPage}
+          setSelectedCategory={handleSetCategory}
+          setLegalTab={setLegalTab}
+        />
+      )}
 
       {/* Cart is now a dedicated page: CartPage */}
 
@@ -632,13 +652,22 @@ export default function App() {
         message={comingSoonSettings.comingSoonMessage}
       />
 
-      <MobileCartBar
-        cartItemsCount={cart.cartItemsCount}
-        cartTotal={cart.cartTotal}
-        onOpenCart={() => setCurrentPage('cart')}
+      {currentPage !== 'ai-assistant' && (
+        <MobileCartBar
+          cartItemsCount={cart.cartItemsCount}
+          cartTotal={cart.cartTotal}
+          onOpenCart={() => setCurrentPage('cart')}
+          currentPage={currentPage}
+        />
+      )}
+      {currentPage !== 'ai-assistant' && <ScrollToTop cartItemsCount={cart.cartItemsCount} />}
+      <AiAssistantWidget
+        onAddToCart={cart.handleAddToCart}
+        showToast={showToast}
+        onNavigate={setCurrentPage}
         currentPage={currentPage}
+        cartItemsCount={cart.cartItemsCount}
       />
-      <ScrollToTop />
       <PWAInstallPrompt showToast={showToast} />
       <Toast toast={toast} />
     </div>

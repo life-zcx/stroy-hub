@@ -24,6 +24,7 @@ import ogRoutes from './routes/ogRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
+import aiLogRoutes from './routes/aiLogRoutes.js';
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import { getGoogleMerchantFeed } from './controllers/feedController.js';
@@ -167,6 +168,24 @@ app.use('/api/og', ogRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/ai-logs', aiLogRoutes);
+
+// Proxy AI requests to standalone ai-service microservice
+app.use('/api/ai', async (req, res) => {
+  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5005';
+  try {
+    const response = await fetch(`${aiServiceUrl}${req.originalUrl}`, {
+      method: req.method,
+      headers: { 'Content-Type': 'application/json' },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err) {
+    logger.error(`[AI PROXY ERROR] Failed to proxy to ${aiServiceUrl}: ${err.message}`);
+    res.status(502).json({ error: 'Сервис ИИ временно недоступен' });
+  }
+});
 
 // Silent Geolocation helper endpoint to bypass client AdBlockers
 app.get('/api/geo', async (req, res) => {
