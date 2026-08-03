@@ -95,9 +95,6 @@ services:
       BACKEND_API_URL: http://backend:5000
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-    volumes:
-      - ./ai-service:/app
-      - /app/node_modules
     depends_on:
       backend:
         condition: service_healthy
