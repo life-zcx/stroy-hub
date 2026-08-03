@@ -19,29 +19,29 @@ export default function Requisites() {
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
-      
+
       {/* Hero Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        
+
         {/* SVG Requisites Building Background */}
-        <svg 
-          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
-          viewBox="0 0 120 80" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block"
+          viewBox="0 0 120 80"
+          fill="none"
+          stroke="currentColor"
           strokeWidth="0.8"
         >
           {/* Building Columns / Temple Style representing official/legal institution */}
           <line x1="20" y1="70" x2="100" y2="70" strokeWidth="1.5" />
           <line x1="25" y1="65" x2="95" y2="65" strokeWidth="1" />
-          
+
           {/* Columns */}
           <rect x="30" y="30" width="8" height="35" rx="0.5" fill="currentColor" fillOpacity="0.05" />
           <rect x="46" y="30" width="8" height="35" rx="0.5" fill="currentColor" fillOpacity="0.05" />
           <rect x="62" y="30" width="8" height="35" rx="0.5" fill="currentColor" fillOpacity="0.05" />
           <rect x="78" y="30" width="8" height="35" rx="0.5" fill="currentColor" fillOpacity="0.05" />
-          
+
           {/* Roof Triangle */}
           <path d="M22 30 L60 12 L98 30 Z" fill="currentColor" fillOpacity="0.1" />
           <line x1="20" y1="30" x2="100" y2="30" strokeWidth="1.2" />
@@ -82,11 +82,11 @@ export default function Requisites() {
               </tr>
               <tr className="border-b border-slate-100">
                 <td className="py-4 pr-4 font-bold text-slate-400 uppercase text-xs">Сокращенное название</td>
-                <td className="py-4 pl-4 font-semibold text-slate-900 leading-relaxed">ИП «TORMAG.KZ» (Тормаг)</td>
+                <td className="py-4 pl-4 font-semibold text-slate-900 leading-relaxed">ИП «TORMAG.KZ»</td>
               </tr>
               <tr className="border-b border-slate-100">
-                <td className="py-4 pr-4 font-bold text-slate-400 uppercase text-xs">БИН</td>
-                <td className="py-4 pl-4 font-mono font-bold text-slate-900">---</td>
+                <td className="py-4 pr-4 font-bold text-slate-400 uppercase text-xs">ИИН</td>
+                <td className="py-4 pl-4 font-mono font-bold text-slate-900">990601301525</td>
               </tr>
               <tr className="border-b border-slate-100">
                 <td className="py-4 pr-4 font-bold text-slate-400 uppercase text-xs">Юридический адрес</td>

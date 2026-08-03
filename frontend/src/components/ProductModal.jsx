@@ -76,8 +76,12 @@ export default function ProductModal({ product, onClose, onAddToCart, onOpenDeta
                 alt={product.name}
                 className="w-full max-w-[320px] h-[260px] md:h-[360px] object-contain drop-shadow-2xl"
                 onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = FALLBACK_PRODUCT_IMAGE;
+                  if (e.target.src !== product.image && product.image) {
+                    e.target.src = product.image;
+                  } else {
+                    e.target.onerror = null;
+                    e.target.src = FALLBACK_PRODUCT_IMAGE;
+                  }
                 }}
               />
             </div>

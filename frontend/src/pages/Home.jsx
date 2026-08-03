@@ -11,7 +11,7 @@ import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import ProductCard from '../components/ProductCard';
 import ProductSkeleton from '../components/ProductSkeleton';
-import { getProductImage } from '../utils/productImage';
+import { getProductImage, FALLBACK_PRODUCT_IMAGE } from '../utils/productImage';
 
 const THEME_GRADIENTS = {
   emerald: 'from-emerald-500 to-teal-600',
@@ -655,6 +655,14 @@ export default function Home({
                             src={imageSrc} 
                             alt={product.name} 
                             className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" 
+                            onError={(e) => {
+                              if (e.target.src !== product.image && product.image) {
+                                e.target.src = product.image;
+                              } else {
+                                e.target.onerror = null;
+                                e.target.src = FALLBACK_PRODUCT_IMAGE;
+                              }
+                            }}
                           />
                         </Link>
                       </div>
