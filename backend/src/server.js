@@ -174,8 +174,9 @@ app.use('/api/ai-logs', aiLogRoutes);
 // Proxy AI requests to standalone ai-service microservice
 app.use('/api/ai', async (req, res) => {
   const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5005';
+  const targetUrl = `${aiServiceUrl}/api/ai${req.url}`;
   try {
-    const response = await fetch(`${aiServiceUrl}${req.originalUrl}`, {
+    const response = await fetch(targetUrl, {
       method: req.method,
       headers: { 'Content-Type': 'application/json' },
       body: req.method !== 'GET' && req.body ? JSON.stringify(req.body) : undefined,
