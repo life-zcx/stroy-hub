@@ -3,6 +3,13 @@ import logger from '../utils/logger.js';
 
 export const logAiChat = async (req, res) => {
   try {
+    const expectedSecret = process.env.INTERNAL_API_KEY || process.env.JWT_SECRET || 'tormag_internal_secret';
+    const incomingSecret = req.headers['x-internal-secret'];
+
+    if (incomingSecret !== expectedSecret) {
+      return res.status(403).json({ error: 'Доступ запрещен. Требуется внутренний ключ безопасности.' });
+    }
+
     const { prompt, reply, recommendedProdIds, userId } = req.body;
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
 

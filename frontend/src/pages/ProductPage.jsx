@@ -457,7 +457,12 @@ export default function ProductPage({
       'Площадь в упаковке',
       'Страна-производитель',
       'Страна производства',
+      'Материал / Состав',
       'Группа горючести',
+      'Тип крепежа',
+      'Тип головки',
+      'Тип шлица',
+      'Тип резьбы',
       'Тип кромки',
       'Срок хранения',
       'Плотность',
@@ -499,6 +504,28 @@ export default function ProductPage({
       let l = line.trim().replace(/^ПараметрЗначение/gi, '').trim();
       if (!l) return;
 
+      const colonIdx = l.indexOf(':');
+      if (colonIdx !== -1) {
+        let key = l.substring(0, colonIdx).replace(/^[\s;,-]+/, '').trim();
+        let val = l.substring(colonIdx + 1).replace(/^[\s;,-]+/, '').trim();
+
+        // Auto-heal double colons like "Тип: крепежа: Саморез по дереву" -> "Тип крепежа: Саморез по дереву"
+        if (val.includes(':')) {
+          const secondColonIdx = val.indexOf(':');
+          const subKeyPart = val.substring(0, secondColonIdx).trim();
+          const subValPart = val.substring(secondColonIdx + 1).trim();
+          if (subKeyPart && subKeyPart.length < 25 && !subKeyPart.includes(' ')) {
+            key = `${key} ${subKeyPart}`;
+            val = subValPart;
+          }
+        }
+
+        if (key && val) {
+          result.push({ label: key, value: val });
+          return;
+        }
+      }
+
       // Check if line starts with any known key (longest key checked first)
       const matchedKey = knownKeys.find(k => l.toLowerCase().startsWith(k.toLowerCase()));
       if (matchedKey) {
@@ -511,16 +538,9 @@ export default function ProductPage({
         }
       }
 
-      // Fallback colon split
-      const colonIdx = l.indexOf(':');
-      if (colonIdx !== -1) {
-        const key = l.substring(0, colonIdx).replace(/^[\s;,-]+/, '').trim();
-        const val = l.substring(colonIdx + 1).replace(/^[\s;,-]+/, '').trim();
-        if (key && val) {
-          result.push({ label: key, value: val });
-        } else if (key) {
-          result.push({ label: key, value: '' });
-        }
+      if (l.includes(':')) {
+        const idx = l.indexOf(':');
+        result.push({ label: l.substring(0, idx).trim(), value: l.substring(idx + 1).trim() });
       } else {
         result.push({ label: l, value: '' });
       }

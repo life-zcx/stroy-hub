@@ -2,7 +2,7 @@ import express from 'express';
 import { 
   getAllProducts, getProductById, createProduct, updateProduct, deleteProduct,
   getPricingSettings, savePricingSettings, importProductsXlsx, matchEstimateXlsx,
-  getProductStats, getPriceLogs
+  getProductStats, getPriceLogs, getAiCatalogProducts
 } from '../controllers/productController.js';
 import { verifyToken, requireRoles } from '../middleware/auth.js';
 import { estimateUploadRateLimiter } from '../middleware/rateLimiter.js';
@@ -14,6 +14,7 @@ const router = express.Router();
 router.get('/pricing/settings', verifyToken, requireRoles(['ADMIN']), getPricingSettings);
 router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePricingSettings);
 router.get('/pricing/logs', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), getPriceLogs);
+router.get('/ai-catalog', getAiCatalogProducts);
 
 // Public endpoints
 router.get('/', getAllProducts);

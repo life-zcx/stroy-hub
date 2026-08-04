@@ -73,9 +73,10 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
 
     // File validation: Extension check
     const ext = selectedFile.name.split('.').pop().toLowerCase();
-    if (!['xlsx', 'csv'].includes(ext)) {
-      showToast({ title: 'Неподдерживаемый формат', message: 'Пожалуйста, загрузите файл Excel (.xlsx) или .csv', type: 'error' });
-      setError('Выбран неподдерживаемый формат файла. Поддерживаются только файлы с расширением .xlsx и .csv');
+    const isImageOrPdf = ['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext);
+    if (!['xlsx', 'csv', 'pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+      showToast({ title: 'Неподдерживаемый формат', message: 'Разрешены файлы Excel, PDF и изображения (JPG, PNG, WebP)', type: 'error' });
+      setError('Выбран неподдерживаемый формат файла. Поддерживаются Excel (.xlsx, .csv), PDF и изображения (.jpg, .png, .webp)');
       return;
     }
 
@@ -85,7 +86,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
     setResults(null);
     setSelectedItems({});
     setUploadProgress(0);
-    setProgressStatus('Чтение файла...');
+    setProgressStatus(isImageOrPdf ? 'Отправка в ИИ-сервис Vision OCR...' : 'Чтение файла...');
 
     let progressVal = 0;
     const progressInterval = setInterval(() => {
@@ -96,16 +97,16 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
       }
       setUploadProgress(Math.floor(progressVal));
       
-      if (progressVal < 25) {
-        setProgressStatus('Парсинг структуры Excel/CSV...');
-      } else if (progressVal < 55) {
-        setProgressStatus('Анализ спецификации товаров...');
-      } else if (progressVal < 82) {
+      if (progressVal < 30) {
+        setProgressStatus(isImageOrPdf ? 'Распознавание рукописного и печатного текста сметы...' : 'Парсинг структуры Excel/CSV...');
+      } else if (progressVal < 65) {
+        setProgressStatus('Извлечение наименований и объемов стройматериалов...');
+      } else if (progressVal < 88) {
         setProgressStatus('Сопоставление позиций с каталогом Tormag...');
       } else {
         setProgressStatus('Подготовка интерактивного превью...');
       }
-    }, 220);
+    }, 250);
 
     try {
       const data = await matchEstimate(selectedFile);
@@ -279,7 +280,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
       </div>
 
       {!results && !loading && (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="w-full space-y-6">
           {/* Uploader Box */}
           <div 
             onDragEnter={handleDrag}
@@ -297,7 +298,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
               ref={fileInputRef}
               type="file" 
               className="hidden" 
-              accept=".xlsx,.csv"
+              accept=".xlsx,.csv,.pdf,.jpg,.jpeg,.png,.webp"
               onChange={handleFileChange}
             />
 
@@ -311,10 +312,10 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
               </div>
               <div>
                 <p className="text-base font-bold text-slate-800 transition-colors group-hover:text-slate-900">
-                  {dragActive ? 'Отпустите файл для мгновенной загрузки' : 'Перетащите файл сюда или выберите на компьютере'}
+                  {dragActive ? 'Отпустите файл для мгновенной загрузки' : 'Перетащите файл или фото сметы сюда'}
                 </p>
                 <p className="mt-2 text-xs text-slate-400 font-semibold">
-                  Поддерживаются форматы Excel (.xlsx) и CSV до 10 МБ
+                  Поддерживаются Excel (.xlsx, .csv), PDF и Фото (JPG, PNG, WebP) до 10 МБ
                 </p>
               </div>
             </div>
@@ -340,7 +341,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
 
       {/* Loading State with Progress Bar & File details */}
       {loading && (
-        <div className="max-w-3xl mx-auto rounded-3xl border border-slate-200/80 bg-white p-8 shadow-lg space-y-6">
+        <div className="w-full rounded-3xl border border-slate-200/80 bg-white p-8 shadow-lg space-y-6">
           <div className="border-b border-slate-100 pb-5">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -386,7 +387,7 @@ export default function EstimatePage({ onAddToCart, onNavigate, showToast, custo
 
       {/* Error state */}
       {error && (
-        <div className="max-w-2xl mx-auto rounded-3xl border border-rose-100 bg-rose-50/40 p-8 text-center space-y-4">
+        <div className="w-full rounded-3xl border border-rose-100 bg-rose-50/40 p-8 text-center space-y-4">
           <AlertCircle className="mx-auto h-12 w-12 text-rose-500" />
           <div>
             <h3 className="text-lg font-black text-slate-900">Не удалось распознать смету</h3>

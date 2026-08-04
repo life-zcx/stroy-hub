@@ -13,6 +13,13 @@ let catalogCache = null;
 let settingsCache = null;
 let lastCacheTime = 0;
 const CACHE_TTL = 30 * 60 * 1000; // Кэш живет 30 минут (в миллисекундах)
+
+export function resetAiCatalogCache() {
+  catalogCache = null;
+  settingsCache = null;
+  lastCacheTime = 0;
+  console.log('[AI SERVICE] Catalog cache cleared via reset endpoint.');
+}
 // -------------------------------------------------
 
 async function generateFallbackResponse() {

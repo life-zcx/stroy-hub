@@ -234,16 +234,19 @@ export const createOrder = async (req, res) => {
         finalTotalAmount = reservedEvaluation.totalAmount;
       }
 
+      // Начисляем кешбек динамически на основе уровня лояльности пользователя
+      // Вызываем getUserLoyaltyStatus один раз до блока useBonuses, используем результат в обоих местах
+      const loyalty = await getUserLoyaltyStatus(parseInt(userId, 10));
+
       let bonusDiscount = 0;
       if (useBonuses) {
-        const availableBalance = await getAvailableBalance(parseInt(userId), tx);
+        const availableBalance = await getAvailableBalance(parseInt(userId, 10), tx);
         if (availableBalance > 0) {
           let maxBonusToUse = availableBalance;
-          const numericUseBonuses = typeof useBonuses === 'number' ? useBonuses : parseInt(useBonuses);
+          const numericUseBonuses = typeof useBonuses === 'number' ? useBonuses : parseInt(useBonuses, 10);
           if (!isNaN(numericUseBonuses) && numericUseBonuses > 0) {
             maxBonusToUse = Math.min(availableBalance, numericUseBonuses);
           }
-          const loyalty = await getUserLoyaltyStatus(parseInt(userId));
           const maxAllowedBonus = Math.floor(finalTotalAmount * (loyalty.maxBonusPaymentPercent / 100));
           bonusDiscount = Math.min(maxBonusToUse, maxAllowedBonus);
           finalTotalAmount -= bonusDiscount;
@@ -268,7 +271,7 @@ export const createOrder = async (req, res) => {
           promotionId: reservedPromotion?.id || null,
           promotionSnapshot: buildPromotionSnapshot(reservedPromotion, reservedEvaluation),
           statusHistory: [createStatusHistoryEntry('pending')],
-          userId: parseInt(userId),
+          userId: parseInt(userId, 10),
           deliveryDate: deliveryDate || null,
           deliveryTime: deliveryTime || null,
           managerNotes: null,
@@ -293,22 +296,21 @@ export const createOrder = async (req, res) => {
 
       // Записываем бонусные транзакции
       if (bonusDiscount > 0) {
-        await createBonusSpent(parseInt(userId), order.id, bonusDiscount, tx);
+        await createBonusSpent(parseInt(userId, 10), order.id, bonusDiscount, tx);
       }
 
-      // Начисляем кешбек динамически на основе уровня лояльности пользователя
-      const loyalty = await getUserLoyaltyStatus(parseInt(userId));
+      // Начисляем кешбек — используем loyalty, полученный выше (не вызываем повторно)
       let earnedAmount = 0;
       const discountRatio = subtotalAmount > 0 ? (finalTotalAmount / subtotalAmount) : 0;
-      
+
       for (const item of order.items) {
         const itemPrice = item.price;
         const rate = itemPrice >= 1000000 ? loyalty.highValueCashback : loyalty.baseCashbackPercent;
         const itemFinalTotal = item.price * item.quantity * discountRatio;
         earnedAmount += Math.round(itemFinalTotal * (rate / 100));
       }
-      
-      await createBonusEarned(parseInt(userId), order.id, earnedAmount, `Начисление кешбэка за заказ #${order.id}`, tx);
+
+      await createBonusEarned(parseInt(userId, 10), order.id, earnedAmount, `Начисление кешбэка за заказ #${order.id}`, tx);
 
       if (reservedPromotion) {
         await tx.promotion.update({

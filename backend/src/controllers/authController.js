@@ -6,7 +6,8 @@ import { sendEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
 import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendTelegramAlert } from '../utils/telegram.js';
-
+import { normalizePhone } from '../utils/phoneUtils.js';
+import logger from '../utils/logger.js';
 
 const buildUserPayload = (user) => ({
   id: user.id,
@@ -29,10 +30,21 @@ const buildUserPayload = (user) => ({
 
 const checkPhoneExists = async (phone) => {
   if (!phone) return false;
-  const digits = phone.replace(/[^\d]/g, '');
-  if (digits.length < 10) return false;
-  const last10Digits = digits.slice(-10);
+  const normalized = normalizePhone(phone);
+  if (!normalized || normalized.length < 10) return false;
 
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { phoneNormalized: normalized },
+        { phone: phone }
+      ]
+    },
+    select: { id: true }
+  });
+  if (existing) return true;
+
+  const last10Digits = normalized.slice(-10);
   const matched = await prisma.$queryRaw`
     SELECT id FROM "User" 
     WHERE "phone" IS NOT NULL 
@@ -240,6 +252,7 @@ export const register = async (req, res) => {
         password: hashedPassword,
         name,
         phone,
+        phoneNormalized: normalizePhone(phone),
         address: address || null,
         entityType: entityType || 'PHYSICAL',
         companyBin: companyBin || null,
@@ -273,7 +286,7 @@ export const register = async (req, res) => {
           where: { sessionId, userId: null },
           data: { userId: newUser.id }
         })
-      ]).catch(err => console.error('Error linking session events on register:', err));
+      ]).catch(err => logger.warn('Error linking session events on register', { error: err.message }));
     }
 
     res.status(201).json({
@@ -323,7 +336,7 @@ export const login = async (req, res) => {
       const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       const text = `🔑 *[Вход в систему]*\n\n👤 *Пользователь:* \`${user.email}\` (${user.name || 'без имени'})\n🛡️ *Роль:* \`${user.role}\`\n🌐 *IP-адрес:* \`${ip}\`\n🖥️ *User-Agent:* \`${userAgent}\``;
-      sendTelegramAlert(text).catch(err => console.error('Error sending Telegram alert on login:', err));
+      sendTelegramAlert(text).catch(err => logger.warn('Error sending Telegram alert on login', { error: err.message }));
     }
 
     if (sessionId) {
@@ -336,7 +349,7 @@ export const login = async (req, res) => {
           where: { sessionId, userId: null },
           data: { userId: user.id }
         })
-      ]).catch(err => console.error('Error linking session events on login:', err));
+      ]).catch(err => logger.warn('Error linking session events on login', { error: err.message }));
     }
 
     res.json({
@@ -443,6 +456,7 @@ export const updateProfile = async (req, res) => {
       data: {
         name: name !== undefined ? name : undefined,
         phone: processedPhone !== undefined ? processedPhone : undefined,
+        phoneNormalized: processedPhone ? normalizePhone(processedPhone) : undefined,
         address: address !== undefined ? address : undefined,
         addresses: addresses !== undefined ? addresses : undefined,
         password: hashedPassword !== undefined ? hashedPassword : undefined,
@@ -470,15 +484,7 @@ export const forgotPassword = async (req, res) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      // For security reasons, don't disclose if user exists or not, but in B2B let's be explicit or return ok.
-      // Let's return error since it helps users correct their typos
-      return res.status(404).json({ error: 'Пользователь с таким email не найден' });
-    }
-
-    // Check email spam lock in Redis
+    // Check email spam lock in Redis (before DB lookup to avoid user enumeration)
     const cleanEmail = email.trim().toLowerCase();
     const spamKey = `rate-limit:email-otp:${cleanEmail}`;
     const isSpam = await redisClient.exists(spamKey);
@@ -486,42 +492,50 @@ export const forgotPassword = async (req, res) => {
       return res.status(429).json({ error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.' });
     }
 
-    // Generate 6-digit verification code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    // Save token to database (delete any old recovery tokens for this email first)
-    await prisma.passwordResetToken.deleteMany({ where: { email } });
-    await prisma.passwordResetToken.create({
-      data: {
-        email,
-        code,
-        expiresAt,
-      },
-    });
+    // NOTE: We intentionally do NOT return a 404 if the user is not found.
+    // Revealing whether an email is registered or not is a User Enumeration vulnerability.
+    // Instead, we silently return 200 OK in both cases.
+    if (user) {
+      // Generate 6-digit verification code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Send email using Resend utility
-    const html = `
-      <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h2 style="color: #0f172a; font-size: 20px; font-weight: bold; margin-bottom: 8px;">Восстановление доступа TORMAG.KZ</h2>
-        <p style="color: #475569; font-size: 14px; margin-bottom: 24px;">Вы запросили сброс пароля. Используйте код ниже для подтверждения операции. Код действителен в течение 10 минут.</p>
-        <div style="background-color: #f1f5f9; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
-          <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0f172a;">${code}</span>
+      // Save token to database (delete any old recovery tokens for this email first)
+      await prisma.passwordResetToken.deleteMany({ where: { email } });
+      await prisma.passwordResetToken.create({
+        data: {
+          email,
+          code,
+          expiresAt,
+        },
+      });
+
+      // Send email using Resend utility
+      const html = `
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #0f172a; font-size: 20px; font-weight: bold; margin-bottom: 8px;">Восстановление доступа TORMAG.KZ</h2>
+          <p style="color: #475569; font-size: 14px; margin-bottom: 24px;">Вы запросили сброс пароля. Используйте код ниже для подтверждения операции. Код действителен в течение 10 минут.</p>
+          <div style="background-color: #f1f5f9; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0f172a;">${code}</span>
+          </div>
+          <p style="color: #94a3b8; font-size: 11px;">Если вы не совершали этот запрос, просто проигнорируйте это письмо.</p>
         </div>
-        <p style="color: #94a3b8; font-size: 11px;">Если вы не совершали этот запрос, просто проигнорируйте это письмо.</p>
-      </div>
-    `;
+      `;
 
-    await sendEmail({
-      to: email,
-      subject: 'Код для восстановления пароля - TORMAG.KZ',
-      html,
-    });
+      await sendEmail({
+        to: email,
+        subject: 'Код для восстановления пароля - TORMAG.KZ',
+        html,
+      });
 
-    // Set lock in Redis only after email was sent successfully
-    await redisClient.set(spamKey, '1', { EX: 60 });
+      // Set lock in Redis only after email was sent successfully
+      await redisClient.set(spamKey, '1', { EX: 60 });
+    }
 
-    res.json({ message: 'Код подтверждения успешно отправлен на вашу почту.' });
+    // Always return the same response to prevent user enumeration
+    res.json({ message: 'Если этот email зарегистрирован, вы получите код подтверждения.' });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при отправке кода: ' + error.message });
   }

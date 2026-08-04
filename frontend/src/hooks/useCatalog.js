@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getProductsPage, getCategories } from '../services/api';
 
 const PRODUCT_PAGE_SIZE = 24;
 
-export default function useCatalog(showToast, initialCategory = 'all') {
+export default function useCatalog(showToast, initialCategory = 'all', currentPage = 'home') {
   const [products, setProducts] = useState([]);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -18,6 +18,13 @@ export default function useCatalog(showToast, initialCategory = 'all') {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 200000 });
   const [onlyHits, setOnlyHits] = useState(false);
   const [onlyBulk, setOnlyBulk] = useState(false);
+
+  // Stable ref so loadProducts doesn't get recreated every time showToast changes
+  const showToastRef = useRef(showToast);
+  useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+
+  const catalogPages = ['home', 'catalog', 'advisor', 'promotions'];
+  const isCatalogPage = !currentPage || catalogPages.includes(currentPage);
 
   const loadCategories = async () => {
     try {
@@ -66,12 +73,12 @@ export default function useCatalog(showToast, initialCategory = 'all') {
       setHasMore(Boolean(result.hasMore));
     } catch (error) {
       console.error(error);
-      showToast?.('⚠️ Ошибка соединения с сервером');
+      showToastRef.current?.('⚠️ Ошибка соединения с сервером');
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk, showToast]);
+  }, [selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk]);
 
   const loadMoreProducts = () => {
     if (!loadingMore && hasMore) {
@@ -99,9 +106,11 @@ export default function useCatalog(showToast, initialCategory = 'all') {
   }, []);
 
   useEffect(() => {
-    loadProducts();
+    if (isCatalogPage) {
+      loadProducts();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk]);
+  }, [isCatalogPage, selectedCategory, searchQuery, sortBy, priceRange.min, priceRange.max, onlyHits, onlyBulk]);
 
   return {
     products,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, 
   ChevronRight, Repeat, Clock, Truck, CheckCircle2, AlertCircle 
@@ -20,6 +20,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
   const [returnRequests, setReturnRequests] = useState([]);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [warrantyRules, setWarrantyRules] = useState([]);
+  const fetchedOrderRef = useRef(null);
 
   const fetchReturns = async () => {
     try {
@@ -40,17 +41,17 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
   };
 
   useEffect(() => {
-    if (customer && orderId && !hasFullDetails && !loading && !error) {
-      onLoadOrder(orderId);
+    if (customer?.id && orderId) {
+      if (fetchedOrderRef.current !== orderId) {
+        fetchedOrderRef.current = orderId;
+        if (!hasFullDetails && !loading && !error) {
+          onLoadOrder(orderId);
+        }
+        fetchReturns();
+        fetchWarrantyRules();
+      }
     }
-  }, [customer, orderId, hasFullDetails, loading, error, onLoadOrder]);
-
-  useEffect(() => {
-    if (customer) {
-      fetchReturns();
-      fetchWarrantyRules();
-    }
-  }, [customer, orderId]);
+  }, [customer?.id, orderId, hasFullDetails, loading, error, onLoadOrder]);
 
   if (!customer) {
     return (

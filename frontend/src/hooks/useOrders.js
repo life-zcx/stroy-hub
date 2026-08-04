@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { getOrderById, getOrders } from '../services/api';
 
 const ORDERS_PAGE_SIZE = 20;
@@ -12,8 +12,10 @@ export default function useOrders(customer, showToast) {
   const [ordersHasMore, setOrdersHasMore] = useState(false);
   const [ordersTotal, setOrdersTotal] = useState(0);
 
-  const fetchMyOrders = async ({ page = 1, append = false } = {}) => {
-    if (!customer) return;
+  const customerId = customer?.id;
+
+  const fetchMyOrders = useCallback(async ({ page = 1, append = false } = {}) => {
+    if (!customerId) return;
     setOrdersLoading(true);
     try {
       const result = await getOrders({ page, limit: ORDERS_PAGE_SIZE, summary: true });
@@ -35,12 +37,12 @@ export default function useOrders(customer, showToast) {
     } finally {
       setOrdersLoading(false);
     }
-  };
+  }, [customerId, showToast]);
 
   const loadMoreOrders = () => fetchMyOrders({ page: ordersPage + 1, append: true });
 
-  const fetchOrderDetails = async (orderId) => {
-    if (!customer || !orderId) return null;
+  const fetchOrderDetails = useCallback(async (orderId) => {
+    if (!customerId || !orderId) return null;
     setOrderDetailsLoading(true);
     setOrderDetailsError('');
     try {
@@ -59,7 +61,7 @@ export default function useOrders(customer, showToast) {
     } finally {
       setOrderDetailsLoading(false);
     }
-  };
+  }, [customerId, showToast]);
 
   const clearOrders = () => {
     setOrders([]);

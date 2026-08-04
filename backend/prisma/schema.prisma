@@ -35,6 +35,7 @@ model User {
   password   String
   name       String?
   phone      String?
+  phoneNormalized String?
   address    String?
   addresses  Json?
   entityType String    @default("PHYSICAL")
@@ -58,6 +59,8 @@ model User {
   cartItems      CartItem[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
+
+  @@index([phoneNormalized])
 }
 
 model Supplier {

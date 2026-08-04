@@ -5,6 +5,13 @@ jest.unstable_mockModule('fs', () => ({
   default: {
     existsSync: jest.fn().mockReturnValue(false),
     readFileSync: jest.fn(),
+    mkdirSync: jest.fn(),
+    writeFileSync: jest.fn(),
+    unlinkSync: jest.fn(),
+    promises: {
+      writeFile: jest.fn().mockResolvedValue(),
+      mkdir: jest.fn().mockResolvedValue(),
+    }
   }
 }));
 
@@ -44,6 +51,9 @@ jest.unstable_mockModule('../src/config/db.js', () => ({
           parentId: null
         }
       ])
+    },
+    promotion: {
+      findMany: jest.fn().mockResolvedValue([])
     }
   }
 }));

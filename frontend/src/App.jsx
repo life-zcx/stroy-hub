@@ -72,7 +72,7 @@ export default function App() {
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
   const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
   const isNotFound = currentPage === '404';
-  const catalog = useCatalog(showToast, currentCategorySlug || 'all');
+  const catalog = useCatalog(showToast, currentCategorySlug || 'all', currentPage);
   const auth = useCustomerAuth(showToast);
   const cart = useCart(showToast, auth.customer);
   const orders = useOrders(auth.customer, showToast);
@@ -232,6 +232,7 @@ export default function App() {
   // Prevent iOS / PWA standalone mode from breaking out to browser on internal link clicks
   useEffect(() => {
     const handleGlobalLinkClick = (e) => {
+      if (e.defaultPrevented) return;
       const anchor = e.target.closest('a');
       if (!anchor) return;
 

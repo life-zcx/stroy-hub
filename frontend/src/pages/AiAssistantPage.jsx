@@ -1,17 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Send, Trash2, RefreshCw, ShoppingCart, ChevronRight, Plus, MessageSquare, AlertCircle, Mic, MicOff } from 'lucide-react';
-import { sendAiChatMessage } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { getIpxImageUrl } from '../utils/productImage';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
-
-const INITIAL_MESSAGE = {
-  id: 1,
-  role: 'assistant',
-  text: 'Здравствуйте! Я TORMAG AI — ваш умный помощник. Готов ответить абсолютно на любые вопросы: найти информацию, помочь с выбором или сделать сложные расчеты. Что вас интересует?',
-  products: []
-};
+import useAiChat from '../hooks/useAiChat';
 
 const QUICK_PROMPTS = [
   { label: 'Подобрать материалы', text: 'Помогите подобрать материалы для моего ремонта' },
@@ -24,65 +17,26 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) {
-  // Chat Sessions Storage
-  const [sessions, setSessions] = useState(() => {
-    try {
-      const saved = localStorage.getItem('tormag_ai_chat_sessions');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn('[AI PAGE] Failed to parse saved chat sessions');
-    }
-    return [{
-      id: 'session-1',
-      title: 'Диалог 1',
-      messages: [INITIAL_MESSAGE],
-      updatedAt: Date.now()
-    }];
-  });
+  const {
+    sessions,
+    activeSessionId,
+    setActiveSessionId,
+    currentSession,
+    messages,
+    inputMessage,
+    setInputMessage,
+    loading,
+    loadingStepIdx,
+    LOADING_STEPS,
+    isListening,
+    handleVoiceInput,
+    handleSendMessage,
+    handleCreateNewChat,
+    handleDeleteChat
+  } = useAiChat();
 
-  const [activeSessionId, setActiveSessionId] = useState(() => {
-    const savedId = localStorage.getItem('tormag_ai_active_session_id');
-    return savedId || 'session-1';
-  });
-
-  const [inputMessage, setInputMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const LOADING_STEPS = [
-    'Анализирую склад TORMAG...',
-    'Подбираю лучшую продукцию...',
-    'Рассчитываю расход материалов...',
-    'Формирую выгодный вариант...'
-  ];
-  const [loadingStepIdx, setLoadingStepIdx] = useState(0);
-
-  useEffect(() => {
-    let interval;
-    if (loading) {
-      setLoadingStepIdx(0);
-      interval = setInterval(() => {
-        setLoadingStepIdx(prev => (prev + 1) % LOADING_STEPS.length);
-      }, 1400);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
-
-  // Active Session Helper
-  const currentSession = sessions.find(s => s.id === activeSessionId) || sessions[0] || {
-    id: 'session-1',
-    title: 'Диалог 1',
-    messages: [INITIAL_MESSAGE]
-  };
-
-  const messages = currentSession.messages || [INITIAL_MESSAGE];
 
   const scrollToBottom = () => {
     if (messagesEndRef.current?.parentElement) {
@@ -97,179 +51,24 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
     if (messages.length > 1) {
       scrollToBottom();
     }
-    try {
-      localStorage.setItem('tormag_ai_chat_sessions', JSON.stringify(sessions));
-      localStorage.setItem('tormag_ai_active_session_id', activeSessionId);
-    } catch (e) {
-      console.warn('[AI PAGE] Failed to save chat sessions');
-    }
-  }, [sessions, activeSessionId, messages]);
+  }, [messages]);
 
-  // Voice Input Speech Recognition
-  const handleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Голосовой ввод не поддерживается вашим браузером');
-      return;
-    }
-
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.lang = 'ru-RU';
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInputMessage(prev => prev ? `${prev} ${transcript}` : transcript);
-        }
-        setIsListening(false);
-      };
-
-      recognition.onerror = (err) => {
-        console.warn('[VOICE RECOGNITION ERROR]', err);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } catch (e) {
-      console.error('[VOICE INPUT EXCEPTION]', e);
-      setIsListening(false);
-    }
-  };
-
-  const handleCreateNewChat = () => {
-    const newSessionId = `session-${Date.now()}`;
-    const newSession = {
-      id: newSessionId,
-      title: `Диалог ${sessions.length + 1}`,
-      messages: [INITIAL_MESSAGE],
-      updatedAt: Date.now()
-    };
-
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newSessionId);
-    showToast?.('Создан новый диалог');
-  };
-
-  const handleDeleteChat = (sessionIdToDelete, e) => {
+  const onConfirmDeleteChat = (sessionId, e) => {
     e?.stopPropagation();
     if (sessions.length <= 1) {
-      setSessions([{
-        id: 'session-1',
-        title: 'Диалог 1',
-        messages: [INITIAL_MESSAGE],
-        updatedAt: Date.now()
-      }]);
-      setActiveSessionId('session-1');
-      showToast?.('Чат удален');
+      handleDeleteChat(sessionId, e);
+      showToast?.('Чат очищен');
       return;
     }
-
     if (window.confirm('Вы действительно хотите удалить этот чат?')) {
-      const filtered = sessions.filter(s => s.id !== sessionIdToDelete);
-      setSessions(filtered);
-      if (activeSessionId === sessionIdToDelete) {
-        setActiveSessionId(filtered[0].id);
-      }
+      handleDeleteChat(sessionId, e);
       showToast?.('Чат удален');
     }
   };
 
-  const handleSendMessage = async (textToSend = inputMessage) => {
-    const query = textToSend.trim();
-    if (!query || loading) return;
-
-    const userMsg = {
-      id: Date.now(),
-      role: 'user',
-      text: query
-    };
-
-    const updatedMessages = [...messages, userMsg];
-
-    let newTitle = currentSession.title;
-    if (messages.length <= 1) {
-      newTitle = query.length > 24 ? query.substring(0, 24) + '...' : query;
-    }
-
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSession.id) {
-        return {
-          ...s,
-          title: newTitle,
-          messages: updatedMessages,
-          updatedAt: Date.now()
-        };
-      }
-      return s;
-    }));
-
-    setInputMessage('');
-    setLoading(true);
-
-    try {
-      const history = messages
-        .filter(m => m.id !== 1)
-        .map(m => ({ role: m.role, text: m.text }));
-
-      const response = await sendAiChatMessage(query, history);
-
-      const aiMsg = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        text: (response.reply || 'Простите, не удалось сформировать ответ.').replace(/\*\*/g, ''),
-        products: response.recommendedProducts || [],
-        options: response.quickOptions || []
-      };
-
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSession.id) {
-          return {
-            ...s,
-            messages: [...updatedMessages, aiMsg],
-            updatedAt: Date.now()
-          };
-        }
-        return s;
-      }));
-    } catch (error) {
-      console.error('[AI PAGE ERROR]', error);
-      const errorMsg = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        text: 'Извините, сервис ИИ-консультаций временно недоступен. Вы можете задать вопрос нашему менеджеру по телефону или заказать обратный звонок.',
-        products: []
-      };
-
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSession.id) {
-          return {
-            ...s,
-            messages: [...updatedMessages, errorMsg],
-            updatedAt: Date.now()
-          };
-        }
-        return s;
-      }));
-    } finally {
-      setLoading(false);
-    }
+  const onCreateChat = () => {
+    handleCreateNewChat();
+    showToast?.('Создан новый диалог');
   };
 
   return (
@@ -292,7 +91,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={handleCreateNewChat}
+            onClick={onCreateChat}
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border-0"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -301,7 +100,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
 
           <button
             type="button"
-            onClick={(e) => handleDeleteChat(currentSession.id, e)}
+            onClick={(e) => onConfirmDeleteChat(currentSession.id, e)}
             className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
             title="Удалить чат"
           >
@@ -325,7 +124,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </h3>
               <button
                 type="button"
-                onClick={handleCreateNewChat}
+                onClick={onCreateChat}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer bg-transparent border-0 flex items-center gap-1 p-0"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -350,7 +149,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
 
                   <button
                     type="button"
-                    onClick={(e) => handleDeleteChat(sess.id, e)}
+                    onClick={(e) => onConfirmDeleteChat(sess.id, e)}
                     className={`p-1 rounded-lg transition-colors border-0 cursor-pointer ${sess.id === activeSessionId ? 'hover:bg-slate-800 text-slate-400 hover:text-red-400' : 'hover:bg-slate-200 text-slate-400 hover:text-red-600'
                       }`}
                     title="Удалить чат"
@@ -403,7 +202,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={handleCreateNewChat}
+                onClick={onCreateChat}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border-0 cursor-pointer flex items-center gap-1 shadow-sm transition-colors"
               >
                 <Plus className="h-3 w-3" />
@@ -411,7 +210,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </button>
               <button
                 type="button"
-                onClick={(e) => handleDeleteChat(currentSession.id, e)}
+                onClick={(e) => onConfirmDeleteChat(currentSession.id, e)}
                 className="text-slate-400 hover:text-red-500 p-1.5 bg-slate-100 hover:bg-red-50 rounded-lg border-0 cursor-pointer transition-colors"
                 title="Удалить чат"
               >
@@ -470,19 +269,23 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                       Рекомендуемые товары:
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {msg.products.map((prod) => (
+                      {msg.products.map((prod, idx) => (
                         <div
-                          key={prod.id}
-                          className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-2.5 flex items-center justify-between gap-3 shadow-sm transition-all"
+                          key={prod.id || idx}
+                          className="bg-white border border-slate-200 hover:border-blue-300 rounded-xl p-2.5 flex items-center justify-between gap-3 shadow-sm transition-all group"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            onClick={() => onNavigate?.('product', prod.slug || prod.id)}
+                            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
+                            title="Перейти к товару"
+                          >
                             <img
                               src={getIpxImageUrl(prod.image, '120x120')}
                               alt={prod.name}
-                              className="w-10 h-10 object-contain rounded-xl bg-slate-50 p-1 shrink-0 border border-slate-100"
+                              className="w-10 h-10 object-contain rounded-xl bg-slate-50 p-1 shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
                             />
                             <div className="min-w-0 text-left">
-                              <h5 className="text-xs font-bold text-slate-900 truncate">{prod.name}</h5>
+                              <h5 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{prod.name}</h5>
                               <span className="text-blue-600 font-bold text-xs block mt-0.5">{formatPrice(prod.price)}</span>
                             </div>
                           </div>
@@ -496,7 +299,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                             className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors shrink-0 border-0 cursor-pointer flex items-center gap-1 shadow-sm"
                           >
                             <ShoppingCart className="h-3.5 w-3.5" />
-                            В корзину
+                            <span>В корзину</span>
                           </button>
                         </div>
                       ))}

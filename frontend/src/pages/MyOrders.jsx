@@ -220,17 +220,10 @@ export default function MyOrders({
                   </div>
 
                   <div className="flex justify-start md:justify-end gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNavigate('order-detail', order.id);
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600 cursor-pointer"
-                    >
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-600 cursor-pointer">
                       Подробнее
                       <ChevronRight className="h-4 w-4" />
-                    </button>
+                    </span>
                   </div>
                 </Link>
               );

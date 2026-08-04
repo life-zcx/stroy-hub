@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import tls from 'tls';
-import { exec, execSync } from 'child_process';
+import { exec } from 'child_process';
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import { uploadLatestBackupToYandex } from './yandexBackup.js';
@@ -67,37 +67,35 @@ const getSslHost = () => {
   return 'stroy-hub.ru';
 };
 
-// Helper to check resources
+// Helper to check resources (async to avoid blocking event loop)
 const checkSystemResources = () => {
-  const cpus = os.cpus().length;
-  const loadAvg = os.loadavg();
-  const cpuPercent = ((loadAvg[0] / cpus) * 100);
+  return new Promise((resolve) => {
+    const cpus = os.cpus().length;
+    const loadAvg = os.loadavg();
+    const cpuPercent = ((loadAvg[0] / cpus) * 100);
 
-  const totalMem = os.totalmem();
-  const freeMem = os.freemem();
-  const ramPercent = (((totalMem - freeMem) / totalMem) * 100);
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const ramPercent = (((totalMem - freeMem) / totalMem) * 100);
 
-  let diskPercent = 0;
-  try {
-    const stdout = execSync("df -h / | tail -n 1 | awk '{print $5}'").toString();
-    const match = stdout.match(/(\d+)%/);
-    if (match) {
-      diskPercent = parseInt(match[1], 10);
-    } else {
-      // Fallback method
-      const stdoutFull = execSync('df -h /').toString();
-      const lines = stdoutFull.trim().split('\n');
-      if (lines.length > 1) {
-        const rootLine = lines.find(l => l.includes(' /')) || lines[1];
-        const secondMatch = rootLine.match(/(\d+)%/);
-        if (secondMatch) diskPercent = parseInt(secondMatch[1], 10);
+    exec("df -h / | tail -n 1 | awk '{print $5}'", (error, stdout) => {
+      let diskPercent = 0;
+      if (!error && stdout) {
+        const match = stdout.match(/(\d+)%/);
+        if (match) {
+          diskPercent = parseInt(match[1], 10);
+        } else {
+          // Fallback: parse full df -h output
+          const parts = stdout.trim().split(/\s+/);
+          const fallbackMatch = parts.find(p => /\d+%/.test(p));
+          if (fallbackMatch) diskPercent = parseInt(fallbackMatch, 10);
+        }
+      } else if (error) {
+        console.error('[RESOURCE MONITOR] Failed to parse disk space:', error.message);
       }
-    }
-  } catch (e) {
-    console.error('[RESOURCE MONITOR] Failed to parse disk space:', e);
-  }
-
-  return { cpuPercent, ramPercent, diskPercent };
+      resolve({ cpuPercent, ramPercent, diskPercent });
+    });
+  });
 };
 
 // Cooldown tracker for warnings
@@ -369,16 +367,11 @@ const handleCommand = async (chatId, text) => {
     const loadAvg = os.loadavg();
     const loadPercent = ((loadAvg[0] / cpus) * 100).toFixed(0);
 
-    // 3. Disk space (runs df -h)
+    // 3. Disk space (async, non-blocking)
     let diskText = 'Недоступно';
     try {
-      const stdout = execSync('df -h /').toString();
-      const lines = stdout.trim().split('\n');
-      if (lines.length > 1) {
-        // Find line containing "/"
-        const rootLine = lines.find(l => l.includes(' /')) || lines[1];
-        diskText = rootLine.replace(/\s+/g, ' ');
-      }
+      const diskInfo = await checkSystemResources();
+      diskText = `${diskInfo.diskPercent}% использовано`;
     } catch (e) {
       diskText = 'Ошибка определения диска';
     }

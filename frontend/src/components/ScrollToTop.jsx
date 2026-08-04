@@ -4,36 +4,40 @@ import { ArrowUp } from 'lucide-react';
 export default function ScrollToTop({ cartItemsCount = 0 }) {
   const [isVisible, setIsVisible] = useState(false);
 
+  // ⚠️ ALL hooks must be declared before any early return (Rules of Hooks)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 640
+  );
+
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.scrollY > 300) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
+      setIsVisible(window.scrollY > 300);
     };
-
     window.addEventListener('scroll', toggleVisibility, { passive: true });
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Must match AiAssistantWidget values exactly:
+  //   mobile + cart items  → 5.5rem (above MobileCartBar)
+  //   mobile, no cart      → 1.5rem
+  //   desktop              → 1.5rem
+  const bottomOffset = isMobile && cartItemsCount > 0 ? '5.5rem' : '1.5rem';
+
   const scrollToTop = () => {
     try {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       window.scrollTo(0, 0);
     }
   };
 
   if (!isVisible) return null;
-
-  // Sync bottom position with AiAssistantWidget (right side):
-  // mobile with cart → 5.5rem, mobile without cart → 1.5rem
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const bottomOffset = isMobile && cartItemsCount > 0 ? '5.5rem' : '1.5rem';
 
   return (
     <button

@@ -350,5 +350,25 @@ export const saveSystemSettings = async (settings) => {
   return response.data;
 };
 
+// AI Assistant API
+export const fillProductWithAi = async (productName) => {
+  try {
+    const response = await api.post('/ai/fill-product', { productName });
+    return response.data;
+  } catch (error) {
+    console.warn('[AI API] Proxy request failed, attempting direct call to ai-service on 5005...', error?.message);
+    const directRes = await fetch('http://localhost:5005/api/ai/fill-product', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName })
+    });
+    if (!directRes.ok) {
+      throw new Error(`AI Service HTTP ${directRes.status}`);
+    }
+    return await directRes.json();
+  }
+};
+
 export default api;
+
 

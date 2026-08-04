@@ -82,7 +82,8 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
@@ -177,15 +178,27 @@ app.use('/api/ai', async (req, res) => {
     const response = await fetch(`${aiServiceUrl}${req.originalUrl}`, {
       method: req.method,
       headers: { 'Content-Type': 'application/json' },
-      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+      body: req.method !== 'GET' && req.body ? JSON.stringify(req.body) : undefined,
     });
-    const data = await response.json();
-    res.status(response.status).json(data);
+
+    const textData = await response.text();
+    let data;
+    try {
+      data = JSON.parse(textData);
+    } catch (parseErr) {
+      logger.error(`[AI PROXY ERROR] Non-JSON response from ${aiServiceUrl}${req.originalUrl} (HTTP ${response.status}): ${textData.substring(0, 200)}`);
+      return res.status(response.status >= 400 ? response.status : 502).json({
+        error: 'ИИ-сервис вернул некорректный ответ. Перезапустите контейнер tormag_ai_service.'
+      });
+    }
+
+    return res.status(response.status).json(data);
   } catch (err) {
     logger.error(`[AI PROXY ERROR] Failed to proxy to ${aiServiceUrl}: ${err.message}`);
-    res.status(502).json({ error: 'Сервис ИИ временно недоступен' });
+    return res.status(502).json({ error: 'Сервис ИИ временно недоступен' });
   }
 });
+
 
 // Silent Geolocation helper endpoint to bypass client AdBlockers
 app.get('/api/geo', async (req, res) => {

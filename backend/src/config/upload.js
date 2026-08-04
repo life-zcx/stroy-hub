@@ -114,18 +114,24 @@ export const createImageUploader = (folderName = 'general') => ({
 export const imageUpload = createImageUploader('products');
 export const returnImageUpload = createImageUploader('returns');
 
-const allowedExcelMimeTypes = new Set([
+const allowedEstimateMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/csv',
   'application/csv',
   'application/octet-stream',
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
 ]);
+
+const allowedEstimateExtensions = new Set(['.xlsx', '.csv', '.pdf', '.jpg', '.jpeg', '.png', '.webp']);
 
 function excelFileFilter(req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
-  const allowedExtension = ext === '.xlsx' || ext === '.csv';
-  if (!allowedExtension || !allowedExcelMimeTypes.has(file.mimetype)) {
-    cb(new Error('Недопустимый формат файла. Разрешены только XLSX и CSV.'));
+  const allowedExtension = allowedEstimateExtensions.has(ext);
+  if (!allowedExtension) {
+    cb(new Error('Недопустимый формат файла. Разрешены только XLSX, CSV, PDF, JPG, PNG и WEBP.'));
     return;
   }
   cb(null, true);
@@ -138,3 +144,4 @@ export const excelUpload = multer({
   },
   fileFilter: excelFileFilter,
 });
+

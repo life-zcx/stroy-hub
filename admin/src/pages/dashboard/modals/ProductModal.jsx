@@ -14,8 +14,11 @@ import {
   Star,
   Upload,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  Bot
 } from 'lucide-react';
+import { fillProductWithAi } from '../../../services/api';
 
 export default function ProductModal({
   open,
@@ -38,6 +41,98 @@ export default function ProductModal({
   isSubmitting = false,
 }) {
   const [activeTab, setActiveTab] = useState('general');
+  const [isAiFilling, setIsAiFilling] = useState(false);
+  const [aiNotice, setAiNotice] = useState(null);
+
+  const handleAiAutoFill = async () => {
+    if (!productForm.name || !productForm.name.trim()) {
+      alert('Пожалуйста, сначала введите название товара!');
+      return;
+    }
+    setIsAiFilling(true);
+    setAiNotice(null);
+
+    try {
+      const aiCard = await fillProductWithAi(productForm.name.trim());
+
+      // 1. Update SEO Slug if empty
+      if (aiCard.seo_title && !productForm.slug) {
+        const generatedSlug = aiCard.seo_title
+          .toLowerCase()
+          .replace(/[^a-z0-9а-яё\s-]/gi, '')
+          .trim()
+          .replace(/\s+/g, '-');
+        onFormChange({ target: { name: 'slug', value: generatedSlug } });
+      }
+
+      // 2. Update Short Description & Detailed Description
+      if (aiCard.description) {
+        onFormChange({ target: { name: 'description', value: aiCard.description } });
+      }
+      if (aiCard.details) {
+        onFormChange({ target: { name: 'details', value: aiCard.details } });
+      }
+
+      // 3. Format Specifications object/attributes into multiline "Параметр: Значение"
+      const specsObj = aiCard.specifications || aiCard.attributes || {};
+      if (typeof specsObj === 'object' && specsObj !== null) {
+        const specsList = [];
+        Object.entries(specsObj).forEach(([key, val]) => {
+          if (val !== null && val !== undefined && String(val).trim() !== '') {
+            let cleanKey = String(key).replace(/:/g, '').trim();
+            cleanKey = cleanKey.replace(/\s*\/\s*Состав$/i, '');
+            specsList.push(`${cleanKey}: ${val}`);
+          }
+        });
+        if (specsList.length > 0) {
+          onFormChange({ target: { name: 'specifications', value: specsList.join('\n') } });
+        }
+      } else if (typeof specsObj === 'string' && specsObj.trim()) {
+        onFormChange({ target: { name: 'specifications', value: specsObj.trim() } });
+      }
+
+
+      // 4. Update Usage / Installation Instructions
+      if (aiCard.usage) {
+        onFormChange({ target: { name: 'usage', value: aiCard.usage } });
+      }
+
+      // 5. Match Category if possible
+      if (aiCard.category && Array.isArray(hierarchicalCategories)) {
+        const catNameLower = aiCard.category.toLowerCase();
+        const matchedCat = hierarchicalCategories.find((c) =>
+          c.name?.toLowerCase().includes(catNameLower) ||
+          catNameLower.includes(c.name?.toLowerCase())
+        );
+        if (matchedCat) {
+          onFormChange({ target: { name: 'categoryId', value: matchedCat.id } });
+        }
+      }
+
+      // 6. Notice flags
+      if (aiCard.flags?.needs_manual_review) {
+        setAiNotice({
+          type: 'warning',
+          text: '⚠️ Карточка заполнена ИИ. Рекомендуется проверить данные перед публикацией.'
+        });
+      } else {
+        setAiNotice({
+          type: 'success',
+          text: '✨ Данные карточки товара (описание, ТТХ, инструкция) успешно заполнены ИИ!'
+        });
+      }
+
+    } catch (err) {
+      console.error(err);
+      setAiNotice({
+        type: 'error',
+        text: '❌ Ошибка при вызове ИИ-сервиса: ' + (err.message || 'Сервис недоступен')
+      });
+    } finally {
+      setIsAiFilling(false);
+    }
+  };
+
 
   if (!open) {
     return null;
@@ -112,20 +207,59 @@ export default function ProductModal({
             {/* ── TAB 1: GENERAL INFO ── */}
             {activeTab === 'general' && (
               <div className="space-y-4 animate-fade-in">
+
+                {/* AI Notice Banner */}
+                {aiNotice && (
+                  <div
+                    className={`p-3.5 rounded-2xl border text-xs font-semibold flex items-center justify-between animate-fade-in ${
+                      aiNotice.type === 'warning'
+                        ? 'bg-amber-50 border-amber-200 text-amber-900'
+                        : aiNotice.type === 'success'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                        : 'bg-red-50 border-red-200 text-red-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 shrink-0 text-indigo-600" />
+                      <span>{aiNotice.text}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAiNotice(null)}
+                      className="text-slate-400 hover:text-slate-700 ml-2"
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    Название товара *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Название товара *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAiAutoFill}
+                      disabled={isAiFilling || !productForm.name?.trim()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                      title="Автоматически сгенерировать SEO название, описание и ТТХ товара с помощью ИИ"
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 ${isAiFilling ? 'animate-spin' : ''}`} />
+                      <span>{isAiFilling ? 'AI заполняет...' : '✨ AI Автозаполнение'}</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     name="name"
                     value={productForm.name}
                     onChange={onFormChange}
                     required
-                    placeholder="Например, Дрель-шуруповерт ALTECO CD 1210 Li-Ion"
+                    placeholder="Например, Дрель-шуруповерт ALTECO CD 1210 Li-Ion или Шпаклевка 20 кг"
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/40 text-sm font-semibold transition-all"
                   />
                 </div>
+
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

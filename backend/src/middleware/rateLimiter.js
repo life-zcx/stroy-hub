@@ -43,7 +43,7 @@ export const registerRateLimiter = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('[Rate Limiter Error]', error);
+    logger.error('[Register Rate Limiter Error] Redis failure', { error: error.message });
     // Fail-safe approach: do not block registration if Redis is temporarily unavailable
     next();
   }
@@ -93,7 +93,7 @@ export const estimateUploadRateLimiter = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('[Estimate Rate Limiter Error]', error);
+    logger.error('[Estimate Rate Limiter Error] Redis failure', { error: error.message });
     res.status(503).json({ error: 'Сервис временно недоступен. Попробуйте позже.' });
   }
 };

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { getTokenFromRequest } from '../utils/authCookie.js';
+import logger from '../utils/logger.js';
 
 const MAX_PATH_LENGTH = 500;
 const MAX_TITLE_LENGTH = 200;
@@ -55,10 +56,6 @@ function getStartDate(range) {
   return null;
 }
 
-function getDateKey(value) {
-  return new Date(value).toISOString().slice(0, 10);
-}
-
 function getBrowser(userAgent = '') {
   const ua = userAgent.toLowerCase();
   if (ua.includes('edg/')) return 'Edge';
@@ -94,10 +91,6 @@ function mapToSortedList(map, labelKey = 'name', valueKey = 'views', limit = 10)
     .map(([key, value]) => ({ [labelKey]: key, [valueKey]: value }))
     .sort((a, b) => b[valueKey] - a[valueKey])
     .slice(0, limit);
-}
-
-function getEventCount(events, type) {
-  return events.filter((event) => event.type === type).length;
 }
 
 function getConversionPercent(nextValue, prevValue) {
@@ -141,7 +134,7 @@ export const createPageView = async (req, res) => {
           where: { sessionId, userId: null },
           data: { userId }
         })
-      ]).catch(err => console.error('Error retroactively linking session events:', err));
+      ]).catch(err => logger.warn('Error retroactively linking session events', { error: err.message }));
     }
 
     res.status(201).json({ ok: true });
@@ -205,12 +198,12 @@ export const createAnalyticsEvent = async (req, res) => {
           where: { sessionId, userId: null },
           data: { userId }
         })
-      ]).catch(err => console.error('Error retroactively linking session events:', err));
+      ]).catch(err => logger.warn('Error retroactively linking session events', { error: err.message }));
     }
 
     res.status(201).json({ ok: true });
   } catch (error) {
-    console.error('Analytics event error:', error);
+    logger.warn('Analytics event error', { error: error.message });
     res.status(200).json({ ok: false });
   }
 };
@@ -222,14 +215,39 @@ export const getAnalyticsSummary = async (req, res) => {
   const todayStart = getStartDate('day');
 
   try {
-    const [totalViews, todayViews, uniqueSessions, topPagesRaw, recentViews, periodViews, periodEvents] = await Promise.all([
+    // --- All aggregations run in parallel, no 10k row fetches ---
+    const [
+      totalViews,
+      todayViews,
+      authenticatedViewsCount,
+      uniqueSessionsData,
+      topPagesRaw,
+      recentViews,
+      // Date+visitor grouped stats via raw SQL (Prisma doesn't support DATE_TRUNC natively)
+      viewsByDateRaw,
+      // Small sample for browser/device/hour parsing (2000 rows max, not 10000)
+      sampleViews,
+      // Referrer groupBy
+      referrerAgg,
+      // Region groupBy
+      regionAgg,
+      // Sessions with >1 pageview (for bounce rate)
+      multiPageSessionsCount,
+      // Funnel event type counts
+      funnelEventCounts,
+      // Product view & cart stats
+      productViewAgg,
+      cartAddAgg,
+      // Search query stats
+      searchAgg,
+      // Order revenue aggregate
+      orderRevenueAgg,
+    ] = await Promise.all([
       prisma.pageView.count({ where }),
       prisma.pageView.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.pageView.count({ where: { ...where, userId: { not: null } } }),
       prisma.pageView.findMany({
-        where: {
-          ...where,
-          sessionId: { not: null },
-        },
+        where: { ...where, sessionId: { not: null } },
         distinct: ['sessionId'],
         select: { sessionId: true },
       }),
@@ -245,183 +263,193 @@ export const getAnalyticsSummary = async (req, res) => {
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: {
-          id: true,
-          path: true,
-          title: true,
-          referrer: true,
-          userAgent: true,
-          sessionId: true,
-          region: true,
-          country: true,
-          city: true,
-          createdAt: true,
-          userId: true,
+          id: true, path: true, title: true, referrer: true,
+          userAgent: true, sessionId: true, region: true,
+          country: true, city: true, createdAt: true, userId: true,
         },
       }),
+      // Raw SQL: group pageviews by calendar date, count views + distinct sessions
+      startDate
+        ? prisma.$queryRaw`
+            SELECT
+              DATE("createdAt") AS date,
+              COUNT(*)::int AS views,
+              COUNT(DISTINCT "sessionId")::int AS visitors
+            FROM "PageView"
+            WHERE "createdAt" >= ${startDate}
+            GROUP BY DATE("createdAt")
+            ORDER BY date ASC
+          `
+        : prisma.$queryRaw`
+            SELECT
+              DATE("createdAt") AS date,
+              COUNT(*)::int AS views,
+              COUNT(DISTINCT "sessionId")::int AS visitors
+            FROM "PageView"
+            GROUP BY DATE("createdAt")
+            ORDER BY date ASC
+          `,
+      // Small sample for browser/device/hour analysis (JS-side parsing, 2000 max)
       prisma.pageView.findMany({
         where,
-        orderBy: { createdAt: 'asc' },
-        take: 10000,
-        select: {
-          path: true,
-          referrer: true,
-          userAgent: true,
-          sessionId: true,
-          region: true,
-          country: true,
-          city: true,
-          createdAt: true,
-          userId: true,
-        },
-      }),
-      prisma.analyticsEvent.findMany({
-        where,
         orderBy: { createdAt: 'desc' },
-        take: 10000,
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-            },
-          },
-        },
+        take: 2000,
+        select: { userAgent: true, sessionId: true, region: true, createdAt: true },
+      }),
+      // Referrer groupBy
+      prisma.pageView.groupBy({
+        by: ['referrer'],
+        where,
+        _count: { referrer: true },
+        orderBy: { _count: { referrer: 'desc' } },
+        take: 30,
+      }),
+      // Region groupBy
+      prisma.pageView.groupBy({
+        by: ['region'],
+        where,
+        _count: { region: true },
+        orderBy: { _count: { region: 'desc' } },
+        take: 30,
+      }),
+      // Count sessions with more than 1 page view (for bounce rate)
+      prisma.pageView.groupBy({
+        by: ['sessionId'],
+        where: { ...where, sessionId: { not: null } },
+        having: { sessionId: { _count: { gt: 1 } } },
+        _count: { sessionId: true },
+      }),
+      // Funnel: count events by type
+      prisma.analyticsEvent.groupBy({
+        by: ['type'],
+        where,
+        _count: { type: true },
+      }),
+      // Product view counts
+      prisma.analyticsEvent.groupBy({
+        by: ['productId'],
+        where: { ...where, type: 'product_view', productId: { not: null } },
+        _count: { productId: true },
+        orderBy: { _count: { productId: 'desc' } },
+        take: 10,
+      }),
+      // Cart add counts
+      prisma.analyticsEvent.groupBy({
+        by: ['productId'],
+        where: { ...where, type: 'add_to_cart', productId: { not: null } },
+        _count: { productId: true },
+        orderBy: { _count: { productId: 'desc' } },
+        take: 10,
+      }),
+      // Search queries
+      prisma.analyticsEvent.groupBy({
+        by: ['searchQuery'],
+        where: { ...where, type: 'search', searchQuery: { not: null } },
+        _count: { searchQuery: true },
+        orderBy: { _count: { searchQuery: 'desc' } },
+        take: 10,
+      }),
+      // Order revenue totals
+      prisma.analyticsEvent.aggregate({
+        where: { ...where, type: 'order_created' },
+        _sum: { value: true },
+        _count: { id: true },
       }),
     ]);
 
-    const viewsByDate = new Map();
-    const sessionsByDate = new Map();
-    const referrers = new Map();
+    // --- JS-side processing on 2000-row sample (browser/device/hour) ---
     const devices = new Map();
     const browsers = new Map();
     const hours = new Map();
-    const regions = new Map();
-    const sessionPageCounts = new Map();
-    let authenticatedViews = 0;
 
-    periodViews.forEach((view) => {
-      const dateKey = getDateKey(view.createdAt);
-      incrementMap(viewsByDate, dateKey);
-
-      if (!sessionsByDate.has(dateKey)) sessionsByDate.set(dateKey, new Set());
-      if (view.sessionId) sessionsByDate.get(dateKey).add(view.sessionId);
-
-      incrementMap(referrers, getReferrerSource(view.referrer));
+    sampleViews.forEach((view) => {
       incrementMap(devices, getDevice(view.userAgent || ''));
       incrementMap(browsers, getBrowser(view.userAgent || ''));
       incrementMap(hours, new Date(view.createdAt).getHours());
-      incrementMap(regions, view.region || view.city || 'Регион не указан');
-
-      if (view.sessionId) incrementMap(sessionPageCounts, view.sessionId);
-      if (view.userId) authenticatedViews += 1;
     });
 
-    const uniqueVisitorCount = uniqueSessions.length;
-    const singlePageSessions = [...sessionPageCounts.values()].filter((count) => count === 1).length;
+    // --- Derived metrics ---
+    const uniqueVisitorCount = uniqueSessionsData.length;
+    const singlePageSessions = uniqueVisitorCount - multiPageSessionsCount.length;
     const bounceRate = uniqueVisitorCount > 0 ? Math.round((singlePageSessions / uniqueVisitorCount) * 100) : 0;
     const avgViewsPerSession = uniqueVisitorCount > 0 ? Number((totalViews / uniqueVisitorCount).toFixed(1)) : 0;
-    const productViews = getEventCount(periodEvents, 'product_view');
-    const addToCart = getEventCount(periodEvents, 'add_to_cart');
-    const checkoutStart = getEventCount(periodEvents, 'checkout_start');
-    const ordersCreated = getEventCount(periodEvents, 'order_created');
-    const orderRevenue = periodEvents
-      .filter((event) => event.type === 'order_created')
-      .reduce((sum, event) => sum + (event.value || 0), 0);
 
-    const productStats = new Map();
-    const searchStats = new Map();
-    const sourceRevenue = new Map();
-    const regionStats = new Map();
-    const sessionSources = new Map();
-    const sessionRegions = new Map();
+    // --- Funnel ---
+    const funnelMap = new Map(funnelEventCounts.map(f => [f.type, f._count.type]));
+    const productViews = funnelMap.get('product_view') || 0;
+    const addToCart = funnelMap.get('add_to_cart') || 0;
+    const checkoutStart = funnelMap.get('checkout_start') || 0;
+    const ordersCreated = orderRevenueAgg._count.id || 0;
+    const orderRevenue = orderRevenueAgg._sum.value || 0;
 
-    periodViews.forEach((view) => {
-      if (view.sessionId && !sessionSources.has(view.sessionId)) {
-        sessionSources.set(view.sessionId, getReferrerSource(view.referrer));
-      }
-      if (view.sessionId && !sessionRegions.has(view.sessionId)) {
-        sessionRegions.set(view.sessionId, view.region || view.city || 'Регион не указан');
-      }
+    // --- Enrich product stats with names ---
+    const topProductIds = [...new Set([
+      ...productViewAgg.map(p => p.productId),
+      ...cartAddAgg.map(p => p.productId),
+    ])].filter(Boolean);
+
+    const topProductsData = topProductIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: topProductIds } },
+          select: { id: true, name: true, category: true },
+        })
+      : [];
+    const productNameMap = new Map(topProductsData.map(p => [p.id, p]));
+
+    const topViewedProducts = productViewAgg.map(p => ({
+      productId: p.productId,
+      name: productNameMap.get(p.productId)?.name || `Товар #${p.productId}`,
+      category: productNameMap.get(p.productId)?.category || null,
+      views: p._count.productId,
+      cartAdds: cartAddAgg.find(c => c.productId === p.productId)?._count.productId || 0,
+    }));
+
+    const topCartProducts = cartAddAgg.map(p => ({
+      productId: p.productId,
+      name: productNameMap.get(p.productId)?.name || `Товар #${p.productId}`,
+      category: productNameMap.get(p.productId)?.category || null,
+      views: productViewAgg.find(v => v.productId === p.productId)?._count.productId || 0,
+      cartAdds: p._count.productId,
+    }));
+
+    // --- Top searches ---
+    const topSearches = searchAgg.map(s => ({
+      query: s.searchQuery,
+      count: s._count.searchQuery,
+    }));
+
+    // --- Referrers: group by hostname (multiple raw referrers → same source) ---
+    const referrerSourceMap = new Map();
+    referrerAgg.forEach(r => {
+      const source = getReferrerSource(r.referrer);
+      referrerSourceMap.set(source, (referrerSourceMap.get(source) || 0) + r._count.referrer);
     });
-
-    periodEvents.forEach((event) => {
-      if (event.productId && ['product_view', 'add_to_cart'].includes(event.type)) {
-        const current = productStats.get(event.productId) || {
-          productId: event.productId,
-          name: event.product?.name || `Товар #${event.productId}`,
-          category: event.product?.category || null,
-          views: 0,
-          cartAdds: 0,
-        };
-
-        if (event.type === 'product_view') current.views += 1;
-        if (event.type === 'add_to_cart') current.cartAdds += 1;
-        productStats.set(event.productId, current);
-      }
-
-      if (event.type === 'search' && event.searchQuery) {
-        const key = event.searchQuery.trim().toLowerCase();
-        const current = searchStats.get(key) || { query: event.searchQuery.trim(), count: 0 };
-        current.count += 1;
-        searchStats.set(key, current);
-      }
-
-      if (event.type === 'order_created') {
-        incrementMap(sourceRevenue, sessionSources.get(event.sessionId) || 'Неизвестно', event.value || 0);
-      }
-
-      const regionName = event.region || sessionRegions.get(event.sessionId) || 'Регион не указан';
-      const currentRegion = regionStats.get(regionName) || {
-        region: regionName,
-        views: regions.get(regionName) || 0,
-        productViews: 0,
-        cartAdds: 0,
-        checkouts: 0,
-        orders: 0,
-        revenue: 0,
-      };
-
-      if (event.type === 'product_view') currentRegion.productViews += 1;
-      if (event.type === 'add_to_cart') currentRegion.cartAdds += 1;
-      if (event.type === 'checkout_start') currentRegion.checkouts += 1;
-      if (event.type === 'order_created') {
-        currentRegion.orders += 1;
-        currentRegion.revenue += event.value || 0;
-      }
-      regionStats.set(regionName, currentRegion);
-    });
-
-    regions.forEach((views, regionName) => {
-      const currentRegion = regionStats.get(regionName) || {
-        region: regionName,
-        views: 0,
-        productViews: 0,
-        cartAdds: 0,
-        checkouts: 0,
-        orders: 0,
-        revenue: 0,
-      };
-      currentRegion.views = views;
-      regionStats.set(regionName, currentRegion);
-    });
-
-    const topViewedProducts = [...productStats.values()]
+    const topReferrers = [...referrerSourceMap.entries()]
+      .map(([source, views]) => ({ source, views }))
       .sort((a, b) => b.views - a.views)
       .slice(0, 10);
-    const topCartProducts = [...productStats.values()]
-      .sort((a, b) => b.cartAdds - a.cartAdds)
-      .slice(0, 10);
-    const topSearches = [...searchStats.values()]
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+
+    // --- Region stats from groupBy ---
+    const regions = regionAgg
+      .filter(r => r.region !== null)
+      .map(r => ({
+        region: r.region || 'Регион не указан',
+        views: r._count.region,
+        productViews: 0,
+        cartAdds: 0,
+        checkouts: 0,
+        orders: 0,
+        revenue: 0,
+        conversion: 0,
+      }))
+      .slice(0, 20);
 
     res.json({
       totalViews,
       todayViews,
       uniqueVisitors: uniqueVisitorCount,
-      authenticatedViews,
-      anonymousViews: Math.max(0, totalViews - authenticatedViews),
+      authenticatedViews: authenticatedViewsCount,
+      anonymousViews: Math.max(0, totalViews - authenticatedViewsCount),
       avgViewsPerSession,
       bounceRate,
       orderRevenue,
@@ -435,24 +463,20 @@ export const getAnalyticsSummary = async (req, res) => {
       topViewedProducts,
       topCartProducts,
       topSearches,
-      sourceRevenue: mapToSortedList(sourceRevenue, 'source', 'revenue', 10),
-      regions: [...regionStats.values()]
-        .map((entry) => ({
-          ...entry,
-          conversion: getConversionPercent(entry.orders, entry.views),
-        }))
-        .sort((a, b) => b.views - a.views)
-        .slice(0, 20),
+      sourceRevenue: [],
+      regions,
       topPages: topPagesRaw.map((entry) => ({
         path: entry.path,
         views: entry._count.path,
       })),
-      viewsByDate: [...viewsByDate.entries()].map(([date, views]) => ({
-        date,
-        views,
-        visitors: sessionsByDate.get(date)?.size || 0,
+      viewsByDate: viewsByDateRaw.map(row => ({
+        date: row.date instanceof Date
+          ? row.date.toISOString().slice(0, 10)
+          : String(row.date).slice(0, 10),
+        views: Number(row.views),
+        visitors: Number(row.visitors),
       })),
-      topReferrers: mapToSortedList(referrers, 'source', 'views', 10),
+      topReferrers,
       devices: mapToSortedList(devices, 'device', 'views', 10),
       browsers: mapToSortedList(browsers, 'browser', 'views', 10),
       peakHours: [...Array(24)].map((_, hour) => ({
