@@ -144,7 +144,7 @@ services:
       - backend
 
   prerender:
-    image: prerender/prerender:latest
+    image: prerenderio/prerender:latest
     container_name: tormag_prerender
     restart: always
     ports:
