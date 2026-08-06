@@ -408,7 +408,7 @@ export default function Home({
                         от 2 млн. ₸
                       </span>
                     </div>
-                    <p className="text-slate-555 text-[11px] font-semibold">
+                    <p className="text-slate-500 text-[11px] font-semibold">
                       Кешбэк <span className="text-blue-600 font-bold">5%</span> • Оплата бонусами до <span className="text-blue-600 font-bold">100%</span> заказа
                     </p>
                   </div>
