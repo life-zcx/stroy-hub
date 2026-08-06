@@ -143,13 +143,6 @@ services:
     depends_on:
       - backend
 
-  prerender:
-    image: prerenderio/prerender:latest
-    container_name: tormag_prerender
-    restart: always
-    ports:
-      - "127.0.0.1:3000:3000"
-
 volumes:
   postgres_data:
     driver: local
