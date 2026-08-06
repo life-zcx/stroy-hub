@@ -2,6 +2,8 @@ import prisma from '../config/db.js';
 
 export const getDynamicSitemap = async (req, res) => {
   try {
+    const today = new Date().toISOString().split('T')[0];
+
     const [products, categories] = await Promise.all([
       prisma.product.findMany({
         select: { id: true }
@@ -33,6 +35,7 @@ export const getDynamicSitemap = async (req, res) => {
     for (const page of staticPages) {
       xml += `  <url>\n`;
       xml += `    <loc>https://tormag.kz/${page.path}</loc>\n`;
+      xml += `    <lastmod>${today}</lastmod>\n`;
       xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
       xml += `    <priority>${page.priority}</priority>\n`;
       xml += `  </url>\n`;
@@ -43,6 +46,7 @@ export const getDynamicSitemap = async (req, res) => {
       if (cat.slug && cat.slug !== 'all') {
         xml += `  <url>\n`;
         xml += `    <loc>https://tormag.kz/catalog/${cat.slug}</loc>\n`;
+        xml += `    <lastmod>${today}</lastmod>\n`;
         xml += `    <changefreq>daily</changefreq>\n`;
         xml += `    <priority>0.8</priority>\n`;
         xml += `  </url>\n`;
@@ -53,6 +57,7 @@ export const getDynamicSitemap = async (req, res) => {
     for (const prod of products) {
       xml += `  <url>\n`;
       xml += `    <loc>https://tormag.kz/product/${prod.id}</loc>\n`;
+      xml += `    <lastmod>${today}</lastmod>\n`;
       xml += `    <changefreq>daily</changefreq>\n`;
       xml += `    <priority>0.7</priority>\n`;
       xml += `  </url>\n`;
@@ -60,10 +65,11 @@ export const getDynamicSitemap = async (req, res) => {
 
     xml += '</urlset>\n';
 
-    res.header('Content-Type', 'application/xml');
+    res.header('Content-Type', 'application/xml; charset=utf-8');
     res.status(200).send(xml);
   } catch (error) {
     console.error('[SITEMAP ERROR] Failed to generate sitemap:', error);
     res.status(500).send('Error generating sitemap');
   }
 };
+

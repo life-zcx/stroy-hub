@@ -1,8 +1,11 @@
 User-agent: *
 Allow: /
+Allow: /api/og/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /order-success
 Disallow: /changelog
+Disallow: /cart
 
 Sitemap: https://tormag.kz/sitemap.xml
+

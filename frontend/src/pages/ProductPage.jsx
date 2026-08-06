@@ -903,8 +903,11 @@ export default function ProductPage({
                   <span className="h-3 w-px bg-slate-200" />
                   <button
                     type="button"
-                    onClick={() => scrollToSection('reviews-section')}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
+                    onClick={() => {
+                      setActiveTab('reviews');
+                      scrollToSection('tabs-section');
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors hover:underline cursor-pointer"
                   >
                     {reviewsMeta.total || product.reviews || 0} {
                       (() => {

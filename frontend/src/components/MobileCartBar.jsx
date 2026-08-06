@@ -8,8 +8,8 @@ export default function MobileCartBar({
   onOpenCart, 
   currentPage 
 }) {
-  // Hide if cart is empty or if already on cart page
-  if (!cartItemsCount || cartItemsCount <= 0 || currentPage === 'cart') {
+  // Hide if cart is empty or if already on cart/checkout page
+  if (!cartItemsCount || cartItemsCount <= 0 || currentPage === 'cart' || currentPage === 'checkout') {
     return null;
   }
 
