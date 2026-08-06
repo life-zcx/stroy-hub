@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { getTokenFromRequest } from '../utils/authCookie.js';
+import redisClient from '../config/redis.js';
 
 export const verifyToken = async (req, res, next) => {
   const token = getTokenFromRequest(req);
@@ -12,10 +13,28 @@ export const verifyToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      include: { supplier: true },
-    });
+    let user = null;
+    const sessionKey = `user:session:${decoded.id}`;
+
+    try {
+      const cached = await redisClient.get(sessionKey);
+      if (cached) {
+        user = JSON.parse(cached);
+      }
+    } catch {}
+
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        include: { supplier: true },
+      });
+
+      if (user) {
+        try {
+          await redisClient.set(sessionKey, JSON.stringify(user), { EX: 60 });
+        } catch {}
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден.' });

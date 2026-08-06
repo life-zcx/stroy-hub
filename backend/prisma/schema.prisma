@@ -118,6 +118,9 @@ model Product {
   @@index([categoryId])
   @@index([price])
   @@index([slug])
+  @@index([name])
+  @@index([article])
+  @@index([isHit])
   @@index([categoryId, price])
   @@index([supplierId, price])
 }

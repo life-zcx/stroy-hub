@@ -607,25 +607,21 @@ export const addUserCartItem = async (req, res) => {
       return res.status(404).json({ error: 'Товар не найден.' });
     }
 
-    // Upsert cart item
-    await prisma.cartItem.upsert({
-      where: {
-        userId_productId: {
-          userId,
-          productId: prodId
-        }
-      },
-      update: {
-        quantity: {
-          increment: qty
-        }
-      },
-      create: {
-        userId,
-        productId: prodId,
-        quantity: qty
-      }
+    // Add or increment cart item safely
+    const existingCartItem = await prisma.cartItem.findFirst({
+      where: { userId, productId: prodId }
     });
+
+    if (existingCartItem) {
+      await prisma.cartItem.update({
+        where: { id: existingCartItem.id },
+        data: { quantity: existingCartItem.quantity + qty }
+      });
+    } else {
+      await prisma.cartItem.create({
+        data: { userId, productId: prodId, quantity: qty }
+      });
+    }
 
     // Return the updated cart items formatted
     const cartItems = await prisma.cartItem.findMany({
@@ -670,16 +666,9 @@ export const updateUserCartItem = async (req, res) => {
   const qty = Math.max(1, parseInt(quantity, 10) || 1);
 
   try {
-    await prisma.cartItem.update({
-      where: {
-        userId_productId: {
-          userId,
-          productId
-        }
-      },
-      data: {
-        quantity: qty
-      }
+    await prisma.cartItem.updateMany({
+      where: { userId, productId },
+      data: { quantity: qty }
     });
 
     // Return updated cart
@@ -722,13 +711,8 @@ export const removeUserCartItem = async (req, res) => {
   }
 
   try {
-    await prisma.cartItem.delete({
-      where: {
-        userId_productId: {
-          userId,
-          productId
-        }
-      }
+    await prisma.cartItem.deleteMany({
+      where: { userId, productId }
     });
 
     // Return updated cart

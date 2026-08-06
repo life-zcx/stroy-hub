@@ -1,29 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import Storefront from './pages/Storefront';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import HomePage from './pages/Home';
-import Advisor from './pages/Advisor';
-import About from './pages/About';
-import EstimatePage from './pages/EstimatePage';
-import FavoritesPage from './pages/Favorites';
-import Delivery from './pages/Delivery';
-import Legal from './pages/Legal';
-import ProductPage from './pages/ProductPage';
-import Services from './pages/Services';
-import PaymentTerms from './pages/PaymentTerms';
-import DeliveryTerms from './pages/DeliveryTerms';
-import Warranty from './pages/Warranty';
-import Faq from './pages/Faq';
-import Requisites from './pages/Requisites';
-import Partners from './pages/Partners';
-import Promotions from './pages/Promotions';
-import MyOrderDetails from './pages/MyOrderDetails';
-import CashbackPage from './pages/CashbackPage';
-import TransactionsHistoryPage from './pages/TransactionsHistoryPage';
-import Cabinet from './pages/Cabinet';
-import CartPage from './pages/CartPage';
-import NotFoundPage from './pages/NotFoundPage';
-import BlockedPage from './pages/BlockedPage';
-import AiAssistantPage from './pages/AiAssistantPage';
+
+const Storefront = lazy(() => import('./pages/Storefront'));
+const Advisor = lazy(() => import('./pages/Advisor'));
+const About = lazy(() => import('./pages/About'));
+const EstimatePage = lazy(() => import('./pages/EstimatePage'));
+const FavoritesPage = lazy(() => import('./pages/Favorites'));
+const Delivery = lazy(() => import('./pages/Delivery'));
+const Legal = lazy(() => import('./pages/Legal'));
+const ProductPage = lazy(() => import('./pages/ProductPage'));
+const Services = lazy(() => import('./pages/Services'));
+const PaymentTerms = lazy(() => import('./pages/PaymentTerms'));
+const DeliveryTerms = lazy(() => import('./pages/DeliveryTerms'));
+const Warranty = lazy(() => import('./pages/Warranty'));
+const Faq = lazy(() => import('./pages/Faq'));
+const Requisites = lazy(() => import('./pages/Requisites'));
+const Partners = lazy(() => import('./pages/Partners'));
+const Promotions = lazy(() => import('./pages/Promotions'));
+const MyOrderDetails = lazy(() => import('./pages/MyOrderDetails'));
+const CashbackPage = lazy(() => import('./pages/CashbackPage'));
+const TransactionsHistoryPage = lazy(() => import('./pages/TransactionsHistoryPage'));
+const Cabinet = lazy(() => import('./pages/Cabinet'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const BlockedPage = lazy(() => import('./pages/BlockedPage'));
+const AiAssistantPage = lazy(() => import('./pages/AiAssistantPage'));
+
+const PageLoader = () => (
+  <div className="w-full py-24 flex flex-col items-center justify-center space-y-4">
+    <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+    <span className="text-sm font-medium text-slate-500">Загрузка страницы...</span>
+  </div>
+);
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -366,216 +374,218 @@ export default function App() {
       />
 
       <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-90px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
-        {currentPage === 'home' && (
-          <HomePage
-            onNavigate={setCurrentPage}
-            setSelectedCategory={handleSetCategory}
-            categories={catalog.categories}
-            setSearchQuery={catalog.setSearchQuery}
-            onAddToCart={cart.handleAddToCart}
-            onUpdateCartQuantity={cart.handleSetCartQuantity}
-            cart={cart.cart}
-            onToggleFavorite={favorites.toggleFavorite}
-            isFavorite={favorites.isFavorite}
-            onOpenDetails={openProductPage}
-            customer={auth.customer}
-            bonuses={bonuses}
-            onOpenAuth={auth.openLoginModal}
-          />
-        )}
+        <Suspense fallback={<PageLoader />}>
+          {currentPage === 'home' && (
+            <HomePage
+              onNavigate={setCurrentPage}
+              setSelectedCategory={handleSetCategory}
+              categories={catalog.categories}
+              setSearchQuery={catalog.setSearchQuery}
+              onAddToCart={cart.handleAddToCart}
+              onUpdateCartQuantity={cart.handleSetCartQuantity}
+              cart={cart.cart}
+              onToggleFavorite={favorites.toggleFavorite}
+              isFavorite={favorites.isFavorite}
+              onOpenDetails={openProductPage}
+              customer={auth.customer}
+              bonuses={bonuses}
+              onOpenAuth={auth.openLoginModal}
+            />
+          )}
 
-        {currentPage === 'catalog' && (
-          <Storefront
-            products={catalog.products}
-            categories={catalog.categories}
-            loading={catalog.loading}
-            loadingMore={catalog.loadingMore}
-            hasMore={catalog.hasMore}
-            total={catalog.total}
-            selectedCategory={catalog.selectedCategory}
-            setSelectedCategory={handleSetCategory}
-            searchQuery={catalog.searchQuery}
-            setSearchQuery={catalog.setSearchQuery}
-            sortBy={catalog.sortBy}
-            setSortBy={catalog.setSortBy}
-            priceRange={catalog.priceRange}
-            setPriceRange={catalog.setPriceRange}
-            onlyHits={catalog.onlyHits}
-            setOnlyHits={catalog.setOnlyHits}
-            onlyBulk={catalog.onlyBulk}
-            setOnlyBulk={catalog.setOnlyBulk}
-            onAddToCart={cart.handleAddToCart}
-            onUpdateCartQuantity={cart.handleSetCartQuantity}
-            cart={cart.cart}
-            onRefresh={catalog.loadProducts}
-            onLoadMore={catalog.loadMoreProducts}
-            onOpenProduct={openProductPage}
-            onNavigate={setCurrentPage}
-            currentRegion={region.currentRegion}
-            onToggleFavorite={favorites.toggleFavorite}
-            isFavorite={favorites.isFavorite}
-          />
-        )}
+          {currentPage === 'catalog' && (
+            <Storefront
+              products={catalog.products}
+              categories={catalog.categories}
+              loading={catalog.loading}
+              loadingMore={catalog.loadingMore}
+              hasMore={catalog.hasMore}
+              total={catalog.total}
+              selectedCategory={catalog.selectedCategory}
+              setSelectedCategory={handleSetCategory}
+              searchQuery={catalog.searchQuery}
+              setSearchQuery={catalog.setSearchQuery}
+              sortBy={catalog.sortBy}
+              setSortBy={catalog.setSortBy}
+              priceRange={catalog.priceRange}
+              setPriceRange={catalog.setPriceRange}
+              onlyHits={catalog.onlyHits}
+              setOnlyHits={catalog.setOnlyHits}
+              onlyBulk={catalog.onlyBulk}
+              setOnlyBulk={catalog.setOnlyBulk}
+              onAddToCart={cart.handleAddToCart}
+              onUpdateCartQuantity={cart.handleSetCartQuantity}
+              cart={cart.cart}
+              onRefresh={catalog.loadProducts}
+              onLoadMore={catalog.loadMoreProducts}
+              onOpenProduct={openProductPage}
+              onNavigate={setCurrentPage}
+              currentRegion={region.currentRegion}
+              onToggleFavorite={favorites.toggleFavorite}
+              isFavorite={favorites.isFavorite}
+            />
+          )}
 
-        {currentPage === 'advisor' && (
-          <Advisor
-            products={catalog.products}
-            onAddToCart={cart.handleAddToCart}
-            showToast={showToast}
-            onNavigate={setCurrentPage}
-          />
-        )}
+          {currentPage === 'advisor' && (
+            <Advisor
+              products={catalog.products}
+              onAddToCart={cart.handleAddToCart}
+              showToast={showToast}
+              onNavigate={setCurrentPage}
+            />
+          )}
 
-        {currentPage === 'about' && <About />}
-        {currentPage === 'estimate' && (
-          <EstimatePage
-            onAddToCart={cart.handleAddToCart}
-            onNavigate={setCurrentPage}
-            showToast={showToast}
-            customer={auth.customer}
-            onRequireAuth={auth.openLoginModal}
-          />
-        )}
-        {currentPage === 'delivery' && <Delivery />}
-        {currentPage === 'legal' && <Legal defaultTab={legalTab} onNavigate={setCurrentPage} />}
-        {currentPage === 'services' && <Services onOpenCallback={() => setIsCallbackModalOpen(true)} />}
-        {currentPage === 'payment-terms' && <PaymentTerms />}
-        {currentPage === 'delivery-terms' && <DeliveryTerms />}
-        {currentPage === 'warranty' && <Warranty />}
-        {currentPage === 'faq' && <Faq />}
-        {currentPage === 'requisites' && <Requisites />}
-        {currentPage === 'partners' && <Partners showToast={showToast} />}
-        {currentPage === 'promotions' && (
-          <Promotions
-            promotionId={currentProductId}
-            onNavigate={setCurrentPage}
-            onAddToCart={cart.handleAddToCart}
-            onUpdateCartQuantity={cart.handleSetCartQuantity}
-            cart={cart.cart}
-            onToggleFavorite={favorites.toggleFavorite}
-            isFavorite={favorites.isFavorite}
-            onOpenCallback={() => setIsCallbackModalOpen(true)}
-          />
-        )}
-        {isCabinetPage && (
-          <Cabinet
-            customer={auth.customer}
-            orders={orders.orders}
-            ordersLoading={orders.ordersLoading}
-            ordersHasMore={orders.ordersHasMore}
-            ordersTotal={orders.ordersTotal}
-            onRefreshOrders={orders.fetchMyOrders}
-            onLoadMoreOrders={orders.loadMoreOrders}
-            bonuses={bonuses}
-            onNavigate={setCurrentPage}
-            onOpenAuth={auth.openLoginModal}
-            handleLogout={handleLogout}
-            showToast={showToast}
-            onCustomerUpdate={handleCustomerUpdate}
-            onAddToCart={cart.handleAddToCart}
-            initialTab={PATH_TO_CABINET_TAB[currentPage] || 'profile'}
-          />
-        )}
+          {currentPage === 'about' && <About />}
+          {currentPage === 'estimate' && (
+            <EstimatePage
+              onAddToCart={cart.handleAddToCart}
+              onNavigate={setCurrentPage}
+              showToast={showToast}
+              customer={auth.customer}
+              onRequireAuth={auth.openLoginModal}
+            />
+          )}
+          {currentPage === 'delivery' && <Delivery />}
+          {currentPage === 'legal' && <Legal defaultTab={legalTab} onNavigate={setCurrentPage} />}
+          {currentPage === 'services' && <Services onOpenCallback={() => setIsCallbackModalOpen(true)} />}
+          {currentPage === 'payment-terms' && <PaymentTerms />}
+          {currentPage === 'delivery-terms' && <DeliveryTerms />}
+          {currentPage === 'warranty' && <Warranty />}
+          {currentPage === 'faq' && <Faq />}
+          {currentPage === 'requisites' && <Requisites />}
+          {currentPage === 'partners' && <Partners showToast={showToast} />}
+          {currentPage === 'promotions' && (
+            <Promotions
+              promotionId={currentProductId}
+              onNavigate={setCurrentPage}
+              onAddToCart={cart.handleAddToCart}
+              onUpdateCartQuantity={cart.handleSetCartQuantity}
+              cart={cart.cart}
+              onToggleFavorite={favorites.toggleFavorite}
+              isFavorite={favorites.isFavorite}
+              onOpenCallback={() => setIsCallbackModalOpen(true)}
+            />
+          )}
+          {isCabinetPage && (
+            <Cabinet
+              customer={auth.customer}
+              orders={orders.orders}
+              ordersLoading={orders.ordersLoading}
+              ordersHasMore={orders.ordersHasMore}
+              ordersTotal={orders.ordersTotal}
+              onRefreshOrders={orders.fetchMyOrders}
+              onLoadMoreOrders={orders.loadMoreOrders}
+              bonuses={bonuses}
+              onNavigate={setCurrentPage}
+              onOpenAuth={auth.openLoginModal}
+              handleLogout={handleLogout}
+              showToast={showToast}
+              onCustomerUpdate={handleCustomerUpdate}
+              onAddToCart={cart.handleAddToCart}
+              initialTab={PATH_TO_CABINET_TAB[currentPage] || 'profile'}
+            />
+          )}
 
-        {currentPage === 'cashback' && (
-          <CashbackPage
-            customer={auth.customer}
-            bonuses={bonuses}
-            onNavigate={setCurrentPage}
-            onOpenAuth={auth.openLoginModal}
-          />
-        )}
-        {currentPage === 'cashback/history' && (
-          <TransactionsHistoryPage
-            customer={auth.customer}
-            bonuses={bonuses}
-            onNavigate={setCurrentPage}
-            onOpenAuth={auth.openLoginModal}
-          />
-        )}
-        {currentPage === 'order-detail' && (
-          <MyOrderDetails
-            customer={auth.customer}
-            orderId={currentOrderId}
-            orders={orders.orders}
-            loading={orders.orderDetailsLoading}
-            error={orders.orderDetailsError}
-            onRefresh={orders.fetchOrderDetails}
-            onLoadOrder={orders.fetchOrderDetails}
-            onOpenAuth={auth.openLoginModal}
-            onNavigate={setCurrentPage}
-            onAddToCart={cart.handleAddToCart}
-            showToast={showToast}
-          />
-        )}
-        {currentPage === 'product' && (
-          <ProductPage
-            productId={currentProductId}
-            onBackToCatalog={() => {
-              setCurrentPage('catalog');
-            }}
-            onAddToCart={cart.handleAddToCart}
-            onUpdateCartQuantity={cart.handleSetCartQuantity}
-            cart={cart.cart}
-            onNavigate={setCurrentPage}
-            categories={catalog.categories}
-            setSelectedCategory={handleSetCategory}
-            onToggleFavorite={favorites.toggleFavorite}
-            isFavorite={favorites.isFavorite}
-            showToast={showToast}
-          />
-        )}
+          {currentPage === 'cashback' && (
+            <CashbackPage
+              customer={auth.customer}
+              bonuses={bonuses}
+              onNavigate={setCurrentPage}
+              onOpenAuth={auth.openLoginModal}
+            />
+          )}
+          {currentPage === 'cashback/history' && (
+            <TransactionsHistoryPage
+              customer={auth.customer}
+              bonuses={bonuses}
+              onNavigate={setCurrentPage}
+              onOpenAuth={auth.openLoginModal}
+            />
+          )}
+          {currentPage === 'order-detail' && (
+            <MyOrderDetails
+              customer={auth.customer}
+              orderId={currentOrderId}
+              orders={orders.orders}
+              loading={orders.orderDetailsLoading}
+              error={orders.orderDetailsError}
+              onRefresh={orders.fetchOrderDetails}
+              onLoadOrder={orders.fetchOrderDetails}
+              onOpenAuth={auth.openLoginModal}
+              onNavigate={setCurrentPage}
+              onAddToCart={cart.handleAddToCart}
+              showToast={showToast}
+            />
+          )}
+          {currentPage === 'product' && (
+            <ProductPage
+              productId={currentProductId}
+              onBackToCatalog={() => {
+                setCurrentPage('catalog');
+              }}
+              onAddToCart={cart.handleAddToCart}
+              onUpdateCartQuantity={cart.handleSetCartQuantity}
+              cart={cart.cart}
+              onNavigate={setCurrentPage}
+              categories={catalog.categories}
+              setSelectedCategory={handleSetCategory}
+              onToggleFavorite={favorites.toggleFavorite}
+              isFavorite={favorites.isFavorite}
+              showToast={showToast}
+            />
+          )}
 
-        {currentPage === 'favorites' && (
-          <FavoritesPage
-            favorites={favorites.favorites}
-            onToggleFavorite={favorites.toggleFavorite}
-            onAddToCart={cart.handleAddToCart}
-            onOpenProduct={openProductPage}
-            onNavigate={setCurrentPage}
-            onClearAll={favorites.clearFavorites}
-          />
-        )}
+          {currentPage === 'favorites' && (
+            <FavoritesPage
+              favorites={favorites.favorites}
+              onToggleFavorite={favorites.toggleFavorite}
+              onAddToCart={cart.handleAddToCart}
+              onOpenProduct={openProductPage}
+              onNavigate={setCurrentPage}
+              onClearAll={favorites.clearFavorites}
+            />
+          )}
 
-        {(currentPage === 'cart' || currentPage === 'checkout') && (
-          <CartPage
-            cart={cart.cart}
-            onUpdateQuantity={cart.handleUpdateQuantity}
-            onRemoveFromCart={cart.handleRemoveFromCart}
-            onClearCart={cart.handleClearCart}
-            showToast={showToast}
-            customer={auth.customer}
-            onCustomerUpdate={handleCustomerUpdate}
-            onOpenAuth={() => auth.setAuthModalOpen(true)}
-            onNavigate={setCurrentPage}
-            bonuses={bonuses}
-            onAddToCart={cart.handleAddToCart}
-            currentPage={currentPage}
-          />
-        )}
+          {(currentPage === 'cart' || currentPage === 'checkout') && (
+            <CartPage
+              cart={cart.cart}
+              onUpdateQuantity={cart.handleUpdateQuantity}
+              onRemoveFromCart={cart.handleRemoveFromCart}
+              onClearCart={cart.handleClearCart}
+              showToast={showToast}
+              customer={auth.customer}
+              onCustomerUpdate={handleCustomerUpdate}
+              onOpenAuth={() => auth.setAuthModalOpen(true)}
+              onNavigate={setCurrentPage}
+              bonuses={bonuses}
+              onAddToCart={cart.handleAddToCart}
+              currentPage={currentPage}
+            />
+          )}
 
-        {currentPage === 'ai-assistant' && (
-          <AiAssistantPage
-            onAddToCart={cart.handleAddToCart}
-            showToast={showToast}
-            onNavigate={setCurrentPage}
-            onOpenCallback={() => setIsCallbackModalOpen(true)}
-          />
-        )}
+          {currentPage === 'ai-assistant' && (
+            <AiAssistantPage
+              onAddToCart={cart.handleAddToCart}
+              showToast={showToast}
+              onNavigate={setCurrentPage}
+              onOpenCallback={() => setIsCallbackModalOpen(true)}
+            />
+          )}
 
-        {/* Blocked user screen */}
-        {auth.customer?.isBlocked && (
-          <BlockedPage
-            user={auth.customer}
-            onLogout={handleLogout}
-            onOpenCallback={() => setIsCallbackModalOpen(true)}
-          />
-        )}
+          {/* Blocked user screen */}
+          {auth.customer?.isBlocked && (
+            <BlockedPage
+              user={auth.customer}
+              onLogout={handleLogout}
+              onOpenCallback={() => setIsCallbackModalOpen(true)}
+            />
+          )}
 
-        {/* 404 Not Found */}
-        {isNotFound && !auth.isAuthChecking && (
-          <NotFoundPage onNavigate={setCurrentPage} />
-        )}
+          {/* 404 Not Found */}
+          {isNotFound && !auth.isAuthChecking && (
+            <NotFoundPage onNavigate={setCurrentPage} />
+          )}
+        </Suspense>
       </main>
 
       {/* Footer: hidden on mobile AI page and in PWA; shown on desktop even for AI page */}

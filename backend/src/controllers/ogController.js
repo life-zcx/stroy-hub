@@ -12,18 +12,31 @@ function escapeHtml(str) {
 
 export const getProductOg = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).send('Invalid product ID');
+    const rawId = req.params.id;
+    if (!rawId) {
+      return res.status(400).send('Invalid product identifier');
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const parsedId = parseInt(rawId, 10);
+    const isNumeric = !isNaN(parsedId) && String(parsedId) === String(rawId);
+
+    let product = await prisma.product.findFirst({
+      where: isNumeric ? { id: parsedId } : { slug: rawId },
       include: {
         supplier: { select: { name: true } },
         categoryRelation: { select: { name: true, slug: true } }
       }
     });
+
+    if (!product && isNumeric) {
+      product = await prisma.product.findFirst({
+        where: { slug: rawId },
+        include: {
+          supplier: { select: { name: true } },
+          categoryRelation: { select: { name: true, slug: true } }
+        }
+      });
+    }
 
     if (!product) {
       return res.status(404).send('Product not found');

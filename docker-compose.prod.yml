@@ -99,6 +99,12 @@ services:
       backend:
         condition: service_healthy
 
+  prerender:
+    image: prerender/prerender:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+
   gateway:
     image: ghcr.io/life-zcx/stroy-hub/gateway:latest
     restart: unless-stopped

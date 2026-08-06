@@ -108,10 +108,11 @@ export const getAllProducts = async (req, res) => {
   const skip     = (pageNum - 1) * limitNum;
 
   const where = {};
+  let searchConditions = null;
 
   if (search && search.trim() !== '') {
     const q = search.trim();
-    const searchConditions = [
+    searchConditions = [
       { name: { contains: q, mode: 'insensitive' } },
       { article: { contains: q, mode: 'insensitive' } },
       { description: { contains: q, mode: 'insensitive' } },
@@ -121,8 +122,6 @@ export const getAllProducts = async (req, res) => {
     if (!isNaN(searchId) && String(searchId) === q) {
       searchConditions.push({ id: searchId });
     }
-
-    where.OR = searchConditions;
   }
 
   if (supplierId) {
@@ -176,6 +175,7 @@ export const getAllProducts = async (req, res) => {
       return res.json(JSON.parse(cached));
     }
 
+    let categoryConditions = null;
     if (category && category !== 'all') {
       let rawCategory = category;
       try {
@@ -186,10 +186,21 @@ export const getAllProducts = async (req, res) => {
       } catch {}
 
       const { slugs, ids } = await getDescendantCategorySlugsAndIds(rawCategory);
-      where.OR = [
+      categoryConditions = [
         { category: { in: slugs } },
         { categoryId: { in: ids } },
       ];
+    }
+
+    if (searchConditions && categoryConditions) {
+      where.AND = [
+        { OR: searchConditions },
+        { OR: categoryConditions },
+      ];
+    } else if (searchConditions) {
+      where.OR = searchConditions;
+    } else if (categoryConditions) {
+      where.OR = categoryConditions;
     }
 
     const [total, products] = await Promise.all([
@@ -321,7 +332,13 @@ export const getAiCatalogProducts = async (req, res) => {
       take: 5000,
       orderBy: { id: 'desc' },
     });
-    res.json(products);
+
+    const truncated = products.map(p => ({
+      ...p,
+      description: p.description ? p.description.substring(0, 150) : null
+    }));
+
+    res.json(truncated);
   } catch (error) {
     logger.error('[AI CATALOG ENDPOINT ERROR]', error);
     res.status(500).json({ error: 'Ошибка получения каталога ИИ: ' + error.message });
