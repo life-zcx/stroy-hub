@@ -1,0 +1,56 @@
+/* KineticHeroBanner.css */
+
+.kinetic-banner-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Subtle, elegant ambient glowing spheres tailored for TORMAG light palette */
+.kinetic-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  transition: background-color 1.2s ease, opacity 1s ease;
+  will-change: opacity, background-color;
+}
+
+.kinetic-glow-primary {
+  top: -30%;
+  left: -20%;
+  width: 500px;
+  height: 500px;
+  opacity: 0.18;
+}
+
+.kinetic-glow-secondary {
+  bottom: -30%;
+  right: -15%;
+  width: 550px;
+  height: 550px;
+  opacity: 0.14;
+}
+
+.kinetic-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: rgba(226, 232, 240, 0.6);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.kinetic-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+  width: 0%;
+  border-radius: 0 2px 2px 0;
+  will-change: width;
+}
+
+/* Loyalty Tier Cards Styling */
+.tier-card-base {
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
