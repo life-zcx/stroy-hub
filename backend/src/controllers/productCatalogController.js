@@ -354,8 +354,20 @@ export const getProductStats = async (req, res) => {
       return res.status(400).json({ error: 'Некорректный ID товара' });
     }
 
-    const [viewsCount, cartAddsCount, orderItemsCount, totalRevenue] = await Promise.all([
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    const [viewsCount, recentSessionsData, cartAddsCount, orderItemsCount, totalRevenue] = await Promise.all([
       prisma.analyticsEvent.count({ where: { productId, type: 'product_view' } }),
+      prisma.analyticsEvent.findMany({
+        where: {
+          productId,
+          type: 'product_view',
+          createdAt: { gte: thirtyMinutesAgo },
+          sessionId: { not: null }
+        },
+        distinct: ['sessionId'],
+        select: { sessionId: true }
+      }),
       prisma.analyticsEvent.count({ where: { productId, type: 'add_to_cart' } }),
       prisma.orderItem.aggregate({
         where: { productId, order: { status: { not: 'cancelled' } } },
@@ -367,9 +379,15 @@ export const getProductStats = async (req, res) => {
       })
     ]);
 
+    // Calculate dynamic live watching count based on UNIQUE active sessions (minimum 1)
+    const watching = Math.max(1, recentSessionsData.length);
+
     res.json({
       productId,
+      views: viewsCount,
+      watching,
       viewsCount,
+      watchingNow: watching,
       cartAddsCount,
       purchasedQuantity: orderItemsCount._sum.quantity || 0,
       totalRevenue: totalRevenue._sum.price || 0

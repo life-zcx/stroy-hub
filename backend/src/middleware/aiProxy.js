@@ -1,4 +1,19 @@
+import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
+import prisma from '../config/db.js';
+import { JWT_SECRET } from '../config/env.js';
+import { getTokenFromRequest } from '../utils/authCookie.js';
+
+function getUserIdFromToken(req) {
+  const token = getTokenFromRequest(req);
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return Number.isInteger(decoded.id) ? decoded.id : null;
+  } catch (error) {
+    return null;
+  }
+}
 
 export const aiProxyHandler = async (req, res) => {
   const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5005';
@@ -20,6 +35,29 @@ export const aiProxyHandler = async (req, res) => {
       return res.status(response.status >= 400 ? response.status : 502).json({
         error: 'ИИ-сервис вернул некорректный ответ. Перезапустите контейнер tormag_ai_service.'
       });
+    }
+
+    if (response.ok && (req.url === '/chat' || req.originalUrl.includes('/chat')) && data && data.reply) {
+      const promptText = req.body?.message || req.body?.prompt || '';
+      if (promptText) {
+        const userId = getUserIdFromToken(req);
+        const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip;
+        const recommendedProdIds = Array.isArray(data.recommendedProducts)
+          ? data.recommendedProducts.map(p => typeof p === 'object' ? p.id : p).filter(id => Number.isInteger(id))
+          : [];
+
+        prisma.aiChatLog.create({
+          data: {
+            prompt: String(promptText),
+            reply: String(data.reply),
+            recommendedProdIds,
+            ip: String(clientIp || '').substring(0, 45),
+            userId: userId ? Number(userId) : null
+          }
+        }).catch(err => {
+          logger.error('[AI CHAT DB LOG ERROR]', { error: err.message });
+        });
+      }
     }
 
     return res.status(response.status).json(data);

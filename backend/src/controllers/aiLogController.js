@@ -33,3 +33,25 @@ export const logAiChat = async (req, res) => {
     res.status(500).json({ error: 'Ошибка сохранения лога ИИ' });
   }
 };
+
+export const getUserAiChatHistory = async (req, res) => {
+  try {
+    const userId = req.user?.id || null;
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+
+    const where = userId
+      ? { userId: Number(userId) }
+      : { ip: String(clientIp || '').substring(0, 45) };
+
+    const logs = await prisma.aiChatLog.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+
+    res.json(logs);
+  } catch (error) {
+    logger.error('[GET AI CHAT HISTORY ERROR]', error);
+    res.status(500).json({ error: 'Ошибка получения истории ИИ' });
+  }
+};
