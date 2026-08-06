@@ -1,37 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
-import HomePage from './pages/Home';
-
-const Storefront = lazy(() => import('./pages/Storefront'));
-const Advisor = lazy(() => import('./pages/Advisor'));
-const About = lazy(() => import('./pages/About'));
-const EstimatePage = lazy(() => import('./pages/EstimatePage'));
-const FavoritesPage = lazy(() => import('./pages/Favorites'));
-const Delivery = lazy(() => import('./pages/Delivery'));
-const Legal = lazy(() => import('./pages/Legal'));
-const ProductPage = lazy(() => import('./pages/ProductPage'));
-const Services = lazy(() => import('./pages/Services'));
-const PaymentTerms = lazy(() => import('./pages/PaymentTerms'));
-const DeliveryTerms = lazy(() => import('./pages/DeliveryTerms'));
-const Warranty = lazy(() => import('./pages/Warranty'));
-const Faq = lazy(() => import('./pages/Faq'));
-const Requisites = lazy(() => import('./pages/Requisites'));
-const Partners = lazy(() => import('./pages/Partners'));
-const Promotions = lazy(() => import('./pages/Promotions'));
-const MyOrderDetails = lazy(() => import('./pages/MyOrderDetails'));
-const CashbackPage = lazy(() => import('./pages/CashbackPage'));
-const TransactionsHistoryPage = lazy(() => import('./pages/TransactionsHistoryPage'));
-const Cabinet = lazy(() => import('./pages/Cabinet'));
-const CartPage = lazy(() => import('./pages/CartPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-const BlockedPage = lazy(() => import('./pages/BlockedPage'));
-const AiAssistantPage = lazy(() => import('./pages/AiAssistantPage'));
-
-const PageLoader = () => (
-  <div className="w-full py-24 flex flex-col items-center justify-center space-y-4">
-    <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-    <span className="text-sm font-medium text-slate-500">Загрузка страницы...</span>
-  </div>
-);
+import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -40,6 +7,13 @@ import CallbackModal from './components/CallbackModal';
 import Toast from './components/Toast';
 import ScrollToTop from './components/ScrollToTop';
 import MobileCartBar from './components/MobileCartBar';
+import ComingSoonModal from './components/ComingSoonModal';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import AiAssistantWidget from './components/AiAssistantWidget';
+
+import SeoHeadManager from './components/SeoHeadManager';
+import AppRoutes from './components/AppRoutes';
+
 import useToast from './hooks/useToast';
 import useNavigation from './hooks/useNavigation';
 import useCatalog from './hooks/useCatalog';
@@ -47,24 +21,19 @@ import useCart from './hooks/useCart';
 import useCustomerAuth from './hooks/useCustomerAuth';
 import useOrders from './hooks/useOrders';
 import useRegion from './hooks/useRegion';
-import useFavorites from './hooks/useFavorites'
+import useFavorites from './hooks/useFavorites';
 import useBonuses from './hooks/useBonuses';
-import { getAnalyticsSessionId, setAnalyticsContext, trackEvent } from './utils/analytics';
-import { getPageHref } from './utils/navigationHelper';
-import { PATH_TO_CABINET_TAB } from './hooks/useNavigation';
+
 import { getSystemSettings } from './services/api';
-import ComingSoonModal from './components/ComingSoonModal';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
-import AiAssistantWidget from './components/AiAssistantWidget';
 
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Detect PWA standalone mode (installed app) — hide footer there
   const isPwa = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true
   );
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
@@ -78,8 +47,10 @@ export default function App() {
 
   const { toast, showToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
+
   const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
   const isNotFound = currentPage === '404';
+
   const catalog = useCatalog(showToast, currentCategorySlug || 'all', currentPage);
   const auth = useCustomerAuth(showToast);
   const cart = useCart(showToast, auth.customer);
@@ -88,7 +59,6 @@ export default function App() {
   const favorites = useFavorites(showToast);
   const bonuses = useBonuses(auth.customer);
 
-  // Sync category from URL to catalog state
   useEffect(() => {
     if (currentPage === 'catalog' && currentCategorySlug) {
       catalog.setSelectedCategory(currentCategorySlug);
@@ -97,7 +67,6 @@ export default function App() {
     }
   }, [currentCategorySlug, currentPage]);
 
-  // Sync category from catalog state back to URL
   const handleSetCategory = (slug) => {
     catalog.setSelectedCategory(slug);
     setCurrentPage('catalog', null, slug);
@@ -112,132 +81,12 @@ export default function App() {
     }
   }, [currentPage, currentProductId]);
 
-  // Dynamic SEO Page Titles and Descriptions
-  useEffect(() => {
-    const pageTitles = {
-      home: "TORMAG — Всё для стройки и ремонта",
-      catalog: "TORMAG - Каталог стройматериалов",
-      advisor: "TORMAG - Умный подбор стройматериалов",
-      about: "TORMAG - О компании",
-      delivery: "TORMAG - Доставка и оплата",
-      services: "TORMAG - Строительные услуги",
-      partners: "TORMAG - Наши партнеры",
-      promotions: "TORMAG - Акции и скидки",
-      favorites: "TORMAG - Избранные товары",
-      orders: "TORMAG - Мои заказы",
-      'my-promotions': "TORMAG - Мои промокоды",
-      cashback: "TORMAG - Мой кешбэк",
-      cabinet: "TORMAG - Личный кабинет",
-      'cabinet/orders': "TORMAG - Мои заказы",
-      'cabinet/promotions': "TORMAG - Мои промокоды",
-      'cabinet/cashback': "TORMAG - Мой кешбэк",
-      'cashback/history': "TORMAG - История транзакций",
-      requisites: "TORMAG - Реквизиты компании",
-      faq: "TORMAG - Вопрос-ответ",
-      legal: "TORMAG - Юридическая информация",
-      estimate: "TORMAG - Заказ по смете",
-      product: "TORMAG - Просмотр товара",
-      'payment-terms': "TORMAG - Условия оплаты",
-      'delivery-terms': "TORMAG - Условия доставки",
-      warranty: "TORMAG - Гарантия на товар",
-      cart: "TORMAG - Корзина",
-      'order-detail': "TORMAG - Детали заказа",
-      changelog: "TORMAG - Обновления платформы"
-    };
-
-    const pageDescriptions = {
-      home: "Строительная платформа TORMAG в Алматы. Огромный каталог стройматериалов, прямые оптовые поставки от дистрибьюторов, оперативная доставка и кэшбэк 3%.",
-      catalog: "Каталог строительных и отделочных материалов TORMAG. Широкий ассортимент сухих смесей, красок, инструментов, крепежа с доставкой по Алматы.",
-      advisor: "Умный калькулятор-подборщик строительных материалов под ваш бюджет и задачи от платформы TORMAG.",
-      about: "Узнайте больше о строительной платформе TORMAG. Наша миссия, команда, ценности и преимущества работы с нами.",
-      delivery: "Условия и сроки доставки строительных материалов по Алматы и области. Удобные способы оплаты, включая Kaspi QR.",
-      services: "Услуги снабжения объектов, расчета смет, шеф-монтажа и специализированной логистики от платформы TORMAG.",
-      partners: "Официальные дистрибьюторы и бренды-партнеры строительной платформы TORMAG.",
-      promotions: "Акции, распродажи, спецпредложения и действующие промокоды на строительные материалы в TORMAG.",
-      favorites: "Ваш список избранных строительных материалов на платформе TORMAG.",
-      orders: "Управление и отслеживание статуса ваших заказов на платформе TORMAG.",
-      cabinet: "Личный кабинет покупателя TORMAG. Управление профилем, заказами и бонусами.",
-      'cabinet/orders': "История ваших заказов на платформе TORMAG.",
-      'cabinet/promotions': "Ваши активные промокоды и купоны на скидку в TORMAG.",
-      'cabinet/cashback': "Бонусный баланс и история кешбэка TORMAG.",
-      estimate: "Удобная загрузка смет в формате Excel/CSV для автоматического подбора материалов в TORMAG.",
-      'cashback/history': "История начисления и списания бонусных баллов кешбэка TORMAG.",
-      legal: "Пользовательское соглашение, договор публичной оферты и политика конфиденциальности платформы TORMAG.",
-      changelog: "История релизов, новых функций, оптимизаций и исправлений на строительной платформе TORMAG.KZ."
-    };
-
-    // Dynamic page title/description updates (skip product and catalog to let their subcomponents handle it when data loads)
-    if (currentPage !== 'product' && currentPage !== 'catalog') {
-      const newTitle = pageTitles[currentPage] || "TORMAG — Всё для стройки и ремонта";
-      document.title = newTitle;
-
-      const newDesc = pageDescriptions[currentPage] || "Строительная платформа TORMAG в Алматы. Огромный выбор строительных материалов от дистрибьюторов по выгодным ценам с доставкой.";
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) {
-        metaDesc.setAttribute('content', newDesc);
-      }
-    } else if (currentPage === 'catalog' && !currentCategorySlug) {
-      // If catalog root page without category, set the default
-      document.title = pageTitles.catalog;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) {
-        metaDesc.setAttribute('content', pageDescriptions.catalog);
-      }
-    }
-
-    // Dynamic Canonical Link
-    const canonicalPath = getPageHref(currentPage, currentProductId, currentCategorySlug);
-    let canonicalLink = document.querySelector('link[rel="canonical"]');
-    if (!canonicalLink) {
-      canonicalLink = document.createElement('link');
-      canonicalLink.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonicalLink);
-    }
-    canonicalLink.setAttribute('href', `https://tormag.kz${canonicalPath}`);
-
-    // Dynamic Robots Meta Tag for Private/Cabinet Pages
-    let robotsMeta = document.querySelector('meta[name="robots"]');
-    if (isCabinetPage) {
-      if (!robotsMeta) {
-        robotsMeta = document.createElement('meta');
-        robotsMeta.setAttribute('name', 'robots');
-        document.head.appendChild(robotsMeta);
-      }
-      robotsMeta.setAttribute('content', 'noindex, nofollow');
-    } else {
-      if (robotsMeta) {
-        robotsMeta.remove();
-      }
-    }
-  }, [currentPage, currentProductId, currentCategorySlug, isCabinetPage]);
-
-  useEffect(() => {
-    setAnalyticsContext({
-      region: region.currentRegion,
-      country: 'Казахстан',
-      city: region.currentRegion,
-    });
-  }, [region.currentRegion]);
-
-  useEffect(() => {
-    trackEvent('page_view', {
-      path: window.location.pathname,
-      title: document.title,
-      referrer: document.referrer,
-      sessionId: getAnalyticsSessionId(),
-      region: region.currentRegion,
-      country: 'Казахстан',
-      city: region.currentRegion,
-    });
-  }, [currentPage, currentProductId, currentCategorySlug, currentOrderId, region.currentRegion]);
-
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Prevent iOS / PWA standalone mode from breaking out to browser on internal link clicks
   useEffect(() => {
     const handleGlobalLinkClick = (e) => {
       if (e.defaultPrevented) return;
@@ -245,7 +94,6 @@ export default function App() {
       if (!anchor) return;
 
       const href = anchor.getAttribute('href');
-      // If it's an internal link starting with '/' and not external http/tel/mailto
       if (href && href.startsWith('/') && !href.startsWith('//')) {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
 
@@ -259,7 +107,6 @@ export default function App() {
     return () => document.removeEventListener('click', handleGlobalLinkClick);
   }, []);
 
-  // Service Worker push notification listener for active foreground windows
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
@@ -342,6 +189,15 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans ${currentPage === 'ai-assistant' ? 'ai-assistant-root overflow-hidden' : ''}`}>
+      <SeoHeadManager
+        currentPage={currentPage}
+        currentProductId={currentProductId}
+        currentCategorySlug={currentCategorySlug}
+        currentOrderId={currentOrderId}
+        isCabinetPage={isCabinetPage}
+        region={region}
+      />
+
       <Header
         isScrolled={isScrolled}
         currentRegion={region.currentRegion}
@@ -374,222 +230,32 @@ export default function App() {
       />
 
       <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-90px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
-        <Suspense fallback={<PageLoader />}>
-          {currentPage === 'home' && (
-            <HomePage
-              onNavigate={setCurrentPage}
-              setSelectedCategory={handleSetCategory}
-              categories={catalog.categories}
-              setSearchQuery={catalog.setSearchQuery}
-              onAddToCart={cart.handleAddToCart}
-              onUpdateCartQuantity={cart.handleSetCartQuantity}
-              cart={cart.cart}
-              onToggleFavorite={favorites.toggleFavorite}
-              isFavorite={favorites.isFavorite}
-              onOpenDetails={openProductPage}
-              customer={auth.customer}
-              bonuses={bonuses}
-              onOpenAuth={auth.openLoginModal}
-            />
-          )}
-
-          {currentPage === 'catalog' && (
-            <Storefront
-              products={catalog.products}
-              categories={catalog.categories}
-              loading={catalog.loading}
-              loadingMore={catalog.loadingMore}
-              hasMore={catalog.hasMore}
-              total={catalog.total}
-              selectedCategory={catalog.selectedCategory}
-              setSelectedCategory={handleSetCategory}
-              searchQuery={catalog.searchQuery}
-              setSearchQuery={catalog.setSearchQuery}
-              sortBy={catalog.sortBy}
-              setSortBy={catalog.setSortBy}
-              priceRange={catalog.priceRange}
-              setPriceRange={catalog.setPriceRange}
-              onlyHits={catalog.onlyHits}
-              setOnlyHits={catalog.setOnlyHits}
-              onlyBulk={catalog.onlyBulk}
-              setOnlyBulk={catalog.setOnlyBulk}
-              onAddToCart={cart.handleAddToCart}
-              onUpdateCartQuantity={cart.handleSetCartQuantity}
-              cart={cart.cart}
-              onRefresh={catalog.loadProducts}
-              onLoadMore={catalog.loadMoreProducts}
-              onOpenProduct={openProductPage}
-              onNavigate={setCurrentPage}
-              currentRegion={region.currentRegion}
-              onToggleFavorite={favorites.toggleFavorite}
-              isFavorite={favorites.isFavorite}
-            />
-          )}
-
-          {currentPage === 'advisor' && (
-            <Advisor
-              products={catalog.products}
-              onAddToCart={cart.handleAddToCart}
-              showToast={showToast}
-              onNavigate={setCurrentPage}
-            />
-          )}
-
-          {currentPage === 'about' && <About />}
-          {currentPage === 'estimate' && (
-            <EstimatePage
-              onAddToCart={cart.handleAddToCart}
-              onNavigate={setCurrentPage}
-              showToast={showToast}
-              customer={auth.customer}
-              onRequireAuth={auth.openLoginModal}
-            />
-          )}
-          {currentPage === 'delivery' && <Delivery />}
-          {currentPage === 'legal' && <Legal defaultTab={legalTab} onNavigate={setCurrentPage} />}
-          {currentPage === 'services' && <Services onOpenCallback={() => setIsCallbackModalOpen(true)} />}
-          {currentPage === 'payment-terms' && <PaymentTerms />}
-          {currentPage === 'delivery-terms' && <DeliveryTerms />}
-          {currentPage === 'warranty' && <Warranty />}
-          {currentPage === 'faq' && <Faq />}
-          {currentPage === 'requisites' && <Requisites />}
-          {currentPage === 'partners' && <Partners showToast={showToast} />}
-          {currentPage === 'promotions' && (
-            <Promotions
-              promotionId={currentProductId}
-              onNavigate={setCurrentPage}
-              onAddToCart={cart.handleAddToCart}
-              onUpdateCartQuantity={cart.handleSetCartQuantity}
-              cart={cart.cart}
-              onToggleFavorite={favorites.toggleFavorite}
-              isFavorite={favorites.isFavorite}
-              onOpenCallback={() => setIsCallbackModalOpen(true)}
-            />
-          )}
-          {isCabinetPage && (
-            <Cabinet
-              customer={auth.customer}
-              orders={orders.orders}
-              ordersLoading={orders.ordersLoading}
-              ordersHasMore={orders.ordersHasMore}
-              ordersTotal={orders.ordersTotal}
-              onRefreshOrders={orders.fetchMyOrders}
-              onLoadMoreOrders={orders.loadMoreOrders}
-              bonuses={bonuses}
-              onNavigate={setCurrentPage}
-              onOpenAuth={auth.openLoginModal}
-              handleLogout={handleLogout}
-              showToast={showToast}
-              onCustomerUpdate={handleCustomerUpdate}
-              onAddToCart={cart.handleAddToCart}
-              initialTab={PATH_TO_CABINET_TAB[currentPage] || 'profile'}
-            />
-          )}
-
-          {currentPage === 'cashback' && (
-            <CashbackPage
-              customer={auth.customer}
-              bonuses={bonuses}
-              onNavigate={setCurrentPage}
-              onOpenAuth={auth.openLoginModal}
-            />
-          )}
-          {currentPage === 'cashback/history' && (
-            <TransactionsHistoryPage
-              customer={auth.customer}
-              bonuses={bonuses}
-              onNavigate={setCurrentPage}
-              onOpenAuth={auth.openLoginModal}
-            />
-          )}
-          {currentPage === 'order-detail' && (
-            <MyOrderDetails
-              customer={auth.customer}
-              orderId={currentOrderId}
-              orders={orders.orders}
-              loading={orders.orderDetailsLoading}
-              error={orders.orderDetailsError}
-              onRefresh={orders.fetchOrderDetails}
-              onLoadOrder={orders.fetchOrderDetails}
-              onOpenAuth={auth.openLoginModal}
-              onNavigate={setCurrentPage}
-              onAddToCart={cart.handleAddToCart}
-              showToast={showToast}
-            />
-          )}
-          {currentPage === 'product' && (
-            <ProductPage
-              productId={currentProductId}
-              onBackToCatalog={() => {
-                setCurrentPage('catalog');
-              }}
-              onAddToCart={cart.handleAddToCart}
-              onUpdateCartQuantity={cart.handleSetCartQuantity}
-              cart={cart.cart}
-              onNavigate={setCurrentPage}
-              categories={catalog.categories}
-              setSelectedCategory={handleSetCategory}
-              onToggleFavorite={favorites.toggleFavorite}
-              isFavorite={favorites.isFavorite}
-              showToast={showToast}
-            />
-          )}
-
-          {currentPage === 'favorites' && (
-            <FavoritesPage
-              favorites={favorites.favorites}
-              onToggleFavorite={favorites.toggleFavorite}
-              onAddToCart={cart.handleAddToCart}
-              onOpenProduct={openProductPage}
-              onNavigate={setCurrentPage}
-              onClearAll={favorites.clearFavorites}
-            />
-          )}
-
-          {(currentPage === 'cart' || currentPage === 'checkout') && (
-            <CartPage
-              cart={cart.cart}
-              onUpdateQuantity={cart.handleUpdateQuantity}
-              onRemoveFromCart={cart.handleRemoveFromCart}
-              onClearCart={cart.handleClearCart}
-              showToast={showToast}
-              customer={auth.customer}
-              onCustomerUpdate={handleCustomerUpdate}
-              onOpenAuth={() => auth.setAuthModalOpen(true)}
-              onNavigate={setCurrentPage}
-              bonuses={bonuses}
-              onAddToCart={cart.handleAddToCart}
-              currentPage={currentPage}
-            />
-          )}
-
-          {currentPage === 'ai-assistant' && (
-            <AiAssistantPage
-              onAddToCart={cart.handleAddToCart}
-              showToast={showToast}
-              onNavigate={setCurrentPage}
-              onOpenCallback={() => setIsCallbackModalOpen(true)}
-            />
-          )}
-
-          {/* Blocked user screen */}
-          {auth.customer?.isBlocked && (
-            <BlockedPage
-              user={auth.customer}
-              onLogout={handleLogout}
-              onOpenCallback={() => setIsCallbackModalOpen(true)}
-            />
-          )}
-
-          {/* 404 Not Found */}
-          {isNotFound && !auth.isAuthChecking && (
-            <NotFoundPage onNavigate={setCurrentPage} />
-          )}
-        </Suspense>
+        <AppRoutes
+          currentPage={currentPage}
+          currentProductId={currentProductId}
+          currentCategorySlug={currentCategorySlug}
+          currentOrderId={currentOrderId}
+          isCabinetPage={isCabinetPage}
+          isNotFound={isNotFound}
+          legalTab={legalTab}
+          setCurrentPage={setCurrentPage}
+          handleSetCategory={handleSetCategory}
+          openProductPage={openProductPage}
+          setIsCallbackModalOpen={setIsCallbackModalOpen}
+          handleCustomerUpdate={handleCustomerUpdate}
+          handleLogout={handleLogout}
+          showToast={showToast}
+          catalog={catalog}
+          auth={auth}
+          cart={cart}
+          orders={orders}
+          region={region}
+          favorites={favorites}
+          bonuses={bonuses}
+        />
       </main>
 
-      {/* Footer: hidden on mobile AI page and in PWA; shown on desktop even for AI page */}
-      {(currentPage !== 'ai-assistant' || typeof window !== 'undefined' && window.innerWidth >= 640) && !isPwa && (
+      {(currentPage !== 'ai-assistant' || (typeof window !== 'undefined' && window.innerWidth >= 640)) && !isPwa && (
         <Footer
           customer={auth.customer}
           onOpenAuth={auth.openLoginModal}
@@ -598,8 +264,6 @@ export default function App() {
           setLegalTab={setLegalTab}
         />
       )}
-
-      {/* Cart is now a dedicated page: CartPage */}
 
       <AuthModal
         isOpen={auth.authModalOpen}

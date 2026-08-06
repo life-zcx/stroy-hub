@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import helmet from 'helmet';
 
+// Routes imports
 import supplierRoutes from './routes/supplierRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -25,24 +26,36 @@ import cartRoutes from './routes/cartRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import aiLogRoutes from './routes/aiLogRoutes.js';
+import geoRoutes from './routes/geoRoutes.js';
+
+// Middlewares & Controllers imports
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import { getGoogleMerchantFeed } from './controllers/feedController.js';
-import logger from './utils/logger.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
+import { aiProxyHandler } from './middleware/aiProxy.js';
+import {
+  handleProductOgPrerender,
+  handleCatalogOgPrerender,
+  handleStaticOgPrerender
+} from './middleware/seoPrerender.js';
+
+// Configuration & Utilities imports
+import logger from './utils/logger.js';
 import { startCleanupScheduler } from './utils/cleanup.js';
 import { startTelegramBotListener } from './utils/telegramBot.js';
 import prisma from './config/db.js';
 import redisClient from './config/redis.js';
+import { validateEnvironment } from './config/envCheck.js';
 
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 
+validateEnvironment();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
-
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
@@ -54,40 +67,28 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   origin(origin, callback) {
-    if (!origin) {
+    if (!origin || (!isProduction && allowedOrigins.length === 0) || allowedOrigins.includes(origin)) {
       callback(null, true);
       return;
     }
-
-    if (!isProduction && allowedOrigins.length === 0) {
-      callback(null, true);
-      return;
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-
     callback(new Error('Origin is not allowed by CORS'));
   },
 };
 
-// ESM __dirname workaround
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+// Security & Parsing Middlewares
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+// Response Error Interceptor for 500 status masking in Production
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
-
   res.json = (body) => {
     if (res.statusCode >= 500) {
       const errorMsg = body && typeof body === 'object' && body.error ? body.error : JSON.stringify(body);
@@ -102,53 +103,45 @@ app.use((req, res, next) => {
         return originalJson({ error: 'Внутренняя ошибка сервера.' });
       }
     }
-
     return originalJson(body);
   };
-
   next();
 });
 
-// IPX dynamic image optimization endpoint
+// Dynamic Image Optimization & Static Assets
 app.get('/_ipx/*', handleIpxImageRequest);
 app.get('/api/img', handleIpxImageRequest);
-
-// Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Request logging middleware. Full records are available through docker logs.
+// Request Logging
 app.use((req, res, next) => {
-  // Skip health check — Docker pings it every 15s, no need to pollute logs
-  if (req.path === '/health') {
-    return next();
-  }
-
+  if (req.path === '/health') return next();
   const startedAt = Date.now();
-
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
     const ip = req.ip || req.socket?.remoteAddress || '-';
     const userId = req.user?.id || null;
     const message = `${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`;
-    
     const meta = { ip, userId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs };
 
-    if (res.statusCode >= 500) {
-      logger.error(message, meta);
-    } else if (res.statusCode >= 400) {
-      logger.warn(message, meta);
-    } else {
-      logger.info(message, meta);
-    }
+    if (res.statusCode >= 500) logger.error(message, meta);
+    else if (res.statusCode >= 400) logger.warn(message, meta);
+    else logger.info(message, meta);
   });
-
   next();
 });
 
-// Routes
+// SEO Pre-rendering for Crawlers & Bots
+app.get('/product/:id', handleProductOgPrerender);
+app.get('/catalog/:slug', handleCatalogOgPrerender);
+app.get('/:page(services|about|delivery|promotions|partners|faq|warranty|payment-terms|delivery-terms|requisites)', handleStaticOgPrerender);
+
+// Feeds & Sitemap
 app.get('/sitemap.xml', getDynamicSitemap);
 app.get('/feed/google.xml', getGoogleMerchantFeed);
 app.get('/api/feed/google.xml', getGoogleMerchantFeed);
+
+// API Gateway & Service Routers
 app.use('/api', globalRateLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
@@ -170,84 +163,22 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/ai-logs', aiLogRoutes);
+app.use('/api/geo', geoRoutes);
+app.use('/api/ai', aiProxyHandler);
 
-// Proxy AI requests to standalone ai-service microservice
-app.use('/api/ai', async (req, res) => {
-  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5005';
-  const targetUrl = `${aiServiceUrl}/api/ai${req.url}`;
-  try {
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers: { 'Content-Type': 'application/json' },
-      body: req.method !== 'GET' && req.body ? JSON.stringify(req.body) : undefined,
-    });
-
-    const textData = await response.text();
-    let data;
-    try {
-      data = JSON.parse(textData);
-    } catch (parseErr) {
-      logger.error(`[AI PROXY ERROR] Non-JSON response from ${aiServiceUrl}${req.originalUrl} (HTTP ${response.status}): ${textData.substring(0, 200)}`);
-      return res.status(response.status >= 400 ? response.status : 502).json({
-        error: 'ИИ-сервис вернул некорректный ответ. Перезапустите контейнер tormag_ai_service.'
-      });
-    }
-
-    return res.status(response.status).json(data);
-  } catch (err) {
-    logger.error(`[AI PROXY ERROR] Failed to proxy to ${aiServiceUrl}: ${err.message}`);
-    return res.status(502).json({ error: 'Сервис ИИ временно недоступен' });
-  }
-});
-
-
-// Silent Geolocation helper endpoint to bypass client AdBlockers
-app.get('/api/geo', async (req, res) => {
-  // If Cloudflare is active and has determined the city, leverage it instantly (zero API delay!)
-  const cfCity = req.headers['cf-ipcity'];
-  if (cfCity) {
-    logger.info(`[GEO IP] Cloudflare header detected city: ${cfCity}`);
-    return res.json({ city: cfCity });
-  }
-
-  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || '';
-  
-  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('172.')) {
-    return res.json({ city: 'Almaty' });
-  }
-
-  try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/`);
-    if (!response.ok) throw new Error('ipapi.co failed');
-    const data = await response.json();
-    return res.json({ city: data.city || 'Almaty' });
-  } catch (error) {
-    try {
-      const response = await fetch(`https://ipinfo.io/${ip}/json`);
-      if (!response.ok) throw new Error('ipinfo.io failed');
-      const data = await response.json();
-      return res.json({ city: data.city || 'Almaty' });
-    } catch (e) {
-      return res.json({ city: 'Almaty' });
-    }
-  }
-});
-
-// Healthcheck
+// Health Check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Global error handler
+// Global Error Handler
 app.use((err, req, res, next) => {
   if (err.message === 'Origin is not allowed by CORS') {
     return res.status(403).json({ error: 'Запрос с этого источника запрещен.' });
   }
-
   if (err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({ error: 'Размер файла превышает допустимый лимит.' });
   }
-
   if (err.message?.includes('Недопустимый формат файла')) {
     return res.status(400).json({ error: err.message });
   }
@@ -269,7 +200,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 
 const gracefulShutdown = async (signal) => {
   logger.info(`[SHUTDOWN] Получен сигнал ${signal}. Завершение работы сервера...`);
-
   server.close(async () => {
     logger.info('[SHUTDOWN] HTTP сервер остановлен.');
     try {
@@ -278,7 +208,6 @@ const gracefulShutdown = async (signal) => {
     } catch (e) {
       logger.error('[SHUTDOWN Error] Ошибка закрытия PostgreSQL', { error: e.message });
     }
-
     try {
       if (redisClient.isOpen) {
         await redisClient.quit();
@@ -287,7 +216,6 @@ const gracefulShutdown = async (signal) => {
     } catch (e) {
       logger.error('[SHUTDOWN Error] Ошибка закрытия Redis', { error: e.message });
     }
-
     process.exit(0);
   });
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   ArrowLeft, ClipboardList, CreditCard, MapPin, RefreshCw, ShoppingBag, 
-  ChevronRight, Repeat, Clock, Truck, CheckCircle2, AlertCircle 
+  ChevronRight, ChevronDown, ChevronUp, Repeat, Clock, Truck, CheckCircle2, AlertCircle, Gift, Coins 
 } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { formatDateTime, getStatusMeta } from './MyOrders';
@@ -11,7 +11,7 @@ import { getMyReturnRequests, getWarrantyRules } from '../services/api';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 
-export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate, onAddToCart, showToast }) {
+export default function MyOrderDetails({ customer, orderId, orders = [], loading, error, onRefresh, onLoadOrder, onOpenAuth, onNavigate, onAddToCart, showToast, bonuses }) {
   const order = orders.find((item) => String(item.id) === String(orderId));
   const hasFullDetails = Boolean(order && Array.isArray(order.items));
 
@@ -20,6 +20,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
   const [returnRequests, setReturnRequests] = useState([]);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [warrantyRules, setWarrantyRules] = useState([]);
+  const [isExpandedItems, setIsExpandedItems] = useState(false);
   const fetchedOrderRef = useRef(null);
 
   const fetchReturns = async () => {
@@ -47,11 +48,12 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
         if (!hasFullDetails && !loading && !error) {
           onLoadOrder(orderId);
         }
+        bonuses?.fetchSummary?.();
         fetchReturns();
         fetchWarrantyRules();
       }
     }
-  }, [customer?.id, orderId, hasFullDetails, loading, error, onLoadOrder]);
+  }, [customer?.id, orderId, hasFullDetails, loading, error, onLoadOrder, bonuses]);
 
   if (!customer) {
     return (
@@ -183,40 +185,47 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
       </nav>
 
       {/* Main Order Info Header */}
-      <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Информация о покупке</span>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-outfit text-3xl font-black text-slate-950">Заказ №{order.id}</h1>
-              <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-wider ${statusMeta.color}`}>
-                <StatusIcon className="h-4 w-4" />
+              <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-950">Заказ №{order.id}</h1>
+              <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wider ${statusMeta.color}`}>
+                <StatusIcon className="h-3.5 w-3.5" />
                 {statusMeta.text}
               </span>
             </div>
-            <p className="text-xs font-semibold text-slate-555 pt-1">Оформлен: {formatDateTime(order.createdAt)}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] items-start">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] items-start">
+        <div className="space-y-5">
           {/* Order Items with thumbnails */}
-          <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-3">
-              <ShoppingBag className="h-4.5 w-4.5 text-blue-600" />
-              Состав заказа
-            </h2>
-            <div className="space-y-3">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-slate-50/50 hover:bg-slate-50 border border-slate-100 p-4 transition-colors">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400">
+                <ShoppingBag className="h-4 w-4 text-blue-600" />
+                Состав заказа ({order.items.length} {order.items.length === 1 ? 'позиция' : order.items.length < 5 ? 'позиции' : 'позиций'})
+              </h2>
+              {order.items.length > 4 && (
+                <span className="text-[11px] font-bold text-slate-400">
+                  {isExpandedItems ? `Показано: ${order.items.length}` : `Показано: 4 из ${order.items.length}`}
+                </span>
+              )}
+            </div>
+
+            <div className={`space-y-3 ${isExpandedItems && order.items.length > 5 ? 'max-h-[500px] overflow-y-auto pr-1' : ''}`}>
+              {(isExpandedItems ? order.items : order.items.slice(0, 4)).map((item) => (
+                <div key={item.id} className="flex items-center gap-4 rounded-xl bg-slate-50/50 hover:bg-slate-50 border border-slate-100 p-3.5 transition-colors">
                   <Link
                     href={item.product ? getPageHref('product', item.productId) : '#'}
                     onClick={(e) => {
                       if (!item.product) e.preventDefault();
                       else onNavigate('product', item.productId);
                     }}
-                    className="w-14 h-14 bg-white border border-slate-150 rounded-xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors block"
+                    className="w-12 h-12 bg-white border border-slate-150 rounded-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors block"
                   >
                     <img 
                       src={item.product?.image || 'https://placehold.co/100x100/f8fafc/475569?text=Tormag'} 
@@ -224,7 +233,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                       alt={item.product?.name} 
                     />
                   </Link>
-                  <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
                     <div className="text-left">
                       <Link
                         href={item.product ? getPageHref('product', item.productId) : '#'}
@@ -237,27 +246,42 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                         {item.product?.name || 'Товар удален'}
                       </Link>
                       {item.selectedOption && (
-                        <div className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-1">
+                        <div className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-0.5">
                           {item.selectedOption}
                         </div>
                       )}
-                      <p className="mt-1 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
+                      <p className="mt-0.5 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
                     </div>
                     <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end">
-                      <span className="font-outfit text-base font-black text-slate-950 shrink-0 text-left sm:text-right">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
+                      <div className="text-right">
+                        <span className="font-outfit text-base font-black text-slate-950 shrink-0 block">
+                          {formatPrice(item.price * item.quantity)}
+                        </span>
+                        {(() => {
+                          const orderSubtotal = order.subtotalAmount || order.totalAmount || 1;
+                          const discountRatio = orderSubtotal > 0 ? (order.totalAmount / orderSubtotal) : 1;
+                          const itemPaidTotal = item.price * item.quantity * discountRatio;
+                          const itemRate = item.price >= 1000000 ? 0.05 : 0.03;
+                          const itemEarnedBonus = Math.round(itemPaidTotal * itemRate);
+
+                          return (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-150 px-1.5 py-0.5 rounded-md inline-block mt-0.5" title="Начисляемый кешбэк за данный товар (с учетом скидки)">
+                              +{formatPrice(itemEarnedBonus)} бонусов
+                            </span>
+                          );
+                        })()}
+                      </div>
                       {order.status === 'completed' && item.product && (
                         <div className="shrink-0 pl-2 flex flex-col sm:flex-row gap-2 items-center">
                           {item.isReviewed || reviewedProductIds.includes(item.productId) ? (
-                            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1 shrink-0">
                               ✓ Отзыв оставлен
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => setSelectedProductForReview(item.product)}
-                              className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                              className="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
                             >
                               Оценить товар
                             </button>
@@ -277,7 +301,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                                 rejected: 'text-rose-700 bg-rose-50 border-rose-200'
                               };
                               return (
-                                <div className={`text-[10px] font-bold border px-3 py-1.5 rounded-xl flex flex-col items-start gap-0.5 shrink-0 ${statusClasses[ret.status] || ''}`}>
+                                <div className={`text-[10px] font-bold border px-2.5 py-1 rounded-lg flex flex-col items-start gap-0.5 shrink-0 ${statusClasses[ret.status] || ''}`}>
                                   <span>{statusTexts[ret.status] || ret.status} ({ret.quantity} шт)</span>
                                   {ret.adminComment && <span className="text-[9px] opacity-80 max-w-[150px] truncate">Комм: {ret.adminComment}</span>}
                                 </div>
@@ -292,36 +316,47 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                 </div>
               ))}
             </div>
+
+            {order.items.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setIsExpandedItems(!isExpandedItems)}
+                className="w-full mt-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-xs font-bold text-slate-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>{isExpandedItems ? 'Свернуть список позиций' : `Показать еще ${order.items.length - 4} товаров (всего ${order.items.length} поз.)`}</span>
+                {isExpandedItems ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+              </button>
+            )}
           </div>
 
           {/* Shipping & Payment details */}
-          <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-3">Оплата и доставка</h2>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <h2 className="mb-3.5 text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2.5">Оплата и доставка</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-slate-50/80 border border-slate-100 p-4">
-                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  <MapPin className="h-4 w-4" />
+              <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3.5">
+                <div className="mb-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <MapPin className="h-3.5 w-3.5 text-slate-500" />
                   Адрес доставки
                 </div>
-                <p className="font-semibold text-sm leading-relaxed text-slate-800">{order.clientAddress}</p>
+                <p className="font-semibold text-sm leading-snug text-slate-800">{order.clientAddress}</p>
                 {order.deliveryDate && (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs text-slate-650">
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 text-xs text-slate-650">
                     <span className="font-bold block text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Желаемое время доставки</span>
                     <div className="font-bold text-slate-800">{order.deliveryDate}</div>
                     {order.deliveryTime && <div className="text-slate-600 mt-0.5">Интервал: {order.deliveryTime}</div>}
                   </div>
                 )}
               </div>
-              <div className="rounded-2xl bg-slate-50/80 border border-slate-100 p-4">
-                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  <CreditCard className="h-4 w-4" />
+              <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3.5">
+                <div className="mb-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <CreditCard className="h-3.5 w-3.5 text-slate-500" />
                   Способ оплаты
                 </div>
                 <p className="font-semibold text-sm text-slate-800">
                   {order.paymentMethod === 'cash' ? 'Наличными при получении' : order.paymentMethod === 'kaspi' ? 'Kaspi QR / Kaspi Red' : 'Безналичный расчет (B2B)'}
                 </p>
                 {order.paymentMethod === 'invoice' && order.companyName && (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 text-xs text-slate-650">
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 text-xs text-slate-650">
                     <span className="font-bold block text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Реквизиты организации</span>
                     <div className="font-bold text-slate-800">{order.companyName}</div>
                     <div className="font-mono mt-0.5 text-slate-600">БИН/ИИН: {order.companyBin}</div>
@@ -330,8 +365,8 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
               </div>
             </div>
             {order.clientComment && (
-              <div className="mt-4 rounded-2xl bg-slate-50/80 border border-slate-100 p-4">
-                <div className="mb-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+              <div className="mt-3 rounded-xl bg-slate-50/80 border border-slate-100 p-3">
+                <div className="mb-1 text-[9px] font-black uppercase tracking-wider text-slate-400">
                   Комментарий к заказу
                 </div>
                 <p className="text-xs text-slate-700 font-semibold italic">«{order.clientComment}»</p>
@@ -340,30 +375,50 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
           </div>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-5">
           {/* Order Summary Checkout Card */}
-          <div className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-3">Расчет стоимости</h2>
-            <div className="space-y-3.5 text-sm">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <h2 className="mb-3.5 text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2.5">Расчет стоимости</h2>
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between gap-4 text-slate-500 font-semibold">
-                <span>Товары</span>
+                <span>Товары ({order.items?.length || 0})</span>
                 <span className="font-extrabold text-slate-800">{formatPrice(order.subtotalAmount || order.totalAmount)}</span>
               </div>
-              {(order.discountAmount || order.promoCode) && (
+              
+              {order.promoCode && (
                 <div className="flex justify-between gap-4 text-emerald-600 font-semibold">
-                  <span>Скидка {order.promoCode ? `(${order.promoCode})` : ''}</span>
-                  <span className="font-black">- {formatPrice(order.discountAmount || 0)}</span>
+                  <span>Промокод ({order.promoCode})</span>
+                  <span className="font-black">- {formatPrice((order.discountAmount || 0) - (order.usedBonusPoints || 0))}</span>
                 </div>
               )}
-              <div className="flex justify-between gap-4 border-t border-slate-100 pt-3.5 text-base">
+
+              {Boolean(order.usedBonusPoints && order.usedBonusPoints > 0) && (
+                <div className="flex justify-between gap-4 text-emerald-600 font-semibold">
+                  <span>Списано бонусами</span>
+                  <span className="font-black">- {formatPrice(order.usedBonusPoints)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between gap-4 border-t border-slate-100 pt-3 text-base">
                 <span className="font-black text-slate-950">К оплате</span>
                 <span className="font-outfit font-black text-slate-950 text-lg">{formatPrice(order.totalAmount)}</span>
               </div>
-              
+
+              {/* Minimal Clean Cashback Row */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-700">
+                <span className="flex items-center gap-1.5 text-slate-500 font-semibold">
+                  <Gift className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  Кешбэк за заказ (3%)
+                </span>
+                <span className="font-outfit font-black text-emerald-600">
+                  +{formatPrice(Math.round((order.totalAmount || 0) * 0.03))}
+                </span>
+              </div>
+
               <button
                 type="button"
                 onClick={() => handleRepeatOrder(order)}
-                className="w-full mt-5 px-4 py-3.5 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
+                className="w-full mt-4 px-4 py-3 bg-slate-950 hover:bg-slate-800 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
               >
                 <Repeat className="h-4 w-4" />
                 Повторить заказ
@@ -373,7 +428,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                 <button
                   type="button"
                   onClick={() => setShowReturnModal(true)}
-                  className="w-full mt-2 px-4 py-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-2xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
+                  className="w-full mt-2 px-4 py-2.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2"
                 >
                   Оформить возврат
                 </button>
@@ -440,9 +495,6 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                             <Icon className={`h-3 w-3 ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`} />
                           )}
                         </div>
-                        {isCurrent && (
-                          <span className="absolute h-6 w-6 rounded-full bg-blue-500/20 animate-ping pointer-events-none" />
-                        )}
                       </div>
 
                       <div className="flex-1 space-y-1 min-w-0">

@@ -98,6 +98,32 @@ export const estimateUploadRateLimiter = async (req, res, next) => {
   }
 };
 
+export const passwordResetRateLimiter = async (req, res, next) => {
+  const ip = getClientIp(req);
+
+  try {
+    const key = `rate-limit:password-reset:${ip}`;
+    const count = await redisClient.incr(key);
+
+    if (count === 1) {
+      await redisClient.expire(key, 15 * 60); // 15 минут
+    }
+
+    if (count > 5) {
+      logger.warn(`[Password Reset Rate Limit] IP ${ip} exceeded 5 attempts in 15m`);
+      return res.status(429).json({
+        error: 'Слишком много попыток сброса пароля. Пожалуйста, повторите через 15 минут.'
+      });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('[Password Reset Rate Limiter Error] Redis failure', { error: error.message });
+    next();
+  }
+};
+
+
 
 // Global rate limiter: 200 requests per minute per IP
 // Applied to all API routes as a first line of defence against bots and abuse.

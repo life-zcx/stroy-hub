@@ -1,17 +1,11 @@
 import prisma from '../config/db.js';
 import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
-import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
+import { evaluatePromotion } from '../utils/promotionUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
-import { buildPromotionSnapshot, evaluatePromotion, normalizePromoCode } from '../utils/promotionUtils.js';
-import { sendTelegramNotification } from '../utils/telegram.js';
-import { broadcastNotification } from '../utils/pushNotifier.js';
-import {
-  getAvailableBalance,
-  createBonusEarned,
-  createBonusSpent,
-  activatePendingBonuses,
-  cancelBonusesForOrder,
-} from './bonusController.js';
+import { buildPromotionSnapshot } from '../utils/promotionUtils.js';
+import { prepareOrderItemsAndPricing } from '../services/orderPricingService.js';
+import { calculateOrderBonusDiscount, recordOrderBonusTransactions, handleOrderStatusBonusUpdates } from '../services/orderBonusService.js';
+import { triggerOrderCreatedNotifications, triggerOrderStatusChangedNotification } from '../services/orderNotificationService.js';
 
 function getSupplierId(user) {
   const parsed = Number.parseInt(user?.supplierId, 10);
@@ -20,23 +14,12 @@ function getSupplierId(user) {
 
 function buildOrderItemsInclude(user) {
   const supplierId = user?.role === 'SUPPLIER' ? getSupplierId(user) : null;
-
   return {
     items: {
-      ...(supplierId
-        ? {
-            where: {
-              product: {
-                supplierId,
-              },
-            },
-          }
-        : {}),
+      ...(supplierId ? { where: { product: { supplierId } } } : {}),
       include: {
         product: {
-          include: {
-            supplier: true,
-          },
+          include: { supplier: true },
         },
       },
     },
@@ -50,23 +33,13 @@ function buildOrderWhere(user) {
   if (user.role === 'CUSTOMER') {
     where.userId = user.id;
   } else if (user.role === 'SUPPLIER') {
-    where.items = {
-      some: {
-        product: {
-          supplierId,
-        },
-      },
-    };
+    where.items = { some: { product: { supplierId } } };
   }
-
   return where;
 }
 
 function createStatusHistoryEntry(status, changedAt = new Date()) {
-  return {
-    status,
-    changedAt: changedAt.toISOString(),
-  };
+  return { status, changedAt: changedAt.toISOString() };
 }
 
 function buildStatusHistory(existingOrder, nextStatus) {
@@ -74,16 +47,11 @@ function buildStatusHistory(existingOrder, nextStatus) {
     ? existingOrder.statusHistory
     : [createStatusHistoryEntry(existingOrder.status || 'pending', existingOrder.createdAt || new Date())];
 
-  if (existingOrder.status === nextStatus) {
-    return currentHistory;
-  }
-
-  return [
-    ...currentHistory,
-    createStatusHistoryEntry(nextStatus),
-  ];
+  if (existingOrder.status === nextStatus) return currentHistory;
+  return [...currentHistory, createStatusHistoryEntry(nextStatus)];
 }
 
+// Create a new Order
 export const createOrder = async (req, res) => {
   const { clientName, clientPhone, clientAddress, paymentMethod, items, promoCode, useBonuses, deliveryDate, deliveryTime, comment, companyName, companyBin } = req.body;
 
@@ -91,103 +59,19 @@ export const createOrder = async (req, res) => {
     return res.status(400).json({ error: 'Все поля заказа и товары обязательны' });
   }
 
-  // Expect authenticated user from verifyToken middleware
   const userId = req.user?.id;
   if (!userId) {
     return res.status(401).json({ error: 'Для оформления заказа необходимо войти в систему' });
   }
 
   try {
-    // 1. Verify that all products in the order exist in the database
-    const uniqueProductIds = [...new Set(items.map(item => parseInt(item.productId, 10)).filter(Boolean))];
-    const rawProducts = await prisma.product.findMany({
-      where: {
-        id: { in: uniqueProductIds }
-      }
-    });
+    const { normalizedItems, subtotalAmount, evaluationContext, appliedPromotion } = await prepareOrderItemsAndPricing(items, promoCode);
 
-    if (rawProducts.length !== uniqueProductIds.length) {
-      return res.status(400).json({ 
-        error: 'Некоторые товары из вашей корзины устарели или больше не существуют (база данных была обновлена). Пожалуйста, очистите корзину и добавьте актуальные товары.' 
-      });
-    }
-
-    const settings = readPricingSettings();
-    const allCats = await prisma.category.findMany();
-    const categoryMap = new Map(allCats.map(c => [c.id, c]));
-    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
-    const existingProducts = rawProducts.map(p => applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap));
-
-    let normalizedItems = [];
-
-    for (const item of items) {
-      const productId = Number.parseInt(item.productId, 10);
-      const quantity = Number.parseInt(item.quantity, 10);
-
-      if (!Number.isFinite(productId) || !Number.isFinite(quantity) || quantity <= 0) {
-        return res.status(400).json({ error: 'В заказе обнаружены некорректные позиции.' });
-      }
-
-      const product = existingProducts.find((entry) => entry.id === productId);
-      if (!product) {
-        return res.status(400).json({ error: 'Один из товаров не найден в базе данных.' });
-      }
-
-      let itemPrice = product.price;
-      const selectedOption = item.selectedOption ? String(item.selectedOption).trim() : null;
-      if (selectedOption && product.options && typeof product.options === 'object') {
-        const opts = product.options;
-        if (Array.isArray(opts.items)) {
-          const matchedOpt = opts.items.find(o => String(o.value || '').trim() === selectedOption);
-          if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null && !isNaN(parseFloat(matchedOpt.price))) {
-            itemPrice = parseFloat(matchedOpt.price);
-          }
-        }
-      }
-
-      normalizedItems.push({
-        productId,
-        quantity,
-        price: itemPrice,
-        selectedOption,
-      });
-    }
-
-    const evaluationContext = await buildEvaluationContext(normalizedItems);
-    normalizedItems = evaluationContext.items.map((item, idx) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-      selectedOption: normalizedItems[idx]?.selectedOption || null,
-    }));
-    const subtotalAmount = evaluationContext.subtotalAmount;
-
-    const normalizedPromoCode = normalizePromoCode(promoCode);
-    let appliedPromotion = null;
-    let discountAmount = 0;
-    let finalTotalAmount = subtotalAmount;
-
-    if (normalizedPromoCode) {
-      appliedPromotion = await prisma.promotion.findUnique({
-        where: { promoCode: normalizedPromoCode },
-      });
-      if (!appliedPromotion || !appliedPromotion.isActive) {
-        return res.status(400).json({ error: 'Указанный промокод неактивен или не существует.' });
-      }
-
-      const evaluation = evaluatePromotion(appliedPromotion, evaluationContext);
-      if (!evaluation.valid) {
-        return res.status(400).json({ error: evaluation.error });
-      }
-
-      discountAmount = evaluation.discountAmount;
-      finalTotalAmount = evaluation.totalAmount;
-    }
-
-    // 2. Perform transaction to ensure consistent writing of Order and OrderItems
     const result = await prisma.$transaction(async (tx) => {
       let reservedPromotion = null;
       let reservedEvaluation = null;
+      let discountAmount = 0;
+      let finalTotalAmount = subtotalAmount;
 
       if (appliedPromotion) {
         reservedPromotion = await tx.promotion.findUnique({
@@ -198,27 +82,18 @@ export const createOrder = async (req, res) => {
           throw new Error('Указанный промокод неактивен или не существует.');
         }
 
-        // Проверка: промокод только для первого заказа (ВНУТРИ транзакции)
         if (reservedPromotion.isFirstOrderOnly) {
           const existingOrdersCount = await tx.order.count({
-            where: {
-              userId: parseInt(userId),
-              status: { not: 'cancelled' },
-            },
+            where: { userId: parseInt(userId), status: { not: 'cancelled' } },
           });
           if (existingOrdersCount > 0) {
             throw new Error('Этот промокод действует только на первый заказ.');
           }
         }
 
-        // Проверка: максимальное кол-во использований на одного пользователя (ВНУТРИ транзакции)
         if (reservedPromotion.maxUsagePerUser != null) {
           const userPromoUsageCount = await tx.order.count({
-            where: {
-              userId: parseInt(userId),
-              promotionId: reservedPromotion.id,
-              status: { not: 'cancelled' },
-            },
+            where: { userId: parseInt(userId), promotionId: reservedPromotion.id, status: { not: 'cancelled' } },
           });
           if (userPromoUsageCount >= reservedPromotion.maxUsagePerUser) {
             throw new Error('Вы уже использовали этот промокод максимальное количество раз.');
@@ -234,25 +109,16 @@ export const createOrder = async (req, res) => {
         finalTotalAmount = reservedEvaluation.totalAmount;
       }
 
-      // Начисляем кешбек динамически на основе уровня лояльности пользователя
-      // Вызываем getUserLoyaltyStatus один раз до блока useBonuses, используем результат в обоих местах
-      const loyalty = await getUserLoyaltyStatus(parseInt(userId, 10));
+      // Calculate bonus discount before creating order record
+      const { bonusDiscount, updatedTotalAmount, loyalty } = await calculateOrderBonusDiscount(
+        userId,
+        useBonuses,
+        finalTotalAmount,
+        tx
+      );
 
-      let bonusDiscount = 0;
-      if (useBonuses) {
-        const availableBalance = await getAvailableBalance(parseInt(userId, 10), tx);
-        if (availableBalance > 0) {
-          let maxBonusToUse = availableBalance;
-          const numericUseBonuses = typeof useBonuses === 'number' ? useBonuses : parseInt(useBonuses, 10);
-          if (!isNaN(numericUseBonuses) && numericUseBonuses > 0) {
-            maxBonusToUse = Math.min(availableBalance, numericUseBonuses);
-          }
-          const maxAllowedBonus = Math.floor(finalTotalAmount * (loyalty.maxBonusPaymentPercent / 100));
-          bonusDiscount = Math.min(maxBonusToUse, maxAllowedBonus);
-          finalTotalAmount -= bonusDiscount;
-          discountAmount += bonusDiscount;
-        }
-      }
+      finalTotalAmount = updatedTotalAmount;
+      discountAmount += bonusDiscount;
 
       const order = await tx.order.create({
         data: {
@@ -282,61 +148,37 @@ export const createOrder = async (req, res) => {
               quantity: item.quantity,
               price: item.price,
               selectedOption: item.selectedOption || null,
-            }))
-          }
+            })),
+          },
         },
         include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        }
+          items: { include: { product: true } },
+        },
       });
 
-      // Записываем бонусные транзакции
-      if (bonusDiscount > 0) {
-        await createBonusSpent(parseInt(userId, 10), order.id, bonusDiscount, tx);
-      }
-
-      // Начисляем кешбек — используем loyalty, полученный выше (не вызываем повторно)
-      let earnedAmount = 0;
-      const discountRatio = subtotalAmount > 0 ? (finalTotalAmount / subtotalAmount) : 0;
-
-      for (const item of order.items) {
-        const itemPrice = item.price;
-        const rate = itemPrice >= 1000000 ? loyalty.highValueCashback : loyalty.baseCashbackPercent;
-        const itemFinalTotal = item.price * item.quantity * discountRatio;
-        earnedAmount += Math.round(itemFinalTotal * (rate / 100));
-      }
-
-      await createBonusEarned(parseInt(userId, 10), order.id, earnedAmount, `Начисление кешбэка за заказ #${order.id}`, tx);
+      // Record spent & earned bonus transactions with the valid created order.id
+      await recordOrderBonusTransactions(
+        userId,
+        order.id,
+        bonusDiscount,
+        subtotalAmount,
+        finalTotalAmount,
+        normalizedItems,
+        loyalty,
+        tx
+      );
 
       if (reservedPromotion) {
         await tx.promotion.update({
           where: { id: reservedPromotion.id },
-          data: {
-            usageCount: {
-              increment: 1,
-            },
-          },
+          data: { usageCount: { increment: 1 } },
         });
       }
 
       return order;
     });
 
-    // Send Telegram Notification (runs asynchronously in the background)
-    sendTelegramNotification(result);
-
-    // Send Web Push Notification
-    broadcastNotification({
-      title: `Новый заказ #${result.id}! 🎉`,
-      body: `Ваш заказ на сумму ${result.totalAmount.toLocaleString('ru-RU')} ₸ принят и отправлен на обработку!`,
-      icon: '/pwa-192x192.png',
-      data: { url: '/cabinet/orders' }
-    }).catch(() => {});
-
+    triggerOrderCreatedNotifications(result);
     res.status(201).json(result);
   } catch (error) {
     const normalizedMessage = String(error.message || '').toLowerCase();
@@ -345,6 +187,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
+// Get all orders (paginated)
 export const getAllOrders = async (req, res) => {
   const user = req.user;
   const supplierId = getSupplierId(user);
@@ -353,37 +196,26 @@ export const getAllOrders = async (req, res) => {
     return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
   }
 
-  if (user.role === 'SUPPLIER') {
-    if (!supplierId) {
-      return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
-    }
+  if (user.role === 'SUPPLIER' && !supplierId) {
+    return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
   }
 
   try {
     const { status, search, sort } = req.query;
     const where = buildOrderWhere(user);
 
-    if (status && status !== 'all') {
-      where.status = status;
-    }
+    if (status && status !== 'all') where.status = status;
 
     if (search) {
       const q = search.toLowerCase().trim();
       const OR = [
         { clientName: { contains: q, mode: 'insensitive' } },
         { clientPhone: { contains: q, mode: 'insensitive' } },
-        { clientAddress: { contains: q, mode: 'insensitive' } }
+        { clientAddress: { contains: q, mode: 'insensitive' } },
       ];
-      
       const parsedId = parseInt(q, 10);
-      if (!isNaN(parsedId)) {
-        OR.push({ id: parsedId });
-      }
-      
-      where.AND = [
-        ...(where.AND || []),
-        { OR }
-      ];
+      if (!isNaN(parsedId)) OR.push({ id: parsedId });
+      where.AND = [...(where.AND || []), { OR }];
     }
 
     let orderBy = { createdAt: 'desc' };
@@ -402,21 +234,11 @@ export const getAllOrders = async (req, res) => {
           ? {
               include: {
                 _count: { select: { items: true } },
-                returnRequests: {
-                  select: {
-                    id: true,
-                    status: true,
-                    quantity: true,
-                    productId: true,
-                  },
-                },
+                returnRequests: { select: { id: true, status: true, quantity: true, productId: true } },
               },
             }
           : {
-              include: {
-                ...buildOrderItemsInclude(user),
-                returnRequests: true,
-              },
+              include: { ...buildOrderItemsInclude(user), returnRequests: true },
             }),
         orderBy,
         skip: (page - 1) * limit,
@@ -438,50 +260,35 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
+// Get order details by ID
 export const getOrderById = async (req, res) => {
   const user = req.user;
   const supplierId = getSupplierId(user);
   const orderId = Number.parseInt(req.params.id, 10);
 
-  if (!user) {
-    return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
-  }
-
-  if (Number.isNaN(orderId)) {
-    return res.status(400).json({ error: 'Неверный ID заказа' });
-  }
-
-  if (user.role === 'SUPPLIER' && !supplierId) {
-    return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
-  }
+  if (!user) return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
+  if (Number.isNaN(orderId)) return res.status(400).json({ error: 'Неверный ID заказа' });
+  if (user.role === 'SUPPLIER' && !supplierId) return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
 
   try {
     const order = await prisma.order.findFirst({
-      where: {
-        ...buildOrderWhere(user),
-        id: orderId,
-      },
+      where: { ...buildOrderWhere(user), id: orderId },
       include: buildOrderItemsInclude(user),
     });
 
-    if (!order) {
-      return res.status(404).json({ error: 'Заказ не найден' });
-    }
+    if (!order) return res.status(404).json({ error: 'Заказ не найден' });
 
     if (user.role === 'CUSTOMER' && order.items) {
-      const productIds = order.items.map(item => item.productId);
+      const productIds = order.items.map((item) => item.productId);
       const reviews = await prisma.review.findMany({
-        where: {
-          userId: user.id,
-          productId: { in: productIds }
-        },
-        select: { productId: true }
+        where: { userId: user.id, productId: { in: productIds } },
+        select: { productId: true },
       });
-      const reviewedProductIds = new Set(reviews.map(r => r.productId));
+      const reviewedProductIds = new Set(reviews.map((r) => r.productId));
 
-      order.items = order.items.map(item => ({
+      order.items = order.items.map((item) => ({
         ...item,
-        isReviewed: reviewedProductIds.has(item.productId)
+        isReviewed: reviewedProductIds.has(item.productId),
       }));
     }
 
@@ -491,19 +298,15 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+// Update order status
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const supplierId = getSupplierId(req.user);
 
-  if (!status) {
-    return res.status(400).json({ error: 'Статус обязателен' });
-  }
-
+  if (!status) return res.status(400).json({ error: 'Статус обязателен' });
   const validStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: 'Неверный статус заказа' });
-  }
+  if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Неверный статус заказа' });
 
   try {
     if (req.user?.role === 'SUPPLIER' && !supplierId) {
@@ -513,20 +316,9 @@ export const updateOrderStatus = async (req, res) => {
     const orderId = parseInt(id);
     const existing = req.user?.role === 'SUPPLIER'
       ? await prisma.order.findFirst({
-          where: {
-            id: orderId,
-            items: {
-              some: {
-                product: {
-                  supplierId,
-                },
-              },
-            },
-          },
+          where: { id: orderId, items: { some: { product: { supplierId } } } },
         })
-      : await prisma.order.findUnique({
-          where: { id: orderId },
-        });
+      : await prisma.order.findUnique({ where: { id: orderId } });
 
     if (!existing) {
       return res.status(req.user?.role === 'SUPPLIER' ? 403 : 404).json({
@@ -537,124 +329,51 @@ export const updateOrderStatus = async (req, res) => {
     const updated = await prisma.$transaction(async (tx) => {
       const order = await tx.order.update({
         where: { id: orderId },
-        data: {
-          status,
-          statusHistory: buildStatusHistory(existing, status),
-        },
-        include: buildOrderItemsInclude(req.user)
+        data: { status, statusHistory: buildStatusHistory(existing, status) },
+        include: buildOrderItemsInclude(req.user),
       });
 
-      // Обновляем бонусы при смене статуса (ВНУТРИ транзакции)
-      if (status === 'completed') {
-        await activatePendingBonuses(orderId, tx);
-        const earnedTx = await tx.bonusTransaction.findFirst({
-          where: { orderId, type: 'earned' }
-        });
-        const newBalance = await getAvailableBalance(existing.userId, tx);
-        const earnedAmount = earnedTx?.amount || 0;
-        if (earnedAmount > 0) {
-          broadcastNotification({
-            title: `💰 Начислен кешбэк TORMAG!`,
-            body: `Вам начислено +${earnedAmount.toLocaleString('ru-RU')} ₸ бонусов за заказ #${orderId}! Ваш новый баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`,
-            icon: '/pwa-192x192.png',
-            data: { url: '/cashback' }
-          }).catch(() => {});
-        }
-      } else if (status === 'cancelled') {
-        await cancelBonusesForOrder(orderId, existing.userId, tx);
-      }
-
+      await handleOrderStatusBonusUpdates(orderId, existing.userId, status, tx);
       return order;
     });
 
-    const STATUS_MAP = {
-      pending: 'В обработке',
-      processing: 'Принят в работу',
-      shipped: 'Передан в доставку',
-      completed: 'Выполнен',
-      cancelled: 'Отменен'
-    };
-
-    broadcastNotification({
-      title: `Заказ #${updated.id}`,
-      body: `Статус вашего заказа изменен: ${STATUS_MAP[updated.status] || updated.status}`,
-      icon: '/pwa-192x192.png',
-      data: { url: '/cabinet/orders' }
-    }).catch(() => {});
-
+    triggerOrderStatusChangedNotification(updated);
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
   }
 };
 
+// Update order details (Admin/Supplier)
 export const updateOrder = async (req, res) => {
   const { id } = req.params;
-  const {
-    status,
-    cancellationReason,
-    managerNotes,
-    clientComment,
-    clientName,
-    clientPhone,
-    clientAddress,
-    items,
-    discountAmount,
-    companyName,
-    companyBin,
-  } = req.body;
+  const { status, cancellationReason, managerNotes, clientComment, clientName, clientPhone, clientAddress, items, discountAmount, companyName, companyBin } = req.body;
   const supplierId = getSupplierId(req.user);
 
   try {
     const orderId = parseInt(id, 10);
-    if (Number.isNaN(orderId)) {
-      return res.status(400).json({ error: 'Неверный ID заказа' });
-    }
+    if (Number.isNaN(orderId)) return res.status(400).json({ error: 'Неверный ID заказа' });
 
-    // Find the existing order
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { items: { include: { product: true } } },
     });
 
-    if (!existingOrder) {
-      return res.status(404).json({ error: 'Заказ не найден' });
-    }
+    if (!existingOrder) return res.status(404).json({ error: 'Заказ не найден' });
 
-    // Check permissions for Supplier
     if (req.user?.role === 'SUPPLIER') {
-      if (!supplierId) {
-        return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
-      }
-
-      const hasSupplierProducts = existingOrder.items.some(
-        (item) => item.product.supplierId === supplierId
-      );
-
-      if (!hasSupplierProducts) {
-        return res.status(403).json({ error: 'Недостаточно прав для изменения этого заказа.' });
-      }
+      if (!supplierId) return res.status(403).json({ error: 'Для вашей учетной записи не привязан поставщик.' });
+      const hasSupplierProducts = existingOrder.items.some((item) => item.product.supplierId === supplierId);
+      if (!hasSupplierProducts) return res.status(403).json({ error: 'Недостаточно прав для изменения этого заказа.' });
     }
 
     const updateData = {};
     if (status !== undefined) {
       const validStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: 'Неверный статус заказа' });
-      }
+      if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Неверный статус заказа' });
       updateData.status = status;
       updateData.statusHistory = buildStatusHistory(existingOrder, status);
-      if (status === 'cancelled' && cancellationReason) {
-        updateData.cancellationReason = cancellationReason;
-      } else if (status !== 'cancelled') {
-        updateData.cancellationReason = null;
-      }
+      updateData.cancellationReason = status === 'cancelled' && cancellationReason ? cancellationReason : null;
     }
 
     if (managerNotes !== undefined) updateData.managerNotes = managerNotes;
@@ -671,33 +390,24 @@ export const updateOrder = async (req, res) => {
       updateData.totalAmount = Math.max(0, existingOrder.subtotalAmount - manualDiscount);
     }
 
-    // Perform inside a transaction if we are editing items
     const result = await prisma.$transaction(async (tx) => {
       if (items !== undefined && Array.isArray(items)) {
-        // Only Admin can modify order items
         if (req.user?.role !== 'ADMIN') {
           throw new Error('Только администратор может изменять состав заказа.');
         }
-
         if (items.length === 0) {
           throw new Error('Заказ не может быть пустым. Если вы хотите отменить заказ, измените его статус на Отменен.');
         }
 
-        // 1. Verify products exist
         const uniqueProductIds = [...new Set(items.map((item) => parseInt(item.productId, 10)).filter(Boolean))];
-        const rawProducts = await tx.product.findMany({
-          where: { id: { in: uniqueProductIds } },
-        });
-
-        if (rawProducts.length !== uniqueProductIds.length) {
-          throw new Error('Некоторые товары не найдены в базе данных.');
-        }
+        const rawProducts = await tx.product.findMany({ where: { id: { in: uniqueProductIds } } });
+        if (rawProducts.length !== uniqueProductIds.length) throw new Error('Некоторые товары не найдены в базе данных.');
 
         const settings = readPricingSettings();
         const allCats = await tx.category.findMany();
-        const categoryMap = new Map(allCats.map(c => [c.id, c]));
-        const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
-        const existingProducts = rawProducts.map(p => applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap));
+        const categoryMap = new Map(allCats.map((c) => [c.id, c]));
+        const categorySlugMap = new Map(allCats.map((c) => [c.slug, c]));
+        const existingProducts = rawProducts.map((p) => applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap));
 
         let normalizedItems = items.map((item) => {
           const product = existingProducts.find((p) => p.id === parseInt(item.productId, 10));
@@ -706,24 +416,16 @@ export const updateOrder = async (req, res) => {
           if (selectedOption && product.options && typeof product.options === 'object') {
             const opts = product.options;
             if (Array.isArray(opts.items)) {
-              const matchedOpt = opts.items.find(o => o.value === selectedOption);
+              const matchedOpt = opts.items.find((o) => o.value === selectedOption);
               if (matchedOpt && matchedOpt.price && !isNaN(parseFloat(matchedOpt.price))) {
                 itemPrice = parseFloat(matchedOpt.price);
               }
             }
           }
-          if (item.price && !isNaN(parseFloat(item.price))) {
-            itemPrice = parseFloat(item.price);
-          }
-          return {
-            productId: product.id,
-            quantity: parseInt(item.quantity, 10),
-            price: itemPrice,
-            selectedOption,
-          };
+          if (item.price && !isNaN(parseFloat(item.price))) itemPrice = parseFloat(item.price);
+          return { productId: product.id, quantity: parseInt(item.quantity, 10), price: itemPrice, selectedOption };
         });
 
-        // Recalculate price details
         const evaluationContext = await buildEvaluationContext(normalizedItems);
         normalizedItems = evaluationContext.items.map((item, idx) => ({
           productId: item.productId,
@@ -742,10 +444,7 @@ export const updateOrder = async (req, res) => {
         if (discountAmount !== undefined) {
           finalDiscount = parseFloat(discountAmount) || 0;
         } else if (promoCodeToUse) {
-          const promo = await tx.promotion.findUnique({
-            where: { promoCode: promoCodeToUse },
-          });
-
+          const promo = await tx.promotion.findUnique({ where: { promoCode: promoCodeToUse } });
           if (promo) {
             const evaluation = evaluatePromotion(promo, evaluationContext);
             if (evaluation.valid) {
@@ -768,12 +467,7 @@ export const updateOrder = async (req, res) => {
         updateData.promotionTitle = promotionTitleToUse;
         updateData.promotionSnapshot = promotionSnapshotToUse;
 
-        // Delete old items
-        await tx.orderItem.deleteMany({
-          where: { orderId },
-        });
-
-        // Create new items
+        await tx.orderItem.deleteMany({ where: { orderId } });
         await tx.orderItem.createMany({
           data: normalizedItems.map((item) => ({
             orderId,
@@ -785,62 +479,21 @@ export const updateOrder = async (req, res) => {
         });
       }
 
-      // Update the order itself
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: updateData,
         include: buildOrderItemsInclude(req.user),
       });
 
-      // Also update bonuses if status changed (ВНУТРИ транзакции)
-      if (status === 'completed') {
-        await activatePendingBonuses(orderId, tx);
-        if (existingOrder.userId) {
-          const earnedTx = await tx.bonusTransaction.findFirst({
-            where: { orderId, type: 'earned' }
-          });
-          const newBalance = await getAvailableBalance(existingOrder.userId, tx);
-          const earnedAmount = earnedTx?.amount || 0;
-          if (earnedAmount > 0) {
-            broadcastNotification({
-              title: `💰 Начислен кешбэк TORMAG!`,
-              body: `Вам начислено +${earnedAmount.toLocaleString('ru-RU')} ₸ бонусов за заказ #${orderId}! Ваш новый баланс: ${Math.round(newBalance).toLocaleString('ru-RU')} ₸`,
-              icon: '/pwa-192x192.png',
-              data: { url: '/cashback' }
-            }).catch(() => {});
-          }
-        }
-      } else if (status === 'cancelled') {
-        if (existingOrder.userId) {
-          await cancelBonusesForOrder(orderId, existingOrder.userId, tx);
-        }
+      if (status !== undefined) {
+        await handleOrderStatusBonusUpdates(orderId, existingOrder.userId, status, tx);
       }
 
       return updatedOrder;
     });
 
-    const STATUS_MAP = {
-      pending: 'В обработке',
-      processing: 'Принят в работу',
-      shipped: 'Передан в доставку',
-      completed: 'Выполнен',
-      cancelled: 'Отменен'
-    };
-
-    if (result && result.status) {
-      broadcastNotification({
-        title: `Заказ #${result.id}`,
-        body: `Обновлен статус заказа: ${STATUS_MAP[result.status] || result.status}`,
-        icon: '/pwa-192x192.png',
-        data: { url: '/cabinet/orders' }
-      }).catch(() => {});
-    }
-
     res.json(result);
   } catch (error) {
-    res.status(400).json({ error: 'Ошибка обновления заказа: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
   }
 };
-
-// getUserBonuses перенесён в bonusController.js
-// Используйте GET /api/bonuses/summary

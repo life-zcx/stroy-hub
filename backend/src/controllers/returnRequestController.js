@@ -252,8 +252,8 @@ export const updateReturnRequestStatus = async (req, res) => {
                 data: {
                   userId: returnRequest.userId,
                   orderId: returnRequest.orderId,
-                  type: 'spent',
-                  status: 'used',
+                  type: 'cancelled',
+                  status: 'cancelled',
                   amount: deductAmount,
                   description: `Списание кэшбека за возврат товара (${returnRequest.quantity} шт. ${returnRequest.product?.name || 'товар'}) по заказу #${returnRequest.orderId}`,
                 },

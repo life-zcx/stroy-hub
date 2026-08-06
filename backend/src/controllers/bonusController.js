@@ -11,19 +11,35 @@ import { broadcastNotification } from '../utils/pushNotifier.js';
  * Если передан `tx` (Prisma transaction client) — работает в рамках транзакции.
  */
 export async function getAvailableBalance(userId, tx = prisma) {
-  const [earnedResult, spentResult] = await Promise.all([
+  const [earnedResult, spentResult, returnDeductionsResult] = await Promise.all([
     tx.bonusTransaction.aggregate({
       where: { userId, status: 'available', type: { in: ['earned', 'manual'] } },
       _sum: { amount: true },
     }),
     tx.bonusTransaction.aggregate({
-      where: { userId, status: 'used', type: 'spent' },
+      where: {
+        userId,
+        status: 'used',
+        type: 'spent',
+        description: { not: { contains: 'возврат товара' } },
+      },
+      _sum: { amount: true },
+    }),
+    tx.bonusTransaction.aggregate({
+      where: {
+        userId,
+        OR: [
+          { status: 'cancelled', type: 'cancelled' },
+          { type: 'spent', description: { contains: 'возврат товара' } },
+        ],
+      },
       _sum: { amount: true },
     }),
   ]);
   const totalEarned = earnedResult._sum.amount || 0;
   const totalSpent = spentResult._sum.amount || 0;
-  return Math.max(0, totalEarned - totalSpent);
+  const totalReturnDeductions = returnDeductionsResult._sum.amount || 0;
+  return Math.max(0, totalEarned - totalSpent - totalReturnDeductions);
 }
 
 /**
@@ -146,7 +162,12 @@ export const getUserBonusSummary = async (req, res) => {
         _sum: { amount: true },
       }),
       prisma.bonusTransaction.aggregate({
-        where: { userId, type: 'spent', status: 'used' },
+        where: {
+          userId,
+          type: 'spent',
+          status: 'used',
+          description: { not: { contains: 'возврат товара' } },
+        },
         _sum: { amount: true },
       }),
       getUserLoyaltyStatus(userId),

@@ -33,6 +33,7 @@ import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
+import OrderSuccessCelebration from '../components/OrderSuccessCelebration';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
@@ -580,99 +581,15 @@ export default function CartPage({
   };
 
   if (successOrder) {
-    const earnedRefund = Math.round(successOrder.totalAmount * 0.03);
     return (
-      <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-left animate-fade-in-up">
-        {/* Animated Checkmark and Header */}
-        <div className="text-center space-y-4 mb-10">
-          <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm animate-pulse mb-2">
-            <CheckCircle2 className="h-12 w-12 text-emerald-600" />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-950 font-outfit">Заказ успешно создан!</h1>
-          <p className="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
-            Спасибо за покупку в <span className="font-extrabold text-slate-900">TORMAG</span>. Мы уже начали готовить ваш заказ к отправке.
-          </p>
-        </div>
-
-        {/* Details Card */}
-        <div className="bg-white rounded-[2rem] border border-slate-150 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-100">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Номер заказа</span>
-              <div className="text-xl font-black text-slate-900">#{successOrder.id}</div>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Итоговая сумма</span>
-              <div className="text-xl font-black text-emerald-600 font-outfit">{formatPrice(successOrder.totalAmount)}</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Получатель</span>
-              <p className="font-bold text-slate-800">{successOrder.clientName}</p>
-              <p className="text-slate-500 text-xs font-semibold">{successOrder.clientPhone}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Адрес доставки</span>
-              <p className="font-bold text-slate-800 leading-snug">{successOrder.clientAddress}</p>
-            </div>
-            {successOrder.deliveryDate && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Дата и время доставки</span>
-                <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
-                  {successOrder.deliveryDate} {successOrder.deliveryTime ? `(слот: ${successOrder.deliveryTime})` : ''}
-                </p>
-              </div>
-            )}
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Способ оплаты</span>
-              <p className="font-bold text-slate-800 uppercase tracking-wider text-xs bg-slate-100 px-2.5 py-1 rounded-md inline-block mt-0.5">
-                {successOrder.paymentMethod === 'kaspi' ? 'Kaspi QR / Kaspi Red' : successOrder.paymentMethod === 'invoice' ? 'Безналичный расчет (B2B)' : 'Наличными при получении'}
-              </p>
-            </div>
-          </div>
-
-          {/* Cashback Card */}
-          <div className="bg-emerald-50/50 border border-emerald-100 p-5 rounded-2xl flex items-start gap-4 shadow-sm relative overflow-hidden">
-            <div className="p-3 bg-emerald-100/50 border border-emerald-200 rounded-xl text-emerald-600 shrink-0">
-              <Gift className="h-6 w-6" />
-            </div>
-            <div className="space-y-1 relative z-10">
-              <span className="text-[9px] font-black tracking-widest text-emerald-600 uppercase">Начисление бонусов</span>
-              <p className="text-sm font-black text-slate-900 font-outfit">Вам начислено +{formatPrice(earnedRefund)} бонусами!</p>
-              <p className="text-[11px] text-slate-550 leading-normal font-medium">Бонусы станут доступны для оплаты новых покупок сразу после доставки данного заказа.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col sm:flex-row gap-4">
-          <Link
-            href={getPageHref('catalog')}
-            onClick={() => {
-              setSuccessOrder(null);
-              onNavigate('catalog');
-            }}
-            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] text-center"
-          >
-            <ShoppingBag className="h-5 w-5 text-slate-650" />
-            <span>Продолжить покупки</span>
-          </Link>
-          <Link
-            href={successOrder ? getPageHref('order-detail', successOrder.id) : '#'}
-            onClick={() => {
-              const orderId = successOrder.id;
-              setSuccessOrder(null);
-              onNavigate('order-detail', orderId);
-            }}
-            className="flex-1 bg-slate-900 hover:bg-slate-850 text-white font-bold py-4 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform active:scale-[0.98] text-center"
-          >
-            <span>Отслеживать заказ</span>
-            <ArrowRight className="h-5 w-5" />
-          </Link>
-        </div>
-      </div>
+      <OrderSuccessCelebration
+        successOrder={successOrder}
+        onNavigate={(page, id) => {
+          setSuccessOrder(null);
+          onNavigate(page, id);
+        }}
+        showToast={showToast}
+      />
     );
   }
 
