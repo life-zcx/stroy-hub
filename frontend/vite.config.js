@@ -18,7 +18,7 @@ export default defineConfig({
       workbox: {
         importScripts: ['/sw-push.js']
       },
-      includeAssets: ['favicon.png', 'robots.txt', 'apple-touch-icon.png', 'manifest.json'],
+      includeAssets: ['favicon.ico', 'favicon-32x32.png', 'favicon-16x16.png', 'robots.txt', 'apple-touch-icon.png', 'manifest.json', 'logo.png'],
       manifest: {
         name: 'TORMAG — Всё для стройки и ремонта',
         short_name: 'TORMAG',
@@ -32,20 +32,29 @@ export default defineConfig({
         id: '/',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: '/favicon-16x16.png',
+            sizes: '16x16',
+            type: 'image/png'
+          },
+          {
+            src: '/favicon-32x32.png',
+            sizes: '32x32',
+            type: 'image/png'
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png'
+          },
+          {
+            src: '/android-chrome-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
+            src: '/pwa-192x192.png',
+            sizes: '192x192',
             type: 'image/png'
-          },
-          {
-            src: '/pwa-maskable-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
           }
         ]
       }
