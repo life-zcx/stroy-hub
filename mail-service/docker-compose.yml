@@ -30,9 +30,9 @@ services:
     ports:
       - "127.0.0.1:${ROUNDCUBE_PORT:-8090}:80"   # Roundcube Web Interface (localhost only)
     environment:
-      - ROUNDCUBEMAIL_DEFAULT_HOST=mail-server
-      - ROUNDCUBEMAIL_DEFAULT_PORT=143
-      - ROUNDCUBEMAIL_SMTP_SERVER=mail-server
+      - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
+      - ROUNDCUBEMAIL_DEFAULT_PORT=993
+      - ROUNDCUBEMAIL_SMTP_SERVER=tls://mail-server
       - ROUNDCUBEMAIL_SMTP_PORT=587
       - ROUNDCUBEMAIL_LANGUAGE=ru_RU
       - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload
