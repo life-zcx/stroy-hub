@@ -28,3 +28,26 @@ cabinet.tormag.kz {
     }
 }
 
+# --- Веб-почта Roundcube ---
+mail.tormag.kz {
+    reverse_proxy 127.0.0.1:8890
+
+    encode gzip zstd
+
+    log {
+        output file /var/log/caddy/mail_access.log
+    }
+}
+
+# --- Панель управления Stalwart ---
+panel.mail.tormag.kz {
+    reverse_proxy 127.0.0.1:8880
+
+    encode gzip zstd
+
+    log {
+        output file /var/log/caddy/panel_mail_access.log
+    }
+}
+
+

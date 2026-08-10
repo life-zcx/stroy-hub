@@ -12,6 +12,8 @@ services:
       - "${STALWART_SUBMISSION_PORT:-587}:587" # SMTP Submission (STARTTLS)
       - "${STALWART_IMAP_PORT:-993}:993"     # IMAPS (Implicit TLS)
       - "${STALWART_ADMIN_PORT:-8080}:8080" # Stalwart Admin Web UI
+    environment:
+      - STALWART_RECOVERY_ADMIN=${STALWART_RECOVERY_ADMIN:-}
     volumes:
       - mail_etc:/etc/stalwart
       - mail_data:/var/lib/stalwart

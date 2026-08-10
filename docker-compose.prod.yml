@@ -119,6 +119,8 @@ services:
       - "587:587"   # SMTP Submission (STARTTLS)
       - "993:993"   # IMAPS (Implicit TLS)
       - "8880:8080" # Direct Web Admin UI
+    environment:
+      - STALWART_RECOVERY_ADMIN=${STALWART_RECOVERY_ADMIN:-}
     volumes:
       - mail_etc:/etc/stalwart
       - mail_data:/var/lib/stalwart
