@@ -50,6 +50,7 @@ export const getProductOg = async (req, res) => {
     const brandName = product.supplier?.name || 'TORMAG';
     const categoryName = product.categoryRelation?.name || product.category || 'Стройматериалы';
     const categorySlug = product.categoryRelation?.slug || '';
+    const productIdentifier = product.slug || product.id || rawId;
 
     const schemaJson = {
       "@context": "https://schema.org/",
@@ -64,7 +65,7 @@ export const getProductOg = async (req, res) => {
       },
       "offers": {
         "@type": "Offer",
-        "url": `https://tormag.kz/product/${id}`,
+        "url": `https://tormag.kz/product/${productIdentifier}`,
         "priceCurrency": "KZT",
         "price": product.price,
         "itemCondition": "https://schema.org/NewCondition",
@@ -92,14 +93,14 @@ export const getProductOg = async (req, res) => {
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <meta name="keywords" content="${escapeHtml(`${product.name}, ${categoryName}, купить ${product.name} алматы, стройматериалы алматы, тормаг`)}">
-  <link rel="canonical" href="https://tormag.kz/product/${id}">
+  <link rel="canonical" href="https://tormag.kz/product/${productIdentifier}">
   
   <!-- Open Graph -->
   <meta property="og:type" content="product">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${escapeHtml(imageUrl)}">
-  <meta property="og:url" content="https://tormag.kz/product/${id}">
+  <meta property="og:url" content="https://tormag.kz/product/${productIdentifier}">
   <meta property="og:site_name" content="TORMAG">
   <meta property="product:price:amount" content="${product.price}">
   <meta property="product:price:currency" content="KZT">
@@ -139,7 +140,7 @@ export const getProductOg = async (req, res) => {
           ${product.article ? `<p><strong>Артикул:</strong> ${escapeHtml(product.article)}</p>` : ''}
           ${product.bulkDiscount ? `<p><strong>Оптовые поставки:</strong> ${escapeHtml(product.bulkDiscount)}</p>` : ''}
           <div style="margin-top: 20px;">
-            <a href="https://tormag.kz/product/${id}" style="display: inline-block; background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Перейти к покупке на TORMAG.KZ</a>
+            <a href="https://tormag.kz/product/${productIdentifier}" style="display: inline-block; background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Перейти к покупке на TORMAG.KZ</a>
           </div>
         </div>
       </div>

@@ -113,9 +113,31 @@ app.get('/_ipx/*', handleIpxImageRequest);
 app.get('/api/img', handleIpxImageRequest);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Bot Scanner Probe filter helper
+const BOT_PROBE_REGEX = /(\.env|\.git|\.bak|\.sql|\.ini|\.yml|\.yaml|\.pem|\.p12|\.php|\.xml|wp-config|aws_credentials|db_credentials|swagger|openapi|sms-sender|finchat|keystore|secrets|sendgrid|mailgun|smtp)/i;
+
+const isBotProbe404 = (req, statusCode) => {
+  if (statusCode !== 404) return false;
+  const url = req.originalUrl || req.url || '';
+  const pathOnly = url.split('?')[0];
+  if (BOT_PROBE_REGEX.test(pathOnly)) return true;
+  if (
+    pathOnly.startsWith('/api/env') ||
+    pathOnly.startsWith('/api/config') ||
+    pathOnly.startsWith('/api/auth/') ||
+    pathOnly === '/api/upload' ||
+    pathOnly.startsWith('/api/docs') ||
+    pathOnly === '/api/secrets.txt' ||
+    pathOnly === '/api/backup.sql'
+  ) {
+    return true;
+  }
+  return false;
+};
+
 // Request Logging
 app.use((req, res, next) => {
-  if (req.path === '/health') return next();
+  if (req.path === '/health' || req.path === '/healthz') return next();
   const startedAt = Date.now();
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
@@ -124,9 +146,17 @@ app.use((req, res, next) => {
     const message = `${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`;
     const meta = { ip, userId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs };
 
-    if (res.statusCode >= 500) logger.error(message, meta);
-    else if (res.statusCode >= 400) logger.warn(message, meta);
-    else logger.info(message, meta);
+    if (res.statusCode >= 500) {
+      logger.error(message, meta);
+    } else if (res.statusCode >= 400) {
+      if (isBotProbe404(req, res.statusCode)) {
+        logger.debug(message, meta);
+      } else {
+        logger.warn(message, meta);
+      }
+    } else {
+      logger.info(message, meta);
+    }
   });
   next();
 });
@@ -167,7 +197,7 @@ app.use('/api/geo', geoRoutes);
 app.use('/api/ai', aiProxyHandler);
 
 // Health Check
-app.get('/health', (req, res) => {
+app.get(['/health', '/healthz'], (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
