@@ -118,7 +118,7 @@ services:
       - "465:465"   # SMTPS (Implicit TLS)
       - "587:587"   # SMTP Submission (STARTTLS)
       - "993:993"   # IMAPS (Implicit TLS)
-      - "8880:8080" # Direct Web Admin UI
+      - "127.0.0.1:8880:8080" # Web Admin UI (localhost only)
     environment:
       - STALWART_RECOVERY_ADMIN=${STALWART_RECOVERY_ADMIN:-}
     volumes:
@@ -130,7 +130,7 @@ services:
     container_name: tormag_webmail
     restart: unless-stopped
     ports:
-      - "8890:80"   # Direct Webmail UI
+      - "127.0.0.1:8890:80"   # Webmail UI (localhost only)
     environment:
       - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
       - ROUNDCUBEMAIL_DEFAULT_PORT=993
