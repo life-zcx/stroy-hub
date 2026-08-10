@@ -108,7 +108,40 @@ services:
     ports:
       - "${GATEWAY_PORT:-80}:80"
 
+  mail-server:
+    image: stalwartlabs/mail-server:latest
+    container_name: tormag_mail_server
+    restart: unless-stopped
+    ports:
+      - "25:25"     # SMTP Outbound & Inbound
+      - "465:465"   # SMTPS (Implicit TLS)
+      - "587:587"   # SMTP Submission (STARTTLS)
+      - "993:993"   # IMAPS (Implicit TLS)
+    environment:
+      - STALWART_PATH=/opt/stalwart-mail
+    volumes:
+      - mail_data:/opt/stalwart-mail
+
+  webmail:
+    image: roundcube/roundcubemail:latest
+    container_name: tormag_webmail
+    restart: unless-stopped
+    environment:
+      - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
+      - ROUNDCUBEMAIL_DEFAULT_PORT=993
+      - ROUNDCUBEMAIL_SMTP_SERVER=tls://mail-server
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+      - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload
+    volumes:
+      - webmail_data:/var/www/html
+      - webmail_db:/var/roundcube/db
+    depends_on:
+      - mail-server
+
 volumes:
   postgres_data:
   backend_uploads:
   db_backups:
+  mail_data:
+  webmail_data:
+  webmail_db:
