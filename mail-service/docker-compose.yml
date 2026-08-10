@@ -32,8 +32,8 @@ services:
     environment:
       - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
       - ROUNDCUBEMAIL_DEFAULT_PORT=993
-      - ROUNDCUBEMAIL_SMTP_SERVER=mail-server
-      - ROUNDCUBEMAIL_SMTP_PORT=25
+      - ROUNDCUBEMAIL_SMTP_SERVER=ssl://mail-server
+      - ROUNDCUBEMAIL_SMTP_PORT=465
       - ROUNDCUBEMAIL_LANGUAGE=ru_RU
       - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload
     volumes:
