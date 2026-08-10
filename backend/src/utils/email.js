@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
     pass: SMTP_PASS,
   },
   tls: {
-    rejectUnauthorized: process.env.NODE_ENV === 'production' && !process.env.ALLOW_SELF_SIGNED_SMTP,
+    rejectUnauthorized: false,
   },
   connectionTimeout: 10000, // 10 секунд лимит на подключение
   greetingTimeout: 10000,   // 10 секунд лимит на приветствие сервера
