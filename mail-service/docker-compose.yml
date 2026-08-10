@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mail-server:
-    image: stalwartlabs/mail-server:latest
+    image: stalwartlabs/stalwart:latest
     container_name: tormag_mail_server
     restart: unless-stopped
     ports:
