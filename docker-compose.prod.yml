@@ -117,6 +117,7 @@ services:
       - "465:465"   # SMTPS (Implicit TLS)
       - "587:587"   # SMTP Submission (STARTTLS)
       - "993:993"   # IMAPS (Implicit TLS)
+      - "8880:8080" # Direct Web Admin UI
     environment:
       - STALWART_PATH=/opt/stalwart-mail
     volumes:
@@ -126,6 +127,8 @@ services:
     image: roundcube/roundcubemail:latest
     container_name: tormag_webmail
     restart: unless-stopped
+    ports:
+      - "8890:80"   # Direct Webmail UI
     environment:
       - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
       - ROUNDCUBEMAIL_DEFAULT_PORT=993
