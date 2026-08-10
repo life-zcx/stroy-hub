@@ -4,6 +4,7 @@ services:
   mail-server:
     image: stalwartlabs/stalwart:latest
     container_name: tormag_mail_server
+    user: "0:0"
     restart: unless-stopped
     ports:
       - "${STALWART_SMTP_PORT:-25}:25"       # SMTP Outbound & Inbound
