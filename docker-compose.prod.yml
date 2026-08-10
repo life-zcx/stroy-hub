@@ -119,10 +119,9 @@ services:
       - "587:587"   # SMTP Submission (STARTTLS)
       - "993:993"   # IMAPS (Implicit TLS)
       - "8880:8080" # Direct Web Admin UI
-    environment:
-      - STALWART_PATH=/opt/stalwart-mail
     volumes:
-      - mail_data:/opt/stalwart-mail
+      - mail_etc:/etc/stalwart
+      - mail_data:/var/lib/stalwart
 
   webmail:
     image: roundcube/roundcubemail:latest
@@ -146,6 +145,7 @@ volumes:
   postgres_data:
   backend_uploads:
   db_backups:
+  mail_etc:
   mail_data:
   webmail_data:
   webmail_db:
