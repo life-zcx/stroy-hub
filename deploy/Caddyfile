@@ -1,31 +1,36 @@
-# Caddy configuration for tormag.kz
-# Place this file on your Ubuntu host or run it via Docker
-
-tormag.kz, www.tormag.kz {
-    # Automatic HTTPS is fully managed by Caddy! No certbot needed.
-    
-    # Reverse proxy to the Docker Gateway container
-    # Since GATEWAY_PORT will be 8080 in this setup, we proxy there:
-    reverse_proxy 127.0.0.1:8080
-
-    # Compression for text assets
-    encode gzip zstd
-
-    # Basic logging
-    log {
-        output file /var/log/caddy/tormag_access.log
-    }
+# Редирект сторонних доменов на основной сайт
+adkulan.shop, www.adkulan.shop,
+hr-payroll.quest, www.hr-payroll.quest,
+kaaspi.shop, www.kaaspi.shop,
+pizda.asia, www.pizda.asia,
+cs2tournaments.asia, www.cs2tournaments.asia,
+adkulan.ru, www.adkulan.ru {
+        redir https://tormag.kz{uri} permanent
 }
 
+# --- Основной сайт tormag.kz ---
+tormag.kz, www.tormag.kz {
+        # Reverse proxy to the Docker Gateway container
+        reverse_proxy 127.0.0.1:8080
+
+        # Compression for text assets
+        encode gzip zstd
+
+        # Basic logging
+        log {
+                output file /var/log/caddy/tormag_access.log
+        }
+}
+
+# --- Личный кабинет ---
 cabinet.tormag.kz {
-    # Automatic HTTPS for admin subdomain
-    reverse_proxy 127.0.0.1:8080
+        reverse_proxy 127.0.0.1:8080
 
-    encode gzip zstd
+        encode gzip zstd
 
-    log {
-        output file /var/log/caddy/cabinet_access.log
-    }
+        log {
+                output file /var/log/caddy/cabinet_access.log
+        }
 }
 
 # --- Веб-почта Roundcube ---
