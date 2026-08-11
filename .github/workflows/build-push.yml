@@ -86,6 +86,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME || 'root' }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
           script: |
             cd ~/stroy-hub || cd /var/www/stroy-hub || cd ./
             chmod +x deploy/deploy.sh

@@ -12,10 +12,10 @@ CHAT_ID="${TELEGRAM_ADMIN_CHAT_ID:-$TELEGRAM_CHAT_ID}"
 send_telegram() {
     local message="$1"
     if [ -n "$BOT_TOKEN" ] && [ -n "$CHAT_ID" ]; then
-        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+        curl -s --connect-timeout 5 --max-time 10 -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
             -d "chat_id=${CHAT_ID}" \
             -d "parse_mode=Markdown" \
-            -d "text=${message}" > /dev/null || true
+            -d "text=${message}" > /dev/null 2>&1 || true
     fi
 }
 
@@ -69,4 +69,6 @@ echo " ✅ Tormag updated successfully! (${COMMIT_HASH})"
 echo "========================================================="
 
 send_telegram "🚀 *[CD Pipeline] Tormag успешно обновлен!*%0A%0A📌 *Коммит:* \`${COMMIT_HASH}\`%0A💬 *Заголовок:* ${COMMIT_MSG}"
+
+exit 0
 
