@@ -123,6 +123,7 @@ services:
       - "127.0.0.1:8880:8080" # Web Admin UI (localhost only)
     environment:
       - STALWART_RECOVERY_ADMIN=${STALWART_RECOVERY_ADMIN:-}
+      - STALWART_SERVER_LISTENER_HTTP_BIND=["0.0.0.0:8080"]
     volumes:
       - mail_etc:/etc/stalwart
       - mail_data:/var/lib/stalwart

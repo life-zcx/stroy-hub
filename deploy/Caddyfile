@@ -46,11 +46,7 @@ mail.tormag.kz {
 
 # --- Панель управления Stalwart ---
 panel.mail.tormag.kz {
-    reverse_proxy https://127.0.0.1:8880 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-    }
+    reverse_proxy 127.0.0.1:8880
 
     encode gzip zstd
 
