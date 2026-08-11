@@ -531,18 +531,18 @@ const handleCommand = async (chatId, text) => {
           body: JSON.stringify({ ref: 'main' }),
         });
         if (res.ok || res.status === 204) {
-          await sendMsg(chatId, `🟢 *Сигнал деплоя успешно отправлен!*%0A%0AGitHub Actions выполняет деплой на VPS. По окончании вы получите итоговый отчет.`);
+          await sendMsg(chatId, `🟢 *Сигнал деплоя успешно отправлен!*%0A%0AGitHub Actions заставит VPS обновиться. Ожидайте итоговый отчет.`);
         } else {
           const errText = await res.text().catch(() => '');
-          await sendMsg(chatId, `⚠️ *GitHub API ответил:* \`${errText.slice(0, 150)}\``);
+          await sendMsg(chatId, `⚠️ *GitHub API ответил (${res.status}):* \`${errText.slice(0, 150)}\``);
         }
       } else {
-        // Fallback: local script execution
-        exec('bash /app/deploy/deploy.sh || bash deploy/deploy.sh', (error, stdout, stderr) => {
+        // Fallback execution using sh
+        exec('sh deploy/deploy.sh || /bin/sh deploy/deploy.sh', (error, stdout, stderr) => {
           if (error) {
-            sendMsg(chatId, `🔴 *Ошибка при запуске deploy.sh:* \`${error.message}\``);
+            sendMsg(chatId, `⚠️ *Для авто-деплоя через GitHub Actions укажите GITHUB_TOKEN в .env.production*\n\nОшибка локального запуска: \`${error.message.slice(0, 200)}\``);
           } else {
-            sendMsg(chatId, `🟢 *Деплой успешно запущен!*`);
+            sendMsg(chatId, `🟢 *Деплой успешно выполнен!*`);
           }
         });
       }
