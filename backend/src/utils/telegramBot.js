@@ -64,7 +64,7 @@ const getSslHost = () => {
       return new URL(firstOrigin).hostname;
     } catch (e) {}
   }
-  return 'stroy-hub.ru';
+  return 'tormag.kz';
 };
 
 // Helper to check resources (async to avoid blocking event loop)

@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================================="
-echo " 🚀 Stroy-Hub Production Deployment & Update Script"
+echo " 🚀 Tormag Production Deployment & Update Script"
 echo "========================================================="
 
 # 1. Pull latest code from main branch
@@ -34,5 +34,5 @@ docker image prune -f
 
 echo ""
 echo "========================================================="
-echo " ✅ Stroy-Hub updated successfully!"
+echo " ✅ Tormag updated successfully!"
 echo "========================================================="

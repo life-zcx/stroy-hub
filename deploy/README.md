@@ -1,6 +1,6 @@
-# 🚀 Полная техническая документация и руководство по деплою Stroy-Hub (`tormag.kz`)
+# 🚀 Полная техническая документация и руководство по деплою Tormag (`tormag.kz`)
 
-Данный документ содержит полное архитектурное описание всех сервисов, поддоменов, резервного копирования, интеграций и стандартных процедур обновления инфраструктуры **Stroy-Hub (`tormag.kz`)**.
+Данный документ содержит полное архитектурное описание всех сервисов, поддоменов, резервного копирования, интеграций и стандартных процедур обновления инфраструктуры **Tormag (`tormag.kz`)**.
 
 ---
 
@@ -29,7 +29,7 @@
          └──────────┬───────────┘
                     ▼
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                              Внутренний Docker-стек (stroy-hub)                          │
+│                              Внутренний Docker-стек (tormag.kz)                          │
 ├───────────────────┬──────────────────┬────────────────────┬──────────────────────────────┤
 │ Backend (Express) │ AI Service       │ PostgreSQL 15      │ Redis 7                      │
 │ - Port: 5000      │ - Port: 5005     │ - Port: 5432       │ - Port: 6379                 │
@@ -133,26 +133,11 @@ chmod +x deploy/deploy.sh
 
 ---
 
-## 🔍 5. Диагностика и устранение неисправностей (Troubleshooting)
+## 🔍 5. Полезные команды при обслуживании
 
-### 🔴 1. Ошибка `HTTP ERROR 502 Bad Gateway` на `panel.mail.tormag.kz`
-* **Причина:** Stalwart включил внутренний SSL/TLS на порту `8080` (хост-порт `8880`), а Caddy отправлял незашифрованный HTTP-запрос (ошибка `EOF` в логах Caddy).
-* **Решение:** В `/etc/caddy/Caddyfile` блок `panel.mail.tormag.kz` должен проксировать по `https` с флагом `tls_insecure_skip_verify`:
-  ```caddy
-  panel.mail.tormag.kz {
-      reverse_proxy https://127.0.0.1:8880 {
-          transport http {
-              tls_insecure_skip_verify
-          }
-      }
-      encode gzip zstd
-  }
-  ```
-  После изменения выполнить: `sudo systemctl reload caddy`.
-
-### 🔴 2. Просмотр логов в реальном времени
+### 📊 Просмотр логов
 ```bash
-# Логи хостового Caddy (ошибки SSL, статус маршрутизации)
+# Логи Caddy
 sudo journalctl -u caddy -n 50 --no-pager -f
 
 # Логи Backend API
@@ -165,14 +150,12 @@ docker compose -f docker-compose.prod.yml logs -f --tail 100 gateway
 docker logs -f --tail 100 tormag_mail_server
 ```
 
-### 🔴 3. Смена пароля администратора
-Если нужно сбросить пароль администратора в БД:
+### 🔑 Полезные команды
 ```bash
+# Смена пароля администратора в БД
 docker compose --env-file .env.production -f docker-compose.prod.yml run --rm backend npm run change-password
-```
 
-### 🔴 4. Повторный прогон семян / начальных данных БД
-```bash
+# Начальное заполнение БД (Prisma seed)
 docker compose --env-file .env.production -f docker-compose.prod.yml run --rm backend npm run prisma:seed
 ```
 
