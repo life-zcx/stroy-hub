@@ -165,7 +165,7 @@ export default function ProductModal({ product, onClose, onAddToCart, onOpenDeta
               <div className="mt-auto space-y-2.5">
                 <button
                   onClick={() => { onAddToCart(product); onClose(); }}
-                  className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/25 hover:shadow-xl"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-xl"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   Добавить в корзину

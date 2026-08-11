@@ -601,3 +601,48 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+export const verifyResetCode = async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Укажите email и код подтверждения' });
+  }
+
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = String(code).trim();
+    const attemptsKey = `fail-attempts:reset-password:${cleanEmail}`;
+    const attempts = await redisClient.get(attemptsKey);
+    if (attempts && parseInt(attempts, 10) >= 5) {
+      await prisma.passwordResetToken.deleteMany({ where: { email: cleanEmail } });
+      return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Восстановление аннулировано. Запросите код заново.' });
+    }
+
+    // Verify recovery code in database
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: { email: cleanEmail, code: cleanCode },
+    });
+
+    if (!resetToken) {
+      const currentAttempts = await redisClient.incr(attemptsKey);
+      if (currentAttempts === 1) {
+        await redisClient.expire(attemptsKey, 600); // 10 minutes
+      }
+      if (currentAttempts >= 5) {
+        await prisma.passwordResetToken.deleteMany({ where: { email: cleanEmail } });
+        return res.status(429).json({ error: 'Слишком много неверных попыток ввода кода. Восстановление аннулировано. Запросите код заново.' });
+      }
+      return res.status(400).json({ error: 'Неверный код подтверждения' });
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      return res.status(400).json({ error: 'Срок действия кода подтверждения истек. Запросите новый код.' });
+    }
+
+    res.json({ message: 'Код подтверждения верен' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка проверки кода: ' + error.message });
+  }
+};
+
+

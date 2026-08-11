@@ -12,6 +12,8 @@ export default function AuthModal({
   setAuthEmail,
   authPassword,
   setAuthPassword,
+  authConfirmPassword = '',
+  setAuthConfirmPassword = () => {},
   authName,
   setAuthName,
   authPhone,
@@ -43,6 +45,7 @@ export default function AuthModal({
   handleSelectRegion,
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (!isOpen) return null;
 
@@ -73,11 +76,12 @@ export default function AuthModal({
             <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[95px] -my-6 w-auto object-contain shrink-0" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
-          <p className="text-slate-500 text-xs mt-1">
-            {authTab === 'forgot' ? 'Восстановление доступа к аккаунту' :
-              authTab === 'reset' ? 'Установите новый пароль' :
-                authTab === 'register-confirm' ? 'Подтверждение почты' :
-                  'Авторизуйтесь для оформления заказов и отслеживания доставки'}
+          <p className="text-slate-500 text-xs mt-1 font-medium">
+            {authTab === 'forgot' ? 'Восстановление пароля (Шаг 1 из 3): Укажите почту' :
+              authTab === 'reset-code' ? 'Восстановление пароля (Шаг 2 из 3): Код подтверждения' :
+                authTab === 'reset-password' || authTab === 'reset' ? 'Восстановление пароля (Шаг 3 из 3): Установка пароля' :
+                  authTab === 'register-confirm' ? 'Подтверждение почты' :
+                    'Авторизуйтесь для оформления заказов и отслеживания доставки'}
           </p>
         </div>
 
@@ -296,26 +300,32 @@ export default function AuthModal({
           ) : (
             /* STANDARD SINGLE/DOUBLE COLUMN LAYOUT FOR OTHER MODAL STATES */
             <div className={authTab === 'register' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : 'space-y-4'}>
-              {/* Email input */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Электронная почта *</label>
-                <input
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  required
-                  autoComplete="username"
-                  disabled={authTab === 'reset' || authTab === 'register-confirm'}
-                  placeholder="user@tormag.kz"
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 disabled:opacity-60"
-                />
-              </div>
-
-              {/* Verification Code input */}
-              {(authTab === 'reset' || authTab === 'register-confirm') && (
+              {/* STEP 1: EMAIL INPUT (or login / register email) */}
+              {(authTab === 'login' || authTab === 'register' || authTab === 'forgot') && (
                 <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Электронная почта *</label>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    required
+                    autoComplete="username"
+                    placeholder="user@tormag.kz"
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
+                  />
+                </div>
+              )}
+
+              {/* STEP 2: VERIFICATION CODE INPUT */}
+              {(authTab === 'reset-code' || authTab === 'register-confirm') && (
+                <div>
+                  {authTab === 'reset-code' && (
+                    <div className="mb-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-800 font-medium">
+                      Код отправлен на электронную почту: <span className="font-bold text-emerald-950">{authEmail}</span>
+                    </div>
+                  )}
                   <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
-                    {authTab === 'register-confirm' ? 'Код подтверждения из письма *' : 'Код из письма *'}
+                    {authTab === 'register-confirm' ? 'Код подтверждения из письма *' : 'Код из письма (6 цифр) *'}
                   </label>
                   <input
                     type="text"
@@ -326,29 +336,38 @@ export default function AuthModal({
                     placeholder="123456"
                     className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800 font-mono text-center tracking-widest text-lg"
                   />
-                  <div className="mt-2 text-right">
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    {authTab === 'reset-code' && (
+                      <button
+                        type="button"
+                        onClick={() => { setAuthTab('forgot'); setAuthError(null); }}
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-800 bg-transparent border-0 cursor-pointer"
+                      >
+                        ← Изменить почту
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleResendCode}
                       disabled={resendCooldown > 0 || authLoading}
-                      className={`text-xs font-semibold bg-transparent border-0 cursor-pointer ${resendCooldown > 0
+                      className={`text-xs font-semibold bg-transparent border-0 cursor-pointer ml-auto ${resendCooldown > 0
                         ? 'text-slate-400 cursor-not-allowed'
                         : 'text-emerald-600 hover:text-emerald-500 hover:underline'
                         }`}
                     >
                       {resendCooldown > 0
-                        ? `Отправить код повторно через ${resendCooldown} сек`
+                        ? `Отправить повторно (${resendCooldown}с)`
                         : 'Отправить код повторно'}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Password input */}
-              {(authTab === 'login' || authTab === 'register' || authTab === 'reset') && (
+              {/* LOGIN / REGISTER SINGLE PASSWORD INPUT */}
+              {(authTab === 'login' || authTab === 'register') && (
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
-                    {authTab === 'reset' ? 'Новый пароль *' : 'Пароль *'}
+                    Пароль *
                   </label>
                   <div className="relative">
                     <input
@@ -366,11 +385,7 @@ export default function AuthModal({
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-transparent border-0 p-1 cursor-pointer flex items-center justify-center"
                       title={showPassword ? "Скрыть пароль" : "Показать пароль"}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {authTab === 'register' && authPassword && (
@@ -389,6 +404,82 @@ export default function AuthModal({
                       </span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* STEP 3: NEW PASSWORD & PASSWORD CONFIRMATION */}
+              {(authTab === 'reset-password' || authTab === 'reset') && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
+                      Новый пароль *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        className="w-full p-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-transparent border-0 p-1 cursor-pointer flex items-center justify-center"
+                        title={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {authPassword && (
+                      <div className="mt-1.5 space-y-1">
+                        <div className="flex gap-1 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className={`h-full transition-all duration-300 ${pwdStrength.score === 1 ? 'w-1/3 bg-red-500' :
+                            pwdStrength.score === 2 ? 'w-2/3 bg-amber-500' :
+                              'w-full bg-emerald-500'
+                            }`} />
+                        </div>
+                        <span className={`text-[10px] font-bold ${pwdStrength.score === 1 ? 'text-red-500' :
+                          pwdStrength.score === 2 ? 'text-amber-500' :
+                            'text-emerald-600'
+                          }`}>
+                          {pwdStrength.text}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
+                      Подтверждение нового пароля *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={authConfirmPassword}
+                        onChange={(e) => setAuthConfirmPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        className="w-full p-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-600/50 text-sm text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-transparent border-0 p-1 cursor-pointer flex items-center justify-center"
+                        title={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {authConfirmPassword && authPassword !== authConfirmPassword && (
+                      <span className="text-[10px] font-bold text-red-500 mt-1 block">
+                        Пароли не совпадают
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -470,7 +561,11 @@ export default function AuthModal({
             ) : authTab === 'register' ? (
               'Зарегистрироваться'
             ) : authTab === 'forgot' ? (
-              'Получить код восстановления'
+              'Отправить код восстановления'
+            ) : authTab === 'reset-code' ? (
+              'Подтвердить код'
+            ) : authTab === 'reset-password' || authTab === 'reset' ? (
+              'Сохранить новый пароль'
             ) : authTab === 'register-confirm' ? (
               'Подтвердить и завершить регистрацию'
             ) : (
@@ -479,7 +574,7 @@ export default function AuthModal({
           </button>
 
           {/* Go Back buttons for recovery flows */}
-          {(authTab === 'forgot' || authTab === 'reset' || authTab === 'register-confirm') && (
+          {(authTab === 'forgot' || authTab === 'reset-code' || authTab === 'reset-password' || authTab === 'reset' || authTab === 'register-confirm') && (
             <div className="text-center pt-2">
               <button
                 type="button"

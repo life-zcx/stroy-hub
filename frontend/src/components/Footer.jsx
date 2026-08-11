@@ -36,12 +36,12 @@ export default function Footer({
                 <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="98" height="44" className="h-11 w-auto object-contain brightness-0 invert" />
               </Link>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-xs">
+            <p className="text-xs text-slate-300 leading-relaxed max-w-xs font-medium">
               TORMAG.KZ — крупнейший строительный маркетплейс Казахстана. Всё для качественного строительства, ремонта и благоустройства вашего дома напрямую от дистрибьюторов.
             </p>
             <div className="flex items-center gap-2 pt-2 border-t border-slate-800/40">
-              <ShieldCheck className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
-              <span className="text-slate-300 text-xs font-bold">Проверенные поставщики & Гарантия</span>
+              <ShieldCheck className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
+              <span className="text-slate-200 text-xs font-bold">Проверенные поставщики & Гарантия</span>
             </div>
           </div>
 

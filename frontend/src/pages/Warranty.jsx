@@ -33,10 +33,10 @@ export default function Warranty() {
         </svg>
 
         <div className="relative z-10 space-y-3 max-w-2xl">
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white text-shade-hero">
             Гарантия качества
           </h1>
-          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+          <p className="text-base md:text-lg text-slate-200 font-medium leading-relaxed text-shade-sm">
             Гарантийные обязательства, сертификация соответствия и правила возврата материалов на платформе Tormag
           </p>
         </div>

@@ -78,18 +78,18 @@ export default function ProductCard({
       {/* ── Badges ── */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 pointer-events-none">
         {product.isHit && (
-          <span className="bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide flex items-center gap-1 shadow-sm">
-            <Zap className="h-2.5 w-2.5 fill-current" /> Хит
+          <span className="bg-red-500 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wide flex items-center gap-1 shadow-sm">
+            <Zap className="h-3 w-3 fill-current" /> Хит
           </span>
         )}
-        {product.oldPrice && (
-          <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-sm">
-            −{formatPrice(product.oldPrice - displayPrice)}
+        {product.oldPrice && product.oldPrice > displayPrice && (
+          <span className="bg-blue-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wide shadow-sm">
+            −{Math.round((1 - displayPrice / product.oldPrice) * 100)}%
           </span>
         )}
         {product.activePromotion && (
-          <span className="bg-blue-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wide shadow-2xs flex items-center gap-1">
-            <Tag className="h-2.5 w-2.5 fill-current shrink-0" />
+          <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg uppercase tracking-wide shadow-sm flex items-center gap-1">
+            <Tag className="h-3 w-3 fill-current shrink-0" />
             <span>{product.activePromotion.badgeText || product.activePromotion.title}</span>
           </span>
         )}
@@ -101,10 +101,10 @@ export default function ProductCard({
           e.stopPropagation();
           onToggleFavorite?.(product);
         }}
-        className={`absolute top-3 right-3 z-20 p-2 rounded-xl transition-all duration-300 shadow-sm ${
+        className={`absolute top-3 right-3 z-20 p-2 rounded-xl transition-all duration-300 shadow-md border border-slate-200/80 ${
           isFavorite 
-            ? 'bg-rose-500 text-white scale-110' 
-            : 'bg-white/80 backdrop-blur-sm text-slate-400 hover:text-rose-500 hover:bg-white'
+            ? 'bg-rose-500 text-white scale-110 shadow-rose-500/30 border-rose-600' 
+            : 'bg-white/90 backdrop-blur-md text-slate-600 hover:text-rose-500 hover:bg-white'
         }`}
       >
         <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
@@ -140,12 +140,12 @@ export default function ProductCard({
         {/* ── Content ── */}
         <div className="flex flex-col flex-1 p-4 pb-0 min-w-0 w-full">
           {/* Rating row */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
-            <span className="flex items-center text-emerald-500 font-semibold">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-2 font-medium">
+            <span className="flex items-center text-emerald-600 font-bold">
               <Zap className="h-3 w-3 fill-current mr-0.5" />
               {product.rating && product.rating > 0 ? product.rating : '0.0'}
             </span>
-            <span className="text-slate-200">•</span>
+            <span className="text-slate-300">•</span>
             <span>
               {product.reviews && product.reviews > 0
                 ? `${product.reviews} ${product.reviews % 10 === 1 && product.reviews % 100 !== 11 ? 'отзыв' : [2,3,4].includes(product.reviews % 10) && ![12,13,14].includes(product.reviews % 100) ? 'отзыва' : 'отзывов'}`
@@ -159,24 +159,27 @@ export default function ProductCard({
           </h3>
 
           {/* Price — always at bottom */}
-          <div className="mb-3 space-y-1">
+          <div className="mb-3 space-y-1.5">
             {product.oldPrice ? (
-              <div className="text-xs text-slate-400 line-through leading-none">{formatPrice(product.oldPrice)}</div>
+              <div className="text-xs text-slate-500 line-through leading-none font-medium">{formatPrice(product.oldPrice)}</div>
             ) : (
               <div className="text-xs leading-none invisible select-none">-</div>
             )}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-baseline gap-1 text-xl font-extrabold text-slate-900 leading-none">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-xl font-extrabold text-slate-900 leading-none">
                 {formatPrice(displayPrice)}
-                <span className="text-xs font-normal text-slate-400">/ шт</span>
-              </div>
+              </span>
+              <span className="text-xs font-semibold text-slate-600">/ шт</span>
               {firstOption && (
                 <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-200 leading-none">
                   {firstOption.value}
                 </span>
               )}
-              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md inline-flex items-center gap-0.5 border border-emerald-100/50 leading-none" title="Бонусы за покупку">
-                +{formatPrice(Math.round(displayPrice * (product.cashbackPercent ?? 3) / 100))}
+            </div>
+            <div>
+              <span className="bg-[#e6f7ef] text-[#00a046] text-[10px] font-black px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-[#b2e6ce] leading-none" title="Бонусы за покупку">
+                <span className="font-extrabold text-[#00a046]">+{formatPrice(Math.round(displayPrice * (product.cashbackPercent ?? 3) / 100))}</span>
+                <span className="w-3.5 h-3.5 rounded-full bg-[#00a046] text-white font-black text-[9px] flex items-center justify-center shrink-0 leading-none">Б</span>
               </span>
             </div>
           </div>
@@ -187,12 +190,12 @@ export default function ProductCard({
       <div className="p-4 pt-2">
         {inCart ? (
           /* ── Степпер когда товар в корзине ── */
-          <div className="flex items-center justify-between bg-slate-900 rounded-xl h-[44px] px-1 shadow-md overflow-hidden">
+          <div className="flex items-center justify-between bg-blue-600 rounded-xl h-[44px] px-1 shadow-md shadow-blue-600/20 overflow-hidden">
             <button
               type="button"
               onClick={handleDecrement}
               disabled={loading}
-              className="w-10 h-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
+              className="w-10 h-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
             >
               <Minus className="h-4 w-4" strokeWidth={2.5} />
             </button>
@@ -200,18 +203,18 @@ export default function ProductCard({
             <button
               type="button"
               onClick={() => onNavigate?.('cart')}
-              className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold text-sm hover:bg-white/5 transition-all rounded-lg"
+              className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold text-sm hover:bg-white/10 transition-all rounded-lg"
             >
-              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-white" />
               <span>{cartQuantity}</span>
-              <span className="text-white/50 text-[10px] font-normal">шт</span>
+              <span className="text-white/70 text-[10px] font-normal">шт</span>
             </button>
 
             <button
               type="button"
               onClick={handleIncrement}
               disabled={loading}
-              className="w-10 h-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
+              className="w-10 h-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" strokeWidth={2.5} />
             </button>
@@ -221,7 +224,7 @@ export default function ProductCard({
           <button
             onClick={handleAdd}
             disabled={loading}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold h-[44px] rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md active:scale-95 text-xs uppercase tracking-wider disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold h-[44px] rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 active:scale-95 text-xs uppercase tracking-wider disabled:opacity-60 cursor-pointer"
           >
             <ShoppingCart className="h-4 w-4 shrink-0" />
             <span>В корзину</span>

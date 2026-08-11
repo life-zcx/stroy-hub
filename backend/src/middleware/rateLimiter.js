@@ -2,7 +2,7 @@ import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 
 function getClientIp(req) {
-  let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  let ip = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress;
   if (Array.isArray(ip)) {
     ip = ip[0];
   } else if (typeof ip === 'string') {
@@ -125,10 +125,17 @@ export const passwordResetRateLimiter = async (req, res, next) => {
 
 
 
-// Global rate limiter: 200 requests per minute per IP
+// Global rate limiter
 // Applied to all API routes as a first line of defence against bots and abuse.
 export const globalRateLimiter = async (req, res, next) => {
+  if (process.env.DISABLE_RATE_LIMIT === 'true') {
+    return next();
+  }
+
   const ip = getClientIp(req);
+  const isDev = process.env.NODE_ENV !== 'production';
+  const defaultLimit = isDev ? 5000 : 300;
+  const maxLimit = parseInt(process.env.GLOBAL_RATE_LIMIT, 10) || defaultLimit;
 
   try {
     const key = `rate-limit:global:${ip}`;
@@ -138,8 +145,8 @@ export const globalRateLimiter = async (req, res, next) => {
       await redisClient.expire(key, 60);
     }
 
-    if (count > 200) {
-      logger.warn(`[Global Rate Limit] IP ${ip} exceeded 200 req/min`);
+    if (count > maxLimit) {
+      logger.warn(`[Global Rate Limit] IP ${ip} exceeded ${maxLimit} req/min`);
       return res.status(429).json({
         error: 'Слишком много запросов. Пожалуйста, попробуйте через минуту.',
       });

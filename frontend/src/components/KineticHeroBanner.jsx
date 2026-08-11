@@ -229,7 +229,7 @@ export default function KineticHeroBanner({
                     Прямые поставки строительных материалов <span className="text-blue-600 font-extrabold">от ведущих дистрибьюторов</span>
                   </p>
 
-                  <p ref={textRef} className="text-slate-500 text-xs sm:text-sm leading-relaxed font-normal max-w-xl">
+                  <p ref={textRef} className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium max-w-xl">
                     Комплексное снабжение строительных объектов, гарантированное качество и прозрачные оптовые условия для вашего бизнеса.
                   </p>
                 </div>
@@ -247,10 +247,10 @@ export default function KineticHeroBanner({
                 <Link
                   href={getPageHref('estimate')}
                   onClick={() => onNavigate('estimate')}
-                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 text-slate-700 font-bold rounded-2xl transition-colors duration-200 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
+                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-bold rounded-2xl transition-colors duration-200 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer shadow-xs"
                 >
                   <span>Заказ по смете</span>
-                  <ArrowRight className="h-4.5 w-4.5 text-slate-400" />
+                  <ArrowRight className="h-4.5 w-4.5 text-slate-600" />
                 </Link>
               </div>
             </div>
@@ -396,10 +396,10 @@ export default function KineticHeroBanner({
                   alt={currentPromo.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/10 group-hover/promo:bg-black/20 transition-colors duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent group-hover/promo:from-slate-950/90 transition-colors duration-300" />
 
                 <div ref={ctaRef} className="absolute bottom-10 left-6 sm:bottom-10 sm:left-10 z-20">
-                  <span className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg backdrop-blur-sm text-xs uppercase tracking-wider transition-colors duration-300">
+                  <span className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-900/40 backdrop-blur-sm text-xs uppercase tracking-wider transition-colors duration-300 text-shade-sm">
                     <span>Открыть акцию</span>
                     <ArrowRight className="h-4.5 w-4.5" />
                   </span>
@@ -511,7 +511,7 @@ export default function KineticHeroBanner({
               className={`h-2 rounded-full transition-all duration-500 ${
                 currentSlide === idx
                   ? 'w-7 bg-slate-900'
-                  : 'w-2 bg-slate-300/80 hover:bg-slate-400'
+                  : 'w-2 bg-slate-900/35 hover:bg-slate-900/60'
               }`}
             />
           </button>

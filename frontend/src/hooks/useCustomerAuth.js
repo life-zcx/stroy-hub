@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getProfile, login, logout, register, forgotPassword, resetPassword, sendRegisterCode } from '../services/api';
+import { getProfile, login, logout, register, forgotPassword, verifyResetCode, resetPassword, sendRegisterCode } from '../services/api';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import { getAnalyticsSessionId } from '../utils/analytics';
 
@@ -9,6 +9,7 @@ export default function useCustomerAuth(showToast) {
   const [authTab, setAuthTab] = useState('login'); // login, register, forgot, reset, register-confirm
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authAddress, setAuthAddress] = useState('');
@@ -76,7 +77,7 @@ export default function useCustomerAuth(showToast) {
     setAuthLoading(true);
     setAuthError(null);
     try {
-      if (authTab === 'reset') {
+      if (authTab === 'reset-code' || authTab === 'reset-password' || authTab === 'reset') {
         await forgotPassword(authEmail);
         showToast?.('✉️ Код подтверждения отправлен повторно!');
         setResendCooldown(60);
@@ -123,6 +124,7 @@ export default function useCustomerAuth(showToast) {
   const resetAuthForm = () => {
     setAuthEmail('');
     setAuthPassword('');
+    setAuthConfirmPassword('');
     setAuthName('');
     setAuthPhone('');
     setAuthAddress('');
@@ -235,16 +237,40 @@ export default function useCustomerAuth(showToast) {
         setAuthModalOpen(false);
         resetAuthForm();
       } else if (authTab === 'forgot') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(authEmail)) {
+          setAuthError('Неверный формат электронной почты');
+          return;
+        }
         await forgotPassword(authEmail);
         showToast?.('✉️ Код подтверждения отправлен на вашу почту!');
         setResendCooldown(60);
-        setAuthTab('reset');
-      } else if (authTab === 'reset') {
+        setAuthTab('reset-code');
+      } else if (authTab === 'reset-code') {
+        const cleanCode = authResetCode.replace(/\D/g, '');
+        if (!cleanCode || cleanCode.length !== 6) {
+          setAuthError('Укажите 6-значный код подтверждения из письма');
+          return;
+        }
+        await verifyResetCode(authEmail, cleanCode);
+        setAuthTab('reset-password');
+      } else if (authTab === 'reset-password' || authTab === 'reset') {
+        if (authPassword.length < 6) {
+          setAuthError('Новый пароль должен содержать не менее 6 символов');
+          return;
+        }
+        if (!authConfirmPassword) {
+          setAuthError('Пожалуйста, подтвердите новый пароль');
+          return;
+        }
+        if (authPassword !== authConfirmPassword) {
+          setAuthError('Пароли не совпадают');
+          return;
+        }
         await resetPassword(authEmail, authResetCode, authPassword);
         showToast?.('🔑 Пароль успешно изменен! Войдите с новым паролем.');
         setAuthTab('login');
-        setAuthPassword('');
-        setAuthResetCode('');
+        resetAuthForm();
       }
     } catch (err) {
       console.error(err);
@@ -276,6 +302,8 @@ export default function useCustomerAuth(showToast) {
     setAuthEmail,
     authPassword,
     setAuthPassword,
+    authConfirmPassword,
+    setAuthConfirmPassword,
     authName,
     setAuthName,
     authPhone,

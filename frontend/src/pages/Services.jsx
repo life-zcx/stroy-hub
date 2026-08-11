@@ -101,11 +101,11 @@ export default function Services({ onOpenCallback }) {
         </svg>
 
         <div className="relative z-10 space-y-3 max-w-2xl">
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
-            Наши услуги
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white text-shade-hero">
+            Услуги и сервис TORMAG
           </h1>
-          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
-            Профессиональные решения для застройщиков, прорабов и частных клиентов от строительной платформы Tormag
+          <p className="text-base md:text-lg text-slate-200 font-medium leading-relaxed text-shade-sm">
+            Полный цикл обслуживания: от индивидуального тонирования красок до объектного снабжения под ключ
           </p>
         </div>
       </div>

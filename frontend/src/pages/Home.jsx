@@ -417,7 +417,7 @@ export default function Home({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="text-left space-y-2">
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные категории</h2>
-            <p className="text-slate-500 text-sm">Самые востребованные строительные материалы этого сезона</p>
+            <p className="text-slate-600 font-semibold text-sm">Самые востребованные строительные материалы этого сезона</p>
           </div>
           <Link
             href={getPageHref('catalog')}
@@ -460,7 +460,7 @@ export default function Home({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="text-left space-y-2">
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные товары</h2>
-            <p className="text-slate-500 text-sm">Хиты продаж и востребованные строительные материалы</p>
+            <p className="text-slate-600 font-semibold text-sm">Хиты продаж и востребованные строительные материалы</p>
           </div>
           <Link
             href={getPageHref('catalog')}
@@ -497,7 +497,7 @@ export default function Home({
       <section className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Почему выбирают TORMAG?</h2>
-          <p className="text-slate-500 text-sm">Мы меняем подход к закупке строительных материалов в Казахстане</p>
+          <p className="text-slate-700 font-bold text-sm">Мы меняем подход к закупке строительных материалов в Казахстане</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -507,7 +507,7 @@ export default function Home({
               <Award className="h-6 w-6" strokeWidth={2.5} />
             </div>
             <h3 className="font-extrabold text-slate-950 text-base">Цены дистрибьюторов</h3>
-            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
+            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
               Вы заказываете товары напрямую с официальных региональных складов брендов, исключая наценки розничных магазинов.
             </p>
           </div>
@@ -517,7 +517,7 @@ export default function Home({
               <ShieldCheck className="h-6 w-6" strokeWidth={2.5} />
             </div>
             <h3 className="font-extrabold text-slate-950 text-base">100% Гарантия бренда</h3>
-            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
+            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
               Все поставщики проходят жесткую модерацию. Предоставляем сертификаты соответствия на каждую партию товара.
             </p>
           </div>
@@ -527,7 +527,7 @@ export default function Home({
               <Truck className="h-6 w-6" strokeWidth={2.5} />
             </div>
             <h3 className="font-extrabold text-slate-950 text-base">Быстрая доставка</h3>
-            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
+            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
               Собственная курьерская сеть и грузовой транспорт гарантируют доставку в течение 24 часов с момента подтверждения.
             </p>
           </div>
@@ -537,7 +537,7 @@ export default function Home({
               <Building2 className="h-6 w-6" strokeWidth={2.5} />
             </div>
             <h3 className="font-extrabold text-slate-950 text-base">Удобно для бизнеса</h3>
-            <p className="text-slate-700 text-xs font-semibold leading-relaxed">
+            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
               Полный пакет закрывающих документов для ТОО и ИП. Работаем с НДС, предоставляем отсрочку платежа постоянным клиентам.
             </p>
           </div>
@@ -550,7 +550,7 @@ export default function Home({
       <section className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-600/20 rounded-[2.5rem] p-8 md:p-12 text-left flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
         <div className="space-y-4 max-w-xl relative z-10">
           <h3 className="text-2xl md:text-3xl font-extrabold text-slate-950 font-outfit">Затрудняетесь с выбором материалов?</h3>
-          <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+          <p className="text-slate-800 text-xs md:text-sm leading-relaxed font-semibold">
             Воспользуйтесь нашим интерактивным умным калькулятором. Укажите тип ваших строительных или отделочных работ, выберите подходящий бюджетный уровень — и система мгновенно сформирует идеальный комплект товаров со складов в Алматы.
           </p>
         </div>
@@ -568,7 +568,7 @@ export default function Home({
       <section className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Официальные бренды-партнеры</h2>
-          <p className="text-slate-500 text-sm">Материалы от ведущих казахстанских и мировых заводов-производителей</p>
+          <p className="text-slate-600 font-semibold text-sm">Материалы от ведущих казахстанских и мировых заводов-производителей</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">

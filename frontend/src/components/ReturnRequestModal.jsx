@@ -413,7 +413,7 @@ export default function ReturnRequestModal({
             <button
               type="submit"
               disabled={loading || Object.keys(selectedProducts).length === 0}
-              className="w-full bg-[#525252] hover:bg-slate-900 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm flex items-center justify-center gap-2 border-0 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <Clock className="h-5 w-5 animate-spin" />

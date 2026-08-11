@@ -1025,11 +1025,6 @@ export default function ProductPage({
 
         {/* BLOCK 2: Sticky Buy Box (3 cols on lg) */}
         <div className="lg:col-span-3 bg-white border border-slate-100 rounded-3xl shadow-sm p-5 space-y-4 self-start lg:sticky lg:top-4">
-          {/* Guarantee Label */}
-          <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-extrabold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100/50">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>Гарантия низкой цены</span>
-          </div>
 
           {/* Active Promotion Banner */}
           {activePromotion && (
@@ -1074,25 +1069,27 @@ export default function ProductPage({
           )}
 
           {/* Pricing block */}
-          <div>
+          <div className="space-y-1 max-w-full overflow-hidden">
             {showStrikethroughOldPrice && (
-              <div className="text-xs text-slate-400 line-through mb-0.5 font-medium">
+              <div className="text-xs sm:text-sm text-slate-500 line-through font-medium truncate">
                 {formatPrice(totalOldPrice)}
               </div>
             )}
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900 font-outfit">
+            <div className="flex flex-col space-y-0.5 max-w-full">
+              <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-outfit tracking-tight leading-tight break-all max-w-full">
                 {formatPrice(totalMainPrice)}
-              </span>
-              <span className="text-xs text-slate-400 font-semibold">
-                {displayQty > 1 ? `за ${displayQty} шт` : '/ шт'}
-              </span>
+              </div>
+              <div className="text-xs text-slate-500 font-bold pt-0.5">
+                за {displayQty.toLocaleString('ru-RU')} шт
+              </div>
             </div>
 
-            {/* Cashback computation */}
-            <div className="inline-flex items-center gap-1 mt-2 text-[10px] font-black text-emerald-700 bg-emerald-50/50 border border-emerald-100 px-2 py-0.5 rounded-md">
-              <Tag className="h-3 w-3" />
-              <span>+ {formatPrice(Math.round(effectivePrice * (product.cashbackPercent ?? 3) / 100) * displayQty)} бонусов</span>
+            {/* Cashback computation (Kaspi style) */}
+            <div className="pt-1.5 max-w-full overflow-hidden">
+              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-[#00a046] bg-[#e6f7ef] border border-[#b2e6ce] px-3 py-1.5 rounded-xl leading-none max-w-full flex-wrap" title="Бонусы за покупку">
+                <span className="font-extrabold text-[#00a046] break-all">+{formatPrice(Math.round(effectivePrice * (product.cashbackPercent ?? 3) / 100) * displayQty)}</span>
+                <span className="w-4 h-4 rounded-full bg-[#00a046] text-white font-black text-[10px] flex items-center justify-center shrink-0 leading-none">Б</span>
+              </span>
             </div>
           </div>
 
@@ -1101,16 +1098,11 @@ export default function ProductPage({
             const inCart = cartQty > 0;
 
             if (inCart) {
-              // ─── Товар уже в корзине: степпер + кнопка "Перейти" ───
+              // ─── Товар уже в корзине: степпер с РЕДАКТИРУЕМЫМ ИНПУТОМ + кнопка "Перейти" ───
               return (
                 <div className="space-y-2">
-                  {/* Если есть вариант — показываем какой именно есть в корзине */}
-                  {cartItemForProduct?.selectedOption && (
-                    <div className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
-                      В корзине: <span className="text-slate-900">{cartItemForProduct.selectedOption}</span>
-                    </div>
-                  )}
-                  {/* Stepper */}
+
+                  {/* Stepper with editable input */}
                   <div className="flex items-center bg-slate-900 rounded-xl h-12 px-1 justify-between shadow-md">
                     <button
                       type="button"
@@ -1119,26 +1111,39 @@ export default function ProductPage({
                         if (cartQty === 1) onUpdateCartQuantity?.(product.id, 0, optToUse);
                         else onUpdateCartQuantity?.(product.id, cartQty - 1, optToUse);
                       }}
-                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer"
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer shrink-0"
                     >
                       −
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate?.('cart')}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-full text-white font-extrabold hover:bg-white/5 rounded-lg transition-all cursor-pointer"
-                    >
+                    
+                    <div className="flex-1 flex items-center justify-center gap-1 h-full px-1 min-w-0 overflow-hidden">
                       <ShoppingCart className="h-4 w-4 text-emerald-400 shrink-0" />
-                      <span className="text-base">{cartQty}</span>
-                      <span className="text-white/40 text-xs font-normal">шт</span>
-                    </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="99999999"
+                        value={cartQty}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          const optToUse = cartItemForProduct?.selectedOption || selectedOption;
+                          if (!isNaN(val) && val > 0) {
+                            onUpdateCartQuantity?.(product.id, Math.min(val, 99999999), optToUse);
+                          } else if (e.target.value === '') {
+                            onUpdateCartQuantity?.(product.id, 1, optToUse);
+                          }
+                        }}
+                        className="w-full max-w-[85px] min-w-0 bg-transparent text-center font-extrabold text-white text-sm sm:text-base focus:outline-none focus:bg-white/15 rounded py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text truncate"
+                      />
+                      <span className="text-white/60 text-xs font-normal shrink-0">шт</span>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => {
                         const optToUse = cartItemForProduct?.selectedOption || selectedOption;
                         onUpdateCartQuantity?.(product.id, cartQty + 1, optToUse);
                       }}
-                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer"
+                      className="w-10 h-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all active:scale-90 text-xl font-bold cursor-pointer shrink-0"
                     >
                       +
                     </button>

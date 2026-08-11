@@ -297,10 +297,10 @@ export default function Storefront({
                   className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700 opacity-90"
                   style={{ backgroundImage: `url(${cat.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=400&auto=format&fit=crop'})` }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent z-0"></div>
+                <div className="absolute inset-0 card-overlay-gradient z-0"></div>
                 
                 <div className="relative z-10 space-y-2">
-                  <h3 className="font-extrabold text-white text-lg sm:text-xl leading-tight font-outfit group-hover:text-emerald-400 transition-colors text-left">{cat.name}</h3>
+                  <h3 className="font-extrabold text-white text-lg sm:text-xl leading-tight font-outfit group-hover:text-emerald-400 transition-colors text-left drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{cat.name}</h3>
                   <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 text-left">
                     Перейти в раздел <ArrowRight className="h-3 w-3" />
                   </div>

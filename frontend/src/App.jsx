@@ -45,7 +45,7 @@ export default function App() {
   });
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
-  const { toast, showToast } = useToast();
+  const { toast, showToast, hideToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
 
   const isCabinetPage = currentPage === 'cabinet' || currentPage.startsWith('cabinet/');
@@ -274,6 +274,8 @@ export default function App() {
         setAuthEmail={auth.setAuthEmail}
         authPassword={auth.authPassword}
         setAuthPassword={auth.setAuthPassword}
+        authConfirmPassword={auth.authConfirmPassword}
+        setAuthConfirmPassword={auth.setAuthConfirmPassword}
         authName={auth.authName}
         setAuthName={auth.setAuthName}
         authPhone={auth.authPhone}
@@ -344,7 +346,7 @@ export default function App() {
         cartItemsCount={cart.cartItemsCount}
       />
       <PWAInstallPrompt showToast={showToast} />
-      <Toast toast={toast} />
+      <Toast toast={toast} onClose={hideToast} />
     </div>
   );
 }

@@ -139,8 +139,7 @@ export default function useCart(showToast, customer) {
         return [...prev, { ...product, selectedOption: selectedOpt, quantity: quantityToAdd }];
       });
     }
-    const optionNotice = selectedOpt ? ` (${selectedOpt})` : '';
-    showToast?.(`«${product.name}»${optionNotice} добавлен в корзину (${quantityToAdd} шт)`);
+    showToast?.('Товар добавлен в корзину');
   };
 
   const handleUpdateQuantity = async (id, val, isAbsolute = false, selectedOption = undefined) => {

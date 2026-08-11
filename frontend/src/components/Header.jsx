@@ -345,7 +345,7 @@ export default function Header({
             <button
               type="button"
               onClick={() => setIsAccessibilityModalOpen(false)}
-              className="flex-1 bg-[#525252] hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-xs text-center"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md text-xs text-center border-0 cursor-pointer"
             >
               Готово
             </button>
@@ -554,9 +554,9 @@ export default function Header({
                 navigateTo('catalog');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'catalog'
+              className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'catalog'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Каталог
@@ -568,9 +568,9 @@ export default function Header({
                 onNavigate('favorites');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'favorites'
+              className={`w-full text-left flex items-center justify-between py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'favorites'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               <span>Избранное</span>
@@ -587,9 +587,9 @@ export default function Header({
                 navigateTo('promotions');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'promotions'
+              className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'promotions'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Акции
@@ -601,9 +601,9 @@ export default function Header({
                 navigateTo('services');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'services'
+              className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'services'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Услуги
@@ -615,9 +615,9 @@ export default function Header({
                 navigateTo('estimate');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'estimate'
+              className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'estimate'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Заказ по смете
@@ -629,9 +629,9 @@ export default function Header({
                 navigateTo('advisor');
                 setIsMobileMenuOpen(false);
               }}
-              className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'advisor'
+              className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'advisor'
                 ? 'bg-emerald-600/10 text-emerald-700'
-                : 'text-slate-500 hover:bg-slate-50'
+                : 'text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Умный подбор
@@ -646,9 +646,9 @@ export default function Header({
                     onNavigate('cabinet');
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cabinet'
+                  className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'cabinet'
                     ? 'bg-blue-600/10 text-blue-700'
-                    : 'text-slate-500 hover:bg-slate-50'
+                    : 'text-slate-900 hover:bg-slate-50'
                     }`}
                 >
                   Личный кабинет
@@ -660,9 +660,9 @@ export default function Header({
                       onNavigate('cashback');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full text-left flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === 'cashback'
+                    className={`w-full text-left flex items-center justify-between py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === 'cashback'
                       ? 'bg-emerald-600/10 text-emerald-700'
-                      : 'text-slate-500 hover:bg-slate-50'
+                      : 'text-slate-900 hover:bg-slate-50'
                       }`}
                   >
                     <span>Мой кешбэк</span>
@@ -676,7 +676,7 @@ export default function Header({
             )}
 
             {/* Informational & Help links */}
-            <div className="border-t border-slate-100 my-1 pt-1" />
+            <div className="border-t border-slate-200 my-2 pt-2" />
 
             {[
               { id: 'about', name: 'О компании' },
@@ -695,9 +695,9 @@ export default function Header({
                   navigateTo(tab.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full text-left block py-2.5 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${currentPage === tab.id
+                className={`w-full text-left block py-3 px-3 rounded-xl text-xs font-bold transition-all uppercase tracking-wider border-b border-slate-100 ${currentPage === tab.id
                   ? 'bg-emerald-600/10 text-emerald-700'
-                  : 'text-slate-500 hover:bg-slate-50'
+                  : 'text-slate-900 hover:bg-slate-50'
                   }`}
               >
                 {tab.name}
@@ -875,9 +875,9 @@ export default function Header({
                     </div>
                     <button
                       onClick={onOpenCallback}
-                      className="w-full bg-[#525252] hover:bg-slate-900 text-white font-bold py-3 rounded-2xl transition-all shadow-lg text-xs"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-blue-600/25 text-xs border-0 cursor-pointer"
                     >
-                      Заказать звонок
+                      Перезвоните мне
                     </button>
                   </div>
 
@@ -920,10 +920,11 @@ export default function Header({
               </div>
             </div>
 
-            {/* Header direct call button */}
+            {/* Header direct call link */}
             <button
+              type="button"
               onClick={onOpenCallback}
-              className="bg-blue-600/10 hover:bg-blue-600 border border-blue-600/20 hover:border-blue-600 text-blue-400 hover:text-white px-4 py-1.5 rounded-full text-[11px] font-bold transition-all"
+              className="text-xs font-semibold text-blue-400 hover:text-white transition-colors underline-offset-4 hover:underline border-0 bg-transparent cursor-pointer p-0"
             >
               Заказать звонок
             </button>
@@ -973,7 +974,7 @@ export default function Header({
                   onChange={handleSearchChange}
                   onFocus={() => setIsSearchFocused(true)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600/50 text-xs text-slate-900 transition-all placeholder-slate-400 h-[42px]"
+                  className="w-full pl-4 pr-12 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600/50 text-xs text-slate-900 transition-all placeholder-slate-500 placeholder:text-slate-500 h-[42px]"
                 />
                 <button
                   type="submit"
