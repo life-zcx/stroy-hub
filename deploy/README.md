@@ -103,33 +103,61 @@
 
 ---
 
-## 🚀 4. Инструкция по обновлению сервера
+## 🛠️ 4. Первичная настройка чистого VPS (`setup_vps.sh`)
 
-### ⚡ Быстрый авто-деплой (Рекомендуемый способ)
-
-Для обновления всех компонентов сервера запустите скрипт [`deploy/deploy.sh`](file:///c:/Users/lgs03/Desktop/project/stroy-hub/deploy/deploy.sh):
+Для автоматической подготовки нового сервера Ubuntu 22.04 / 24.04 запустите:
 
 ```bash
+git clone https://github.com/life-zcx/stroy-hub.git ~/stroy-hub
 cd ~/stroy-hub
-chmod +x deploy/deploy.sh
-./deploy/deploy.sh
+sudo bash deploy/setup_vps.sh
 ```
+
+**Что выполняет скрипт `setup_vps.sh`:**
+1. Устанавливает пакеты `curl`, `git`, `ufw`, `htop`, `openssl`, `jq`.
+2. Устанавливает Docker & Docker Compose с настройкой ротации логов (макс. 10МБ на файл).
+3. Устанавливает и запускает веб-сервер **Caddy**.
+4. Настраивает защитный экран **UFW** (открывает порты `22`, `80`, `443`, `25`, `465`, `587`, `993`).
+5. Генерирует криптографически стойкие ключи `JWT_SECRET` и `POSTGRES_PASSWORD` в `.env.production`.
+6. Генерирует SSH-ключ `github_actions_tormag` для авто-деплоя через GitHub Actions.
 
 ---
 
-### 📝 Что именно происходит при выполнении `deploy.sh`:
+## 🚀 5. Бесшовный авто-деплой (Continuous Deployment)
+
+Каждый `git push origin main` автоматически вызывают пайплайн `.github/workflows/build-push.yml`:
+
+1. **Сборка Docker-образов:** Сборка и отправка в GitHub Container Registry (GHCR).
+2. **SSH-деплой на VPS:** Подключение к серверу и запуск `deploy/deploy.sh`.
+3. **Telegram-уведомление:**
+   * 🚀 При успешном деплое: отправляет короткий отчет в Telegram (хеш коммита, автор, сообщение).
+   * 🚨 При сбое: отправляет аварйный алерт в Telegram с логами ошибки.
+
+### 🔑 Настройка GitHub Secrets (для работы Auto-CD):
+
+Перейдите в **Settings -> Secrets and variables -> Actions** в вашем GitHub репозитории и добавьте:
+
+| Имя Secret | Значение |
+| :--- | :--- |
+| **`SSH_HOST`** | IP-адрес или домен вашего VPS сервера |
+| **`SSH_USERNAME`** | `root` (или ваше имя пользователя) |
+| **`SSH_KEY`** | Содержимое приватного ключа (сгенерировано в `setup_vps.sh`) |
+| **`SSH_PORT`** | `22` |
+| **`TELEGRAM_BOT_TOKEN`** | Токен вашего Telegram-бота |
+| **`TELEGRAM_ADMIN_CHAT_ID`** | ID чата администратора |
+
+---
+
+### 📝 Что происходит при выполнении `deploy.sh`:
 
 1. **`git pull origin main`** — скачивает свежий код из репозитория.
-2. **Синхронизация Caddyfile:**
-   ```bash
-   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
-   sudo systemctl reload caddy
-   ```
-   Обновляет маршруты хостового прокси-сервера Caddy без простоя.
-3. **`docker compose --env-file .env.production -f docker-compose.prod.yml pull`** — скачивает свежесобранные Docker-образы из GHCR (`backend`, `ai-service`, `gateway`).
-4. **`docker compose ... run --rm backend npx prisma migrate deploy`** — безопасно применяет новые миграции структуры БД PostgreSQL.
-5. **`docker compose ... up -d`** — перезапускает обновившиеся контейнеры.
-6. **`docker image prune -f`** — очищает старые кэши и висячие Docker-образы, освобождая место на сервере.
+2. **Синхронизация Caddyfile:** обновляет маршруты Caddy без простоя.
+3. **`docker compose pull`** — скачивает свежие Docker-образы из GHCR.
+4. **`docker compose run --rm backend npx prisma migrate deploy`** — безопасно применяет миграции PostgreSQL.
+5. **`docker compose up -d`** — перезапускает обновившиеся контейнеры.
+6. **`docker image prune -f`** — очищает устаревшие Docker-образы.
+7. **Telegram Alert:** отправляет статус релиза с хоста.
+
 
 ---
 

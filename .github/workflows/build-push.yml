@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build, Push and Deploy (CI/CD)
 
 on:
   push:
@@ -12,6 +12,7 @@ env:
 
 jobs:
   build-and-push:
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,3 +64,46 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/${{ env.REPOSITORY_LC }}/gateway:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-to-vps:
+    name: Continuous Deployment to Production VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute deployment script over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        if: ${{ secrets.SSH_HOST != '' }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME || 'root' }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ~/stroy-hub || cd /var/www/stroy-hub || cd ./
+            chmod +x deploy/deploy.sh
+            ./deploy/deploy.sh
+
+      - name: Send Telegram Success Notification
+        if: ${{ success() && secrets.TELEGRAM_BOT_TOKEN != '' }}
+        run: |
+          CHAT_ID="${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}"
+          [ -z "$CHAT_ID" ] && CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}"
+          COMMIT_SHORT="${GITHUB_SHA:0:7}"
+          MESSAGE="🚀 *[CI/CD GitHub Actions]* %0A%0A✅ *Успешный деплой Tormag!*%0A📌 *Коммит:* \`${COMMIT_SHORT}\`%0A👤 *Автор:* ${{ github.actor }}%0A💬 *Сообщение:* ${{ github.event.head_commit.message }}"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "parse_mode=Markdown" \
+            -d "text=${MESSAGE}"
+
+      - name: Send Telegram Failure Notification
+        if: ${{ failure() && secrets.TELEGRAM_BOT_TOKEN != '' }}
+        run: |
+          CHAT_ID="${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}"
+          [ -z "$CHAT_ID" ] && CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}"
+          COMMIT_SHORT="${GITHUB_SHA:0:7}"
+          MESSAGE="🚨 *[CI/CD ERROR]* %0A%0A❌ *Сбой авто-деплоя Tormag!*%0A📌 *Коммит:* \`${COMMIT_SHORT}\`%0A👤 *Автор:* ${{ github.actor }}%0A⚠️ Проверьте логи сборки на GitHub Actions!"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "parse_mode=Markdown" \
+            -d "text=${MESSAGE}"
+
