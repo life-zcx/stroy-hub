@@ -341,6 +341,7 @@ const handleCommand = async (chatId, text) => {
 
   if (cleanText === '/help') {
     const helpMsg = `🛠️ *Доступные команды Telegram-бота:*\n\n` +
+      `🚀 \`/deploy\` — **Запустить обновление сервера до последней версии**\n` +
       `🖥️ /status — Показать параметры VPS (CPU, RAM, диск, аптайм)\n` +
       `📊 /db — Статус СУБД Postgres и счетчики таблиц\n` +
       `🧹 \`/db_optimize\` — Оптимизация БД (VACUUM ANALYZE)\n` +
@@ -510,6 +511,43 @@ const handleCommand = async (chatId, text) => {
       // Success alerts are sent by yandexBackup.js automatically!
     } catch (error) {
       await sendMsg(chatId, `❌ *Ошибка при ручном бэкапе:* \`${error.message}\``);
+    }
+    return;
+  }
+
+  if (cleanText === '/deploy') {
+    await sendMsg(chatId, `⏳ *Запускаю деплой обновления на сервере Tormag...*\n\nОтправляю сигнал в GitHub Actions для выполнения SSH-деплоя.`);
+    try {
+      const ghToken = process.env.GITHUB_TOKEN || process.env.GH_PAT;
+      const repo = process.env.GITHUB_REPOSITORY || 'life-zcx/stroy-hub';
+      if (ghToken) {
+        const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/build-push.yml/dispatches`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${ghToken}`,
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Tormag-Telegram-Bot'
+          },
+          body: JSON.stringify({ ref: 'main' }),
+        });
+        if (res.ok || res.status === 204) {
+          await sendMsg(chatId, `🟢 *Сигнал деплоя успешно отправлен!*%0A%0AGitHub Actions выполняет деплой на VPS. По окончании вы получите итоговый отчет.`);
+        } else {
+          const errText = await res.text().catch(() => '');
+          await sendMsg(chatId, `⚠️ *GitHub API ответил:* \`${errText.slice(0, 150)}\``);
+        }
+      } else {
+        // Fallback: local script execution
+        exec('bash /app/deploy/deploy.sh || bash deploy/deploy.sh', (error, stdout, stderr) => {
+          if (error) {
+            sendMsg(chatId, `🔴 *Ошибка при запуске deploy.sh:* \`${error.message}\``);
+          } else {
+            sendMsg(chatId, `🟢 *Деплой успешно запущен!*`);
+          }
+        });
+      }
+    } catch (err) {
+      await sendMsg(chatId, `🔴 *Сбой выполнения команды /deploy:* \`${err.message}\``);
     }
     return;
   }
