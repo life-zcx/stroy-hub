@@ -112,16 +112,32 @@ export default function Storefront({
   }, [isMobileFiltersOpen]);
 
 
-  const processedProducts = useMemo(() => {
-    return products;
+  const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+
+  // Dynamically aggregate brands/suppliers from products
+  const availableSuppliers = useMemo(() => {
+    const map = new Map();
+    products.forEach(p => {
+      const sName = p.supplier?.name;
+      if (sName) {
+        map.set(sName, (map.get(sName) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
   }, [products]);
 
-  const activeFilterCount = (onlyHits ? 1 : 0) + (onlyBulk ? 1 : 0) + (priceRange.min > 0 || priceRange.max < 200000 ? 1 : 0);
+  const processedProducts = useMemo(() => {
+    if (selectedSuppliers.length === 0) return products;
+    return products.filter(p => p.supplier?.name && selectedSuppliers.includes(p.supplier.name));
+  }, [products, selectedSuppliers]);
+
+  const activeFilterCount = (onlyHits ? 1 : 0) + (onlyBulk ? 1 : 0) + (priceRange.min > 0 || priceRange.max < 200000 ? 1 : 0) + selectedSuppliers.length;
 
   const resetFilters = () => {
     setPriceRange({ min: 0, max: 200000 });
     setOnlyHits(false);
     setOnlyBulk(false);
+    setSelectedSuppliers([]);
     setSelectedCategory('all');
   };
 
@@ -129,314 +145,371 @@ export default function Storefront({
 
   // ═══ RENDER SIDEBAR CONTENT ═══
   const SidebarContent = ({ isCompact = false }) => (
-    <div className={isCompact ? "space-y-4" : "space-y-8"}>
-      {/* Sort */}
-      <div className="space-y-2">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-[9px]">Сортировка</h3>
+    <div className={isCompact ? "space-y-4 text-left" : "space-y-5 text-left"}>
+      {/* Sort Header */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Сортировка</label>
         <div className="relative group">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="appearance-none w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-900 cursor-pointer outline-none focus:border-emerald-500 transition-all h-[36px]"
+            className="appearance-none w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 cursor-pointer outline-none focus:border-slate-400 focus:bg-white transition-all h-[38px]"
           >
             <option value="popular">По популярности</option>
             <option value="priceAsc">Сначала дешевле</option>
             <option value="priceDesc">Сначала дороже</option>
             <option value="rating">По рейтингу ⭐</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none group-hover:text-slate-700 transition-colors" />
         </div>
       </div>
 
       {/* Category Tree */}
-      <div className="space-y-4 pt-4 border-t border-slate-100">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4" /> Разделы
-        </h3>
-        <div className="flex flex-col gap-1.5 pt-1">
+      <div className="space-y-2 pt-3.5 border-t border-slate-100">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <LayoutGrid className="h-3.5 w-3.5 text-slate-600" /> Разделы
+        </label>
+        <div className="flex flex-col gap-1">
           <Link
             href={getPageHref('catalog')}
             onClick={() => { setSelectedCategory('all'); setIsMobileFiltersOpen(false); }}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${selectedCategory === 'all'
-                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left ${selectedCategory === 'all'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-700 hover:bg-slate-100'
               }`}
           >
-            Все товары
+            <span>Все товары</span>
           </Link>
-          {rootCategories.map(cat => (
-            <div key={cat.id} className="space-y-1">
-              <Link
-                href={getPageHref('catalog', null, cat.slug)}
-                onClick={() => { setSelectedCategory(cat.slug); setIsMobileFiltersOpen(false); }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${selectedCategory === cat.slug || currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id)
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-              >
-                <span>{cat.name}</span>
-                <ChevronRight className={`h-3 w-3 transition-transform ${currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id) ? 'rotate-90' : ''}`} />
-              </Link>
+          {rootCategories.map(cat => {
+            const isActive = selectedCategory === cat.slug || currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id);
+            return (
+              <div key={cat.id} className="space-y-0.5">
+                <Link
+                  href={getPageHref('catalog', null, cat.slug)}
+                  onClick={() => { setSelectedCategory(cat.slug); setIsMobileFiltersOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left ${isActive
+                      ? 'bg-slate-100 text-slate-900 font-bold border border-slate-200/80'
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                >
+                  <span>{cat.name}</span>
+                  <ChevronRight className={`h-3.5 w-3.5 transition-transform text-slate-400 ${isActive ? 'rotate-90 text-slate-800' : ''}`} />
+                </Link>
 
-              {/* Subcategories if root is active/parent */}
-              {currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id) && (
-                <div className="pl-4 pb-1 space-y-1 flex flex-col border-l border-slate-100 ml-3.5 mt-1">
-                  {categories.filter(c => c.parentId === cat.id).map(sub => (
-                    <Link
-                      key={sub.id}
-                      href={getPageHref('catalog', null, sub.slug)}
-                      onClick={() => { setSelectedCategory(sub.slug); setIsMobileFiltersOpen(false); }}
-                      className={`text-[11px] font-bold py-1.5 px-3 rounded-lg text-left transition-colors ${selectedCategory === sub.slug
-                          ? 'text-emerald-600 bg-emerald-50/50'
-                          : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                        }`}
-                    >
-                      {sub.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                {/* Subcategories */}
+                {isActive && (
+                  <div className="pl-3.5 pb-1 space-y-0.5 flex flex-col border-l border-slate-200 ml-3 my-1">
+                    {categories.filter(c => c.parentId === cat.id).map(sub => (
+                      <Link
+                        key={sub.id}
+                        href={getPageHref('catalog', null, sub.slug)}
+                        onClick={() => { setSelectedCategory(sub.slug); setIsMobileFiltersOpen(false); }}
+                        className={`text-[11px] font-semibold py-1 px-2 rounded-lg text-left transition-colors ${selectedCategory === sub.slug
+                            ? 'text-blue-600 font-bold bg-blue-50/50'
+                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                          }`}
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
+      {/* Dynamic Brands List */}
+      {availableSuppliers.length > 0 && (
+        <div className="space-y-2 pt-3.5 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Бренды</label>
+            {selectedSuppliers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedSuppliers([])}
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-700 underline"
+              >
+                Сбросить
+              </button>
+            )}
+          </div>
+          <div className="space-y-1 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
+            {availableSuppliers.map(({ name, count }) => {
+              const isChecked = selectedSuppliers.includes(name);
+              return (
+                <label
+                  key={name}
+                  className="flex items-center justify-between py-1 px-1.5 rounded-lg cursor-pointer transition-colors hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        setSelectedSuppliers(prev => 
+                          isChecked ? prev.filter(s => s !== name) : [...prev, name]
+                        );
+                      }}
+                      className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer shrink-0"
+                    />
+                    <span className={`text-xs truncate ${isChecked ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                      {name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 ml-1">
+                    {count}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Price Range */}
-      <div className="space-y-3 pt-4 border-t border-slate-100">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-[9px]">Цена, ₸</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <span className="text-[9px] text-slate-400 font-bold uppercase ml-1">От</span>
-              <input
-                type="number"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[9px] text-slate-400 font-bold uppercase ml-1">До</span>
-              <input
-                type="number"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) || 200000 }))}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-              />
-            </div>
+      <div className="space-y-2 pt-3.5 border-t border-slate-100">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Цена, ₸</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <span className="text-[9px] text-slate-400 font-bold uppercase ml-0.5">От</span>
+            <input
+              type="number"
+              value={priceRange.min}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))}
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition-all"
+            />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[9px] text-slate-400 font-bold uppercase ml-0.5">До</span>
+            <input
+              type="number"
+              value={priceRange.max}
+              onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) || 200000 }))}
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition-all"
+            />
           </div>
         </div>
       </div>
 
-      {/* Flags */}
-      <div className="space-y-3 pt-4 border-t border-slate-100">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-[9px]">Фильтры</h3>
-        <div className="space-y-1.5">
-          <button
-            onClick={() => setOnlyHits(v => !v)}
-            className={`flex items-center gap-2.5 w-full p-2.5 rounded-xl border transition-all ${onlyHits ? 'bg-red-50 border-red-100 text-red-700 shadow-sm' : 'bg-white border-slate-100 text-slate-600 hover:border-red-100 hover:bg-red-50/30'}`}
-          >
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${onlyHits ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-              <Zap className="h-3.5 w-3.5 fill-current" />
-            </div>
-            <span className="text-[11px] font-extrabold text-left leading-tight">Только ХИТЫ 🔥</span>
-          </button>
+      {/* Clean Checkboxes for Flags */}
+      <div className="space-y-2 pt-3.5 border-t border-slate-100">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Спецпредложения</label>
+        
+        <label className="flex items-center gap-2.5 py-1.5 px-1.5 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+          <input
+            type="checkbox"
+            checked={onlyHits}
+            onChange={() => setOnlyHits(v => !v)}
+            className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer shrink-0"
+          />
+          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+            <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" /> Только ХИТЫ
+          </span>
+        </label>
 
-          <button
-            onClick={() => setOnlyBulk(v => !v)}
-            className={`flex items-center gap-2.5 w-full p-2.5 rounded-xl border transition-all ${onlyBulk ? 'bg-emerald-50 border-emerald-100 text-emerald-700 shadow-sm' : 'bg-white border-slate-100 text-slate-600 hover:border-emerald-100 hover:bg-emerald-50/30'}`}
-          >
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${onlyBulk ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-              <Tag className="h-3.5 w-3.5" />
-            </div>
-            <span className="text-[11px] font-extrabold text-left leading-tight">Оптовая цена %</span>
-          </button>
-        </div>
+        <label className="flex items-center gap-2.5 py-1.5 px-1.5 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+          <input
+            type="checkbox"
+            checked={onlyBulk}
+            onChange={() => setOnlyBulk(v => !v)}
+            className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer shrink-0"
+          />
+          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+            <Tag className="h-3.5 w-3.5 text-emerald-600" /> Товар со скидкой
+          </span>
+        </label>
       </div>
 
-      {/* Reset */}
+      {/* Clean Reset Button */}
       {activeFilterCount > 0 && (
         <button
+          type="button"
           onClick={resetFilters}
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-red-50 hover:bg-red-100 text-red-500 rounded-2xl text-xs font-black transition-all border border-red-100 shadow-sm"
+          className="w-full text-center py-2 px-3 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 hover:text-slate-900 rounded-xl text-xs font-bold transition-all cursor-pointer mt-2"
         >
-          <X className="h-4 w-4" /> Сбросить все
+          Сбросить фильтры ({activeFilterCount})
         </button>
       )}
     </div>
   );
 
-  // If no category selected, show root Tiles view
-  if (selectedCategory === 'all' && !searchQuery && loading === false && products.length > 0 && priceRange.min === 0 && priceRange.max === 200000 && !onlyHits && !onlyBulk) {
-    return (
-      <div className="space-y-12 animate-fade-in-up">
-        {/* Banner or Title can go here */}
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 font-outfit uppercase tracking-tight">Каталог товаров</h2>
-          <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-            Широкий ассортимент качественных строительных материалов от фундамента до крыши. 
-            Покупайте всё необходимое в одном месте с доставкой по городу.
-          </p>
-        </div>
-
-        {rootCategories.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 italic font-semibold text-xs flex flex-col items-center">
-            <RefreshCw className="h-8 w-8 animate-spin mb-4 text-emerald-500" />
-            Разделы каталога загружаются...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {rootCategories.map(cat => (
-              <Link
-                key={cat.id}
-                href={getPageHref('catalog', null, cat.slug)}
-                onClick={() => setSelectedCategory(cat.slug)}
-                className="group cursor-pointer bg-white border border-slate-200/60 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-500 flex flex-col relative h-[280px] justify-end overflow-hidden text-slate-800"
-              >
-                <div 
-                  className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700 opacity-90"
-                  style={{ backgroundImage: `url(${cat.image || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=400&auto=format&fit=crop'})` }}
-                />
-                <div className="absolute inset-0 card-overlay-gradient z-0"></div>
-                
-                <div className="relative z-10 space-y-2">
-                  <h3 className="font-extrabold text-white text-lg sm:text-xl leading-tight font-outfit group-hover:text-emerald-400 transition-colors text-left drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{cat.name}</h3>
-                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 text-left">
-                    Перейти в раздел <ArrowRight className="h-3 w-3" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col lg:flex-row gap-10 animate-fade-in-up font-sans text-slate-800 min-h-screen">
-
+    <div className="flex flex-col lg:flex-row gap-8 animate-fade-in-up font-sans text-slate-800 min-h-screen">
 
       {/* ═══ SIDEBAR (Desktop) ═══ */}
-      <aside className="hidden lg:block w-64 shrink-0 space-y-6 sticky top-24 self-start bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm">
+      <aside className="hidden lg:block w-64 shrink-0 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm h-fit self-start">
         <SidebarContent />
       </aside>
 
       {/* ═══ MAIN CONTENT ═══ */}
       <div className="flex-grow space-y-3">
         
-        {/* Mobile Header / Breadcrumbs */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            {currentCategoryDetail && currentCategoryDetail.breadcrumbs ? (
-              <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
-                <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</Link>
-                <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-                <Link href={getPageHref('catalog')} onClick={() => setSelectedCategory('all')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Каталог</Link>
-                {currentCategoryDetail.breadcrumbs.map((b, i) => (
-                  <React.Fragment key={b.id}>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-                    <Link 
-                      href={getPageHref('catalog', null, b.slug)}
-                      onClick={() => setSelectedCategory(b.slug)} 
-                      className={`hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold ${i === currentCategoryDetail.breadcrumbs.length - 1 ? 'text-slate-900 font-extrabold' : 'text-slate-500'}`}
-                    >
-                      {b.name}
-                    </Link>
-                  </React.Fragment>
-                ))}
-              </nav>
-            ) : (
-              <nav className="flex flex-wrap items-center text-xs font-semibold text-slate-400 font-sans leading-relaxed text-left">
-                <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-500">Главная</Link>
-                <ChevronRight className="h-3.5 w-3.5 text-slate-350 mx-1 shrink-0" />
-                <span className="text-slate-900 font-extrabold">Каталог</span>
-              </nav>
-            )}
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-1 text-xs text-slate-400 text-left">
+          <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-slate-600 cursor-pointer">Главная</Link>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <Link href={getPageHref('catalog')} onClick={() => setSelectedCategory('all')} className="hover:text-slate-600 cursor-pointer">Каталог</Link>
+          {currentCategoryDetail?.breadcrumbs?.map((b, i) => (
+            <React.Fragment key={b.id}>
+              <ChevronRight className="h-3 w-3 shrink-0" />
+              <span className={i === (currentCategoryDetail.breadcrumbs.length - 1) ? 'text-slate-700 font-semibold truncate max-w-[120px]' : 'hover:text-slate-600 cursor-pointer'}>
+                {b.name}
+              </span>
+            </React.Fragment>
+          ))}
+        </nav>
 
-            {/* Mobile Filter Toggle */}
-            <button
-               onClick={() => setIsMobileFiltersOpen(true)}
-               className="lg:hidden flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold"
-            >
-              <Filter className="h-4 w-4" /> Фильтры
-            </button>
-          </div>
+        {/* Page Title */}
+        <h1 className="text-[22px] font-bold text-slate-900 leading-tight text-left -mt-1">
+          {currentCategoryDetail?.name || 'Все товары'}
+        </h1>
 
-          {/* Heading & Toolbar Group */}
-          <div className="text-left">
-             <h1 className="text-3xl font-black text-slate-900 font-outfit uppercase tracking-tight leading-none">
-               {currentCategoryDetail?.name || 'Все товары'}
-             </h1>
-             
-             <div className="flex items-center justify-between gap-4 mt-2 pb-3 border-b border-slate-100 mb-2">
-               <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-slate-400 font-medium tracking-tight">Найдено {total || processedProducts.length} позиций</p>
-                  </div>
-               </div>
-
-               <div className="hidden md:flex items-center gap-3">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Вид:</span>
-                 <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 h-[32px]">
-                   <button
-                     onClick={() => setViewMode('grid')}
-                     className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                   >
-                     <LayoutGrid className="h-3.5 w-3.5" />
-                   </button>
-                   <button
-                     onClick={() => setViewMode('list')}
-                     className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                   >
-                     <List className="h-3.5 w-3.5" />
-                   </button>
-                 </div>
-               </div>
-             </div>
-          </div>
-        </div>
-
-        {/* Categories Pills (Quick access to subcategories) */}
-        {currentCategoryDetail?.children?.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-8">
-            {currentCategoryDetail.children.map(sub => (
+        {/* Category image tile grid — сразу под заголовком */}
+        {(currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
+          <div className="grid grid-cols-2 gap-3">
+            {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map(cat => (
               <Link
-                key={sub.id}
-                href={getPageHref('catalog', null, sub.slug)}
-                onClick={() => setSelectedCategory(sub.slug)}
-                className="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 text-center"
+                key={cat.id}
+                href={getPageHref('catalog', null, cat.slug)}
+                onClick={() => setSelectedCategory(cat.slug)}
+                className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col items-center text-center active:bg-slate-50 transition-all"
               >
-                {sub.name}
+                <div className="w-full h-36 flex items-center justify-center bg-white overflow-hidden">
+                  {cat.image ? (
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <LayoutGrid className="h-8 w-8 text-slate-300" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs font-semibold text-blue-600 py-2.5 px-3 leading-tight">{cat.name}</p>
               </Link>
             ))}
           </div>
         )}
 
+        {/* Found count + view toggle */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500">Найдено {total || processedProducts.length} товаров</p>
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 h-8">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter + Sort row (mobile only) */}
+        <div className="grid grid-cols-2 gap-2 lg:hidden">
+          <button
+            onClick={() => setIsMobileFiltersOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition-all active:bg-slate-50"
+          >
+            <SlidersHorizontal className="h-4 w-4 text-slate-500 shrink-0" />
+            Фильтры
+            {activeFilterCount > 0 && (
+              <span className="ml-1 bg-slate-900 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{activeFilterCount}</span>
+            )}
+          </button>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="appearance-none w-full h-full py-2.5 pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 cursor-pointer outline-none"
+            >
+              <option value="popular">Популярные</option>
+              <option value="priceAsc">Дешевле</option>
+              <option value="priceDesc">Дороже</option>
+              <option value="rating">По рейтингу</option>
+            </select>
+            <ArrowRight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none rotate-90" />
+          </div>
+        </div>
+
+        {/* Active filter chips */}
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide text-left">
+            {selectedSuppliers.map(s => (
+              <span key={s} className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
+                Бренд: {s}
+                <button onClick={() => setSelectedSuppliers(prev => prev.filter(item => item !== s))} className="cursor-pointer ml-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            {onlyHits && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
+                🔥 Хиты
+                <button onClick={() => setOnlyHits(false)} className="cursor-pointer ml-0.5"><X className="h-3 w-3" /></button>
+              </span>
+            )}
+            {onlyBulk && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
+                🏷️ Скидка
+                <button onClick={() => setOnlyBulk(false)} className="cursor-pointer ml-0.5"><X className="h-3 w-3" /></button>
+              </span>
+            )}
+            {selectedCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
+                {currentCategoryDetail?.name || selectedCategory}
+                <button onClick={() => setSelectedCategory('all')} className="cursor-pointer ml-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-600 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              Очистить все
+            </button>
+          </div>
+        )}
+
+
+
+
         {/* ═══ PRODUCT GRID ═══ */}
         {loading && products.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-2 xl:grid-cols-3">
             <ProductSkeleton count={6} />
           </div>
         ) : processedProducts.length === 0 ? (
-          <div className="text-center py-32 bg-slate-50/50 rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-6">
-            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-inner">
-               <Search className="h-10 w-10 text-slate-200" />
+          <div className="text-center py-24 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-5">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-inner">
+               <Search className="h-8 w-8 text-slate-200" />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-slate-900 font-outfit uppercase">Ничего не нашли</h3>
-              <p className="text-slate-400 text-xs font-bold max-w-xs mx-auto uppercase tracking-wide">Попробуйте изменить параметры фильтра или сбросить их</p>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-slate-900">Ничего не нашли</h3>
+              <p className="text-slate-400 text-xs max-w-xs mx-auto">Попробуйте изменить параметры фильтра или сбросить их</p>
             </div>
-            <button 
-              onClick={() => { resetFilters(); setSelectedCategory('all'); }} 
-              className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all transform hover:-translate-y-0.5 shadow-md"
+            <button
+              onClick={() => { resetFilters(); setSelectedCategory('all'); }}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all"
             >
               Сбросить фильтры
             </button>
           </div>
         ) : viewMode === 'grid' ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 gap-3 lg:gap-5 lg:grid-cols-2 xl:grid-cols-3">
               {processedProducts.map(product => (
                 <ProductCard
                   key={product.id}
@@ -467,89 +540,60 @@ export default function Storefront({
           </>
         ) : (
           <>
-            <div className="space-y-4 w-full">
+            <div className="space-y-2 w-full">
               {processedProducts.map(product => (
-                <div key={product.id} className="bg-white border border-slate-100 p-4 sm:p-5 rounded-3xl hover:shadow-xl hover:border-emerald-500/10 transition-all flex flex-col sm:flex-row items-center gap-4 sm:gap-6 relative group text-left w-full overflow-hidden">
-                {product.isHit && (
-                  <span className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase flex items-center gap-1 z-10 shadow-lg shadow-red-500/30">
-                    <Zap className="h-3 w-3 fill-current" /> Хит
-                  </span>
-                )}
-                
-                {/* Clickable Area -> Link to product details */}
-                <Link 
-                  href={getPageHref('product', product.slug || product.id)}
-                  onClick={() => onOpenProduct?.(product.slug || product.id)}
-                  className="flex-grow flex flex-col sm:flex-row items-center gap-4 sm:gap-6 min-w-0 w-full cursor-pointer"
-                >
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img 
-                      src={product.image} 
-                      alt={product.name} 
-                      className="w-full h-full object-contain p-2 mix-blend-multiply" 
-                      onError={(e) => { e.target.src = 'https://placehold.co/128x128'; }} 
-                    />
-                  </div>
-                  <div className="flex-grow space-y-2 min-w-0 w-full py-1">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{categories.find(c => c.slug === product.category)?.name || product.category}</span>
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 break-words">{product.name}</h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Цена</span>
-                        <p className="text-lg sm:text-xl font-black text-slate-900">{product.price.toLocaleString()} ₸</p>
-                      </div>
-                      {product.activePromotion && (
-                        <div className="bg-blue-50 text-blue-700 border border-blue-200/80 px-2.5 py-1 rounded-xl inline-flex items-center gap-1 text-[10px] font-black leading-none self-center mt-1">
-                          <Tag className="h-3 w-3 text-blue-600 shrink-0" />
-                          <span>{product.activePromotion.badgeText || product.activePromotion.title}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+                <div key={product.id} className="bg-white border border-slate-100 rounded-2xl hover:border-slate-200 transition-all flex items-center gap-3 relative overflow-hidden p-3 text-left w-full">
 
-                {/* Actions Zone OUTSIDE Link */}
-                <div className="flex flex-col sm:flex-col items-stretch sm:items-center gap-2.5 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-0 border-slate-100 shrink-0">
-                  <div className="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-xl h-10 p-0.5 w-full sm:w-28 shadow-inner">
+                  {/* Image */}
+                  <Link
+                    href={getPageHref('product', product.slug || product.id)}
+                    onClick={() => onOpenProduct?.(product.slug || product.id)}
+                    className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer"
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-contain p-1.5 mix-blend-multiply"
+                      onError={(e) => { e.target.src = 'https://placehold.co/128x128'; }}
+                    />
+                  </Link>
+
+                  {/* Info */}
+                  <Link
+                    href={getPageHref('product', product.slug || product.id)}
+                    onClick={() => onOpenProduct?.(product.slug || product.id)}
+                    className="flex-1 min-w-0 cursor-pointer"
+                  >
+                    {product.isHit && (
+                      <span className="inline-flex items-center gap-0.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase mb-1">
+                        <Zap className="h-2.5 w-2.5 fill-current" /> Хит
+                      </span>
+                    )}
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug line-clamp-2 break-words mb-1">{product.name}</h3>
+                    <p className="text-base font-bold text-slate-900">{product.price.toLocaleString()} ₸</p>
+                    {product.article && <p className="text-[10px] text-slate-400 mt-0.5">Арт: {product.article}</p>}
+                  </Link>
+
+                  {/* Cart button */}
+                  <div className="shrink-0 flex flex-col items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => changeQuantity(product.id, -1)}
-                      className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
+                      onClick={() => onAddToCart(product, getQuantity(product.id))}
+                      className="w-[38px] h-[38px] bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95"
                     >
-                      -
-                    </button>
-                    <span className="flex-grow text-center text-xs font-black text-slate-850">
-                      {getQuantity(product.id)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => changeQuantity(product.id, 1)}
-                      className="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-slate-200 font-bold rounded-lg transition-all"
-                    >
-                      +
+                      <ShoppingCart className="h-4 w-4" />
                     </button>
                   </div>
-                  <button 
-                    type="button"
-                    onClick={() => onAddToCart(product, getQuantity(product.id))}
-                    className="w-full sm:w-28 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 shrink-0"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    <span className="text-xs font-bold">В корзину</span>
-                  </button>
-                </div>
                 </div>
               ))}
             </div>
             {hasMore && (
-              <div className="pt-6 text-center">
+              <div className="pt-4 text-center">
                 <button
                   type="button"
                   onClick={onLoadMore}
                   disabled={loadingMore}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-wider text-slate-700 transition-all hover:border-emerald-200 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-bold text-slate-700 transition-all hover:border-emerald-200 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw className={`h-4 w-4 ${loadingMore ? 'animate-spin' : ''}`} />
                   Показать еще
@@ -560,23 +604,198 @@ export default function Storefront({
         )}
       </div>
 
-      {/* ═══ MOBILE FILTERS BOTTOM SHEET (TELEPORTED TO BODY) ═══ */}
+
+      {/* ═══ MOBILE FILTERS — KASPI STYLE FULLSCREEN ═══ */}
       {isMobileFiltersOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] lg:hidden flex flex-col justify-end">
-          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsMobileFiltersOpen(false)} />
-          <div className="relative z-10 w-full h-[96vh] max-h-[96vh] bg-white rounded-t-[2rem] shadow-2xl animate-slide-up p-4 pt-3 pb-8 overflow-y-auto border-t border-slate-100 text-left flex flex-col">
-             <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2 shrink-0" />
-             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-               <h2 className="text-lg font-extrabold text-slate-900 uppercase font-outfit">Фильтры</h2>
-               <button onClick={() => setIsMobileFiltersOpen(false)} className="p-1.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
-                 <X className="h-4.5 w-4.5 text-slate-600" />
-               </button>
-             </div>
-             <SidebarContent isCompact={true} />
+        <div className="fixed inset-0 z-[9999] lg:hidden bg-white flex flex-col">
+
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 shrink-0">
+            <button
+              onClick={() => setIsMobileFiltersOpen(false)}
+              className="text-slate-500 text-sm font-medium cursor-pointer hover:text-slate-800 transition-colors"
+            >
+              Отменить
+            </button>
+            <span className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Фильтры</span>
+            <button
+              onClick={() => { resetFilters(); }}
+              className="text-emerald-600 text-sm font-semibold cursor-pointer hover:text-emerald-700 transition-colors"
+            >
+              Сбросить
+            </button>
           </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* Сортировка */}
+            <div className="px-4 py-4 border-b border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Сортировка</p>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 cursor-pointer outline-none"
+                >
+                  <option value="popular">По популярности</option>
+                  <option value="priceAsc">Сначала дешевле</option>
+                  <option value="priceDesc">Сначала дороже</option>
+                  <option value="rating">По рейтингу</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Разделы */}
+            <div className="px-4 py-4 border-b border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <LayoutGrid className="h-3.5 w-3.5" /> Разделы
+              </p>
+              <div className="space-y-0.5">
+                <Link
+                  href={getPageHref('catalog')}
+                  onClick={() => { setSelectedCategory('all'); setIsMobileFiltersOpen(false); }}
+                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${selectedCategory === 'all' ? 'text-slate-900 font-bold' : 'text-slate-600'}`}
+                >
+                  <span>Все товары</span>
+                </Link>
+                {rootCategories.map(cat => {
+                  const isActive = selectedCategory === cat.slug || currentCategoryDetail?.breadcrumbs?.some(b => b.id === cat.id);
+                  const subs = categories.filter(c => c.parentId === cat.id);
+                  return (
+                    <div key={cat.id}>
+                      <Link
+                        href={getPageHref('catalog', null, cat.slug)}
+                        onClick={() => { setSelectedCategory(cat.slug); if (!subs.length) setIsMobileFiltersOpen(false); }}
+                        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${isActive ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-700'}`}
+                      >
+                        <span>{cat.name}</span>
+                        {subs.length > 0 ? (
+                          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isActive ? 'rotate-180' : ''}`} />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-slate-300" />
+                        )}
+                      </Link>
+                      {isActive && subs.length > 0 && (
+                        <div className="ml-4 border-l border-slate-200 pl-3 space-y-0.5 mt-0.5">
+                          {subs.map(sub => (
+                            <Link
+                              key={sub.id}
+                              href={getPageHref('catalog', null, sub.slug)}
+                              onClick={() => { setSelectedCategory(sub.slug); setIsMobileFiltersOpen(false); }}
+                              className={`block py-2 px-2 text-sm rounded-lg transition-colors ${selectedCategory === sub.slug ? 'text-emerald-600 font-semibold bg-emerald-50' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Бренды — chips */}
+            {availableSuppliers.length > 0 && (
+              <div className="px-4 py-4 border-b border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Бренд</p>
+                  {selectedSuppliers.length > 0 && (
+                    <button onClick={() => setSelectedSuppliers([])} className="text-xs text-emerald-600 font-semibold hover:text-emerald-700">Сбросить</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableSuppliers.map(({ name, count }) => {
+                    const isChecked = selectedSuppliers.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => setSelectedSuppliers(prev => isChecked ? prev.filter(s => s !== name) : [...prev, name])}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                          isChecked
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {name}
+                        {count > 0 && <span className={`ml-1 text-[10px] ${isChecked ? 'text-white/70' : 'text-slate-400'}`}>({count})</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Цена */}
+            <div className="px-4 py-4 border-b border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Цена, ₸</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold mb-1">ОТ</p>
+                  <input
+                    type="number"
+                    value={priceRange.min}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-slate-400 bg-slate-50"
+                  />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-semibold mb-1">ДО</p>
+                  <input
+                    type="number"
+                    value={priceRange.max}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) || 200000 }))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-slate-400 bg-slate-50"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Спецпредложения */}
+            <div className="px-4 py-4">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Спецпредложения</p>
+              <label className="flex items-center justify-between py-2.5 cursor-pointer">
+                <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-500 fill-amber-500" /> Только ХИТЫ
+                </span>
+                <div
+                  onClick={() => setOnlyHits(v => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-all cursor-pointer ${onlyHits ? 'bg-emerald-600' : 'bg-slate-200'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${onlyHits ? 'left-6' : 'left-1'}`} />
+                </div>
+              </label>
+              <label className="flex items-center justify-between py-2.5 cursor-pointer border-t border-slate-100">
+                <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-emerald-600" /> Товар со скидкой
+                </span>
+                <div
+                  onClick={() => setOnlyBulk(v => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-all cursor-pointer ${onlyBulk ? 'bg-emerald-600' : 'bg-slate-200'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${onlyBulk ? 'left-6' : 'left-1'}`} />
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+          {/* Sticky bottom — Применить */}
+          <div className="px-4 py-4 border-t border-slate-100 bg-white shrink-0">
+            <button
+              onClick={() => setIsMobileFiltersOpen(false)}
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm rounded-2xl transition-all active:scale-[0.98] cursor-pointer uppercase tracking-wide"
+            >
+              Применить фильтр{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
+          </div>
+
         </div>,
         document.body
       )}
+
     </div>
   );
 }

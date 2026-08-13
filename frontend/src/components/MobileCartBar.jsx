@@ -14,7 +14,7 @@ export default function MobileCartBar({
   }
 
   return (
-    <div className="fixed bottom-3 left-3 right-3 z-40 sm:hidden animate-slide-up">
+    <div className="fixed bottom-[68px] left-3 right-3 z-40 sm:hidden animate-slide-up">
       <div 
         onClick={onOpenCart}
         className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/60 text-white p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-all"

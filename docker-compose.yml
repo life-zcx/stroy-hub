@@ -103,6 +103,7 @@ services:
       - "3000:3000"
     environment:
       VITE_API_PROXY_TARGET: http://backend:5000
+      VITE_YANDEX_MAPS_KEY: ${VITE_YANDEX_MAPS_KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules

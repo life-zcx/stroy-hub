@@ -27,7 +27,8 @@ export default function ScrollToTop({ cartItemsCount = 0 }) {
   //   mobile + cart items  → 5.5rem (above MobileCartBar)
   //   mobile, no cart      → 1.5rem
   //   desktop              → 1.5rem
-  const bottomOffset = isMobile && cartItemsCount > 0 ? '5.5rem' : '1.5rem';
+  // Lift above MobileBottomNav (4rem / 64px)
+  const bottomOffset = isMobile ? '5rem' : '1.5rem';
 
   const scrollToTop = () => {
     try {

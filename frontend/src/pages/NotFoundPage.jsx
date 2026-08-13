@@ -1,54 +1,69 @@
 import React from 'react';
-import { Home, ShoppingBag, Compass, ArrowLeft } from 'lucide-react';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 
 export default function NotFoundPage({ onNavigate }) {
+  const quickLinks = [
+    { label: 'Акции и скидки', page: 'promotions' },
+    { label: 'Услуги', page: 'services' },
+    { label: 'Доставка и оплата', page: 'delivery' },
+    { label: 'О компании', page: 'about' },
+  ];
+
   return (
-    <div className="min-h-[65vh] flex items-center justify-center p-4 sm:p-6 animate-fade-in-up">
-      <div className="w-full max-w-xl bg-white rounded-[2.5rem] border border-slate-200/80 shadow-xl p-8 sm:p-12 text-center space-y-7 relative overflow-hidden">
-        {/* Background Blueprint Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-16 pb-12 sm:pb-24 text-center font-sans animate-fade-in">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <span className="block font-outfit text-8xl sm:text-9xl font-black text-slate-900 tracking-tighter leading-none select-none">
+          404
+        </span>
 
-        {/* Icon Badge */}
-        <div className="w-20 h-20 rounded-3xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-lg mx-auto relative z-10">
-          <Compass className="h-10 w-10 stroke-[2.2]" />
-        </div>
+        <h1 className="font-outfit text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Страница не найдена
+        </h1>
 
-        {/* Text Details */}
-        <div className="space-y-3 relative z-10">
-          <div className="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-700 text-xs font-black uppercase tracking-widest font-mono">
-            Ошибка 404
-          </div>
-          <h1 className="font-outfit text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Страница не найдена
-          </h1>
-          <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto leading-relaxed font-medium">
-            Запрашиваемый адрес не существует, был перемещён или удален. Воспользуйтесь навигацией по каталогу.
-          </p>
-        </div>
+        <p className="text-slate-600 text-base sm:text-lg leading-relaxed font-normal max-w-lg mx-auto">
+          Запрашиваемый адрес не существует, был перемещён или удалён. Воспользуйтесь каталогом товаров или вернитесь на главную страницу.
+        </p>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
           <Link
             href={getPageHref('home')}
             onClick={() => onNavigate?.('home')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold px-7 py-3.5 rounded-2xl transition-all duration-200 text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/25 border border-emerald-500/30 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center bg-[#1069b3] hover:bg-[#0d5b9c] active:scale-[0.98] text-white font-bold px-8 py-3.5 rounded-xl transition-all duration-200 text-xs uppercase tracking-wider shadow-sm cursor-pointer border-0"
           >
-            <Home className="h-4 w-4 shrink-0" />
-            <span>На главную</span>
+            На главную
           </Link>
 
           <Link
             href={getPageHref('catalog')}
             onClick={() => onNavigate?.('catalog')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-extrabold px-7 py-3.5 rounded-2xl transition-all duration-200 text-xs uppercase tracking-wider border border-slate-200 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-bold px-8 py-3.5 rounded-xl transition-all duration-200 text-xs uppercase tracking-wider shadow-sm cursor-pointer border-0"
           >
-            <ShoppingBag className="h-4 w-4 shrink-0" />
-            <span>В каталог товаров</span>
+            Перейти в каталог
           </Link>
+        </div>
+      </div>
+
+      {/* Quick Links */}
+      <div className="mt-14 sm:mt-16 pt-8 sm:pt-10 border-t border-slate-200 max-w-4xl mx-auto">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-4">
+          Популярные разделы
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {quickLinks.map((item) => (
+            <Link
+              key={item.page}
+              href={getPageHref(item.page)}
+              onClick={() => onNavigate?.(item.page)}
+              className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all text-xs font-bold uppercase tracking-wider text-center cursor-pointer"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </div>
     </div>
   );
 }
+
+

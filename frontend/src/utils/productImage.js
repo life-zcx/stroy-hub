@@ -1,7 +1,21 @@
-export const FALLBACK_PRODUCT_IMAGE = '/tormag.png';
+import fallbackLogo from '../tormag.png';
+
+export const FALLBACK_PRODUCT_IMAGE = fallbackLogo;
+
+const failedUrls = new Set();
+
+export const markImageFailed = (rawUrl) => {
+  if (rawUrl && typeof rawUrl === 'string') {
+    failedUrls.add(rawUrl);
+  }
+};
+
+export const isImageFailed = (rawUrl) => {
+  return rawUrl ? failedUrls.has(rawUrl) : false;
+};
 
 export const getIpxImageUrl = (rawUrl, size = '800x800', format = 'webp') => {
-  if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_PRODUCT_IMAGE;
+  if (!rawUrl || typeof rawUrl !== 'string' || failedUrls.has(rawUrl)) return FALLBACK_PRODUCT_IMAGE;
   if (rawUrl.startsWith('data:') || rawUrl.endsWith('.svg')) return rawUrl;
 
   const cleanUrl = rawUrl.startsWith('/') ? rawUrl.slice(1) : rawUrl;
@@ -9,7 +23,8 @@ export const getIpxImageUrl = (rawUrl, size = '800x800', format = 'webp') => {
 };
 
 export const getProductImage = (product, size = '800x800') => {
-  if (!product || !product.image) return FALLBACK_PRODUCT_IMAGE;
+  if (!product || !product.image || failedUrls.has(product.image)) return FALLBACK_PRODUCT_IMAGE;
   return getIpxImageUrl(product.image, size);
 };
+
 

@@ -7,6 +7,7 @@ import CallbackModal from './components/CallbackModal';
 import Toast from './components/Toast';
 import ScrollToTop from './components/ScrollToTop';
 import MobileCartBar from './components/MobileCartBar';
+import MobileBottomNav from './components/MobileBottomNav';
 import ComingSoonModal from './components/ComingSoonModal';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AiAssistantWidget from './components/AiAssistantWidget';
@@ -229,7 +230,7 @@ export default function App() {
         bonuses={bonuses}
       />
 
-      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-90px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8'}`}>
+      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-70px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-20 lg:pb-8'}`}>
         <AppRoutes
           currentPage={currentPage}
           currentProductId={currentProductId}
@@ -329,21 +330,13 @@ export default function App() {
         message={comingSoonSettings.comingSoonMessage}
       />
 
-      {currentPage !== 'ai-assistant' && (
-        <MobileCartBar
-          cartItemsCount={cart.cartItemsCount}
-          cartTotal={cart.cartTotal}
-          onOpenCart={() => setCurrentPage('cart')}
-          currentPage={currentPage}
-        />
-      )}
       {currentPage !== 'ai-assistant' && <ScrollToTop cartItemsCount={cart.cartItemsCount} />}
-      <AiAssistantWidget
-        onAddToCart={cart.handleAddToCart}
-        showToast={showToast}
-        onNavigate={setCurrentPage}
+      <MobileBottomNav
         currentPage={currentPage}
+        onNavigate={setCurrentPage}
         cartItemsCount={cart.cartItemsCount}
+        customer={auth.customer}
+        onOpenAuthLogin={auth.openLoginModal}
       />
       <PWAInstallPrompt showToast={showToast} />
       <Toast toast={toast} onClose={hideToast} />

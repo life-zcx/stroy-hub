@@ -111,7 +111,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
       </div>
 
       {/* Main Grid Layout - Fixed Viewport Height */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 overflow-hidden h-[calc(100vh-11rem)] min-h-[580px] max-h-[820px]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 overflow-hidden h-full lg:h-[calc(100vh-11rem)] lg:min-h-[580px] lg:max-h-[820px] pb-16 lg:pb-0">
 
         {/* Left Sidebar: Saved Chat Sessions & Quick Prompts */}
         <div className="hidden lg:flex lg:col-span-4 flex-col gap-3 overflow-hidden">

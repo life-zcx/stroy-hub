@@ -103,7 +103,7 @@ export const calculateMaterials = ({
         name: 'Дюбель для теплоизоляции тарельчатый (дюбель-гриб) 10х100 мм, 100 шт',
         category: 'hardware',
         price: 2400,
-        image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?w=400&auto=format&fit=crop&q=80',
+        image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
         rating: 4.7,
         supplier: { name: 'Крепеж-Мастер', delivery: 'Завтра' }
       };

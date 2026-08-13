@@ -1444,7 +1444,7 @@ export default function CartPage({
                       setNewAddrForm(f => ({
                         ...f,
                         city: city || f.city,
-                        street: street || ''
+                        street: street || f.street || ''
                       }));
                     }}
                   />

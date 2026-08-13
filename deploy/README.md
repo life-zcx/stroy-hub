@@ -230,4 +230,7 @@ YANDEX_DISK_PASS=пароль_приложения_yandex
 # ИИ Ассистент (Google Gemini)
 GEMINI_API_KEY=ваш_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
+
+# Яндекс.Карты (Геокодер)
+VITE_YANDEX_MAPS_KEY=769bbfb8-5dd0-4d7b-ac8d-57d563cafc01
 ```

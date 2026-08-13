@@ -175,7 +175,7 @@ function UserAddressesSection({ customer, showToast, onCustomerUpdate }) {
                   setAddressForm(f => ({
                     ...f,
                     city: city || f.city,
-                    street: street || ''
+                    street: street || f.street || ''
                   }));
                 }}
               />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ArrowRight, ShieldCheck, Truck, SlidersHorizontal,
   Award, Building2, TicketPercent, FileSpreadsheet,
@@ -11,7 +11,7 @@ import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import ProductCard from '../components/ProductCard';
 import ProductSkeleton from '../components/ProductSkeleton';
-import { getProductImage, FALLBACK_PRODUCT_IMAGE } from '../utils/productImage';
+import { getProductImage, FALLBACK_PRODUCT_IMAGE, markImageFailed } from '../utils/productImage';
 import KineticHeroBanner from '../components/KineticHeroBanner';
 
 
@@ -135,12 +135,16 @@ export default function Home({
     };
   }, []);
 
-  const handleHeroSlideChange = (slideIndex) => {
-    const dealsCount = Math.min(popularProducts.slice(0, 3).length, 3);
-    if (dealsCount > 0) {
-      setCurrentDealIndex(slideIndex % dealsCount);
+  const handleHeroSlideChange = useCallback((slideIndex, meta) => {
+    if (meta?.isAutoplay) {
+      const dealsCount = Math.min(popularProducts.slice(0, 3).length, 3);
+      if (dealsCount > 0) {
+        setCurrentDealIndex(slideIndex % dealsCount);
+      }
     }
-  };
+  }, [popularProducts]);
+
+
 
 
   // Touch Swipe support for Product of the Day deals
@@ -247,13 +251,12 @@ export default function Home({
           onSlideChange={handleHeroSlideChange}
         />
 
-
         {/* Right Column: Product of the Day Deals Carousel (lg:col-span-4) - styled exactly like Technodom */}
         <div 
           onTouchStart={handleDealTouchStart}
           onTouchMove={handleDealTouchMove}
           onTouchEnd={() => handleDealTouchEnd(Math.min(popularProducts.slice(0, 3).length, 3))}
-          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 pb-14 sm:pb-12 relative overflow-hidden shadow-sm h-full text-slate-800"
+          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 pb-14 sm:pb-12 relative overflow-hidden shadow-sm h-full text-slate-800 group/deal"
         >
           {(() => {
             const deals = popularProducts.slice(0, 3);
@@ -278,7 +281,7 @@ export default function Home({
                 </div>
 
                 {deals.length > 0 ? (() => {
-                  const product = deals[currentDealIndex];
+                  const product = deals[currentDealIndex] || deals[0];
                   const imageSrc = getProductImage(product);
                   const isFav = isFavorite?.(product);
 
@@ -292,10 +295,11 @@ export default function Home({
                         <button
                           type="button"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             onToggleFavorite?.(product);
                           }}
-                          className={`absolute top-2 right-2 z-20 p-2 rounded-full transition-all shadow-sm ${
+                          className={`absolute top-2 right-2 z-30 p-2 rounded-full transition-all shadow-sm ${
                             isFav 
                               ? 'bg-rose-500 text-white' 
                               : 'bg-white hover:text-rose-500 text-slate-400 border border-slate-100'
@@ -309,15 +313,25 @@ export default function Home({
                           <>
                             <button
                               type="button"
-                              onClick={() => setCurrentDealIndex(prev => (prev - 1 + deals.length) % deals.length)}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-600 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 transition-all z-20 cursor-pointer shadow-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setCurrentDealIndex(prev => (prev - 1 + deals.length) % deals.length);
+                              }}
+                              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
+                              title="Предыдущий товар"
                             >
                               <ChevronLeft className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
-                              onClick={() => setCurrentDealIndex(prev => (prev + 1) % deals.length)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-600 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 transition-all z-20 cursor-pointer shadow-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setCurrentDealIndex(prev => (prev + 1) % deals.length);
+                              }}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
+                              title="Следующий товар"
                             >
                               <ChevronRight className="h-3.5 w-3.5" />
                             </button>
@@ -327,19 +341,16 @@ export default function Home({
                         <Link
                           href={getPageHref('product', product.slug || product.id)}
                           onClick={() => onOpenDetails?.(product.slug || product.id)}
-                          className="w-full h-full flex items-center justify-center cursor-pointer p-1"
+                          className="w-full h-full flex items-center justify-center cursor-pointer p-2"
                         >
                           <img 
                             src={imageSrc} 
                             alt={product.name} 
-                            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" 
+                            className="max-h-full max-w-full object-contain" 
                             onError={(e) => {
-                              if (e.target.src !== product.image && product.image) {
-                                e.target.src = product.image;
-                              } else {
-                                e.target.onerror = null;
-                                e.target.src = FALLBACK_PRODUCT_IMAGE;
-                              }
+                              e.target.onerror = null;
+                              if (product?.image) markImageFailed(product.image);
+                              e.target.src = FALLBACK_PRODUCT_IMAGE;
                             }}
                           />
                         </Link>
@@ -366,7 +377,7 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => onAddToCart?.(product, 1)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer border-0 mt-auto"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer border-0 mt-auto z-20"
                       >
                         <ShoppingCart className="h-4 w-4" />
                         <span>В корзину</span>
@@ -387,7 +398,11 @@ export default function Home({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setCurrentDealIndex(idx)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCurrentDealIndex(idx);
+                        }}
                         className="p-2 -m-2 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent"
                         title={`Товар ${idx + 1}`}
                         aria-label={`Товар ${idx + 1}`}
@@ -421,35 +436,38 @@ export default function Home({
           </div>
           <Link
             href={getPageHref('catalog')}
-            onClick={() => onNavigate('catalog')}
-            className="flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors"
+            onClick={() => {
+              setSelectedCategory('all');
+              onNavigate('catalog');
+            }}
+            className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
           >
             Смотреть весь каталог
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categoriesList.map(cat => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          {(rootCategories.length > 0 ? rootCategories : categoriesList).map(cat => (
             <Link
-              key={cat.id}
-              href={getPageHref('catalog', null, cat.id)}
+              key={cat.id || cat.slug}
+              href={getPageHref('catalog', null, cat.slug || cat.id)}
               onClick={() => {
-                setSelectedCategory(cat.id);
-                onNavigate('catalog');
+                setSelectedCategory(cat.slug || cat.id);
               }}
-              className="group cursor-pointer bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all relative text-left h-64 flex flex-col justify-end p-6"
+              className="bg-white border border-slate-100 rounded-2xl p-2 sm:p-3 hover:shadow-md transition-all text-center group cursor-pointer flex flex-col items-center justify-between"
             >
-              <div
-                className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-all duration-500"
-                style={{ backgroundImage: `url(${cat.bg})` }}
-              ></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-
-              <div className="relative z-10 space-y-1">
-                <h4 className="font-extrabold text-white text-lg">{cat.name}</h4>
-                <p className="text-slate-300 text-[10px] leading-relaxed">{cat.desc}</p>
+              <div className="w-full h-28 sm:h-36 rounded-xl overflow-hidden bg-slate-50 mb-2 border border-slate-100/80 shrink-0">
+                <img
+                  src={cat.image || cat.bg}
+                  alt={cat.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { e.target.src = 'https://placehold.co/200x200?text=Категория'; }}
+                />
               </div>
+              <span className="text-xs sm:text-sm font-bold text-slate-850 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
+                {cat.name}
+              </span>
             </Link>
           ))}
         </div>
@@ -464,15 +482,18 @@ export default function Home({
           </div>
           <Link
             href={getPageHref('catalog')}
-            onClick={() => onNavigate('catalog')}
-            className="flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-600 transition-colors"
+            onClick={() => {
+              setSelectedCategory('all');
+              onNavigate('catalog');
+            }}
+            className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
           >
             Смотреть все товары
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
           {productsLoading ? (
             <ProductSkeleton count={4} />
           ) : (

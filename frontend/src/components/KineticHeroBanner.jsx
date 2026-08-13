@@ -39,9 +39,16 @@ export default function KineticHeroBanner({
 }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const isAutoplayRef = useRef(false);
+  const onSlideChangeRef = useRef(onSlideChange);
   useEffect(() => {
-    onSlideChange?.(currentSlide);
-  }, [currentSlide, onSlideChange]);
+    onSlideChangeRef.current = onSlideChange;
+  });
+
+  useEffect(() => {
+    onSlideChangeRef.current?.(currentSlide, { isAutoplay: isAutoplayRef.current });
+    isAutoplayRef.current = false;
+  }, [currentSlide]);
   const totalSlides = 3 + homePromotions.length;
 
   const contentRef = useRef(null);
@@ -69,13 +76,20 @@ export default function KineticHeroBanner({
   const [touchEnd, setTouchEnd] = useState(null);
 
 
-  const nextSlide = useCallback(() => {
+  const nextSlide = useCallback((isAutoplay = false) => {
+    isAutoplayRef.current = Boolean(isAutoplay);
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
   }, [totalSlides]);
 
-  const prevSlide = useCallback(() => {
+  const prevSlide = useCallback((isAutoplay = false) => {
+    isAutoplayRef.current = Boolean(isAutoplay);
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
+
+  const goToSlide = useCallback((idx) => {
+    isAutoplayRef.current = false;
+    setCurrentSlide(idx);
+  }, []);
 
   // Current theme colors
   const currentPromo = currentSlide >= 3 ? homePromotions[currentSlide - 3] : null;
@@ -155,7 +169,7 @@ export default function KineticHeroBanner({
           duration: 10,
           ease: 'none',
           onComplete: () => {
-            nextSlide();
+            nextSlide(true);
           }
         }
       );
@@ -481,7 +495,7 @@ export default function KineticHeroBanner({
       {/* Navigation Arrows */}
       <button
         type="button"
-        onClick={prevSlide}
+        onClick={() => prevSlide(false)}
         className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm border border-slate-200/70 transition-colors duration-200 z-30 opacity-0 group-hover/hero:opacity-100 cursor-pointer hidden md:block"
         title="Предыдущий слайд"
       >
@@ -489,7 +503,7 @@ export default function KineticHeroBanner({
       </button>
       <button
         type="button"
-        onClick={nextSlide}
+        onClick={() => nextSlide(false)}
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-slate-600 shadow-sm border border-slate-200/70 transition-colors duration-200 z-30 opacity-0 group-hover/hero:opacity-100 cursor-pointer hidden md:block"
         title="Следующий слайд"
       >
@@ -502,7 +516,7 @@ export default function KineticHeroBanner({
           <button
             key={idx}
             type="button"
-            onClick={() => setCurrentSlide(idx)}
+            onClick={() => goToSlide(idx)}
             className="p-2 -m-2 flex items-center justify-center transition-all duration-300 cursor-pointer"
             title={`Слайд ${idx + 1}`}
             aria-label={`Слайд ${idx + 1}`}

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { getProductById, getProductReviews, getProductStats, getSystemSettings } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
-import { FALLBACK_PRODUCT_IMAGE, getProductImage, getIpxImageUrl } from '../utils/productImage';
+import { FALLBACK_PRODUCT_IMAGE, getProductImage, getIpxImageUrl, markImageFailed } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import InfoModals from '../components/InfoModals';
@@ -821,12 +821,9 @@ export default function ProductPage({
                     className="w-full h-full object-contain cursor-pointer"
                     onClick={() => openZoomModal(activeImageIndex)}
                     onError={(e) => {
-                      if (e.target.src !== activeImage && activeImage) {
-                        e.target.src = activeImage;
-                      } else {
-                        e.target.onerror = null;
-                        e.target.src = FALLBACK_PRODUCT_IMAGE;
-                      }
+                      e.target.onerror = null;
+                      e.target.src = FALLBACK_PRODUCT_IMAGE;
+                      if (activeImage) markImageFailed(activeImage);
                     }}
                   />
                 </div>
@@ -862,12 +859,9 @@ export default function ProductPage({
                             alt={`${product.name} - фото ${i + 1}`}
                             className="w-full h-full object-contain"
                             onError={(e) => {
-                              if (e.target.src !== img && img) {
-                                e.target.src = img;
-                              } else {
-                                e.target.onerror = null;
-                                e.target.src = FALLBACK_PRODUCT_IMAGE;
-                              }
+                              e.target.onerror = null;
+                              e.target.src = FALLBACK_PRODUCT_IMAGE;
+                              if (img) markImageFailed(img);
                             }}
                           />
                         </button>

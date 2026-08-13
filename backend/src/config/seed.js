@@ -255,7 +255,7 @@ async function main() {
     data: {
       name: 'Саморезы по дереву',
       slug: 'wood-screws',
-      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?q=80&w=400&auto=format&fit=crop',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=400&auto=format&fit=crop',
       parentId: hardware.id
     }
   });
@@ -382,7 +382,7 @@ async function main() {
       categoryId: woodScrews.id,
       price: 1200,
       oldPrice: null,
-      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?w=400&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
       rating: 4.7,
       reviews: 312,
       isHit: true,
@@ -434,7 +434,7 @@ async function main() {
       categoryId: woodScrews.id,
       price: 2400,
       oldPrice: null,
-      image: 'https://images.unsplash.com/photo-1590236166418-498c199859f8?w=400&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&auto=format&fit=crop&q=80',
       rating: 4.6,
       reviews: 67,
       isHit: false,
