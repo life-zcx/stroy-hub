@@ -517,7 +517,7 @@ html {
 /* PWA Standalone Mode Bottom Navigation Elevation */
 @media (display-mode: standalone) {
   .pwa-bottom-nav {
-    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
   }
 }
 

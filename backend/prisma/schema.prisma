@@ -49,6 +49,9 @@ model User {
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   isBlocked  Boolean   @default(false)
   blockedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletionReason String?
+  deletedAt  DateTime?
   orders     Order[]
   pageViews  PageView[]
   analyticsEvents AnalyticsEvent[]

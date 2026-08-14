@@ -9,6 +9,7 @@ import MyOrders from './MyOrders';
 import MyPromotions from './MyPromotions';
 import { formatPrice } from '../utils/formatPrice';
 import AddressMapPicker from '../components/AddressMapPicker';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 
 // ─── Kazakhstan cities for profile addresses ──────────────────────────────────
 const KAZAKHSTAN_CITIES = [
@@ -329,9 +330,10 @@ function UserAddressesSection({ customer, showToast, onCustomerUpdate }) {
 }
 
 // ─── Profile edit tab ─────────────────────────────────────────────────────────
-function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
+function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses, handleLogout }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [form, setForm] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
@@ -781,6 +783,27 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses }) {
           </div>
         )}
       </div>
+
+      {/* Subtle Delete Account Link */}
+      <div className="pt-2 flex justify-center sm:justify-start">
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="inline-flex items-center gap-1.5 text-slate-400 hover:text-rose-600 transition-colors text-xs font-medium bg-transparent border-0 p-0 cursor-pointer group"
+        >
+          <Trash2 className="h-3.5 w-3.5 text-slate-400 group-hover:text-rose-600 transition-colors" />
+          <span>Удалить учетную запись</span>
+        </button>
+      </div>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onAccountDeleted={() => {
+          handleLogout?.();
+        }}
+        showToast={showToast}
+      />
     </div>
   );
 }
@@ -902,6 +925,7 @@ export default function Cabinet({
           showToast={showToast}
           onCustomerUpdate={onCustomerUpdate}
           bonuses={bonuses}
+          handleLogout={handleLogout}
         />
       )}
 

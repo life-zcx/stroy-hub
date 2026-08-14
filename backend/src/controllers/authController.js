@@ -645,4 +645,86 @@ export const verifyResetCode = async (req, res) => {
   }
 };
 
+export const deleteAccount = async (req, res) => {
+  const { reason } = req.body;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Пользователь не авторизован' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const anonymizedPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+    const anonymizedName = `Удаленный аккаунт #${userId}`;
+    const anonymizedEmail = `deleted_${userId}_${Date.now()}@deleted.tormag.kz`;
+
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: anonymizedName,
+          email: anonymizedEmail,
+          password: anonymizedPassword,
+          phone: null,
+          phoneNormalized: null,
+          address: null,
+          addresses: null,
+          companyBin: null,
+          companyName: null,
+          directorName: null,
+          legalAddress: null,
+          organizationType: null,
+          isDeleted: true,
+          deletionReason: reason || 'Не указана',
+          deletedAt: new Date(),
+        },
+      });
+    } catch (updateErr) {
+      logger.warn(`Prisma update failed with isDeleted field (${updateErr.message}), trying fallback...`);
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: anonymizedName,
+          email: anonymizedEmail,
+          password: anonymizedPassword,
+          phone: null,
+          phoneNormalized: null,
+          address: null,
+          addresses: null,
+          companyBin: null,
+          companyName: null,
+          directorName: null,
+          legalAddress: null,
+          organizationType: null,
+        },
+      });
+
+      await prisma.$executeRaw`
+        UPDATE "User" 
+        SET "isDeleted" = true, 
+            "deletionReason" = ${reason || 'Не указана'}, 
+            "deletedAt" = NOW() 
+        WHERE "id" = ${userId}
+      `.catch(() => {});
+    }
+
+    clearAuthCookie(req, res);
+    logger.info(`User #${userId} deleted account. Reason: ${reason || 'Not specified'}`);
+
+    res.json({ message: 'Учетная запись успешно удалена.' });
+  } catch (error) {
+    logger.error(`Error deleting user #${req.user?.id}: ${error.message}`);
+    res.status(500).json({ error: 'Ошибка при удалении учетной записи: ' + error.message });
+  }
+};
+
+
 

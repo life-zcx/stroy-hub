@@ -39,6 +39,12 @@ export const updateProfile = async (data) => {
   return response.data;
 };
 
+export const deleteAccount = async (reason) => {
+  const response = await api.delete('/auth/me', { data: { reason } });
+  return response.data;
+};
+
+
 
 // Products API
 export const getProducts = async (params = {}) => {
