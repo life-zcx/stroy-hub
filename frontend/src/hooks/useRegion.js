@@ -24,13 +24,13 @@ export default function useRegion(showToast) {
           const apiCity = data.city ? data.city.toLowerCase().trim() : '';
           
           if (!processCity(apiCity)) {
-            console.log('[GEO IP] City not mapped from backend. Falling back to browser GPS...');
-            triggerBrowserGeolocation();
+            console.log('[GEO IP] City not mapped from backend. Defaulting to Almaty.');
+            handleSelectRegion('Алматы');
           }
         })
         .catch((err) => {
           console.warn('[GEO IP] Backend geolocation failed:', err.message);
-          triggerBrowserGeolocation();
+          handleSelectRegion('Алматы');
         });
     }
 
