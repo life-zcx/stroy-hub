@@ -406,7 +406,7 @@ export default function Header({
               }}
               className="flex items-center cursor-pointer group shrink-0"
             >
-              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="56" fetchpriority="high" className="h-9 w-auto object-contain" />
+              <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="36" fetchpriority="high" className="h-9 w-[125px] object-contain" />
             </Link>
 
             {/* Catalog & Search Block in the center */}

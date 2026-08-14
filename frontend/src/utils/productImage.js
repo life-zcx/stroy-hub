@@ -16,6 +16,12 @@ export const isImageFailed = (rawUrl) => {
 
 export const getIpxImageUrl = (rawUrl, size = '600x600', format = 'webp') => {
   if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_PRODUCT_IMAGE;
+
+  // Serve full http/https URLs directly so external CDN images load instantly without proxy errors
+  if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+    return rawUrl;
+  }
+
   if (failedUrls.has(rawUrl)) return FALLBACK_PRODUCT_IMAGE;
   if (rawUrl.startsWith('data:') || rawUrl.endsWith('.svg')) return rawUrl;
 

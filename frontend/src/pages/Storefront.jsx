@@ -367,32 +367,53 @@ export default function Storefront({
         </h1>
 
         {/* Category image tile grid — сразу под заголовком */}
+        {/* Category image tile grid — сразу под заголовком */}
         {(currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
-          <div className="grid grid-cols-2 gap-3">
-            {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map(cat => (
-              <Link
-                key={cat.id}
-                href={getPageHref('catalog', null, cat.slug)}
-                onClick={() => setSelectedCategory(cat.slug)}
-                className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col items-center text-center active:bg-slate-50 transition-all"
-              >
-                <div className="w-full h-36 flex items-center justify-center bg-white overflow-hidden">
-                  {cat.image ? (
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
-                      <LayoutGrid className="h-8 w-8 text-slate-300" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-3">
+            {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map((cat) => {
+              const imageSrc = cat.image || cat.bg;
+
+              return (
+                <Link
+                  key={cat.id}
+                  href={getPageHref('catalog', null, cat.slug)}
+                  onClick={() => setSelectedCategory(cat.slug)}
+                  className="relative w-full h-32 sm:h-40 md:h-44 lg:h-48 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
+                >
+                  {imageSrc ? (
+                    <>
+                      <img
+                        src={imageSrc}
+                        alt={cat.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const fallbackEl = e.target.parentElement?.querySelector('.category-fallback-box');
+                          if (fallbackEl) fallbackEl.classList.remove('hidden');
+                        }}
+                      />
+                      {/* Dark overlay for clean text contrast */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
+                    </>
+                  ) : null}
+
+                  {/* Clean Light Fallback Card (when image is missing) */}
+                  <div className={`category-fallback-box ${imageSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-4 sm:p-5 flex flex-col justify-end text-left`}>
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center mb-auto">
+                      <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
                     </div>
-                  )}
-                </div>
-                <p className="text-xs font-semibold text-blue-600 py-2.5 px-3 leading-tight">{cat.name}</p>
-              </Link>
-            ))}
+                  </div>
+
+                  {/* Category Title directly overlayed at the bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-5 text-left z-10">
+                    <h3 className={`text-sm sm:text-base md:text-lg font-extrabold leading-tight font-outfit ${imageSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
+                      {cat.name}
+                    </h3>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
 
@@ -489,7 +510,7 @@ export default function Storefront({
         {/* ═══ PRODUCT GRID ═══ */}
         {loading && products.length === 0 ? (
           <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-2 xl:grid-cols-3">
-            <ProductSkeleton count={6} />
+            <ProductSkeleton count={12} />
           </div>
         ) : processedProducts.length === 0 ? (
           <div className="text-center py-24 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-5">

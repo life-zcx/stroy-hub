@@ -460,7 +460,7 @@ export default function Home({
               }}
               className="bg-white border border-slate-100 rounded-2xl p-2 sm:p-3 hover:shadow-md transition-all text-center group cursor-pointer flex flex-col items-center justify-between"
             >
-              <div className="w-full h-28 sm:h-36 rounded-xl overflow-hidden bg-slate-50 mb-2 border border-slate-100/80 shrink-0">
+              <div className="w-full h-28 sm:h-36 rounded-xl overflow-hidden bg-slate-50 mb-2 border border-slate-100/80 shrink-0 flex items-center justify-center p-2">
                 <img
                   src={getIpxImageUrl(cat.image || cat.bg, '400x300')}
                   alt={cat.name}
@@ -468,8 +468,11 @@ export default function Home({
                   height="200"
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.src = 'https://placehold.co/200x200?text=Категория'; }}
+                  className="max-h-full max-w-full object-contain"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = FALLBACK_PRODUCT_IMAGE;
+                  }}
                 />
               </div>
               <span className="text-xs sm:text-sm font-bold text-slate-850 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
@@ -500,9 +503,9 @@ export default function Home({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 min-h-[380px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 min-h-[660px]">
           {productsLoading ? (
-            <ProductSkeleton count={4} />
+            <ProductSkeleton count={8} />
           ) : (
             popularProducts.map((product) => (
               <ProductCard
