@@ -11,7 +11,7 @@ import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import ProductCard from '../components/ProductCard';
 import ProductSkeleton from '../components/ProductSkeleton';
-import { getProductImage, FALLBACK_PRODUCT_IMAGE, markImageFailed } from '../utils/productImage';
+import { getProductImage, getIpxImageUrl, FALLBACK_PRODUCT_IMAGE, markImageFailed } from '../utils/productImage';
 import KineticHeroBanner from '../components/KineticHeroBanner';
 
 
@@ -45,7 +45,7 @@ export default function Home({
   const [brands, setBrands] = useState([]);
   const [homePromotions, setHomePromotions] = useState([]);
   const [popularProducts, setPopularProducts] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   const [currentDealIndex, setCurrentDealIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -344,7 +344,11 @@ export default function Home({
                         >
                           <img 
                             src={imageSrc} 
-                            alt={product.name} 
+                            alt={product.name || 'Товар дня TORMAG'} 
+                            width="300"
+                            height="300"
+                            fetchpriority="high"
+                            decoding="async"
                             className="max-h-full max-w-full object-contain" 
                             onError={(e) => {
                               e.target.onerror = null;
@@ -361,7 +365,7 @@ export default function Home({
                         onClick={() => onOpenDetails?.(product.slug || product.id)}
                         className="flex flex-col text-left group/deal cursor-pointer justify-end mb-3"
                       >
-                        <h4 className="text-slate-700 text-xs sm:text-sm leading-snug group-hover/deal:text-blue-600 transition-colors line-clamp-2 mb-1.5 font-medium">
+                        <h4 className="text-slate-700 text-xs sm:text-sm leading-snug group-hover/deal:text-blue-700 transition-colors line-clamp-2 mb-1.5 font-medium">
                           {product.name}
                         </h4>
 
@@ -402,7 +406,7 @@ export default function Home({
                           e.stopPropagation();
                           setCurrentDealIndex(idx);
                         }}
-                        className="p-2 -m-2 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent"
+                        className="w-8 h-8 p-0 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent"
                         title={`Товар ${idx + 1}`}
                         aria-label={`Товар ${idx + 1}`}
                       >
@@ -458,7 +462,7 @@ export default function Home({
             >
               <div className="w-full h-28 sm:h-36 rounded-xl overflow-hidden bg-slate-50 mb-2 border border-slate-100/80 shrink-0">
                 <img
-                  src={cat.image || cat.bg}
+                  src={getIpxImageUrl(cat.image || cat.bg, '400x300')}
                   alt={cat.name}
                   width="200"
                   height="200"
@@ -496,7 +500,7 @@ export default function Home({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 min-h-[380px]">
           {productsLoading ? (
             <ProductSkeleton count={4} />
           ) : (

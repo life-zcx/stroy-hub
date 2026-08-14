@@ -239,8 +239,8 @@ export default function KineticHeroBanner({
                 </h1>
 
                 <div className="space-y-2.5">
-                  <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg font-bold text-slate-800 leading-snug font-outfit border-l-4 border-blue-600 pl-4">
-                    Прямые поставки строительных материалов <span className="text-blue-600 font-extrabold">от ведущих дистрибьюторов</span>
+                  <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg font-bold text-slate-800 leading-snug font-outfit border-l-4 border-blue-700 pl-4">
+                    Прямые поставки строительных материалов <span className="text-blue-700 font-black">от ведущих дистрибьюторов</span>
                   </p>
 
                   <p ref={textRef} className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium max-w-xl">
@@ -517,7 +517,7 @@ export default function KineticHeroBanner({
             key={idx}
             type="button"
             onClick={() => goToSlide(idx)}
-            className="p-2 -m-2 flex items-center justify-center transition-all duration-300 cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent p-0"
             title={`Слайд ${idx + 1}`}
             aria-label={`Слайд ${idx + 1}`}
           >

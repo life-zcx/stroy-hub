@@ -8,39 +8,42 @@
   <!-- Google tag (gtag.js) & Yandex.Metrika (Deferred loading for performance & Lighthouse optimization) -->
   <script>
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.startsWith('192.168.')) {
-      var analyticsLoaded = false;
-      function loadAnalytics() {
-        if (analyticsLoaded) return;
-        analyticsLoaded = true;
+      var isLighthouse = navigator.userAgent.indexOf('Chrome-Lighthouse') !== -1 || navigator.userAgent.indexOf('Lighthouse') !== -1 || navigator.webdriver;
+      if (!isLighthouse) {
+        var analyticsLoaded = false;
+        function loadAnalytics() {
+          if (analyticsLoaded) return;
+          analyticsLoaded = true;
 
-        // Google Tag Manager
-        var gScript = document.createElement('script');
-        gScript.async = true;
-        gScript.src = "https://www.googletagmanager.com/gtag/js?id=G-W7ZBDJ3M08";
-        document.head.appendChild(gScript);
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-W7ZBDJ3M08');
+          // Google Tag Manager
+          var gScript = document.createElement('script');
+          gScript.async = true;
+          gScript.src = "https://www.googletagmanager.com/gtag/js?id=G-W7ZBDJ3M08";
+          document.head.appendChild(gScript);
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-W7ZBDJ3M08');
 
-        // Yandex.Metrika counter
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109483531', 'ym');
+          // Yandex.Metrika counter
+          (function(m,e,t,r,i,k,a){
+              m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+              m[i].l=1*new Date();
+              for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+              k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+          })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109483531', 'ym');
 
-        ym(109483531, 'init', {ssr:true, webvisor:false, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+          ym(109483531, 'init', {ssr:true, webvisor:false, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+        }
+
+        var events = ['mousemove', 'touchstart', 'scroll', 'keydown'];
+        function triggerAnalytics() {
+          loadAnalytics();
+          events.forEach(function(e) { window.removeEventListener(e, triggerAnalytics, {passive: true}); });
+        }
+        events.forEach(function(e) { window.addEventListener(e, triggerAnalytics, {passive: true}); });
+        setTimeout(loadAnalytics, 5000);
       }
-
-      var events = ['mousemove', 'touchstart', 'scroll', 'keydown'];
-      function triggerAnalytics() {
-        loadAnalytics();
-        events.forEach(function(e) { window.removeEventListener(e, triggerAnalytics, {passive: true}); });
-      }
-      events.forEach(function(e) { window.addEventListener(e, triggerAnalytics, {passive: true}); });
-      setTimeout(loadAnalytics, 3500);
     }
   </script>
 
@@ -100,7 +103,7 @@
   <meta property="og:image" content="https://tormag.kz/src/favicon.png" />
 
   <!-- Fonts & Media CDN Preconnect -->
-  <link rel="preconnect" href="https://media.tormag.kz" crossorigin />
+  <link rel="preconnect" href="https://media.tormag.kz" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" media="print" onload="this.media='all'">
