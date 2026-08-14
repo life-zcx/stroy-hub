@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductSkeleton from '../components/ProductSkeleton';
+import { getIpxImageUrl } from '../utils/productImage';
 
 export default function Storefront({
   products,
@@ -367,24 +368,33 @@ export default function Storefront({
         </h1>
 
         {/* Category image tile grid — сразу под заголовком */}
-        {/* Category image tile grid — сразу под заголовком */}
-        {(currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-3">
+        {loading && categories.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl bg-slate-200 animate-pulse" />
+            ))}
+          </div>
+        ) : (currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
             {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map((cat) => {
               const imageSrc = cat.image || cat.bg;
+              const optimizedSrc = imageSrc ? getIpxImageUrl(imageSrc, '400x300') : null;
 
               return (
                 <Link
                   key={cat.id}
                   href={getPageHref('catalog', null, cat.slug)}
                   onClick={() => setSelectedCategory(cat.slug)}
-                  className="relative w-full h-32 sm:h-40 md:h-44 lg:h-48 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
+                  className="relative w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
                 >
-                  {imageSrc ? (
+                  {optimizedSrc ? (
                     <>
                       <img
-                        src={imageSrc}
+                        src={optimizedSrc}
                         alt={cat.name}
+                        width="400"
+                        height="300"
+                        decoding="async"
                         className="w-full h-full object-cover"
                         loading="lazy"
                         onError={(e) => {
@@ -399,15 +409,15 @@ export default function Storefront({
                   ) : null}
 
                   {/* Clean Light Fallback Card (when image is missing) */}
-                  <div className={`category-fallback-box ${imageSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-4 sm:p-5 flex flex-col justify-end text-left`}>
+                  <div className={`category-fallback-box ${optimizedSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-4 sm:p-5 flex flex-col justify-end text-left`}>
                     <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center mb-auto">
                       <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
                     </div>
                   </div>
 
                   {/* Category Title directly overlayed at the bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-5 text-left z-10">
-                    <h3 className={`text-sm sm:text-base md:text-lg font-extrabold leading-tight font-outfit ${imageSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-left z-10">
+                    <h3 className={`text-sm sm:text-base md:text-xl font-extrabold leading-tight font-outfit ${optimizedSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
                       {cat.name}
                     </h3>
                   </div>

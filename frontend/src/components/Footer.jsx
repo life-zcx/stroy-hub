@@ -33,7 +33,7 @@ export default function Footer({
           <div className="space-y-3 hidden lg:block">
             <div className="flex items-center">
               <Link href={getPageHref('home')} onClick={() => onNavigate('home')}>
-                <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="98" height="44" className="h-11 w-auto object-contain brightness-0 invert" />
+                <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="98" height="44" decoding="async" loading="lazy" className="h-11 w-[98px] object-contain brightness-0 invert" />
               </Link>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed max-w-xs font-medium">
@@ -176,7 +176,7 @@ export default function Footer({
         {/* Bottom Legal & Copyright Bar */}
         <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-slate-400 text-center md:text-left">
           <div className="flex items-center gap-2.5">
-            <img src={logoImg} alt="TORMAG.KZ" width="60" height="24" className="h-6 w-auto object-contain brightness-0 invert lg:hidden shrink-0" />
+            <img src={logoImg} alt="TORMAG.KZ" width="60" height="24" decoding="async" loading="lazy" className="h-6 w-[60px] object-contain brightness-0 invert lg:hidden shrink-0" />
             <p>© 2026 TORMAG.KZ. Все права защищены.</p>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center text-[11px]">

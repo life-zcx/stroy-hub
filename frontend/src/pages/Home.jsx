@@ -3,7 +3,7 @@ import {
   ArrowRight, ShieldCheck, Truck, SlidersHorizontal,
   Award, Building2, TicketPercent, FileSpreadsheet,
   Hammer, HardHat, ChevronLeft, ChevronRight,
-  Gift, UserPlus, LogIn, Percent, ShoppingCart, Heart, Sparkles
+  Gift, UserPlus, LogIn, Percent, ShoppingCart, Heart, Sparkles, LayoutGrid
 } from 'lucide-react';
 import { getBrands, getHomePromotions, getProductsPage } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -450,36 +450,49 @@ export default function Home({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {(rootCategories.length > 0 ? rootCategories : categoriesList).map(cat => (
-            <Link
-              key={cat.id || cat.slug}
-              href={getPageHref('catalog', null, cat.slug || cat.id)}
-              onClick={() => {
-                setSelectedCategory(cat.slug || cat.id);
-              }}
-              className="bg-white border border-slate-100 rounded-2xl p-2 sm:p-3 hover:shadow-md transition-all text-center group cursor-pointer flex flex-col items-center justify-between"
-            >
-              <div className="w-full h-28 sm:h-36 rounded-xl overflow-hidden bg-slate-50 mb-2 border border-slate-100/80 shrink-0 flex items-center justify-center p-2">
-                <img
-                  src={getIpxImageUrl(cat.image || cat.bg, '400x300')}
-                  alt={cat.name}
-                  width="200"
-                  height="200"
-                  loading="lazy"
-                  decoding="async"
-                  className="max-h-full max-w-full object-contain"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = FALLBACK_PRODUCT_IMAGE;
-                  }}
-                />
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-slate-850 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
-                {cat.name}
-              </span>
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6">
+          {(rootCategories.length > 0 ? rootCategories : categoriesList).map((cat) => {
+            const imageSrc = cat.image || cat.bg;
+            return (
+              <Link
+                key={cat.id || cat.slug}
+                href={getPageHref('catalog', null, cat.slug || cat.id)}
+                onClick={() => setSelectedCategory(cat.slug || cat.id)}
+                className="relative w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
+              >
+                {imageSrc ? (
+                  <>
+                    <img
+                      src={getIpxImageUrl(imageSrc, '400x300')}
+                      alt={cat.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const fallbackEl = e.target.parentElement?.querySelector('.category-fallback-box');
+                        if (fallbackEl) fallbackEl.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
+                  </>
+                ) : null}
+
+                {/* Clean Light Fallback Card (when image is missing) */}
+                <div className={`category-fallback-box ${imageSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-3 sm:p-4 flex flex-col justify-end text-left`}>
+                  <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center mb-auto">
+                    <LayoutGrid className="h-5 w-5 text-slate-400" />
+                  </div>
+                </div>
+
+                {/* Category Title directly overlayed at the bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-left z-10">
+                  <h3 className={`text-sm sm:text-base md:text-xl font-extrabold leading-tight font-outfit ${imageSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
+                    {cat.name}
+                  </h3>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -503,7 +516,7 @@ export default function Home({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 min-h-[660px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 items-start min-h-[380px]">
           {productsLoading ? (
             <ProductSkeleton count={8} />
           ) : (
