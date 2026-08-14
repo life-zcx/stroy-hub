@@ -556,6 +556,7 @@ export default function Header({
                               <span className="text-xs font-black text-slate-900">{formatPrice(item.price * item.quantity)}</span>
                               <button
                                 type="button"
+                                aria-label="Удалить товар из корзины"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onRemoveFromCart?.(item.id, item.selectedOption);
@@ -573,7 +574,7 @@ export default function Header({
                       {/* Footer summary */}
                       <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
                         <div className="flex justify-between items-end">
-                          <span className="text-xs font-bold text-slate-555">Итого к оплате:</span>
+                          <span className="text-xs font-bold text-slate-600">Итого к оплате:</span>
                           <span className="text-base font-extrabold text-emerald-600 font-outfit">{formatPrice(cartTotal)}</span>
                         </div>
                       </div>
