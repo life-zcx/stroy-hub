@@ -2,6 +2,7 @@ import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { sendReviewModerationAlert } from '../utils/telegramBot.js';
+import { clearProductsCache } from '../services/pricingService.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -32,18 +33,7 @@ const readReviewSettings = () => {
   return DEFAULT_REVIEW_SETTINGS;
 };
 
-// Helper to clear products cache
-const clearProductsCache = async () => {
-  try {
-    const keys = await redisClient.keys('products:*');
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-      logger.info(`[REDIS] Cleared products cache due to review update: ${keys.length} keys`);
-    }
-  } catch (err) {
-    logger.error('[REDIS ERROR] Error clearing products cache:', err);
-  }
-};
+
 
 // Helper to recalculate average product rating from approved reviews only
 export const recalculateProductRating = async (productId) => {

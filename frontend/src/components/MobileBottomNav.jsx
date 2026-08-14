@@ -66,6 +66,7 @@ export default function MobileBottomNav({
             <button
               key={item.id}
               type="button"
+              aria-label={item.label}
               onClick={item.action}
               className={`flex flex-col items-center justify-center py-1 relative transition-colors cursor-pointer ${
                 active

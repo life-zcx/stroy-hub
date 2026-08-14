@@ -114,6 +114,7 @@ model Product {
   article        String?
   slug           String?     @unique
   options        Json?
+  isDeleted      Boolean     @default(false)
   returnRequests ReturnRequest[]
   cartItems      CartItem[]
 
@@ -124,6 +125,7 @@ model Product {
   @@index([name])
   @@index([article])
   @@index([isHit])
+  @@index([isDeleted])
   @@index([categoryId, price])
   @@index([supplierId, price])
 }
@@ -419,4 +421,6 @@ model AiChatLog {
   createdAt           DateTime @default(now())
 
   @@index([createdAt])
+  @@index([userId])
+  @@index([ip])
 }

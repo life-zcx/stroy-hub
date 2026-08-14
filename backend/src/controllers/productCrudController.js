@@ -158,33 +158,46 @@ export const createProduct = async (req, res) => {
       candidateSlug = `${finalSlug}-${slugSuffix++}`;
     }
 
-    const newProduct = await prisma.product.create({
-      data: {
-        name,
-        slug: candidateSlug,
-        description: description || null,
-        details: details || null,
-        specifications: specifications || null,
-        usage: usage || null,
-        category,
-        categoryId: categoryId ? parseInt(categoryId) : null,
-        price: parseFloat(price),
-        oldPrice: oldPrice ? parseFloat(oldPrice) : null,
-        image: finalImage,
-        images: finalImages,
-        rating: rating ? parseFloat(rating) : 4.5,
-        reviews: reviews ? parseInt(reviews) : 0,
-        isHit: isHit === 'true' || isHit === true,
-        bulkDiscount: bulkDiscount || null,
-        supplierId: effectiveSupplierId,
-        cashbackPercent: cashbackPercent !== undefined && cashbackPercent !== '' ? parseInt(cashbackPercent) : null,
-        article: article || null,
-        options: parsedOptions
-      },
-      include: {
-        supplier: true
+    const productData = {
+      name,
+      slug: candidateSlug,
+      description: description || null,
+      details: details || null,
+      specifications: specifications || null,
+      usage: usage || null,
+      category,
+      categoryId: categoryId ? parseInt(categoryId) : null,
+      price: parseFloat(price),
+      oldPrice: oldPrice ? parseFloat(oldPrice) : null,
+      image: finalImage,
+      images: finalImages,
+      rating: rating ? parseFloat(rating) : 4.5,
+      reviews: reviews ? parseInt(reviews) : 0,
+      isHit: isHit === 'true' || isHit === true,
+      bulkDiscount: bulkDiscount || null,
+      supplierId: effectiveSupplierId,
+      cashbackPercent: cashbackPercent !== undefined && cashbackPercent !== '' ? parseInt(cashbackPercent) : null,
+      article: article || null,
+      options: parsedOptions
+    };
+
+    let newProduct;
+    try {
+      newProduct = await prisma.product.create({
+        data: productData,
+        include: { supplier: true }
+      });
+    } catch (createErr) {
+      if (createErr.code === 'P2002') {
+        productData.slug = `${candidateSlug}-${Date.now().toString(36)}`;
+        newProduct = await prisma.product.create({
+          data: productData,
+          include: { supplier: true }
+        });
+      } else {
+        throw createErr;
       }
-    });
+    }
 
     await clearProductsCache();
     res.status(201).json(newProduct);
@@ -401,14 +414,22 @@ export const deleteProduct = async (req, res) => {
     
     const targetId = parseInt(id, 10);
 
-    await prisma.$transaction([
-      prisma.cartItem.deleteMany({ where: { productId: targetId } }),
-      prisma.analyticsEvent.deleteMany({ where: { productId: targetId } }),
-      prisma.review.deleteMany({ where: { productId: targetId } }),
-      prisma.returnRequest.deleteMany({ where: { productId: targetId } }),
-      prisma.orderItem.deleteMany({ where: { productId: targetId } }),
-      prisma.product.delete({ where: { id: targetId } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.cartItem.deleteMany({ where: { productId: targetId } }),
+        prisma.product.update({
+          where: { id: targetId },
+          data: { isDeleted: true }
+        }),
+      ]);
+    } catch (updateErr) {
+      if (updateErr.message && updateErr.message.includes('isDeleted')) {
+        await prisma.cartItem.deleteMany({ where: { productId: targetId } });
+        await prisma.$executeRaw`UPDATE "Product" SET "isDeleted" = true WHERE id = ${targetId}`.catch(() => {});
+      } else {
+        throw updateErr;
+      }
+    }
     
     await clearProductsCache();
     res.json({ message: 'Товар успешно удален' });

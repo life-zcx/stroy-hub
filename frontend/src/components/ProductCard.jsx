@@ -113,6 +113,8 @@ export default function ProductCard({
 
       {/* ── Favorite ── */}
       <button
+        type="button"
+        aria-label="Добавить в избранное"
         onClick={(e) => {
           e.stopPropagation();
           onToggleFavorite?.(product);
@@ -136,7 +138,9 @@ export default function ProductCard({
         <div className="aspect-square w-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative p-2 sm:p-3 rounded-t-2xl">
           <img
             src={imageSrc}
-            alt={product.name}
+            alt={product.name || 'Товар TORMAG'}
+            width="300"
+            height="300"
             loading="lazy"
             decoding="async"
             className="max-h-full max-w-full object-contain"

@@ -34,6 +34,10 @@ function buildOrderWhere(user) {
     where.userId = user.id;
   } else if (user.role === 'SUPPLIER') {
     where.items = { some: { product: { supplierId } } };
+  } else if (user.role === 'ADMIN') {
+    // Admin sees all orders
+  } else {
+    where.userId = user.id || -1;
   }
   return where;
 }

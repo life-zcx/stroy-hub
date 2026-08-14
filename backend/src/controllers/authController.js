@@ -33,25 +33,19 @@ const checkPhoneExists = async (phone) => {
   const normalized = normalizePhone(phone);
   if (!normalized || normalized.length < 10) return false;
 
+  const last10Digits = normalized.slice(-10);
+
   const existing = await prisma.user.findFirst({
     where: {
       OR: [
         { phoneNormalized: normalized },
+        { phoneNormalized: { endsWith: last10Digits } },
         { phone: phone }
       ]
     },
     select: { id: true }
   });
-  if (existing) return true;
-
-  const last10Digits = normalized.slice(-10);
-  const matched = await prisma.$queryRaw`
-    SELECT id FROM "User" 
-    WHERE "phone" IS NOT NULL 
-      AND RIGHT(REGEXP_REPLACE("phone", '[^\d]', '', 'g'), 10) = ${last10Digits}
-    LIMIT 1
-  `;
-  return matched.length > 0;
+  return Boolean(existing);
 };
 
 export const sendRegisterCode = async (req, res) => {
@@ -714,6 +708,16 @@ export const deleteAccount = async (req, res) => {
             "deletedAt" = NOW() 
         WHERE "id" = ${userId}
       `.catch(() => {});
+    }
+
+    // Clean up Redis session cache & password tokens
+    try {
+      await redisClient.del(`user:session:${userId}`);
+      if (user.email) {
+        await prisma.passwordResetToken.deleteMany({ where: { email: user.email } });
+      }
+    } catch (cleanErr) {
+      logger.warn(`Session cleanup warning on user #${userId} deletion: ${cleanErr.message}`);
     }
 
     clearAuthCookie(req, res);

@@ -40,3 +40,10 @@ chmod +x deploy/deploy.sh
 * **Storage & CDN:** Cloudflare R2 (`media.tormag.kz`), Яндекс.Диск WebDAV.
 * **Mail Server:** Stalwart Mail Server, Roundcube Webmail.
 * **Host Web Server:** Caddy (HTTPS / Automatic Let's Encrypt SSL).
+
+---
+
+## 🗄️ Регламент работы с БД (Database Migrations)
+
+Любое изменение схемы `backend/prisma/schema.prisma` требует обязательного создания файла SQL-миграции в `backend/prisma/migrations/<YYYYMMDD_description>/migration.sql` и вызова `npx prisma generate`. Подробнее в [PROJECT_OVERVIEW.md#7-регламент-работы-с-базой-данных-и-миграциями-database-policy](PROJECT_OVERVIEW.md#7-регламент-работы-с-базой-данных-и-миграциями-database-policy).
+

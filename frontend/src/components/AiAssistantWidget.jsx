@@ -170,7 +170,7 @@ export default function AiAssistantWidget({ onAddToCart, showToast, onNavigate, 
       {/* ── Floating Open Button ── */}
       {!isOpen && (
         <div
-          className="fixed z-40 font-sans"
+          className="hidden sm:block fixed z-40 font-sans"
           style={{
             bottom: bottomOffset,
             right: '1.5rem'

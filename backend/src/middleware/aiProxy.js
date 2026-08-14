@@ -46,17 +46,19 @@ export const aiProxyHandler = async (req, res) => {
           ? data.recommendedProducts.map(p => typeof p === 'object' ? p.id : p).filter(id => Number.isInteger(id))
           : [];
 
-        prisma.aiChatLog.create({
-          data: {
-            prompt: String(promptText),
-            reply: String(data.reply),
-            recommendedProdIds,
-            ip: String(clientIp || '').substring(0, 45),
-            userId: userId ? Number(userId) : null
-          }
-        }).catch(err => {
+        try {
+          await prisma.aiChatLog.create({
+            data: {
+              prompt: String(promptText),
+              reply: String(data.reply),
+              recommendedProdIds,
+              ip: String(clientIp || '').substring(0, 45),
+              userId: userId ? Number(userId) : null
+            }
+          });
+        } catch (err) {
           logger.error('[AI CHAT DB LOG ERROR]', { error: err.message });
-        });
+        }
       }
     }
 

@@ -15,10 +15,16 @@ const formatCartItems = async (cartItems) => {
     if (item.selectedOption && pricedProduct.options && typeof pricedProduct.options === 'object') {
       const opts = pricedProduct.options;
       if (Array.isArray(opts.items)) {
-        const targetOpt = String(item.selectedOption).trim();
-        const matchedOpt = opts.items.find(o => String(o.value || '').trim() === targetOpt);
-        if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null && !isNaN(parseFloat(matchedOpt.price))) {
-          effectivePrice = parseFloat(matchedOpt.price);
+        const targetOpt = String(item.selectedOption).trim().toLowerCase();
+        const matchedOpt = opts.items.find(o => {
+          const valStr = String(o.value || o.name || '').trim().toLowerCase();
+          return valStr === targetOpt;
+        });
+        if (matchedOpt && matchedOpt.price !== undefined && matchedOpt.price !== null) {
+          const parsedOptPrice = parseFloat(matchedOpt.price);
+          if (!isNaN(parsedOptPrice) && parsedOptPrice > 0) {
+            effectivePrice = parsedOptPrice;
+          }
         }
       }
     }

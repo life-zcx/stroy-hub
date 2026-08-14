@@ -332,6 +332,13 @@ export default function App() {
       />
 
       {currentPage !== 'ai-assistant' && <ScrollToTop cartItemsCount={cart.cartItemsCount} />}
+      <AiAssistantWidget
+        onAddToCart={cart.handleAddToCart}
+        showToast={showToast}
+        onNavigate={setCurrentPage}
+        currentPage={currentPage}
+        cartItemsCount={cart.cartItemsCount}
+      />
       <MobileBottomNav
         currentPage={currentPage}
         onNavigate={setCurrentPage}

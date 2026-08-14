@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import tls from 'tls';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import { uploadLatestBackupToYandex } from './yandexBackup.js';
@@ -292,15 +292,31 @@ const runManualBackup = () => {
 
       console.log(`[BACKUP] Starting manual backup to ${outputPath}...`);
 
-      const cmd = `PGPASSWORD="${password}" pg_dump -h ${host} -p ${port} -U ${username} -d ${dbName} | gzip > ${outputPath}`;
+      const pgDump = spawn('pg_dump', ['-h', host, '-p', port, '-U', username, '-d', dbName], {
+        env: { ...process.env, PGPASSWORD: password }
+      });
+      const gzip = spawn('gzip');
+      const outputStream = fs.createWriteStream(outputPath);
 
-      exec(cmd, (error, stdout, stderr) => {
-        if (error) {
-          console.error('[BACKUP ERROR] pg_dump failed:', stderr);
-          return reject(error);
-        }
+      pgDump.stdout.pipe(gzip.stdin);
+      gzip.stdout.pipe(outputStream);
+
+      let stderrBuf = '';
+      pgDump.stderr.on('data', data => { stderrBuf += data.toString(); });
+      gzip.stderr.on('data', data => { stderrBuf += data.toString(); });
+
+      outputStream.on('finish', () => {
         console.log(`[BACKUP SUCCESS] Created backup: ${filename}`);
         resolve({ filename, outputPath });
+      });
+
+      pgDump.on('error', err => {
+        console.error('[BACKUP ERROR] pg_dump failed:', err.message || stderrBuf);
+        reject(err);
+      });
+      gzip.on('error', err => {
+        console.error('[BACKUP ERROR] gzip failed:', err.message || stderrBuf);
+        reject(err);
       });
     } catch (err) {
       reject(err);

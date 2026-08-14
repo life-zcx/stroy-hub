@@ -72,3 +72,45 @@ export const requireRoles = (roles = []) => {
     next();
   };
 };
+
+export const optionalAuth = async (req, res, next) => {
+  const token = getTokenFromRequest(req);
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded && decoded.id) {
+      let user = null;
+      const sessionKey = `user:session:${decoded.id}`;
+
+      try {
+        const cached = await redisClient.get(sessionKey);
+        if (cached) {
+          user = JSON.parse(cached);
+        }
+      } catch {}
+
+      if (!user) {
+        user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { id: true, email: true, role: true, supplierId: true, isBlocked: true, isDeleted: true },
+        });
+      }
+
+      if (user && !user.isBlocked && !user.isDeleted) {
+        req.user = {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          supplierId: user.supplierId,
+        };
+      }
+    }
+  } catch {}
+
+  next();
+};
+
+

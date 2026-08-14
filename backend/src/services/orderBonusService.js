@@ -32,6 +32,10 @@ export const calculateOrderBonusDiscount = async (userId, useBonuses, finalTotal
 
 export const recordOrderBonusTransactions = async (userId, orderId, bonusDiscount, subtotalAmount, finalTotalAmount, items, loyalty, tx) => {
   if (bonusDiscount > 0) {
+    const currentAvailable = await getAvailableBalance(parseInt(userId, 10), tx);
+    if (currentAvailable < bonusDiscount) {
+      throw new Error(`Недостаточно бонусов на счете. Доступно: ${Math.round(currentAvailable)} ₸, попытались списать: ${Math.round(bonusDiscount)} ₸.`);
+    }
     await createBonusSpent(parseInt(userId, 10), orderId, bonusDiscount, tx);
   }
 

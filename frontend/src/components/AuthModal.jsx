@@ -62,74 +62,81 @@ export default function AuthModal({
   const isLegalReg = authTab === 'register' && entityType === 'LEGAL';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className={`w-full ${isLegalReg ? 'max-w-4xl' : authTab === 'register' ? 'max-w-2xl' : 'max-w-md'} bg-white border border-gray-150 p-5 sm:p-8 rounded-3xl shadow-2xl relative space-y-4 sm:space-y-5 animate-fade-in-up transition-all duration-300 my-auto max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] overflow-y-auto custom-scrollbar`}>
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-slate-900 hover:bg-gray-100 rounded-full transition-colors z-10"
-        >
-          <X className="h-5 w-5" />
-        </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
+      <div className={`w-full ${isLegalReg ? 'max-w-4xl' : authTab === 'register' ? 'max-w-2xl' : 'max-w-md'} bg-white border border-gray-150 rounded-3xl shadow-2xl relative flex flex-col animate-fade-in-up transition-all duration-300 my-auto max-h-[calc(100dvh-2.5rem)] sm:max-h-[90vh] overflow-hidden`}>
+        
+        {/* ── Pinned Header Section (Logo, Title, Tabs, Entity Switcher) ── */}
+        <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 bg-white rounded-t-3xl relative shrink-0 space-y-3">
+          <button
+            onClick={onClose}
+            className="absolute top-3.5 right-3.5 p-1.5 text-gray-400 hover:text-slate-900 hover:bg-gray-100 rounded-full transition-colors z-10"
+          >
+            <X className="h-5 w-5" />
+          </button>
 
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center mb-1">
-            <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[95px] -my-6 w-auto object-contain shrink-0" />
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center mb-1">
+              <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[80px] sm:h-[90px] -my-5 w-auto object-contain shrink-0" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
+            <p className="text-slate-500 text-xs mt-0.5 font-medium">
+              {authTab === 'forgot' ? 'Восстановление пароля (Шаг 1 из 3): Укажите почту' :
+                authTab === 'reset-code' ? 'Восстановление пароля (Шаг 2 из 3): Код подтверждения' :
+                  authTab === 'reset-password' || authTab === 'reset' ? 'Восстановление пароля (Шаг 3 из 3): Установка пароля' :
+                    authTab === 'register-confirm' ? 'Подтверждение почты' :
+                      'Авторизуйтесь для оформления заказов и отслеживания доставки'}
+            </p>
           </div>
-          <h3 className="text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
-          <p className="text-slate-500 text-xs mt-1 font-medium">
-            {authTab === 'forgot' ? 'Восстановление пароля (Шаг 1 из 3): Укажите почту' :
-              authTab === 'reset-code' ? 'Восстановление пароля (Шаг 2 из 3): Код подтверждения' :
-                authTab === 'reset-password' || authTab === 'reset' ? 'Восстановление пароля (Шаг 3 из 3): Установка пароля' :
-                  authTab === 'register-confirm' ? 'Подтверждение почты' :
-                    'Авторизуйтесь для оформления заказов и отслеживания доставки'}
-          </p>
+
+          {/* Tab Switcher - only show for login/register */}
+          {(authTab === 'login' || authTab === 'register') && (
+            <div className="flex bg-gray-100 p-1 rounded-xl">
+              <button
+                onClick={() => { setAuthTab('login'); setAuthError(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+              >
+                Войти
+              </button>
+              <button
+                onClick={() => { setAuthTab('register'); setAuthError(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+              >
+                Регистрация
+              </button>
+            </div>
+          )}
+
+          {/* Entity Type Switcher (Physical vs Legal) during Registration */}
+          {authTab === 'register' && (
+            <div className="flex items-center justify-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setEntityType('PHYSICAL')}
+                className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all border flex items-center justify-center gap-1.5 ${entityType === 'PHYSICAL'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+              >
+                <User className="h-4 w-4 shrink-0" />
+                <span>Физическое лицо</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntityType('LEGAL')}
+                className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all border flex items-center justify-center gap-1.5 ${entityType === 'LEGAL'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+              >
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span>Юридическое лицо</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Tab Switcher - only show for login/register */}
-        {(authTab === 'login' || authTab === 'register') && (
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => { setAuthTab('login'); setAuthError(null); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-            >
-              Войти
-            </button>
-            <button
-              onClick={() => { setAuthTab('register'); setAuthError(null); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-            >
-              Регистрация
-            </button>
-          </div>
-        )}
-
-        {/* Entity Type Switcher (Physical vs Legal) during Registration */}
-        {authTab === 'register' && (
-          <div className="flex items-center justify-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-            <button
-              type="button"
-              onClick={() => setEntityType('PHYSICAL')}
-              className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all border flex items-center justify-center gap-1.5 ${entityType === 'PHYSICAL'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-            >
-              <User className="h-4 w-4 shrink-0" />
-              <span>Физическое лицо</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setEntityType('LEGAL')}
-              className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all border flex items-center justify-center gap-1.5 ${entityType === 'LEGAL'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-            >
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span>Юридическое лицо</span>
-            </button>
-          </div>
-        )}
+        {/* ── Scrollable Form Body ── */}
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar text-left">
 
         {authError && (
           <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-xl border border-red-100">
@@ -586,6 +593,7 @@ export default function AuthModal({
             </div>
           )}
         </form>
+        </div>
       </div>
     </div>
   );

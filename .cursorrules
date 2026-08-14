@@ -1,0 +1,7 @@
+# Tormag Project Guidelines for AI Assistants & Developers
+
+## Database & Prisma Migration Policy (MANDATORY)
+
+1. **Migration Creation**: Every single modification to `backend/prisma/schema.prisma` (adding/updating/removing models, columns, relations, types, or indexes) MUST be accompanied by a new SQL migration file inside `backend/prisma/migrations/<YYYYMMDD_description>/migration.sql`.
+2. **Prisma Client Regeneration**: Immediately after editing `backend/prisma/schema.prisma`, run `npx prisma generate` in the `backend/` directory to keep `@prisma/client` types in sync.
+3. **Data Safety**: Never use `prisma migrate reset` in production or drop existing data. Always write non-destructive SQL migrations (`ADD COLUMN IF NOT EXISTS`, `DEFAULT` values for non-null columns).

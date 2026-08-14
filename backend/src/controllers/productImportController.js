@@ -447,6 +447,7 @@ export const matchEstimateXlsx = async (req, res) => {
     const parsedItems = [];
 
     const allProducts = await prisma.product.findMany({
+      where: { isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -458,7 +459,8 @@ export const matchEstimateXlsx = async (req, res) => {
         cashbackPercent: true,
         isHit: true,
         rating: true
-      }
+      },
+      take: 10000
     });
 
     const settings = readPricingSettings();

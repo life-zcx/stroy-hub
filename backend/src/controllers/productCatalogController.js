@@ -8,24 +8,41 @@ import {
   getVersionedProductsCacheKey
 } from '../services/pricingService.js';
 
-let categoriesCache = null;
-let categoriesCacheTime = 0;
+let categoriesCacheMemory = null;
+let categoriesCacheMemoryTime = 0;
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
+const CATEGORY_REDIS_KEY = 'categories:raw:all';
 
 export async function getAllCategoriesCached() {
+  try {
+    const cached = await redisClient.get(CATEGORY_REDIS_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch {}
+
   const now = Date.now();
-  if (categoriesCache && (now - categoriesCacheTime < CATEGORY_CACHE_TTL)) {
-    return categoriesCache;
+  if (categoriesCacheMemory && (now - categoriesCacheMemoryTime < CATEGORY_CACHE_TTL)) {
+    return categoriesCacheMemory;
   }
+
   const categories = await prisma.category.findMany();
-  categoriesCache = categories;
-  categoriesCacheTime = now;
+  categoriesCacheMemory = categories;
+  categoriesCacheMemoryTime = now;
+
+  try {
+    await redisClient.set(CATEGORY_REDIS_KEY, JSON.stringify(categories), { EX: 300 });
+  } catch {}
+
   return categories;
 }
 
-export function clearCategoriesCache() {
-  categoriesCache = null;
-  categoriesCacheTime = 0;
+export async function clearCategoriesCache() {
+  categoriesCacheMemory = null;
+  categoriesCacheMemoryTime = 0;
+  try {
+    await redisClient.del(CATEGORY_REDIS_KEY);
+  } catch {}
 }
 
 export async function getDescendantCategorySlugsAndIds(categorySlugOrId) {
@@ -107,7 +124,7 @@ export const getAllProducts = async (req, res) => {
   const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
   const skip     = (pageNum - 1) * limitNum;
 
-  const where = {};
+  const where = { isDeleted: false };
   let searchConditions = null;
 
   if (search && search.trim() !== '') {
@@ -203,23 +220,49 @@ export const getAllProducts = async (req, res) => {
       where.OR = categoryConditions;
     }
 
-    const [total, products] = await Promise.all([
-      prisma.product.count({ where }),
-      prisma.product.findMany({
-        where,
-        include: {
-          supplier: true,
-          categoryRelation: true,
-          reviewsList: {
-            where: { isApproved: true },
-            select: { rating: true }
-          }
-        },
-        orderBy,
-        skip,
-        take: limitNum,
-      }),
-    ]);
+    let total, products;
+    try {
+      [total, products] = await Promise.all([
+        prisma.product.count({ where }),
+        prisma.product.findMany({
+          where,
+          include: {
+            supplier: true,
+            categoryRelation: true,
+            reviewsList: {
+              where: { isApproved: true },
+              select: { rating: true }
+            }
+          },
+          orderBy,
+          skip,
+          take: limitNum,
+        }),
+      ]);
+    } catch (dbErr) {
+      if (dbErr.message && dbErr.message.includes('isDeleted')) {
+        delete where.isDeleted;
+        [total, products] = await Promise.all([
+          prisma.product.count({ where }),
+          prisma.product.findMany({
+            where,
+            include: {
+              supplier: true,
+              categoryRelation: true,
+              reviewsList: {
+                where: { isApproved: true },
+                select: { rating: true }
+              }
+            },
+            orderBy,
+            skip,
+            take: limitNum,
+          }),
+        ]);
+      } else {
+        throw dbErr;
+      }
+    }
 
     const settings = readPricingSettings();
     const allCats = await getAllCategoriesCached();
