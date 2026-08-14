@@ -20,16 +20,37 @@ export default function PWAUpdatePrompt() {
     },
   });
 
+  const [updating, setUpdating] = React.useState(false);
+
   const handleUpdate = async () => {
+    setUpdating(true);
     try {
       if ('caches' in window) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map((name) => caches.delete(name)));
       }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
+      }
     } catch (e) {
       console.error('Failed to clear browser cache:', e);
     }
-    updateServiceWorker(true);
+
+    try {
+      await updateServiceWorker(true);
+    } catch (e) {
+      console.warn('updateServiceWorker error:', e);
+    }
+
+    // Force immediate hard reload
+    setTimeout(() => {
+      window.location.reload();
+    }, 200);
   };
 
   const handleDismiss = () => {
@@ -72,10 +93,11 @@ export default function PWAUpdatePrompt() {
           <button
             type="button"
             onClick={handleUpdate}
-            className="w-full bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-4 rounded-2xl transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer border-0"
+            disabled={updating}
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 active:scale-98 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-4 rounded-2xl transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer border-0"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span>Обновить и применить</span>
+            <RefreshCw className={`h-4 w-4 ${updating ? 'animate-spin' : ''}`} />
+            <span>{updating ? 'Применение изменений...' : 'Обновить и применить'}</span>
           </button>
         </div>
       </div>

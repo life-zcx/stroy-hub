@@ -47,13 +47,24 @@ export default function DeleteAccountModal({
     try {
       await deleteAccount(selectedReason);
 
-      // Clear frontend auth cookies and local storage explicitly
+      // Clear frontend auth cookies and all client storage explicitly
       try {
-        document.cookie = "tormag_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "tormag_admin_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        const pastDate = "Expires=Thu, 01 Jan 1970 00:00:00 UTC; Path=/;";
+        document.cookie = `tormag_auth_token=; ${pastDate}`;
+        document.cookie = `tormag_admin_auth_token=; ${pastDate}`;
+
+        const host = window.location.hostname;
+        if (host) {
+          document.cookie = `tormag_auth_token=; ${pastDate} Domain=${host};`;
+          document.cookie = `tormag_admin_auth_token=; ${pastDate} Domain=${host};`;
+          document.cookie = `tormag_auth_token=; ${pastDate} Domain=.${host};`;
+          document.cookie = `tormag_admin_auth_token=; ${pastDate} Domain=.${host};`;
+        }
+
         localStorage.removeItem('tormag_customer');
         localStorage.removeItem('customer');
         localStorage.removeItem('tormag_user');
+        sessionStorage.clear();
       } catch (e) {
         console.warn('Error clearing local storage/cookies:', e);
       }
