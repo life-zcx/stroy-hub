@@ -10,13 +10,14 @@ export default defineConfig({
     react(),
     basicSsl(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'auto',
       devOptions: {
         enabled: false
       },
       workbox: {
-        importScripts: ['/sw-push.js']
+        importScripts: ['/sw-push.js'],
+        cleanupOutdatedCaches: true
       },
       includeAssets: ['favicon.ico', 'favicon-32x32.png', 'favicon-16x16.png', 'robots.txt', 'apple-touch-icon.png', 'manifest.json', 'logo.png'],
       manifest: {

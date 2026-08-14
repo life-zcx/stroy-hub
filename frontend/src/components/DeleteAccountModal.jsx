@@ -58,109 +58,106 @@ export default function DeleteAccountModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[999999] bg-white w-screen h-screen min-h-screen overflow-y-auto animate-fade-in flex flex-col justify-between">
+    <div className="fixed inset-0 z-[999999] bg-white w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden animate-fade-in">
+      {/* ── Scrollable Body Area ── */}
       <div 
-        style={{ 
-          paddingTop: 'max(1rem, env(safe-area-inset-top, 1rem))',
-          paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))'
-        }}
-        className="max-w-lg w-full mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col justify-between text-left"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 1rem))' }}
+        className="max-w-lg w-full mx-auto p-4 sm:p-6 flex-1 overflow-y-auto space-y-4 sm:space-y-5 text-left"
       >
-        <div className="space-y-4 sm:space-y-5">
-
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer border-0 shrink-0"
-              title="Назад"
-            >
-              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.5]" />
-            </button>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight text-center">
-              Удалить учетную запись
-            </h2>
-            <div className="w-9 sm:w-10" /> {/* Spacer for centering header title */}
-          </div>
-
-          {/* ── Red Warning Banner ── */}
-          <div className="bg-[#fff0f2] border border-rose-200/70 rounded-2xl p-3 sm:p-3.5 flex items-center gap-3 text-rose-600 shadow-xs">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 stroke-[2.5]" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold leading-tight">
-              Отменить удаление аккаунта невозможно
-            </span>
-          </div>
-
-          {/* ── Description Section ── */}
-          <div className="space-y-1">
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 font-sans leading-snug">
-              Почему вы хотите удалить учетную запись?
-            </h3>
-            <p className="text-xs text-slate-500 font-normal leading-relaxed">
-              Вы уверены, что хотите завершить удаление учетной записи? После подтверждения ваши данные будут окончательно анонимизированы.
-            </p>
-          </div>
-
-          {/* ── Survey Reasons (Radio list) ── */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-900 font-sans">
-              Выберите причину
-            </h4>
-
-            <div className="space-y-2">
-              {REASON_OPTIONS.map((reason) => {
-                const isSelected = selectedReason === reason;
-                return (
-                  <label
-                    key={reason}
-                    onClick={() => setSelectedReason(reason)}
-                    className={`flex items-center gap-3 p-3 rounded-xl sm:rounded-2xl border transition-all cursor-pointer select-none ${
-                      isSelected
-                        ? 'bg-rose-50/60 border-rose-300 text-slate-900 shadow-xs'
-                        : 'bg-slate-50/70 hover:bg-slate-100/70 border-slate-200/80 text-slate-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                        isSelected
-                          ? 'border-rose-500 bg-rose-500 text-white'
-                          : 'border-slate-300 bg-white'
-                      }`}
-                    >
-                      {isSelected && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
-                    </div>
-                    <span className="text-xs sm:text-sm font-semibold leading-none">
-                      {reason}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Action Submit Button ── */}
-        <div className="pt-3 pb-1 sticky bottom-0 bg-white/95 backdrop-blur-md mt-auto">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={loading || !selectedReason}
-            className="w-full bg-[#ff2d55] hover:bg-[#e02447] disabled:opacity-40 text-white font-bold py-3.5 sm:py-4 px-5 rounded-2xl shadow-md shadow-rose-500/15 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer border-0 active:scale-98"
+            onClick={onClose}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer border-0 shrink-0"
+            title="Назад"
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Удаление...</span>
-              </>
-            ) : (
-              <span>Удалить учетную запись</span>
-            )}
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.5]" />
           </button>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 font-sans tracking-tight text-center">
+            Удалить учетную запись
+          </h2>
+          <div className="w-9 sm:w-10" /> {/* Spacer for centering header title */}
         </div>
 
+        {/* ── Red Warning Banner ── */}
+        <div className="bg-[#fff0f2] border border-rose-200/70 rounded-2xl p-3 sm:p-3.5 flex items-center gap-3 text-rose-600 shadow-xs">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 stroke-[2.5]" />
+          </div>
+          <span className="text-xs sm:text-sm font-bold leading-tight">
+            Отменить удаление аккаунта невозможно
+          </span>
+        </div>
+
+        {/* ── Description Section ── */}
+        <div className="space-y-1">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 font-sans leading-snug">
+            Почему вы хотите удалить учетную запись?
+          </h3>
+          <p className="text-xs text-slate-500 font-normal leading-relaxed">
+            Вы уверены, что хотите завершить удаление учетной записи? После подтверждения ваши данные будут окончательно анонимизированы.
+          </p>
+        </div>
+
+        {/* ── Survey Reasons (Radio list) ── */}
+        <div className="space-y-2">
+          <h4 className="text-xs sm:text-sm font-bold text-slate-900 font-sans">
+            Выберите причину
+          </h4>
+
+          <div className="space-y-2 pb-2">
+            {REASON_OPTIONS.map((reason) => {
+              const isSelected = selectedReason === reason;
+              return (
+                <label
+                  key={reason}
+                  onClick={() => setSelectedReason(reason)}
+                  className={`flex items-center gap-3 p-3 rounded-xl sm:rounded-2xl border transition-all cursor-pointer select-none ${
+                    isSelected
+                      ? 'bg-rose-50/60 border-rose-300 text-slate-900 shadow-xs'
+                      : 'bg-slate-50/70 hover:bg-slate-100/70 border-slate-200/80 text-slate-700'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                      isSelected
+                        ? 'border-rose-500 bg-rose-500 text-white'
+                        : 'border-slate-300 bg-white'
+                    }`}
+                  >
+                    {isSelected && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold leading-none">
+                    {reason}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Fixed Bottom Action Bar (Always visible above browser address bar & PWA bar) ── */}
+      <div 
+        style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 1.25rem))' }}
+        className="w-full max-w-lg mx-auto px-4 sm:px-6 pt-3 pb-3 bg-white border-t border-slate-100/90 shrink-0 text-left z-20 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]"
+      >
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={loading || !selectedReason}
+          className="w-full bg-[#ff2d55] hover:bg-[#e02447] disabled:opacity-40 text-white font-bold py-3.5 sm:py-4 px-5 rounded-2xl shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer border-0 active:scale-98"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Удаление...</span>
+            </>
+          ) : (
+            <span>Удалить учетную запись</span>
+          )}
+        </button>
       </div>
     </div>,
     document.body
