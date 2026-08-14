@@ -27,3 +27,4 @@ postgres_data/
 # Logs
 backend/logs/
 *.log
+*.timestamp-*.mjs

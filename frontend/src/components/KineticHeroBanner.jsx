@@ -108,20 +108,20 @@ export default function KineticHeroBanner({
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
     timelineRef.current = tl;
 
-    // Reset initial targets
+    // Reset initial targets cleanly without causing CLS layout shifts
     const textTargets = [titleRef.current, subtitleRef.current, textRef.current, ctaRef.current].filter(Boolean);
-    gsap.set(textTargets, { opacity: 0, y: 25 });
+    gsap.set(textTargets, { opacity: 0 });
     
     if (visualCardRef.current) {
-      gsap.set(visualCardRef.current, { opacity: 0, scale: 0.95, y: 20 });
+      gsap.set(visualCardRef.current, { opacity: 0, scale: 0.98 });
     }
 
     // Title Entrance
     if (titleRef.current) {
       tl.fromTo(
         titleRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6 }
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4 }
       );
     }
 
@@ -130,9 +130,9 @@ export default function KineticHeroBanner({
       const subTargets = [subtitleRef.current, textRef.current].filter(Boolean);
       tl.fromTo(
         subTargets,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 },
-        "-=0.4"
+        { opacity: 0 },
+        { opacity: 1, duration: 0.35, stagger: 0.05 },
+        "-=0.2"
       );
     }
 
@@ -140,9 +140,9 @@ export default function KineticHeroBanner({
     if (ctaRef.current) {
       tl.fromTo(
         ctaRef.current,
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.45 },
-        "-=0.3"
+        { opacity: 0 },
+        { opacity: 1, duration: 0.3 },
+        "-=0.2"
       );
     }
 
@@ -150,9 +150,9 @@ export default function KineticHeroBanner({
     if (visualCardRef.current) {
       tl.fromTo(
         visualCardRef.current,
-        { opacity: 0, scale: 0.94, y: 20 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.65, ease: 'power2.out' },
-        "-=0.5"
+        { opacity: 0, scale: 0.98 },
+        { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' },
+        "-=0.3"
       );
     }
 

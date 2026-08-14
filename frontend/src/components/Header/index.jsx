@@ -534,6 +534,10 @@ export default function Header({
                                 <img
                                   src={item.image}
                                   alt={item.name}
+                                  width="40"
+                                  height="40"
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-4/5 h-4/5 object-contain"
                                   onError={(e) => { e.target.src = 'https://placehold.co/40x40'; }}
                                 />
