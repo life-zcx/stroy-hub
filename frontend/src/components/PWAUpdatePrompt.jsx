@@ -9,10 +9,26 @@ export default function PWAUpdatePrompt() {
   } = useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Periodically check for SW updates every 15 minutes
-        setInterval(() => {
+        // Immediate check on registration
+        r.update().catch(() => {});
+
+        // Check on tab focus / visibility change
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') {
+            r.update().catch(() => {});
+          }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Periodically check for SW updates every 5 minutes
+        const intervalId = setInterval(() => {
           r.update().catch(() => {});
-        }, 15 * 60 * 1000);
+        }, 5 * 60 * 1000);
+
+        return () => {
+          clearInterval(intervalId);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
       }
     },
     onRegisterError(error) {

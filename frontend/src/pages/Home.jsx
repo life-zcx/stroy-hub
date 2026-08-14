@@ -292,6 +292,7 @@ export default function Home({
                         {/* Favorite button */}
                         <button
                           type="button"
+                          aria-label="Добавить в избранное"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

@@ -313,9 +313,9 @@ export default function KineticHeroBanner({
               {/* Tier 1: Участник */}
               <div className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm text-left">
                 <div className="flex items-center justify-between mb-1.5">
-                  <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
+                  <h2 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
                     Уровень «Участник»
-                  </h4>
+                  </h2>
                   <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-lg shrink-0">
                     Базовый
                   </span>
@@ -328,9 +328,9 @@ export default function KineticHeroBanner({
               {/* Tier 2: Резидент */}
               <div className="bg-gradient-to-r from-blue-50/70 via-white to-white border border-blue-200/80 border-l-4 border-l-blue-600 p-4 rounded-2xl shadow-sm text-left">
                 <div className="flex items-center justify-between mb-1.5">
-                  <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
+                  <h2 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
                     Уровень «Резидент»
-                  </h4>
+                  </h2>
                   <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 bg-blue-100/90 text-blue-700 rounded-lg shrink-0">
                     от 500 тыс. ₸
                   </span>
@@ -343,9 +343,9 @@ export default function KineticHeroBanner({
               {/* Tier 3: Партнёр */}
               <div className="bg-slate-900 text-white border border-slate-800 p-4 rounded-2xl shadow-md text-left">
                 <div className="flex items-center justify-between mb-1.5">
-                  <h4 className="font-extrabold text-white text-xs sm:text-sm tracking-tight">
+                  <h2 className="font-extrabold text-white text-xs sm:text-sm tracking-tight">
                     Уровень «Партнёр»
-                  </h4>
+                  </h2>
                   <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 bg-blue-600 text-white rounded-lg shrink-0">
                     от 2 млн. ₸
                   </span>

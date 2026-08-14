@@ -10,6 +10,7 @@ import MobileCartBar from './components/MobileCartBar';
 import MobileBottomNav from './components/MobileBottomNav';
 import ComingSoonModal from './components/ComingSoonModal';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import AiAssistantWidget from './components/AiAssistantWidget';
 
 import SeoHeadManager from './components/SeoHeadManager';
@@ -346,6 +347,7 @@ export default function App() {
         onOpenAuthLogin={auth.openLoginModal}
       />
       <PWAInstallPrompt showToast={showToast} />
+      <PWAUpdatePrompt />
       <Toast toast={toast} onClose={hideToast} />
     </div>
   );

@@ -144,7 +144,7 @@ export default function Footer({
 
           {/* Column 4: Social media & Messengers */}
           <div>
-            <h4 className="font-bold text-white mb-3 lg:mb-6 uppercase tracking-wider text-xs font-outfit">Мессенджеры</h4>
+            <h3 className="font-bold text-white mb-3 lg:mb-6 uppercase tracking-wider text-xs font-outfit">Мессенджеры</h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
               <a
                 href="https://t.me/lifezcx"
