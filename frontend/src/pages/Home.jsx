@@ -254,14 +254,14 @@ export default function Home({
           onTouchStart={handleDealTouchStart}
           onTouchMove={handleDealTouchMove}
           onTouchEnd={() => handleDealTouchEnd(Math.min(popularProducts.slice(0, 3).length, 3))}
-          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 pb-14 sm:pb-12 relative overflow-hidden shadow-sm h-full text-slate-800 group/deal"
+          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 pb-14 sm:pb-12 relative overflow-hidden shadow-sm h-[430px] sm:h-[450px] lg:h-[480px] text-slate-800 group/deal"
         >
           {(() => {
             const deals = popularProducts.slice(0, 3);
             return (
               <>
                 {/* Header: Title and Countdown boxes */}
-                <div className="flex items-center justify-between pb-3 mb-4 z-10 relative">
+                <div className="flex items-center justify-between pb-3 mb-4 z-10 relative shrink-0">
                   <h3 className="font-extrabold text-slate-900 text-[15px] font-sans">Товар дня</h3>
                   <div className="flex items-center gap-1.5">
                     <span className="bg-slate-100 text-slate-900 px-2.5 py-1 rounded-xl font-bold text-xs sm:text-[13px] text-center tracking-tight">
@@ -388,9 +388,13 @@ export default function Home({
                     </div>
                   );
                 })() : (
-                  <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-xs font-semibold gap-2 h-full">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 border-t-transparent" />
-                    Загружаем предложения...
+                  <div className="flex flex-col items-center justify-between py-6 text-slate-400 text-xs font-semibold gap-4 h-full animate-pulse">
+                    <div className="w-full h-44 bg-slate-100 rounded-2xl" />
+                    <div className="w-full space-y-2">
+                      <div className="h-4 bg-slate-100 rounded-md w-3/4" />
+                      <div className="h-6 bg-slate-100 rounded-md w-1/3" />
+                    </div>
+                    <div className="w-full h-11 bg-slate-200 rounded-2xl" />
                   </div>
                 )}
 
