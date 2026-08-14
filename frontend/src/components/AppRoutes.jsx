@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
-import HomePage from '../pages/Home';
 import { PATH_TO_CABINET_TAB } from '../hooks/useNavigation';
+
+const HomePage = lazy(() => import('../pages/Home'));
 
 const Storefront = lazy(() => import('../pages/Storefront'));
 const Advisor = lazy(() => import('../pages/Advisor'));
