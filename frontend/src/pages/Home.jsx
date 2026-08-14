@@ -142,18 +142,6 @@ export default function Home({
     }
   }, [popularProducts]);
 
-  // Independent auto-play timer for Deal of the Day (switches every 5s)
-  useEffect(() => {
-    const dealsCount = Math.min(popularProducts.slice(0, 3).length, 3);
-    if (dealsCount <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentDealIndex((prev) => (prev + 1) % dealsCount);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [popularProducts]);
-
 
 
 
@@ -328,7 +316,7 @@ export default function Home({
                                 e.stopPropagation();
                                 setCurrentDealIndex(prev => (prev - 1 + deals.length) % deals.length);
                               }}
-                              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-100 sm:opacity-0 sm:group-hover/deal:opacity-100"
+                              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
                               title="Предыдущий товар"
                             >
                               <ChevronLeft className="h-3.5 w-3.5" />
@@ -340,7 +328,7 @@ export default function Home({
                                 e.stopPropagation();
                                 setCurrentDealIndex(prev => (prev + 1) % deals.length);
                               }}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-100 sm:opacity-0 sm:group-hover/deal:opacity-100"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
                               title="Следующий товар"
                             >
                               <ChevronRight className="h-3.5 w-3.5" />
@@ -471,7 +459,7 @@ export default function Home({
                 <img
                   src={cat.image || cat.bg}
                   alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover"
                   onError={(e) => { e.target.src = 'https://placehold.co/200x200?text=Категория'; }}
                 />
               </div>

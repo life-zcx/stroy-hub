@@ -23,12 +23,12 @@ export default function ScrollToTop({ cartItemsCount = 0 }) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Must match AiAssistantWidget values exactly:
-  //   mobile + cart items  → 5.5rem (above MobileCartBar)
-  //   mobile, no cart      → 1.5rem
-  //   desktop              → 1.5rem
-  // Lift above MobileBottomNav (4rem / 64px)
-  const bottomOffset = isMobile ? '5rem' : '1.5rem';
+  // Lift button comfortably above MobileBottomNav (and MobileCartBar if present)
+  const bottomOffset = isMobile
+    ? cartItemsCount > 0
+      ? '8.5rem'
+      : '5.75rem'
+    : '2rem';
 
   const scrollToTop = () => {
     try {
