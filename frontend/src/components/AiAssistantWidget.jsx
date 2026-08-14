@@ -324,7 +324,6 @@ export default function AiAssistantWidget({ onAddToCart, showToast, onNavigate, 
                               type="button"
                               onClick={() => {
                                 onAddToCart?.(prod, 1);
-                                showToast?.(`"${prod.name}" добавлен в корзину`);
                               }}
                               className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold py-1.5 px-2.5 rounded-lg transition-colors shrink-0 border-0 cursor-pointer flex items-center gap-1 shadow-sm"
                             >

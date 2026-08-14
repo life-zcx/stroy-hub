@@ -96,7 +96,7 @@ export default function PWAInstallPrompt({ showToast }) {
   const isMobile = typeof window !== 'undefined' && (/android|iphone|ipad|ipod/i.test(navigator.userAgent) || window.innerWidth < 768);
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-50 max-w-md animate-fade-in">
+    <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-[75] max-w-md animate-fade-in">
       <div className="bg-white/95 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 shadow-xl shadow-emerald-900/10 flex flex-col gap-3 text-gray-800">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

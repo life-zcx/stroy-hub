@@ -10,6 +10,9 @@ adkulan.ru, www.adkulan.ru {
 
 # --- Основной сайт tormag.kz ---
 tormag.kz, www.tormag.kz {
+        @nocache path /index.html /sw.js /sw-push.js /manifest.json
+        header @nocache Cache-Control "no-cache, no-store, must-revalidate"
+
         # Reverse proxy to the Docker Gateway container
         reverse_proxy 127.0.0.1:8080
 

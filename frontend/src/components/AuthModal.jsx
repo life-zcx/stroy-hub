@@ -62,8 +62,8 @@ export default function AuthModal({
   const isLegalReg = authTab === 'register' && entityType === 'LEGAL';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className={`w-full ${isLegalReg ? 'max-w-4xl' : authTab === 'register' ? 'max-w-2xl' : 'max-w-md'} bg-white border border-gray-150 p-6 md:p-8 rounded-3xl shadow-2xl relative space-y-5 animate-fade-in-up transition-all duration-300 my-auto`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div className={`w-full ${isLegalReg ? 'max-w-4xl' : authTab === 'register' ? 'max-w-2xl' : 'max-w-md'} bg-white border border-gray-150 p-5 sm:p-8 rounded-3xl shadow-2xl relative space-y-4 sm:space-y-5 animate-fade-in-up transition-all duration-300 my-auto max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] overflow-y-auto custom-scrollbar`}>
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-slate-900 hover:bg-gray-100 rounded-full transition-colors z-10"

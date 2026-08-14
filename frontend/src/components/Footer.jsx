@@ -23,7 +23,7 @@ export default function Footer({
   };
 
   return (
-    <footer className="bg-slate-900 text-slate-300 mt-12 pt-6 lg:pt-12 pb-6 border-t border-slate-800/80">
+    <footer className="bg-slate-900 text-slate-300 mt-12 pt-6 lg:pt-12 pb-24 lg:pb-6 border-t border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Desktop Layout & Mobile Accordion Grid */}

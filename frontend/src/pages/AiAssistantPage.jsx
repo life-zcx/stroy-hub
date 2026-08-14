@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Send, Trash2, RefreshCw, ShoppingCart, ChevronRight, Plus, MessageSquare, AlertCircle, Mic, MicOff } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Trash2, RefreshCw, ShoppingCart, ChevronRight, Plus, MessageSquare, AlertCircle, Mic, MicOff, History, X } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { getIpxImageUrl } from '../utils/productImage';
 import Link from '../components/Link';
@@ -17,6 +17,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) {
+  const [showMobileHistory, setShowMobileHistory] = useState(false);
   const {
     sessions,
     activeSessionId,
@@ -199,14 +200,24 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </div>
               <span className="font-bold text-xs text-slate-900 tracking-wide">TORMAG AI</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setShowMobileHistory(true)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-200 cursor-pointer flex items-center gap-1 shadow-2xs transition-colors"
+                title="История чатов"
+              >
+                <History className="h-3 w-3 text-slate-500" />
+                <span>История ({sessions.length})</span>
+              </button>
+
               <button
                 type="button"
                 onClick={onCreateChat}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border-0 cursor-pointer flex items-center gap-1 shadow-sm transition-colors"
               >
                 <Plus className="h-3 w-3" />
-                <span>Новый чат</span>
+                <span>Новый</span>
               </button>
               <button
                 type="button"
@@ -218,6 +229,75 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </button>
             </div>
           </div>
+
+          {/* Mobile History Drawer Modal */}
+          {showMobileHistory && (
+            <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-xs flex flex-col justify-end sm:hidden">
+              <div className="bg-white rounded-t-3xl p-4 space-y-3 max-h-[75vh] flex flex-col animate-slide-up border-t border-slate-200">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    <h3 className="font-extrabold text-sm text-slate-900">Мои диалоги</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onCreateChat();
+                        setShowMobileHistory(false);
+                      }}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Новый чат</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileHistory(false)}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer bg-transparent border-0"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 py-1">
+                  {sessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      onClick={() => {
+                        setActiveSessionId(sess.id);
+                        setShowMobileHistory(false);
+                      }}
+                      className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${
+                        sess.id === activeSessionId
+                          ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <MessageSquare className={`h-4 w-4 shrink-0 ${sess.id === activeSessionId ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span className="text-xs truncate">{sess.title}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          onConfirmDeleteChat(sess.id, e);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors border-0 cursor-pointer ${
+                          sess.id === activeSessionId ? 'hover:bg-slate-800 text-slate-400 hover:text-red-400' : 'hover:bg-slate-200 text-slate-400 hover:text-red-600'
+                        }`}
+                        title="Удалить чат"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Messages Area */}
           <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar bg-slate-50/50">
@@ -294,7 +374,6 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
                             type="button"
                             onClick={() => {
                               onAddToCart?.(prod, 1);
-                              showToast?.(`"${prod.name}" добавлен в корзину`);
                             }}
                             className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors shrink-0 border-0 cursor-pointer flex items-center gap-1 shadow-sm"
                           >

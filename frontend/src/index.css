@@ -514,6 +514,13 @@ html {
   padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
 }
 
+/* PWA Standalone Mode Bottom Navigation Elevation */
+@media (display-mode: standalone) {
+  .pwa-bottom-nav {
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  }
+}
+
 /* ==========================================================================
    Accessibility Styles (Версия для слабовидящих)
    ========================================================================== */

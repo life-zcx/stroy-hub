@@ -25,6 +25,7 @@ import {
   Edit3,
   Star,
   Trash2,
+  Heart,
 } from 'lucide-react';
 import { createOrder, validatePromotionCode, getProducts, getProductById, getSystemSettings, updateProfile } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -114,8 +115,55 @@ export default function CartPage({
   onNavigate,
   bonuses,
   onAddToCart,
+  onToggleFavorite,
+  isFavorite,
   currentPage = 'cart',
 }) {
+  const [selectedItemKeys, setSelectedItemKeys] = useState(() => {
+    return cart.map(item => `${item.id}-${item.selectedOption || ''}`);
+  });
+
+  useEffect(() => {
+    setSelectedItemKeys(prev => {
+      const currentKeys = new Set(cart.map(item => `${item.id}-${item.selectedOption || ''}`));
+      const validPrev = prev.filter(k => currentKeys.has(k));
+      cart.forEach(item => {
+        const k = `${item.id}-${item.selectedOption || ''}`;
+        if (!prev.includes(k) && !validPrev.includes(k)) {
+          validPrev.push(k);
+        }
+      });
+      return validPrev;
+    });
+  }, [cart]);
+
+  const allSelected = cart.length > 0 && selectedItemKeys.length === cart.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedItemKeys([]);
+    } else {
+      setSelectedItemKeys(cart.map(item => `${item.id}-${item.selectedOption || ''}`));
+    }
+  };
+
+  const toggleSelectItem = (key) => {
+    setSelectedItemKeys(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
+  const handleRemoveSelected = () => {
+    if (selectedItemKeys.length === 0) return;
+    selectedItemKeys.forEach(key => {
+      const item = cart.find(i => `${i.id}-${i.selectedOption || ''}` === key);
+      if (item) {
+        onRemoveFromCart(item.id, item.selectedOption);
+      }
+    });
+    setSelectedItemKeys([]);
+    showToast?.('Выбранные товары удалены');
+  };
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
@@ -388,14 +436,18 @@ export default function CartPage({
     }
   }, [customer]);
 
-  const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const cartItemsCount = cart.reduce((count, item) => count + item.quantity, 0);
+  const selectedCartItems = useMemo(() => {
+    return cart.filter(item => selectedItemKeys.includes(`${item.id}-${item.selectedOption || ''}`));
+  }, [cart, selectedItemKeys]);
+
+  const cartTotal = selectedCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const cartItemsCount = selectedCartItems.reduce((count, item) => count + item.quantity, 0);
   const progressPercent = Math.min(100, (cartTotal / FREE_DELIVERY_THRESHOLD) * 100);
-  const promotionItems = useMemo(() => cart.map((item) => ({
+  const promotionItems = useMemo(() => selectedCartItems.map((item) => ({
     productId: item.id,
     quantity: item.quantity,
     price: item.price,
-  })), [cart]);
+  })), [selectedCartItems]);
 
   const maxBonusPaymentPercent = bonuses?.loyalty?.maxBonusPaymentPercent ?? 50;
   const finalTotalBeforeBonuses = promoPreview.valid ? promoPreview.totalAmount : cartTotal;
@@ -711,7 +763,6 @@ export default function CartPage({
                               }
                             }
                             onAddToCart(itemToAdd);
-                            showToast?.(`«${itemToAdd.name}» добавлен в корзину`);
                           } else {
                             onUpdateQuantity?.(prod.id, 1);
                           }
@@ -733,9 +784,9 @@ export default function CartPage({
   }
 
   return (
-    <div className="space-y-8 animate-fade-in-up font-sans text-slate-800 text-left">
+    <div className="min-h-[65vh] space-y-4 lg:space-y-6 pb-24 lg:pb-36 animate-fade-in-up font-sans text-slate-800 text-left">
       {/* Sleek Breadcrumbs */}
-      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed">
+      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400 font-sans leading-relaxed mb-1">
         <Link 
           href={getPageHref('home')}
           onClick={() => onNavigate?.('home')} 
@@ -762,129 +813,184 @@ export default function CartPage({
         )}
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* Main Title above columns */}
+      {step === 'cart' && (
+        <h1 className="text-xl sm:text-3xl font-black text-slate-900 font-outfit text-center lg:text-left mb-2 lg:mb-4">
+          Корзина
+        </h1>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
         {/* Left Column: Cart items or Delivery details form */}
-        <div className="flex-1 w-full space-y-8">
+        <div className="flex-1 w-full space-y-3 sm:space-y-4">
           {step === 'cart' && (
-            /* Cart Items List */
-            <div className="bg-white rounded-[2rem] border border-slate-150 p-6 sm:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <ShoppingCart className="h-7 w-7 text-emerald-600 shrink-0" />
-              <h1 className="text-2xl font-black text-slate-950 flex-1 leading-tight">Корзина покупок</h1>
-              <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold shrink-0">
-                {cartItemsCount} шт
-              </span>
-            </div>
-
-
-
-            {/* List */}
-            <ul className="divide-y divide-slate-100">
-              {cart.map((item) => (
-                <li
-                  key={`${item.id}-${item.selectedOption || ''}`}
-                  className="flex gap-4 sm:gap-6 py-6 first:pt-0 last:pb-0 relative group"
+            <div className="space-y-3">
+              {/* Top Control Block: Select All & Delete Selected */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-150 shadow-xs flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-slate-800 cursor-pointer bg-transparent border-0 p-0 select-none"
                 >
-                  <Link
-                    href={getPageHref('product', item.slug || item.id)}
-                    onClick={() => onNavigate('product', item.slug || item.id)}
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-emerald-500/30 transition-all"
-                  >
-                    <img
-                      src={item.image || '/tormag.png'}
-                      alt={item.name}
-                      className="w-3/4 h-3/4 object-contain mix-blend-multiply"
-                      onError={(event) => {
-                        event.target.onerror = null;
-                        event.target.src = '/tormag.png';
-                      }}
-                    />
-                  </Link>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    allSelected
+                      ? 'border-blue-600 bg-blue-600 text-white'
+                      : 'border-slate-300 bg-white hover:border-slate-400'
+                  }`}>
+                    {allSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span>Выбрать все</span>
+                </button>
 
-                  <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={handleRemoveSelected}
+                  disabled={selectedItemKeys.length === 0}
+                  className="text-xs font-semibold text-rose-500 hover:text-rose-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer bg-transparent border-0 p-0"
+                >
+                  Удалить выбранные
+                </button>
+              </div>
+
+              {/* Cart Items Cards */}
+              <div className="space-y-3">
+                {cart.map((item) => {
+                  const itemKey = `${item.id}-${item.selectedOption || ''}`;
+                  const isItemSelected = selectedItemKeys.includes(itemKey);
+                  const isFav = isFavorite ? isFavorite(item) : false;
+
+                  return (
+                    <div
+                      key={itemKey}
+                      className="bg-white rounded-2xl p-4 border border-slate-150 shadow-xs text-left space-y-3 relative transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectItem(itemKey)}
+                          className="mt-1 shrink-0 cursor-pointer bg-transparent border-0 p-0 select-none"
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isItemSelected
+                              ? 'border-blue-600 bg-blue-600 text-white'
+                              : 'border-slate-300 bg-white hover:border-slate-400'
+                          }`}>
+                            {isItemSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                        </button>
+
                         <Link
                           href={getPageHref('product', item.slug || item.id)}
                           onClick={() => onNavigate('product', item.slug || item.id)}
-                          className="hover:text-emerald-700 transition-colors cursor-pointer text-left block"
+                          className="w-20 h-20 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer p-1"
                         >
-                          <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 leading-tight">
-                            {item.name}
-                          </h3>
+                          <img
+                            src={item.image || '/tormag.png'}
+                            alt={item.name}
+                            className="w-full h-full object-contain mix-blend-multiply"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/tormag.png';
+                            }}
+                          />
                         </Link>
-                        {item.selectedOption && (
-                          <div className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-1">
-                            Вариант: {item.selectedOption}
+
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Link
+                            href={getPageHref('product', item.slug || item.id)}
+                            onClick={() => onNavigate('product', item.slug || item.id)}
+                            className="hover:text-blue-600 transition-colors cursor-pointer block"
+                          >
+                            <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                              {item.name}
+                            </h3>
+                          </Link>
+
+                          <div className="text-[11px] text-slate-400 font-medium">
+                            Артикул: {item.article || item.id}
                           </div>
-                        )}
+
+                          <div className="text-base sm:text-lg font-black text-slate-950 font-outfit pt-0.5">
+                            {formatPrice(item.price)}
+                          </div>
+
+                          <div className="flex items-center gap-3 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateQuantity(item.id, -1, false, item.selectedOption)}
+                              disabled={item.quantity <= 1}
+                              className="text-slate-400 hover:text-slate-900 text-lg font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer w-6 h-6 flex items-center justify-center bg-transparent border-0 select-none"
+                            >
+                              —
+                            </button>
+                            <QuantityInput
+                              value={item.quantity}
+                              onChange={(val) => onUpdateQuantity(item.id, val, true, item.selectedOption)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onUpdateQuantity(item.id, 1, false, item.selectedOption)}
+                              className="text-slate-400 hover:text-slate-900 text-lg font-bold cursor-pointer w-6 h-6 flex items-center justify-center bg-transparent border-0 select-none"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveFromCart(item.id, item.selectedOption)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer mt-0.5"
-                        title="Удалить из корзины"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
 
-                    <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1.5 font-semibold">
-                      <ShieldCheck className="h-3.5 w-3.5 text-blue-500" /> {item.supplier?.name || 'Официальный склад'}
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 mt-4 pt-2 border-t border-slate-50">
-                      <div className="flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
+                      <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs font-semibold text-slate-600 select-none">
                         <button
                           type="button"
-                          onClick={() => onUpdateQuantity(item.id, -1, false, item.selectedOption)}
-                          disabled={item.quantity <= 1}
-                          className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                          onClick={() => {
+                            if (onToggleFavorite) {
+                              onToggleFavorite(item);
+                            } else {
+                              showToast?.(isFav ? 'Удалено из избранного' : 'Добавлено в избранное');
+                            }
+                          }}
+                          className="flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer bg-transparent border-0 p-0"
                         >
-                          <Minus className="h-3.5 w-3.5" />
+                          <Heart className={`h-4 w-4 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                          <span>{isFav ? 'В избранном' : 'В избранное'}</span>
                         </button>
-                        <QuantityInput
-                          value={item.quantity}
-                          onChange={(val) => onUpdateQuantity(item.id, val, true, item.selectedOption)}
-                        />
+
                         <button
                           type="button"
-                          onClick={() => onUpdateQuantity(item.id, 1, false, item.selectedOption)}
-                          className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-600 cursor-pointer"
+                          onClick={() => onRemoveFromCart(item.id, item.selectedOption)}
+                          className="flex items-center gap-1.5 hover:text-rose-600 transition-colors cursor-pointer bg-transparent border-0 p-0 text-slate-600"
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4 text-slate-400 hover:text-rose-600" />
+                          <span>Удалить</span>
                         </button>
                       </div>
-
-                      <div className="text-right ml-auto shrink-0">
-                        <span className="text-sm sm:text-base font-black text-slate-900 font-outfit block">
-                          {formatPrice(item.price * item.quantity)}
-                        </span>
-                        {item.quantity > 1 && (
-                          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-                            {formatPrice(item.price)} / шт
-                          </span>
-                        )}
-                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Order Summary Card ("Ваш заказ") - Mobile only */}
+              <div className="lg:hidden bg-white rounded-2xl p-5 border border-slate-150 shadow-xs space-y-4 text-left mt-4">
+                <h2 className="text-lg font-extrabold text-slate-900 font-outfit">Ваш заказ</h2>
+
+                <div className="space-y-2 text-xs sm:text-sm">
+                  <div className="flex justify-between items-center text-slate-500 font-semibold">
+                    <span>{cartItemsCount} товара на сумму</span>
+                    <span>{formatPrice(cartTotal)}</span>
                   </div>
-                </li>
-              ))}
-            </ul>
 
-            {step === 'cart' && (
-              <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center gap-4 flex-wrap">
-                <Link
-                  href={getPageHref('catalog')}
-                  onClick={() => onNavigate?.('catalog')}
-                  className="px-5 py-3 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer bg-transparent border-0 text-center"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Продолжить покупки
-                </Link>
+                  <div className="flex justify-between items-center text-slate-900 font-extrabold text-sm sm:text-base pt-2 border-t border-slate-100">
+                    <span>Общая стоимость</span>
+                    <span className="text-base sm:text-lg font-black text-slate-950 font-outfit">{formatPrice(cartTotal)}</span>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
+                    if (selectedItemKeys.length === 0) {
+                      showToast?.('Выберите хотя бы один товар для оформления');
+                      return;
+                    }
                     if (!customer) {
                       onOpenAuth?.();
                     } else {
@@ -892,14 +998,12 @@ export default function CartPage({
                       onNavigate?.('checkout');
                     }
                   }}
-                  className="bg-slate-950 hover:bg-slate-800 text-white font-extrabold py-3.5 px-7 rounded-2xl shadow-md shadow-slate-950/20 transition-all flex items-center gap-2 transform active:scale-95 text-sm cursor-pointer"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 transform active:scale-98 text-sm sm:text-base cursor-pointer border-0 mt-2"
                 >
-                  <span>Перейти к оформлению</span>
-                  <ChevronRight className="h-4.5 w-4.5" />
+                  <span>Оформить заказ</span>
                 </button>
               </div>
-            )}
-          </div>
+            </div>
           )}
 
           {step === 'checkout' && (
@@ -1349,12 +1453,6 @@ export default function CartPage({
                           <span>- {formatPrice(bonusDiscount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-slate-500 font-semibold">
-                        <span>Доставка</span>
-                        <span className={cartTotal >= FREE_DELIVERY_THRESHOLD ? 'text-slate-900 font-bold' : 'font-semibold'}>
-                          {cartTotal >= FREE_DELIVERY_THRESHOLD ? 'Бесплатно' : 'По тарифам складов'}
-                        </span>
-                      </div>
                       <div className="pt-4 border-t border-dashed border-slate-250 flex justify-between items-end">
                         <span className="text-base font-bold text-slate-900">Итого к оплате:</span>
                         <div className="text-right">
@@ -1409,6 +1507,64 @@ export default function CartPage({
 
               </form>
             )}
+          </div>
+        )}
+      </div>
+
+        {/* Right Column (Desktop Sticky Sidebar): Cart Summary & Actions */}
+        {step === 'cart' && (
+          <div className="hidden lg:block lg:w-96 shrink-0 space-y-6 sticky top-24">
+            <div className="bg-white rounded-2xl p-6 border border-slate-150 shadow-sm space-y-5 text-left">
+              <h2 className="text-xl font-extrabold text-slate-900 font-outfit">Ваш заказ</h2>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center text-slate-500 font-semibold">
+                  <span>Товары ({cartItemsCount})</span>
+                  <span>{formatPrice(cartTotal)}</span>
+                </div>
+                {promoPreview.valid && (
+                  <div className="flex justify-between items-center text-slate-900 font-semibold">
+                    <span>Скидка по промокоду</span>
+                    <span className="text-emerald-600 font-bold">- {formatPrice(promoPreview.discountAmount)}</span>
+                  </div>
+                )}
+                {bonusDiscount > 0 && (
+                  <div className="flex justify-between items-center text-slate-900 font-semibold">
+                    <span>Списание бонусов</span>
+                    <span className="text-amber-600 font-bold">- {formatPrice(bonusDiscount)}</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-slate-100 flex justify-between items-end">
+                  <span className="text-base font-bold text-slate-900">Общая стоимость:</span>
+                  <div className="text-right">
+                    {(promoPreview.valid || bonusDiscount > 0) && (
+                      <span className="block text-xs text-slate-400 line-through mb-0.5">{formatPrice(cartTotal)}</span>
+                    )}
+                    <span className="text-2xl font-black text-slate-950 font-outfit">{formatPrice(finalTotal)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedItemKeys.length === 0) {
+                    showToast?.('Выберите хотя бы один товар для оформления');
+                    return;
+                  }
+                  if (!customer) {
+                    onOpenAuth?.();
+                  } else {
+                    setStep('checkout');
+                    onNavigate?.('checkout');
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 text-base cursor-pointer border-0"
+              >
+                <span>Оформить заказ</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1533,6 +1689,5 @@ export default function CartPage({
       )}
 
       </div>
-    </div>
   );
 }

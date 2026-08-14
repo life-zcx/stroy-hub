@@ -57,7 +57,7 @@ export default function MobileBottomNav({
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-[80] bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:hidden">
+    <nav className="fixed bottom-0 inset-x-0 z-[80] bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:hidden pwa-bottom-nav">
       <div className="grid grid-cols-5 h-16 items-center px-1">
         {navItems.map((item) => {
           const Icon = item.icon;

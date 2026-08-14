@@ -243,6 +243,8 @@ export default function AppRoutes({
           onNavigate={setCurrentPage}
           bonuses={bonuses}
           onAddToCart={cart.handleAddToCart}
+          onToggleFavorite={favorites.toggleFavorite}
+          isFavorite={favorites.isFavorite}
           currentPage={currentPage}
         />
       )}
