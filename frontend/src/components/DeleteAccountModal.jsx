@@ -46,6 +46,18 @@ export default function DeleteAccountModal({
     setLoading(true);
     try {
       await deleteAccount(selectedReason);
+
+      // Clear frontend auth cookies and local storage explicitly
+      try {
+        document.cookie = "tormag_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "tormag_admin_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        localStorage.removeItem('tormag_customer');
+        localStorage.removeItem('customer');
+        localStorage.removeItem('tormag_user');
+      } catch (e) {
+        console.warn('Error clearing local storage/cookies:', e);
+      }
+
       showToast?.('Ваша учетная запись успешно удалена');
       onAccountDeleted?.();
       onClose();

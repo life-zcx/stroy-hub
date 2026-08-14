@@ -74,5 +74,12 @@ export function setAuthCookie(req, res, token) {
 export function clearAuthCookie(req, res) {
   const options = getCookieOptions(req);
   delete options.maxAge;
-  res.clearCookie(getCookieName(req), options);
+
+  const names = [AUTH_COOKIE_NAME, ADMIN_AUTH_COOKIE_NAME, getCookieName(req)];
+  names.forEach((name) => {
+    res.clearCookie(name, options);
+    const noDomainOptions = { ...options };
+    delete noDomainOptions.domain;
+    res.clearCookie(name, noDomainOptions);
+  });
 }
