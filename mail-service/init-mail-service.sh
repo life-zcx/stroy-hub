@@ -28,8 +28,8 @@ check_port() {
 }
 
 echo "[1/4] Checking for port conflicts..."
-check_port ${STALWART_ADMIN_PORT:-8080} "STALWART_ADMIN_PORT"
-check_port ${ROUNDCUBE_PORT:-8090} "ROUNDCUBE_PORT"
+check_port ${STALWART_ADMIN_PORT:-8880} "STALWART_ADMIN_PORT"
+check_port ${ROUNDCUBE_PORT:-8890} "ROUNDCUBE_PORT"
 
 # Check docker compose
 if command -v docker-compose &> /dev/null; then
@@ -51,6 +51,6 @@ echo ""
 echo "=========================================="
 echo " Mail Service successfully started!"
 echo "------------------------------------------"
-echo " Stalwart Admin UI: http://YOUR_SERVER_IP:${STALWART_ADMIN_PORT:-8080}"
-echo " Roundcube Webmail:  http://YOUR_SERVER_IP:${ROUNDCUBE_PORT:-8090}"
+echo " Stalwart Admin UI: http://YOUR_SERVER_IP:${STALWART_ADMIN_PORT:-8880}"
+echo " Roundcube Webmail:  http://YOUR_SERVER_IP:${ROUNDCUBE_PORT:-8890}"
 echo "=========================================="

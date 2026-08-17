@@ -11,7 +11,7 @@ services:
       - "${STALWART_SMTPS_PORT:-465}:465"   # SMTPS (Implicit TLS)
       - "${STALWART_SUBMISSION_PORT:-587}:587" # SMTP Submission (STARTTLS)
       - "${STALWART_IMAP_PORT:-993}:993"     # IMAPS (Implicit TLS)
-      - "127.0.0.1:${STALWART_ADMIN_PORT:-8080}:8080" # Stalwart Admin Web UI (localhost only)
+      - "127.0.0.1:${STALWART_ADMIN_PORT:-8880}:8080" # Stalwart Admin Web UI (localhost only)
     environment:
       - STALWART_RECOVERY_ADMIN=${STALWART_RECOVERY_ADMIN:-}
       - STALWART_SERVER_LISTENER_HTTP_BIND=["0.0.0.0:8080"]
@@ -29,7 +29,7 @@ services:
     container_name: tormag_webmail
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${ROUNDCUBE_PORT:-8090}:80"   # Roundcube Web Interface (localhost only)
+      - "127.0.0.1:${ROUNDCUBE_PORT:-8890}:80"   # Roundcube Web Interface (localhost only)
     environment:
       - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail-server
       - ROUNDCUBEMAIL_DEFAULT_PORT=993
