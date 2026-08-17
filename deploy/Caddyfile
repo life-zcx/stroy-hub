@@ -49,7 +49,7 @@ mail.tormag.kz {
 
 # --- Панель управления Stalwart ---
 panel.mail.tormag.kz {
-    reverse_proxy 127.0.0.1:8080
+    reverse_proxy 127.0.0.1:8880
 
     encode gzip zstd
 
