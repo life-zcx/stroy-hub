@@ -22,7 +22,7 @@
          ▼                      ▼                      ▼                      ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐   ┌──────────────────┐
 │ Gateway         │    │ Gateway (Admin) │    │ Webmail          │   │ Stalwart Admin   │
-│ tormag.kz       │    │ cabinet.tormag  │    │ mail.tormag.kz   │   │ panel.mail.tormag│
+│ tormag.kz       │    │ cabinet.tormag  │    │ mail.tormag.kz   │   │ mailpanel.tormag │
 │ (127.0.0.1:8080)│    │ (127.0.0.1:8080)│    │ (127.0.0.1:8890) │   │ (127.0.0.1:8880) │
 └────────┬────────┘    └────────┬────────┘    └──────────────────┘   └──────────────────┘
          │                      │
@@ -54,7 +54,7 @@
 | **`www.tormag.kz`** | HTTPS | `http://127.0.0.1:8080` (Gateway Nginx) | Зеркало главного сайта с редиректом / поддержкой |
 | **`cabinet.tormag.kz`** | HTTPS | `http://127.0.0.1:8080` (Gateway Nginx) | Панель управления администратора и поставщиков |
 | **`mail.tormag.kz`** | HTTPS | `http://127.0.0.1:8890` (Roundcube Container) | Веб-интерфейс электронной почты |
-| **`panel.mail.tormag.kz`** | HTTPS | `https://127.0.0.1:8880` *(Stalwart TLS)* | Административная панель управления почтовым сервером |
+| **`mailpanel.tormag.kz`** | HTTPS | `https://127.0.0.1:8880` *(Stalwart TLS)* | Административная панель управления почтовым сервером |
 | **`media.tormag.kz`** | HTTPS | Cloudflare R2 (`tormag-media` bucket) | Публичный CDN для картинок товаров, баннеров и логотипов |
 
 ### 🔁 Редиректы сторонних доменов в Caddy:

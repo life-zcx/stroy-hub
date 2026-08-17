@@ -135,7 +135,7 @@
 | **`tormag.kz`** | Главная витрина интернет-магазина |
 | **`cabinet.tormag.kz`** | Личный кабинет администратора и поставщиков |
 | **`mail.tormag.kz`** | Веб-почта Roundcube |
-| **`panel.mail.tormag.kz`** | Почтовый сервер Stalwart Admin UI |
+| **`mailpanel.tormag.kz`** | Почтовый сервер Stalwart Admin UI |
 | **`media.tormag.kz`** | Публичный CDN Cloudflare R2 (картинки, логотипы, баннеры) |
 | **Telegram Bot** | Уведомления менеджерам о новых заказах, заявках и статусах бэкапов |
 | **Яндекс.Диск** | Ежедневное резервное копирование дампов БД PostgreSQL через WebDAV |
