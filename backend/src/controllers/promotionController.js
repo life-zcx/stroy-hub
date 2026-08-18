@@ -218,7 +218,7 @@ async function buildEvaluationContext(items, subtotalAmount) {
   };
 }
 
-function buildPromotionData(body, imagePath = null, imageCardPath = null, imageDetailPath = null) {
+function buildPromotionData(body, imagePath = null, imageCardPath = null, imageDetailPath = null, imageHomePath = null, imageMobilePath = null) {
   const title = String(body.title || '').trim();
   const description = String(body.description || '').trim();
   const badge = String(body.badge || '').trim() || null;
@@ -337,6 +337,8 @@ function buildPromotionData(body, imagePath = null, imageCardPath = null, imageD
       image: imagePath,
       imageCard: imageCardPath,
       imageDetail: imageDetailPath,
+      imageHome: imageHomePath,
+      imageMobile: imageMobilePath,
     },
   };
 }
@@ -473,11 +475,13 @@ async function extractImagePath(req, fieldName, bodyValue, existingImage = null)
 
 
 export const createPromotion = async (req, res) => {
+  const imageHome = await extractImagePath(req, 'imageHomeFile', req.body.imageHome);
   const imageCard = await extractImagePath(req, 'imageCardFile', req.body.imageCard);
   const imageDetail = await extractImagePath(req, 'imageDetailFile', req.body.imageDetail);
-  const image = imageCard || imageDetail || null;
+  const imageMobile = await extractImagePath(req, 'imageMobileFile', req.body.imageMobile);
+  const image = imageHome || imageCard || imageDetail || imageMobile || null;
 
-  const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
+  const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail, imageHome, imageMobile);
 
   if (error) {
     return res.status(400).json({ error });
@@ -497,10 +501,11 @@ export const createPromotion = async (req, res) => {
 
     res.status(201).json(serializedPromotion);
   } catch (error) {
+    console.error('Ошибка создания акции:', error);
     const statusCode = error.code === 'P2002' ? 400 : 500;
     const message = error.code === 'P2002'
       ? 'Промокод с таким значением уже существует.'
-      : 'Ошибка создания акции: ' ;
+      : 'Ошибка создания акции: ' + (error.message || error);
 
     res.status(statusCode).json({ error: message });
   }
@@ -522,12 +527,13 @@ export const updatePromotion = async (req, res) => {
       return res.status(404).json({ error: 'Акция не найдена.' });
     }
 
+    const imageHome = await extractImagePath(req, 'imageHomeFile', req.body.imageHome, existingPromotion.imageHome);
     const imageCard = await extractImagePath(req, 'imageCardFile', req.body.imageCard, existingPromotion.imageCard);
     const imageDetail = await extractImagePath(req, 'imageDetailFile', req.body.imageDetail, existingPromotion.imageDetail);
-    const image = imageCard || imageDetail || null;
+    const imageMobile = await extractImagePath(req, 'imageMobileFile', req.body.imageMobile, existingPromotion.imageMobile);
+    const image = imageHome || imageCard || imageDetail || imageMobile || null;
 
-
-    const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail);
+    const { data, error } = buildPromotionData(req.body, image, imageCard, imageDetail, imageHome, imageMobile);
 
     if (error) {
       return res.status(400).json({ error });

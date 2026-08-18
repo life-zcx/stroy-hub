@@ -64,12 +64,18 @@ export default function PromotionModal({
   onRemoveTier,
   products,
   categories,
+  onHomeFileChange,
   onCardFileChange,
   onDetailFileChange,
+  onMobileFileChange,
+  imageHomeFile,
   imageCardFile,
   imageDetailFile,
+  imageMobileFile,
+  onClearImageHome,
   onClearImageCard,
   onClearImageDetail,
+  onClearImageMobile,
 }) {
   if (!open) {
     return null;
@@ -107,93 +113,197 @@ export default function PromotionModal({
             <textarea name="description" value={promotionForm.description} onChange={onFormChange} required rows="3" placeholder="Расскажите, кто и на каких условиях может использовать акцию" className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 text-sm font-semibold transition-all duration-200" />
           </div>
 
-          {/* Promotion Banners (Card and Detail) */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Banner 1: Card / Preview Image */}
-            <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
-                Баннер для карточки (Превью)
-              </label>
-              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">
-                Рекомендуемый размер: 800х500 px (16:10 или 16:9)
+          {/* Promotion Banners (Home, Card, Detail, Mobile) */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                Изображения и Баннеры акции
               </span>
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={onCardFileChange}
-                  className="hidden"
-                  id="promo-card-upload"
-                />
-                <label
-                  htmlFor="promo-card-upload"
-                  className="flex-1 px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-sm font-bold text-slate-600 cursor-pointer text-center transition-all duration-200 border-dashed truncate"
-                >
-                  {imageCardFile ? imageCardFile.name : 'Выбрать файл...'}
-                </label>
-                {(imageCardFile || promotionForm.imageCard) && (
-                  <div className="relative group shrink-0">
-                    <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
-                      <img
-                        src={imageCardFile ? URL.createObjectURL(imageCardFile) : promotionForm.imageCard}
-                        alt="Превью карточки"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={onClearImageCard}
-                      className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
-                      title="Удалить превью"
-                    >
-                      <XIcon className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
+              <span className="text-[10px] text-slate-400 font-bold">
+                Загрузите баннеры для нужных разделов
+              </span>
             </div>
 
-            {/* Banner 2: Detail Page Image */}
-            <div>
-              <label className="block text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1 pl-1">
-                Баннер для страницы акции (Шапка)
-              </label>
-              <span className="block text-[10px] font-semibold text-slate-400 mb-2 pl-1">
-                Рекомендуемый размер: 1200х510 px (21:9)
-              </span>
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={onDetailFileChange}
-                  className="hidden"
-                  id="promo-detail-upload"
-                />
-                <label
-                  htmlFor="promo-detail-upload"
-                  className="flex-1 px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-sm font-bold text-slate-600 cursor-pointer text-center transition-all duration-200 border-dashed truncate"
-                >
-                  {imageDetailFile ? imageDetailFile.name : 'Выбрать файл...'}
-                </label>
-                {(imageDetailFile || promotionForm.imageDetail) && (
-                  <div className="relative group shrink-0">
-                    <div className="w-16 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
-                      <img
-                        src={imageDetailFile ? URL.createObjectURL(imageDetailFile) : promotionForm.imageDetail}
-                        alt="Превью шапки"
-                        className="w-full h-full object-cover"
-                      />
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Banner 1: Home Page Hero */}
+              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider pl-1">
+                    1. Баннер для Главной страницы
+                  </label>
+                  {(imageHomeFile || promotionForm.imageHome) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-wider">
+                      ✓ Загружен
+                    </span>
+                  ) : (imageCardFile || promotionForm.imageCard) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-wider" title="Если файл не выложен, система возьмет баннер со 2-го поля">
+                      ⚠️ Возьмется с поля 2
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-extrabold uppercase tracking-wider">
+                      Не загружен
+                    </span>
+                  )}
+                </div>
+                <span className="block text-[10px] font-semibold text-slate-400 pl-1">
+                  Рекомендуемый размер: 1200×740 px (Слайдер на Главной)
+                </span>
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onHomeFileChange}
+                    className="hidden"
+                    id="promo-home-upload"
+                  />
+                  <label
+                    htmlFor="promo-home-upload"
+                    className={`flex-1 px-4 py-3 border rounded-xl text-xs font-bold cursor-pointer text-center transition-all duration-200 border-dashed truncate ${
+                      (imageHomeFile || promotionForm.imageHome)
+                        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 hover:bg-emerald-100/70'
+                        : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {imageHomeFile ? imageHomeFile.name : (promotionForm.imageHome ? 'Изменить файл...' : '+ Выбрать файл...')}
+                  </label>
+                  {(imageHomeFile || promotionForm.imageHome) && (
+                    <div className="relative group shrink-0">
+                      <div className="w-16 h-11 rounded-xl border border-emerald-300 overflow-hidden bg-slate-100 shadow-sm">
+                        <img
+                          src={imageHomeFile ? URL.createObjectURL(imageHomeFile) : promotionForm.imageHome}
+                          alt="Превью для главной"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onClearImageHome}
+                        className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
+                        title="Удалить баннер главной"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={onClearImageDetail}
-                      className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
-                      title="Удалить шапку"
-                    >
-                      <XIcon className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+
+              {/* Banner 2: Promotions Page (Cards and Detail) */}
+              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider pl-1">
+                    2. Баннер для страницы Акций
+                  </label>
+                  {(imageCardFile || promotionForm.imageCard) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-wider">
+                      ✓ Загружен
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-extrabold uppercase tracking-wider">
+                      Не загружен
+                    </span>
+                  )}
+                </div>
+                <span className="block text-[10px] font-semibold text-slate-400 pl-1">
+                  Рекомендуемый размер: 1012×404 px (Карточки и внутри акции)
+                </span>
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onCardFileChange}
+                    className="hidden"
+                    id="promo-card-upload"
+                  />
+                  <label
+                    htmlFor="promo-card-upload"
+                    className={`flex-1 px-4 py-3 border rounded-xl text-xs font-bold cursor-pointer text-center transition-all duration-200 border-dashed truncate ${
+                      (imageCardFile || promotionForm.imageCard)
+                        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 hover:bg-emerald-100/70'
+                        : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {imageCardFile ? imageCardFile.name : (promotionForm.imageCard ? 'Изменить файл...' : '+ Выбрать файл...')}
+                  </label>
+                  {(imageCardFile || promotionForm.imageCard) && (
+                    <div className="relative group shrink-0">
+                      <div className="w-16 h-11 rounded-xl border border-emerald-300 overflow-hidden bg-slate-100 shadow-sm">
+                        <img
+                          src={imageCardFile ? URL.createObjectURL(imageCardFile) : promotionForm.imageCard}
+                          alt="Превью карточки"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onClearImageCard}
+                        className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
+                        title="Удалить баннер"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Banner 3: Mobile Devices Image */}
+              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase tracking-wider pl-1">
+                    3. Баннер для мобильных устройств (Смартфоны)
+                  </label>
+                  {(imageMobileFile || promotionForm.imageMobile) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-wider">
+                      ✓ Загружен
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[9px] font-black uppercase tracking-wider" title="Автоматически адаптирует ПК-баннер на телефонах">
+                      ℹ️ Авто-адаптация ПК баннера
+                    </span>
+                  )}
+                </div>
+                <span className="block text-[10px] font-semibold text-slate-400 pl-1">
+                  Рекомендуемый размер: 800×800 px (Квадратный баннер специально для экранов телефонов)
+                </span>
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onMobileFileChange}
+                    className="hidden"
+                    id="promo-mobile-upload"
+                  />
+                  <label
+                    htmlFor="promo-mobile-upload"
+                    className={`flex-1 px-4 py-3 border rounded-xl text-xs font-bold cursor-pointer text-center transition-all duration-200 border-dashed truncate ${
+                      (imageMobileFile || promotionForm.imageMobile)
+                        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 hover:bg-emerald-100/70'
+                        : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {imageMobileFile ? imageMobileFile.name : (promotionForm.imageMobile ? 'Изменить файл...' : '+ Выбрать файл...')}
+                  </label>
+                  {(imageMobileFile || promotionForm.imageMobile) && (
+                    <div className="relative group shrink-0">
+                      <div className="w-16 h-11 rounded-xl border border-emerald-300 overflow-hidden bg-slate-100 shadow-sm">
+                        <img
+                          src={imageMobileFile ? URL.createObjectURL(imageMobileFile) : promotionForm.imageMobile}
+                          alt="Превью для мобилок"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onClearImageMobile}
+                        className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-all shadow-md active:scale-90"
+                        title="Удалить мобильный баннер"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

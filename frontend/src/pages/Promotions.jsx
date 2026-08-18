@@ -154,12 +154,19 @@ export default function Promotions({
 
         {/* Big Banner Image / Harmonious Glassmorphic Promo Banner */}
         <div className="w-full overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-slate-200/80 shadow-sm relative bg-slate-100">
-          {selectedPromo.imageDetail || selectedPromo.image ? (
-            <img 
-              src={selectedPromo.imageDetail || selectedPromo.image} 
-              alt={selectedPromo.title} 
-              className="w-full h-auto max-h-[350px] object-cover"
-            />
+          {selectedPromo.imageDetail || selectedPromo.imageCard || selectedPromo.imageHome || selectedPromo.image ? (
+            <div className={`${selectedPromo.imageMobile ? 'aspect-square sm:aspect-[1012/404]' : 'aspect-[16/10] sm:aspect-[1012/404]'} w-full relative overflow-hidden bg-slate-100 flex items-center justify-center`}>
+              <picture className="w-full h-full block">
+                {selectedPromo.imageMobile && (
+                  <source media="(max-width: 640px)" srcSet={selectedPromo.imageMobile} />
+                )}
+                <img 
+                  src={selectedPromo.imageDetail || selectedPromo.imageCard || selectedPromo.imageHome || selectedPromo.image} 
+                  alt={selectedPromo.title} 
+                  className="w-full h-full object-cover object-left-top sm:object-left shadow-sm"
+                />
+              </picture>
+            </div>
           ) : (
             <div className={`w-full bg-gradient-to-br ${getThemeGradient(selectedPromo.theme)} rounded-3xl sm:rounded-[2.5rem] p-8 sm:p-12 text-white flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden space-y-5`}>
               {/* Subtle Ambient Glow */}
@@ -332,15 +339,20 @@ export default function Promotions({
               onClick={() => onNavigate?.('promotions', promotion.id)}
               className="group cursor-pointer space-y-4 text-left block text-slate-800"
             >
-              <div className="aspect-[16/9] w-full overflow-hidden rounded-[2rem] border border-slate-200/80 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-emerald-500/20 relative bg-slate-50">
-                {promotion.imageCard || promotion.image ? (
-                  <img
-                    src={promotion.imageCard || promotion.image}
-                    alt={promotion.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+              <div className={`${promotion.imageMobile ? 'aspect-square sm:aspect-[1012/404]' : 'aspect-[16/10] sm:aspect-[1012/404]'} w-full overflow-hidden rounded-2xl sm:rounded-[2rem] border border-slate-200/80 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-emerald-500/20 relative bg-slate-950 flex items-center justify-center`}>
+                {promotion.imageCard || promotion.imageHome || promotion.imageDetail || promotion.image ? (
+                  <picture className="w-full h-full block">
+                    {promotion.imageMobile && (
+                      <source media="(max-width: 640px)" srcSet={promotion.imageMobile} />
+                    )}
+                    <img
+                      src={promotion.imageCard || promotion.imageHome || promotion.imageDetail || promotion.image}
+                      alt={promotion.title}
+                      className="w-full h-full object-cover object-left-top sm:object-left"
+                    />
+                  </picture>
                 ) : (
-                  <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(promotion.theme)} flex flex-col items-center justify-center text-white p-4 group-hover:scale-105 transition-transform duration-500`}>
+                  <div className={`w-full h-full bg-gradient-to-br ${getThemeGradient(promotion.theme)} flex flex-col items-center justify-center text-white p-4`}>
                     <span className="text-3xl font-black font-outfit drop-shadow-sm select-none">
                       -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
                     </span>
@@ -350,7 +362,7 @@ export default function Promotions({
                   </div>
                 )}
                 {promotion.discountValue > 0 && (promotion.imageCard || promotion.image) && (
-                  <span className="absolute bottom-4 left-4 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                  <span className="absolute top-3 right-3 z-20 bg-yellow-300 border border-yellow-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
                     -{promotion.discountValue}{promotion.discountType === 'PERCENT' ? '%' : ' ₸'}
                   </span>
                 )}

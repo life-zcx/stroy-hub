@@ -109,8 +109,10 @@ function createEmptyPromotionForm() {
     isActive: true,
     showOnSite: true,
     showOnHome: false,
+    imageHome: '',
     imageCard: '',
     imageDetail: '',
+    imageMobile: '',
   };
 }
 
@@ -195,8 +197,10 @@ export function useDashboardData({ user, showToast }) {
   const [additionalImageFiles, setAdditionalImageFiles] = useState([]);
   const [categoryImageFile, setCategoryImageFile] = useState(null);
   const [brandLogoFile, setBrandLogoFile] = useState(null);
+  const [promotionImageHomeFile, setPromotionImageHomeFile] = useState(null);
   const [promotionImageCardFile, setPromotionImageCardFile] = useState(null);
   const [promotionImageDetailFile, setPromotionImageDetailFile] = useState(null);
+  const [promotionImageMobileFile, setPromotionImageMobileFile] = useState(null);
   const [previewCategoryImage, setPreviewCategoryImage] = useState('');
 
   const hierarchicalCategories = useMemo(
@@ -315,8 +319,10 @@ export function useDashboardData({ user, showToast }) {
   const resetPromotionForm = () => {
     setEditingPromotion(null);
     setPromotionForm(createEmptyPromotionForm());
+    setPromotionImageHomeFile(null);
     setPromotionImageCardFile(null);
     setPromotionImageDetailFile(null);
+    setPromotionImageMobileFile(null);
   };
 
   const resetBrandForm = () => {
@@ -582,12 +588,25 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const handlePromotionHomeFileChange = (event) => {
+    setPromotionImageHomeFile(event.target.files[0] || null);
+  };
+
   const handlePromotionCardFileChange = (event) => {
     setPromotionImageCardFile(event.target.files[0] || null);
   };
 
   const handlePromotionDetailFileChange = (event) => {
     setPromotionImageDetailFile(event.target.files[0] || null);
+  };
+
+  const handlePromotionMobileFileChange = (event) => {
+    setPromotionImageMobileFile(event.target.files[0] || null);
+  };
+
+  const clearPromotionImageHome = () => {
+    setPromotionImageHomeFile(null);
+    setPromotionForm((prev) => ({ ...prev, imageHome: '' }));
   };
 
   const clearPromotionImageCard = () => {
@@ -598,6 +617,11 @@ export function useDashboardData({ user, showToast }) {
   const clearPromotionImageDetail = () => {
     setPromotionImageDetailFile(null);
     setPromotionForm((prev) => ({ ...prev, imageDetail: '' }));
+  };
+
+  const clearPromotionImageMobile = () => {
+    setPromotionImageMobileFile(null);
+    setPromotionForm((prev) => ({ ...prev, imageMobile: '' }));
   };
 
   const handlePromotionSubmit = async (event) => {
@@ -630,6 +654,12 @@ export function useDashboardData({ user, showToast }) {
     if (promotionForm.startsAt) formData.append('startsAt', toIsoOrNull(promotionForm.startsAt));
     if (promotionForm.endsAt) formData.append('endsAt', toIsoOrNull(promotionForm.endsAt));
 
+    if (promotionImageHomeFile) {
+      formData.append('imageHomeFile', promotionImageHomeFile);
+    } else {
+      formData.append('imageHome', promotionForm.imageHome || '');
+    }
+
     if (promotionImageCardFile) {
       formData.append('imageCardFile', promotionImageCardFile);
     } else {
@@ -640,6 +670,12 @@ export function useDashboardData({ user, showToast }) {
       formData.append('imageDetailFile', promotionImageDetailFile);
     } else {
       formData.append('imageDetail', promotionForm.imageDetail || '');
+    }
+
+    if (promotionImageMobileFile) {
+      formData.append('imageMobileFile', promotionImageMobileFile);
+    } else {
+      formData.append('imageMobile', promotionForm.imageMobile || '');
     }
 
     try {
@@ -696,11 +732,15 @@ export function useDashboardData({ user, showToast }) {
       isActive: promotion.isActive ?? true,
       showOnSite: promotion.showOnSite ?? true,
       showOnHome: promotion.showOnHome ?? false,
+      imageHome: promotion.imageHome || '',
       imageCard: promotion.imageCard || '',
       imageDetail: promotion.imageDetail || '',
+      imageMobile: promotion.imageMobile || '',
     });
+    setPromotionImageHomeFile(null);
     setPromotionImageCardFile(null);
     setPromotionImageDetailFile(null);
+    setPromotionImageMobileFile(null);
     setIsPromotionModalOpen(true);
   };
 
@@ -1154,12 +1194,18 @@ export function useDashboardData({ user, showToast }) {
     startEditSupplier,
     handleDeleteSupplier,
     handlePromotionChange,
+    handlePromotionHomeFileChange,
     handlePromotionCardFileChange,
     handlePromotionDetailFileChange,
+    handlePromotionMobileFileChange,
+    clearPromotionImageHome,
     clearPromotionImageCard,
     clearPromotionImageDetail,
+    clearPromotionImageMobile,
+    promotionImageHomeFile,
     promotionImageCardFile,
     promotionImageDetailFile,
+    promotionImageMobileFile,
     handlePromotionTargetToggle,
     handlePromotionTierChange,
     handleAddPromotionTier,

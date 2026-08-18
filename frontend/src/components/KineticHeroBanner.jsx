@@ -206,7 +206,7 @@ export default function KineticHeroBanner({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="kinetic-banner-container lg:col-span-8 relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/85 px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12 group/hero h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800 select-none"
+      className="kinetic-banner-container lg:col-span-8 relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/85 group/hero h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800 select-none"
     >
       {/* Soft Ambient Glow Orbs */}
       <div
@@ -228,7 +228,7 @@ export default function KineticHeroBanner({
 
         {/* ── SLIDE 0: MAIN USP ── */}
         {currentSlide === 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-stretch w-full h-full py-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
             <div className="lg:col-span-12 flex flex-col justify-between text-left h-full w-full">
               <div className="space-y-4">
                 <h1 ref={titleRef} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight font-outfit">
@@ -273,7 +273,7 @@ export default function KineticHeroBanner({
 
         {/* ── SLIDE 1: LOYALTY INFO (TORMAG Club) ── */}
         {currentSlide === 1 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full h-full py-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
             {/* Left Column */}
             <div className="lg:col-span-6 flex flex-col justify-between text-left h-full w-full pr-2">
               <div className="space-y-4">
@@ -361,7 +361,7 @@ export default function KineticHeroBanner({
 
         {/* ── SLIDE 2: REVIEW PROMO ── */}
         {currentSlide === 2 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full h-full py-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
             <div className="lg:col-span-12 flex flex-col justify-between text-left h-full w-full">
               <div className="space-y-4">
                 <h1 ref={titleRef} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] tracking-tight font-outfit">
@@ -398,22 +398,32 @@ export default function KineticHeroBanner({
 
         {/* ── SLIDE 3+: DYNAMIC PROMOTIONS ── */}
         {currentSlide >= 3 && currentPromo && (() => {
-          if (currentPromo.image) {
+          const bannerSrc = currentPromo.imageHome || currentPromo.imageCard || currentPromo.image;
+          if (bannerSrc) {
             return (
               <Link
                 href={getPageHref('promotions', currentPromo.id)}
                 onClick={() => onNavigate('promotions', currentPromo.id)}
-                className="absolute inset-0 w-full h-full block cursor-pointer group/promo z-10"
+                className="absolute inset-0 w-full h-full block cursor-pointer group/promo z-10 overflow-hidden rounded-[2rem]"
               >
-                <img
-                  src={currentPromo.image}
-                  alt={currentPromo.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent group-hover/promo:from-slate-950/90 transition-colors duration-300" />
+                {/* Responsive banner: uses imageMobile on smartphones if provided */}
+                <picture className="w-full h-full block">
+                  {currentPromo.imageMobile && (
+                    <source media="(max-width: 640px)" srcSet={currentPromo.imageMobile} />
+                  )}
+                  <img
+                    src={bannerSrc}
+                    alt={currentPromo.title}
+                    className="w-full h-full object-cover object-left select-none"
+                  />
+                </picture>
 
-                <div ref={ctaRef} className="absolute bottom-10 left-6 sm:bottom-10 sm:left-10 z-20">
-                  <span className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-900/40 backdrop-blur-sm text-xs uppercase tracking-wider transition-colors duration-300 text-shade-sm">
+                {/* Subtle gradient shadow on bottom-left for crisp button contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+
+                {/* CTA Button placed at bottom-left */}
+                <div ref={ctaRef} className="absolute bottom-12 left-6 sm:bottom-8 sm:left-10 z-20">
+                  <span className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-900/40 text-xs uppercase tracking-wider transition-colors duration-300">
                     <span>Открыть акцию</span>
                     <ArrowRight className="h-4.5 w-4.5" />
                   </span>
@@ -423,7 +433,7 @@ export default function KineticHeroBanner({
           }
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full h-full py-2">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
               <div className="lg:col-span-6 flex flex-col justify-between text-left h-full w-full pr-2">
                 <div className="space-y-4">
                   <h1 ref={titleRef} className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight font-outfit">

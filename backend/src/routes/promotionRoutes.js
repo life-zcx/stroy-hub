@@ -20,8 +20,10 @@ router.get('/my', verifyToken, getMyPromotions);
 router.post('/validate', validatePromotionCode);
 
 const uploadFields = imageUpload.fields([
+  { name: 'imageHomeFile', maxCount: 1 },
   { name: 'imageCardFile', maxCount: 1 },
-  { name: 'imageDetailFile', maxCount: 1 }
+  { name: 'imageDetailFile', maxCount: 1 },
+  { name: 'imageMobileFile', maxCount: 1 }
 ]);
 
 router.get('/', verifyToken, requireRoles(['ADMIN']), getAllPromotions);

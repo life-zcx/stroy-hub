@@ -249,6 +249,8 @@ model Promotion {
   image         String?
   imageCard     String?
   imageDetail   String?
+  imageHome     String?
+  imageMobile   String?
 }
 
 model PageView {
