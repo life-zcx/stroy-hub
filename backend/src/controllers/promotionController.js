@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { broadcastNotification } from '../utils/pushNotifier.js';
@@ -365,7 +366,7 @@ export const getPublicPromotions = async (req, res) => {
     await redisClient.set(PROMOTIONS_CACHE_KEY_PUBLIC, JSON.stringify(result), { EX: 120 });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения акций: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения акций: '  });
   }
 };
 
@@ -396,7 +397,7 @@ export const getHomePromotions = async (req, res) => {
     await redisClient.set(PROMOTIONS_CACHE_KEY_HOME, JSON.stringify(result), { EX: 120 });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения акций для главной: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения акций для главной: '  });
   }
 };
 
@@ -433,7 +434,7 @@ export const validatePromotionCode = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка проверки промокода: ' + error.message });
+    res.status(500).json({ error: 'Ошибка проверки промокода: '  });
   }
 };
 
@@ -445,7 +446,7 @@ export const getAllPromotions = async (req, res) => {
 
     res.json(await enrichPromotions(promotions));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения списка акций: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения списка акций: '  });
   }
 };
 import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
@@ -499,7 +500,7 @@ export const createPromotion = async (req, res) => {
     const statusCode = error.code === 'P2002' ? 400 : 500;
     const message = error.code === 'P2002'
       ? 'Промокод с таким значением уже существует.'
-      : 'Ошибка создания акции: ' + error.message;
+      : 'Ошибка создания акции: ' ;
 
     res.status(statusCode).json({ error: message });
   }
@@ -554,7 +555,7 @@ export const updatePromotion = async (req, res) => {
     const statusCode = error.code === 'P2002' ? 400 : 500;
     const message = error.code === 'P2002'
       ? 'Промокод с таким значением уже существует.'
-      : 'Ошибка обновления акции: ' + error.message;
+      : 'Ошибка обновления акции: ' ;
 
     res.status(statusCode).json({ error: message });
   }
@@ -589,7 +590,7 @@ export const deletePromotion = async (req, res) => {
     await clearPromotionsCache();
     res.json({ message: 'Акция удалена.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка удаления акции: ' + error.message });
+    res.status(500).json({ error: 'Ошибка удаления акции: '  });
   }
 };
 
@@ -603,7 +604,7 @@ export const getMyPromotions = async (req, res) => {
     });
     res.json(await enrichPromotions(promotions));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения личных промокодов: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения личных промокодов: '  });
   }
 };
 

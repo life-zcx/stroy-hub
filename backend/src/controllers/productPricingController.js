@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import {
   readPricingSettings,
   writePricingSettings,
@@ -68,7 +69,7 @@ export const getPriceLogs = async (req, res) => {
       hasMore: page * limit < total,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения истории цен: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения истории цен: '  });
   }
 };
 
@@ -77,7 +78,7 @@ export const getPricingSettings = async (req, res) => {
     const settings = readPricingSettings();
     res.json(settings);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения настроек ценообразования: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения настроек ценообразования: '  });
   }
 };
 
@@ -207,6 +208,6 @@ export const savePricingSettings = async (req, res) => {
       res.status(500).json({ error: 'Не удалось записать файл настроек' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка сохранения настроек ценообразования: ' + error.message });
+    res.status(500).json({ error: 'Ошибка сохранения настроек ценообразования: '  });
   }
 };

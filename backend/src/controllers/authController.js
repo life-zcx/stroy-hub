@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { safeErrorMessage } from '../utils/apiError.js';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
@@ -148,7 +149,7 @@ export const sendRegisterCode = async (req, res) => {
 
     res.json({ message: 'Код подтверждения регистрации успешно отправлен на вашу почту.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при отправке кода подтверждения: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при отправке кода подтверждения: '  });
   }
 };
 
@@ -287,7 +288,7 @@ export const register = async (req, res) => {
       user: buildUserPayload(newUser),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при регистрации: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при регистрации: '  });
   }
 };
 
@@ -350,7 +351,7 @@ export const login = async (req, res) => {
       user: buildUserPayload(user),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка входа: ' + error.message });
+    res.status(500).json({ error: 'Ошибка входа: '  });
   }
 };
 
@@ -376,7 +377,7 @@ export const getProfile = async (req, res) => {
 
     res.json(buildUserPayload(user));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения профиля: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения профиля: '  });
   }
 };
 
@@ -470,7 +471,7 @@ export const updateProfile = async (req, res) => {
 
     res.json(buildUserPayload(updatedUser));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления профиля: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления профиля: '  });
   }
 };
 
@@ -535,7 +536,7 @@ export const forgotPassword = async (req, res) => {
     // Always return the same response to prevent user enumeration
     res.json({ message: 'Если этот email зарегистрирован, вы получите код подтверждения.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при отправке кода: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при отправке кода: '  });
   }
 };
 
@@ -595,7 +596,7 @@ export const resetPassword = async (req, res) => {
 
     res.json({ message: 'Пароль успешно изменен. Теперь вы можете войти в систему.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка смены пароля: ' + error.message });
+    res.status(500).json({ error: 'Ошибка смены пароля: '  });
   }
 };
 
@@ -639,7 +640,7 @@ export const verifyResetCode = async (req, res) => {
 
     res.json({ message: 'Код подтверждения верен' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка проверки кода: ' + error.message });
+    res.status(500).json({ error: 'Ошибка проверки кода: '  });
   }
 };
 
@@ -730,7 +731,7 @@ export const deleteAccount = async (req, res) => {
     res.json({ message: 'Учетная запись успешно удалена.' });
   } catch (error) {
     logger.error(`Error deleting user #${req.user?.id}: ${error.message}`);
-    res.status(500).json({ error: 'Ошибка при удалении учетной записи: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при удалении учетной записи: '  });
   }
 };
 

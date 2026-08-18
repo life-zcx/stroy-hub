@@ -160,3 +160,35 @@ export const globalRateLimiter = async (req, res, next) => {
   }
 };
 
+// Analytics rate limiter
+// Applied specifically to public analytics ingest endpoints (/page-view, /event).
+// Stricter than the global limiter: 60 events per IP per minute.
+export const analyticsRateLimiter = async (req, res, next) => {
+  if (process.env.DISABLE_RATE_LIMIT === 'true') {
+    return next();
+  }
+
+  const ip = getClientIp(req);
+
+  try {
+    const key = `rate-limit:analytics:${ip}`;
+    const count = await redisClient.incr(key);
+
+    if (count === 1) {
+      await redisClient.expire(key, 60);
+    }
+
+    if (count > 60) {
+      logger.warn(`[Analytics Rate Limit] IP ${ip} exceeded 60 analytics events/min`);
+      return res.status(429).json({
+        error: 'Слишком много запросов аналитики. Пожалуйста, попробуйте через минуту.',
+      });
+    }
+
+    next();
+  } catch (error) {
+    // Fail-open: analytics is non-critical, do not block traffic if Redis is down
+    logger.error('[Analytics Rate Limiter Error]', error);
+    next();
+  }
+};

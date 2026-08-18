@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
 import { evaluatePromotion } from '../utils/promotionUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
@@ -187,7 +188,7 @@ export const createOrder = async (req, res) => {
   } catch (error) {
     const normalizedMessage = String(error.message || '').toLowerCase();
     const statusCode = normalizedMessage.includes('акци') || normalizedMessage.includes('промокод') ? 400 : 500;
-    res.status(statusCode).json({ error: 'Ошибка создания заказа: ' + error.message });
+    res.status(statusCode).json({ error: 'Ошибка создания заказа: '  });
   }
 };
 
@@ -260,7 +261,7 @@ export const getAllOrders = async (req, res) => {
       hasMore: page * limit < total,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения списка заказов: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения списка заказов: '  });
   }
 };
 
@@ -298,7 +299,7 @@ export const getOrderById = async (req, res) => {
 
     res.json(order);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения заказа: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения заказа: '  });
   }
 };
 
@@ -344,7 +345,7 @@ export const updateOrderStatus = async (req, res) => {
     triggerOrderStatusChangedNotification(updated);
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления заказа: '  });
   }
 };
 
@@ -498,6 +499,6 @@ export const updateOrder = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления заказа: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления заказа: '  });
   }
 };

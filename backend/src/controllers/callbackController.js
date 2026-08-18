@@ -2,6 +2,8 @@ import prisma from '../config/db.js';
 import { sanitizeOptionalText, sanitizePersonName, sanitizePhone } from '../utils/requestValidation.js';
 import { sendCallbackAlert } from '../utils/telegramBot.js';
 import { broadcastNotification } from '../utils/pushNotifier.js';
+import { safeErrorMessage } from '../utils/apiError.js';
+import logger from '../utils/logger.js';
 
 export const createCallback = async (req, res) => {
   const { userName, userPhone } = req.body;
@@ -23,7 +25,7 @@ export const createCallback = async (req, res) => {
     });
 
     // Send Telegram Notification asynchronously
-    sendCallbackAlert(callback).catch(err => console.error('[TELEGRAM ALERT ERROR] Callback:', err));
+    sendCallbackAlert(callback).catch(err => logger.error('[TELEGRAM ALERT ERROR] Callback:', { error: err.message }));
 
     // Send Web Push Notification to Admin devices
     broadcastNotification({
@@ -35,8 +37,8 @@ export const createCallback = async (req, res) => {
 
     res.status(201).json(callback);
   } catch (error) {
-    const statusCode = error.message.includes('Поле') ? 400 : 500;
-    res.status(statusCode).json({ error: 'Ошибка при создании заявки: ' + error.message });
+    const statusCode = error.message?.includes('Поле') ? 400 : 500;
+    res.status(statusCode).json({ error: safeErrorMessage(error, 'Ошибка при создании заявки.') });
   }
 };
 
@@ -47,7 +49,7 @@ export const getAllCallbacks = async (req, res) => {
     });
     res.json(callbacks);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении заявок: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при получении заявок.') });
   }
 };
 
@@ -74,7 +76,7 @@ export const updateCallback = async (req, res) => {
     });
     res.json(updated);
   } catch (error) {
-    const statusCode = error.message.includes('Поле') || error.message.includes('Недопустимый') ? 400 : 500;
-    res.status(statusCode).json({ error: 'Ошибка при обновлении заявки: ' + error.message });
+    const statusCode = error.message?.includes('Поле') || error.message?.includes('Недопустимый') ? 400 : 500;
+    res.status(statusCode).json({ error: safeErrorMessage(error, 'Ошибка при обновлении заявки.') });
   }
 };

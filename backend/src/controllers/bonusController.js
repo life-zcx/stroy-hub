@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { broadcastNotification } from '../utils/pushNotifier.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 // ─────────────────────────────────────────────
 // Утилитарные функции (переиспользуются в orderController)
@@ -183,7 +184,7 @@ export const getUserBonusSummary = async (req, res) => {
       availableBonusPoints: Math.round(availableBalance),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения бонусного баланса: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения бонусного баланса.') });
   }
 };
 
@@ -228,7 +229,7 @@ export const getBonusHistory = async (req, res) => {
       hasMore: page * limit < total,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения истории бонусов: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения истории бонусов.') });
   }
 };
 
@@ -287,6 +288,6 @@ export const manualAdjustBonus = async (req, res) => {
       message: `Бонусы скорректированы. Новый баланс: ${Math.round(newBalance)} ₸`,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка корректировки бонусов: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка корректировки бонусов.') });
   }
 };

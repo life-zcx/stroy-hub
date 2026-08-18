@@ -93,7 +93,9 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+        // NOTE: 'unsafe-inline' is kept for style/script compatibility with the SPA framework.
+        // 'unsafe-eval' has been REMOVED — it was previously allowing arbitrary code execution.
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -105,8 +107,9 @@ app.use(
     },
   })
 );
+// NOTE: Helmet already sets HSTS via the hsts option above.
+// Additional security headers not covered by Helmet:
 app.use((req, res, next) => {
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
   next();
 });

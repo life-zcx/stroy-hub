@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import { Prisma } from '@prisma/client';
 import logger from '../utils/logger.js';
 import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
@@ -202,7 +203,7 @@ export const createProduct = async (req, res) => {
     await clearProductsCache();
     res.status(201).json(newProduct);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка создания товара: ' + error.message });
+    res.status(500).json({ error: 'Ошибка создания товара: '  });
   }
 };
 
@@ -386,7 +387,7 @@ export const updateProduct = async (req, res) => {
     await clearProductsCache();
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления товара: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления товара: '  });
   }
 };
 
@@ -434,6 +435,6 @@ export const deleteProduct = async (req, res) => {
     await clearProductsCache();
     res.json({ message: 'Товар успешно удален' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка удаления товара: ' + error.message });
+    res.status(500).json({ error: 'Ошибка удаления товара: '  });
   }
 };

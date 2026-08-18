@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 const CACHE_KEY_PUBLIC = 'brands:public';
 const CACHE_KEY_ALL = 'brands:all';
@@ -71,7 +72,7 @@ export const getPublicBrands = async (req, res) => {
     await redisClient.set(CACHE_KEY_PUBLIC, JSON.stringify(brands), { EX: 300 });
     res.json(brands);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения брендов: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения брендов.') });
   }
 };
 
@@ -93,7 +94,7 @@ export const getAllBrands = async (req, res) => {
     await redisClient.set(CACHE_KEY_ALL, JSON.stringify(brands), { EX: 60 });
     res.json(brands);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения брендов: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения брендов.') });
   }
 };
 
@@ -121,7 +122,7 @@ export const createBrand = async (req, res) => {
   } catch (error) {
     const message = error.code === 'P2002'
       ? 'Бренд с таким названием уже существует.'
-      : 'Ошибка создания бренда: ' + error.message;
+      : safeErrorMessage(error, 'Ошибка создания бренда.');
     res.status(error.code === 'P2002' ? 400 : 500).json({ error: message });
   }
 };
@@ -166,7 +167,7 @@ export const updateBrand = async (req, res) => {
   } catch (error) {
     const message = error.code === 'P2002'
       ? 'Бренд с таким названием уже существует.'
-      : 'Ошибка обновления бренда: ' + error.message;
+      : safeErrorMessage(error, 'Ошибка обновления бренда.');
     res.status(error.code === 'P2002' ? 400 : 500).json({ error: message });
   }
 };
@@ -191,6 +192,6 @@ export const deleteBrand = async (req, res) => {
     await clearBrandsCache();
     res.json({ message: 'Бренд удален.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка удаления бренда: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка удаления бренда.') });
   }
 };

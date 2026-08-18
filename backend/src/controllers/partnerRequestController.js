@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import {
   sanitizeCompanyName,
   sanitizeEmail,
@@ -34,7 +35,7 @@ export const createPartnerRequest = async (req, res) => {
     res.status(201).json(partnerRequest);
   } catch (error) {
     const statusCode = error.message.includes('Поле') ? 400 : 500;
-    res.status(statusCode).json({ error: 'Ошибка при отправке партнерской заявки: ' + error.message });
+    res.status(statusCode).json({ error: 'Ошибка при отправке партнерской заявки: '  });
   }
 };
 
@@ -46,7 +47,7 @@ export const getAllPartnerRequests = async (req, res) => {
 
     res.json(requests);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении партнерских заявок: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при получении партнерских заявок: '  });
   }
 };
 
@@ -72,6 +73,6 @@ export const updatePartnerRequest = async (req, res) => {
     res.json(updatedRequest);
   } catch (error) {
     const statusCode = error.message.includes('Поле') || error.message.includes('Недопустимый') ? 400 : 500;
-    res.status(statusCode).json({ error: 'Ошибка обновления партнерской заявки: ' + error.message });
+    res.status(statusCode).json({ error: 'Ошибка обновления партнерской заявки: '  });
   }
 };

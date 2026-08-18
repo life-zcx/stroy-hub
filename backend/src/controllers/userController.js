@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/db.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { getAvailableBalance, getPendingBalance } from './bonusController.js';
+import { safeErrorMessage } from '../utils/apiError.js';
+import logger from '../utils/logger.js';
 
 const ALLOWED_ROLES = ['ADMIN', 'SUPPLIER', 'CUSTOMER'];
 
@@ -82,7 +84,7 @@ export const getAllUsers = async (req, res) => {
 
     res.json(users.map(serializeUser));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения пользователей: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения пользователей.') });
   }
 };
 
@@ -165,7 +167,7 @@ export const createUserByAdmin = async (req, res) => {
 
     res.status(201).json(serializeUser(createdUser));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка создания пользователя: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка создания пользователя.') });
   }
 };
 
@@ -281,7 +283,10 @@ export const updateUser = async (req, res) => {
     res.json(serializeUser(updatedUser));
   } catch (error) {
     const status = error.statusCode || 500;
-    res.status(status).json({ error: error.message || 'Ошибка обновления пользователя: ' + error.message });
+    // error.message here comes from our own custom errors (role validation, not-found)
+    // which are safe to expose. But in production we still wrap unknown ones.
+    const message = error.statusCode ? error.message : safeErrorMessage(error, 'Ошибка обновления пользователя.');
+    res.status(status).json({ error: message });
   }
 };
 
@@ -311,7 +316,7 @@ export const updateUserPassword = async (req, res) => {
 
     res.json({ message: 'Пароль пользователя обновлен.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления пароля: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка обновления пароля.') });
   }
 };
 
@@ -374,7 +379,8 @@ export const updateUserBlockStatus = async (req, res) => {
     res.json(serializeUser(updatedUser));
   } catch (error) {
     const status = error.statusCode || 500;
-    res.status(status).json({ error: error.message || 'Ошибка изменения статуса блокировки: ' + error.message });
+    const message = error.statusCode ? error.message : safeErrorMessage(error, 'Ошибка изменения статуса блокировки.');
+    res.status(status).json({ error: message });
   }
 };
 
@@ -571,7 +577,8 @@ export const getUserPortrait = async (req, res) => {
       })),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения портрета пользователя: ' + error.message });
+    logger.error('[GET USER PORTRAIT ERROR]', { error: error.message, userId });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения портрета пользователя.') });
   }
 };
 
@@ -646,7 +653,7 @@ export const addUserCartItem = async (req, res) => {
       addedAt: c.updatedAt
     })));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при добавлении товара в корзину: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при добавлении товара в корзину.') });
   }
 };
 
@@ -694,7 +701,7 @@ export const updateUserCartItem = async (req, res) => {
       addedAt: c.updatedAt
     })));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при обновлении количества товара в корзине: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при обновлении количества товара в корзине.') });
   }
 };
 
@@ -738,7 +745,7 @@ export const removeUserCartItem = async (req, res) => {
       addedAt: c.updatedAt
     })));
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при удалении товара из корзины: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при удалении товара из корзины.') });
   }
 };
 
@@ -757,7 +764,7 @@ export const clearUserCart = async (req, res) => {
 
     res.json({ success: true, message: 'Корзина успешно очищена' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при очистке корзины пользователя: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при очистке корзины пользователя.') });
   }
 };
 

@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 export const getAllSuppliers = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ export const getAllSuppliers = async (req, res) => {
     });
     res.json(suppliers);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения дистрибьюторов: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка получения дистрибьюторов.') });
   }
 };
 
@@ -27,7 +28,7 @@ export const createSupplier = async (req, res) => {
     });
     res.status(201).json(newSupplier);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка создания дистрибьютора: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка создания дистрибьютора.') });
   }
 };
 
@@ -57,7 +58,7 @@ export const updateSupplier = async (req, res) => {
     });
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления дистрибьютора: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка обновления дистрибьютора.') });
   }
 };
 
@@ -79,6 +80,6 @@ export const deleteSupplier = async (req, res) => {
 
     res.json({ message: 'Дистрибьютор успешно удален' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка удаления дистрибьютора: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка удаления дистрибьютора.') });
   }
 };

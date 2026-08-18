@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 // Get all warranty rules with populated target names
 export const getAllWarrantyRules = async (req, res) => {
@@ -45,7 +46,7 @@ export const getAllWarrantyRules = async (req, res) => {
 
     res.json(populatedRules);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении правил гарантии: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при получении правил гарантии.') });
   }
 };
 
@@ -99,7 +100,7 @@ export const createWarrantyRule = async (req, res) => {
 
     res.status(201).json(rule);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при создании правила: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при создании правила.') });
   }
 };
 
@@ -129,7 +130,7 @@ export const updateWarrantyRule = async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при обновлении правила: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при обновлении правила.') });
   }
 };
 
@@ -152,6 +153,6 @@ export const deleteWarrantyRule = async (req, res) => {
 
     res.json({ success: true, message: 'Правило удалено.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при удалении правила: ' + error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при удалении правила.') });
   }
 };

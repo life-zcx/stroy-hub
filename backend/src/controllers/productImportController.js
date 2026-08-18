@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import XlsxPopulate from 'xlsx-populate';
 import path from 'path';
 import logger from '../utils/logger.js';
@@ -311,7 +312,7 @@ export const importProductsXlsx = async (req, res) => {
       updatedCount
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка импорта товаров: ' + error.message });
+    res.status(500).json({ error: 'Ошибка импорта товаров: '  });
   }
 };
 
@@ -582,6 +583,6 @@ export const matchEstimateXlsx = async (req, res) => {
       fileMimeType: req.file?.mimetype || null,
       userId: req.user?.id || null,
     });
-    res.status(500).json({ error: 'Ошибка сопоставления сметы: ' + error.message });
+    res.status(500).json({ error: 'Ошибка сопоставления сметы: '  });
   }
 };

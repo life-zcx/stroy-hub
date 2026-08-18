@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 // Client: Create Return Request
 export const createReturnRequest = async (req, res) => {
@@ -120,7 +121,7 @@ export const createReturnRequest = async (req, res) => {
 
     res.status(201).json(returnRequest);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при создании запроса на возврат: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при создании запроса на возврат: '  });
   }
 };
 
@@ -152,7 +153,7 @@ export const getMyReturnRequests = async (req, res) => {
 
     res.json(returnRequests);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении ваших возвратов: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при получении ваших возвратов: '  });
   }
 };
 
@@ -192,7 +193,7 @@ export const getAllReturnRequests = async (req, res) => {
 
     res.json(returnRequests);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении всех возвратов: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при получении всех возвратов: '  });
   }
 };
 
@@ -268,6 +269,6 @@ export const updateReturnRequestStatus = async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при модерации возврата: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при модерации возврата: '  });
   }
 };

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import logger from '../utils/logger.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 
 let sharp = null;
 try {
@@ -179,6 +180,6 @@ export const handleIpxImageRequest = async (req, res) => {
 
   } catch (error) {
     logger.error(`[IPX OPTIMIZER] Error processing image request: ${error.message}`);
-    return res.status(500).json({ error: 'Ошибка обработки изображения: ' + error.message });
+    return res.status(500).json({ error: safeErrorMessage(error, 'Ошибка обработки изображения.') });
   }
 };

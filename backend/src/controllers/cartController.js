@@ -1,5 +1,7 @@
 import prisma from '../config/db.js';
 import { applyRetailPricingToProduct, readPricingSettings } from './productController.js';
+import { safeErrorMessage } from '../utils/apiError.js';
+import logger from '../utils/logger.js';
 
 // Format the cart items to include variant options and custom variant prices with retail markups
 const formatCartItems = async (cartItems) => {
@@ -58,8 +60,8 @@ export const getCart = async (req, res) => {
 
     res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
-    console.error('[GET CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось загрузить корзину.' });
+    logger.error('[GET CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось загрузить корзину.') });
   }
 };
 
@@ -130,8 +132,8 @@ export const addToCart = async (req, res) => {
 
     res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
-    console.error('[ADD TO CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось добавить товар в корзину.' });
+    logger.error('[ADD TO CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось добавить товар в корзину.') });
   }
 };
 
@@ -189,8 +191,8 @@ export const updateCartItem = async (req, res) => {
 
     res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
-    console.error('[UPDATE CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось обновить корзину.' });
+    logger.error('[UPDATE CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось обновить корзину.') });
   }
 };
 
@@ -241,8 +243,8 @@ export const removeFromCart = async (req, res) => {
 
     res.status(200).json(await formatCartItems(cartItems));
   } catch (error) {
-    console.error('[REMOVE FROM CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось удалить товар из корзины.' });
+    logger.error('[REMOVE FROM CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось удалить товар из корзины.') });
   }
 };
 
@@ -302,8 +304,8 @@ export const syncCart = async (req, res) => {
 
     res.status(200).json(await formatCartItems(updatedCartItems));
   } catch (error) {
-    console.error('[SYNC CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось синхронизировать корзину.' });
+    logger.error('[SYNC CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось синхронизировать корзину.') });
   }
 };
 
@@ -318,7 +320,7 @@ export const clearCart = async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('[CLEAR CART ERROR]', error);
-    res.status(500).json({ error: 'Не удалось очистить корзину.' });
+    logger.error('[CLEAR CART ERROR]', { error: error.message });
+    res.status(500).json({ error: safeErrorMessage(error, 'Не удалось очистить корзину.') });
   }
 };

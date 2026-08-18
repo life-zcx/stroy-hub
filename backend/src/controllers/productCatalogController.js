@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import { attachActivePromotionsToProduct } from '../utils/promotionUtils.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
@@ -291,7 +292,7 @@ export const getAllProducts = async (req, res) => {
     await redisClient.set(cacheKey, JSON.stringify(result), { EX: 1800 });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения товаров: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения товаров: '  });
   }
 };
 
@@ -355,7 +356,7 @@ export const getProductById = async (req, res) => {
     await redisClient.set(cacheKey, JSON.stringify(mappedProduct), { EX: 1800 });
     res.json(mappedProduct);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения товара: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения товара: '  });
   }
 };
 
@@ -384,7 +385,7 @@ export const getAiCatalogProducts = async (req, res) => {
     res.json(truncated);
   } catch (error) {
     logger.error('[AI CATALOG ENDPOINT ERROR]', error);
-    res.status(500).json({ error: 'Ошибка получения каталога ИИ: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения каталога ИИ: '  });
   }
 };
 
@@ -436,6 +437,6 @@ export const getProductStats = async (req, res) => {
       totalRevenue: totalRevenue._sum.price || 0
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения статистики товара: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения статистики товара: '  });
   }
 };

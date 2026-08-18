@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { safeErrorMessage } from '../utils/apiError.js';
 import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { getTokenFromRequest } from '../utils/authCookie.js';
@@ -139,7 +140,7 @@ export const createPageView = async (req, res) => {
 
     res.status(201).json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка записи просмотра страницы: ' + error.message });
+    res.status(500).json({ error: 'Ошибка записи просмотра страницы: '  });
   }
 };
 
@@ -486,6 +487,6 @@ export const getAnalyticsSummary = async (req, res) => {
       recentViews,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения аналитики: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения аналитики: '  });
   }
 };

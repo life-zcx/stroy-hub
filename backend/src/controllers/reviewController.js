@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { sendReviewModerationAlert } from '../utils/telegramBot.js';
@@ -138,7 +139,7 @@ export const getProductReviews = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching product reviews:', error);
-    res.status(500).json({ error: 'Ошибка при получении отзывов: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при получении отзывов: '  });
   }
 };
 
@@ -275,7 +276,7 @@ export const createProductReview = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error creating product review:', error);
-    res.status(500).json({ error: 'Ошибка при отправке отзыва: ' + error.message });
+    res.status(500).json({ error: 'Ошибка при отправке отзыва: '  });
   }
 };
 

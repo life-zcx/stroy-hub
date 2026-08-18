@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { safeErrorMessage } from '../utils/apiError.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 import { processAndUploadMedia } from '../utils/mediaOptimizer.js';
@@ -38,7 +39,7 @@ export const getAllCategories = async (req, res) => {
     await redisClient.set(cacheKey, JSON.stringify(categories), { EX: 3600 });
     res.json(categories);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения категорий: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения категорий: '  });
   }
 };
 
@@ -106,7 +107,7 @@ export const getCategoryById = async (req, res) => {
     await redisClient.set(cacheKey, JSON.stringify(result), { EX: 600 });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка получения категории: ' + error.message });
+    res.status(500).json({ error: 'Ошибка получения категории: '  });
   }
 };
 
@@ -153,7 +154,7 @@ export const createCategory = async (req, res) => {
     await clearCategoriesCache();
     res.status(201).json(newCategory);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка создания категории: ' + error.message });
+    res.status(500).json({ error: 'Ошибка создания категории: '  });
   }
 };
 
@@ -209,7 +210,7 @@ export const updateCategory = async (req, res) => {
     await clearCategoriesCache();
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления категории: ' + error.message });
+    res.status(500).json({ error: 'Ошибка обновления категории: '  });
   }
 };
 
@@ -233,6 +234,6 @@ export const deleteCategory = async (req, res) => {
     await clearCategoriesCache();
     res.json({ message: 'Категория успешно удалена' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка удаления категории: ' + error.message });
+    res.status(500).json({ error: 'Ошибка удаления категории: '  });
   }
 };
