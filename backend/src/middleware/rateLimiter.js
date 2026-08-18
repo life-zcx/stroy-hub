@@ -1,6 +1,15 @@
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
 
+// IPs that bypass globalRateLimiter (internal Docker services, health-checkers, etc.)
+// Extend via INTERNAL_IPS env var: comma-separated list of IPs/CIDRs
+const INTERNAL_IPS = new Set([
+  '127.0.0.1',
+  '::1',
+  '::ffff:127.0.0.1',
+  ...(process.env.INTERNAL_IPS ? process.env.INTERNAL_IPS.split(',').map(s => s.trim()) : []),
+]);
+
 function getClientIp(req) {
   let ip = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress;
   if (Array.isArray(ip)) {
@@ -127,12 +136,18 @@ export const passwordResetRateLimiter = async (req, res, next) => {
 
 // Global rate limiter
 // Applied to all API routes as a first line of defence against bots and abuse.
+// Internal IPs (Docker services, health checkers) are whitelisted and bypass it.
 export const globalRateLimiter = async (req, res, next) => {
   if (process.env.DISABLE_RATE_LIMIT === 'true') {
     return next();
   }
 
+  // Whitelist: internal IPs skip the global limiter entirely
   const ip = getClientIp(req);
+  if (INTERNAL_IPS.has(ip)) {
+    return next();
+  }
+
   const isDev = process.env.NODE_ENV !== 'production';
   const defaultLimit = isDev ? 5000 : 300;
   const maxLimit = parseInt(process.env.GLOBAL_RATE_LIMIT, 10) || defaultLimit;
@@ -157,6 +172,64 @@ export const globalRateLimiter = async (req, res, next) => {
     // Fail-open: do not block users if Redis is temporarily unavailable
     logger.error('[Global Rate Limiter Error]', error);
     next();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User-ID based rate limiter
+// Solves the NAT/VPN problem: counts per authenticated user, not per IP.
+// Falls back to IP if the user is not authenticated.
+// ─────────────────────────────────────────────────────────────────────────────
+export const userRateLimiter = (maxRequests = 300, windowSeconds = 60) =>
+  async (req, res, next) => {
+    if (process.env.DISABLE_RATE_LIMIT === 'true') return next();
+
+    // Use userId when available; fall back to IP
+    const actor = req.user?.id ? `user:${req.user.id}` : `ip:${getClientIp(req)}`;
+
+    try {
+      const key = `rate-limit:user:${actor}`;
+      const count = await redisClient.incr(key);
+      if (count === 1) await redisClient.expire(key, windowSeconds);
+
+      if (count > maxRequests) {
+        logger.warn(`[User Rate Limit] ${actor} exceeded ${maxRequests} req/${windowSeconds}s`);
+        return res.status(429).json({
+          error: 'Слишком много запросов. Пожалуйста, попробуйте позже.',
+        });
+      }
+      next();
+    } catch (error) {
+      logger.error('[User Rate Limiter Error]', { error: error.message });
+      next(); // fail-open
+    }
+  };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Heavy query rate limiter
+// For endpoints that trigger expensive DB work (analytics, catalog with filters,
+// product import). Much stricter than the global 300 req/min.
+// ─────────────────────────────────────────────────────────────────────────────
+export const heavyQueryRateLimiter = async (req, res, next) => {
+  if (process.env.DISABLE_RATE_LIMIT === 'true') return next();
+
+  const actor = req.user?.id ? `user:${req.user.id}` : `ip:${getClientIp(req)}`;
+
+  try {
+    const key = `rate-limit:heavy:${actor}`;
+    const count = await redisClient.incr(key);
+    if (count === 1) await redisClient.expire(key, 60);
+
+    if (count > 30) {
+      logger.warn(`[Heavy Query Rate Limit] ${actor} exceeded 30 heavy req/min`);
+      return res.status(429).json({
+        error: 'Слишком много тяжёлых запросов. Пожалуйста, подождите минуту.',
+      });
+    }
+    next();
+  } catch (error) {
+    logger.error('[Heavy Query Rate Limiter Error]', { error: error.message });
+    next(); // fail-open
   }
 };
 

@@ -32,7 +32,7 @@ import geoRoutes from './routes/geoRoutes.js';
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
 import { getGoogleMerchantFeed } from './controllers/feedController.js';
-import { globalRateLimiter } from './middleware/rateLimiter.js';
+import { globalRateLimiter, heavyQueryRateLimiter, userRateLimiter } from './middleware/rateLimiter.js';
 import { aiProxyHandler } from './middleware/aiProxy.js';
 import {
   handleProductOgPrerender,
@@ -206,21 +206,27 @@ app.get('/api/feed/google.xml', getGoogleMerchantFeed);
 app.use('/api', globalRateLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
+
+// Heavy endpoints: strict limiter (30 req/min) — expensive DB queries
+app.use('/api/products', heavyQueryRateLimiter, productRoutes);
+app.use('/api/analytics', analyticsRoutes); // analytics routes have own limiters
+
+// User-scoped routes: count per userId (not IP) — prevents NAT/VPN collisions
+app.use('/api/orders', userRateLimiter(120, 60), orderRoutes);
+app.use('/api/users', userRateLimiter(100, 60), userRoutes);
+app.use('/api/cart', userRateLimiter(200, 60), cartRoutes);
+app.use('/api/bonuses', userRateLimiter(60, 60), bonusRoutes);
+
+// Standard API routes
 app.use('/api/categories', categoryRoutes);
 app.use('/api/callbacks', callbackRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/partner-requests', partnerRequestRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/brands', brandRoutes);
-app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/bonuses', bonusRoutes);
 app.use('/api/returns', returnRequestRoutes);
 app.use('/api/warranty-rules', warrantyRuleRoutes);
 app.use('/api/og', ogRoutes);
-app.use('/api/cart', cartRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/ai-logs', aiLogRoutes);
