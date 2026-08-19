@@ -422,7 +422,7 @@ export const getUserPortrait = async (req, res) => {
       getAvailableBalance(userId),
       getPendingBalance(userId),
       prisma.bonusTransaction.aggregate({
-        where: { userId, type: { in: ['earned', 'manual'] }, status: { in: ['available', 'used'] } },
+        where: { userId, type: { in: ['earned', 'manual', 'referral_earned'] }, status: { in: ['available', 'used'] } },
         _sum: { amount: true },
       }),
       prisma.bonusTransaction.aggregate({

@@ -575,11 +575,20 @@ export default function Header({
                         ))}
                       </div>
 
-                      {/* Footer summary */}
-                      <div className="border-t border-slate-100 pt-3 flex flex-col gap-3">
+                      {/* Footer summary & Action buttons */}
+                      <div className="border-t border-slate-100 pt-3 flex flex-col gap-2.5">
                         <div className="flex justify-between items-end">
                           <span className="text-xs font-bold text-slate-600">Итого к оплате:</span>
-                          <span className="text-base font-extrabold text-emerald-600 font-outfit">{formatPrice(cartTotal)}</span>
+                          <span className="text-base font-extrabold text-slate-950 font-outfit">{formatPrice(cartTotal)}</span>
+                        </div>
+                        <div className="pt-1">
+                          <Link
+                            href="/cart"
+                            onClick={() => onNavigate?.('cart')}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-600/20 cursor-pointer block"
+                          >
+                            Оформить заказ
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -651,6 +660,7 @@ export default function Header({
         onOpenRegion={onOpenRegion}
         favoritesCount={favoritesCount}
         cartItemsCount={cartItemsCount}
+        bonuses={bonuses}
       />
     </>
   );

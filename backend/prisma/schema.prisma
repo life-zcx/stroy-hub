@@ -63,7 +63,13 @@ model User {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 
+  referralCode String?   @unique
+  referredById Int?
+  referredBy   User?     @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals    User[]    @relation("UserReferrals")
+
   @@index([phoneNormalized])
+  @@index([referralCode])
 }
 
 model Supplier {
@@ -446,4 +452,10 @@ model AiChatLog {
   @@index([createdAt])
   @@index([userId])
   @@index([ip])
+}
+
+model SystemSetting {
+  id        String   @id @default("default")
+  data      Json
+  updatedAt DateTime @updatedAt
 }

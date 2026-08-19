@@ -27,11 +27,13 @@ function buildOrderItemsInclude(user) {
   };
 }
 
-function buildOrderWhere(user) {
+function buildOrderWhere(user, scope = null) {
   const where = {};
   const supplierId = getSupplierId(user);
 
-  if (user.role === 'CUSTOMER') {
+  if (scope === 'personal') {
+    where.userId = user.id;
+  } else if (user.role === 'CUSTOMER') {
     where.userId = user.id;
   } else if (user.role === 'SUPPLIER') {
     where.items = { some: { product: { supplierId } } };
@@ -208,8 +210,8 @@ export const getAllOrders = async (req, res) => {
   }
 
   try {
-    const { status, search, sort } = req.query;
-    const where = buildOrderWhere(user);
+    const { status, search, sort, scope } = req.query;
+    const where = buildOrderWhere(user, scope);
 
     if (status && status !== 'all') where.status = status;
 

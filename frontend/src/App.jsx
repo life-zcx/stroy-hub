@@ -40,11 +40,7 @@ export default function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState('user-agreement');
-  const [comingSoonSettings, setComingSoonSettings] = useState({
-    comingSoonModalEnabled: false,
-    comingSoonTitle: '',
-    comingSoonMessage: ''
-  });
+  const [systemSettings, setSystemSettings] = useState(null);
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
   const { toast, showToast, hideToast } = useToast();
@@ -60,6 +56,23 @@ export default function App() {
   const region = useRegion(showToast);
   const favorites = useFavorites(showToast);
   const bonuses = useBonuses(auth.customer);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const refCode = params.get('ref');
+      if (refCode) {
+        const cleanCode = refCode.trim().toUpperCase();
+        localStorage.setItem('tormag_referral_code', cleanCode);
+
+        if (!auth.isAuthChecking && !auth.customer) {
+          auth.setAuthTab('register');
+          auth.setAuthModalOpen(true);
+          showToast?.('Вы перешли по приглашению друга! Зарегистрируйтесь для совершения покупок.');
+        }
+      }
+    }
+  }, [auth.isAuthChecking, auth.customer]);
 
   useEffect(() => {
     if (currentPage === 'catalog' && currentCategorySlug) {
@@ -129,10 +142,10 @@ export default function App() {
     const fetchSettings = async () => {
       try {
         const data = await getSystemSettings();
-        setComingSoonSettings(data);
+        setSystemSettings(data);
 
         const wasDismissed = sessionStorage.getItem('tormag_coming_soon_dismissed') === 'true';
-        if (data.comingSoonModalEnabled && !wasDismissed) {
+        if (data?.comingSoonModalEnabled && !wasDismissed) {
           setIsComingSoonModalOpen(true);
         }
       } catch (err) {
@@ -270,6 +283,7 @@ export default function App() {
       <AuthModal
         isOpen={auth.authModalOpen}
         onClose={() => auth.setAuthModalOpen(false)}
+        systemSettings={systemSettings}
         authTab={auth.authTab}
         setAuthTab={auth.setAuthTab}
         authEmail={auth.authEmail}
@@ -327,8 +341,8 @@ export default function App() {
       <ComingSoonModal
         isOpen={isComingSoonModalOpen}
         onClose={handleCloseComingSoonModal}
-        title={comingSoonSettings.comingSoonTitle}
-        message={comingSoonSettings.comingSoonMessage}
+        title={systemSettings?.comingSoonTitle}
+        message={systemSettings?.comingSoonMessage}
       />
 
       {currentPage !== 'ai-assistant' && <ScrollToTop cartItemsCount={cart.cartItemsCount} />}

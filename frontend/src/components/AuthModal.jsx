@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import { X, Clock, Eye, EyeOff, User, Building2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Clock, Eye, EyeOff, User, Building2, Share2 } from 'lucide-react';
 import logoImg from '../tormag.png';
 import { ALL_CITIES } from '../utils/geo';
 
 export default function AuthModal({
   isOpen,
   onClose,
+  systemSettings,
   authTab,
   setAuthTab,
   authEmail,
   setAuthEmail,
   authPassword,
   setAuthPassword,
-  authConfirmPassword = '',
-  setAuthConfirmPassword = () => {},
+  authConfirmPassword,
+  setAuthConfirmPassword,
   authName,
   setAuthName,
   authPhone,
@@ -46,6 +47,12 @@ export default function AuthModal({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const welcomeEnabled = Boolean(systemSettings?.welcomeBonusEnabled);
+  const welcomeAmount = systemSettings?.welcomeBonusAmount || 0;
+  const welcomeTitle = systemSettings?.welcomeBonusTitle || 'Приветственный бонус на первый заказ';
+  const referralBonusAmount = systemSettings?.referralBonusAmount || 500;
+
+
 
   if (!isOpen) return null;
 
@@ -60,6 +67,8 @@ export default function AuthModal({
 
   const pwdStrength = getPasswordStrength(authPassword);
   const isLegalReg = authTab === 'register' && entityType === 'LEGAL';
+
+  const hasRefCode = typeof window !== 'undefined' && Boolean(localStorage.getItem('tormag_referral_code'));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
@@ -137,6 +146,40 @@ export default function AuthModal({
 
         {/* ── Scrollable Form Body ── */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar text-left">
+
+        {/* 1. Referral Link Entrance Badge (+500 KZT Welcome Bonus) */}
+        {authTab === 'register' && hasRefCode && (
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200/80 rounded-2xl p-3.5 flex items-center gap-3 text-xs text-blue-950 font-semibold shadow-2xs">
+            <div className="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl shrink-0 font-black text-xs font-outfit shadow-xs">
+              +{referralBonusAmount} ₸
+            </div>
+            <div>
+              <span className="block font-bold text-slate-900">Регистрация по приглашению</span>
+              <span className="block text-[11px] text-slate-600 font-normal">
+                Вам зачислится {referralBonusAmount} ₸ приветственных бонусов при регистрации
+              </span>
+            </div>
+          </div>
+        )}
+
+
+
+        {/* 2. Universal Welcome Bonus Banner from Site Settings */}
+        {authTab === 'register' && !hasRefCode && welcomeEnabled && Number(welcomeAmount) > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200/80 rounded-2xl p-3.5 flex items-center gap-3 text-xs text-blue-950 font-semibold shadow-2xs">
+            <div className="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl shrink-0 font-black text-xs font-outfit shadow-xs">
+              +{welcomeAmount} ₸
+            </div>
+            <div>
+              <span className="block font-bold text-slate-900">
+                {welcomeTitle || 'Приветственный бонус'}
+              </span>
+              <span className="block text-[11px] text-slate-600 font-normal">
+                Зарегистрируйтесь и получите {welcomeAmount} ₸ бонусов на первый заказ
+              </span>
+            </div>
+          </div>
+        )}
 
         {authError && (
           <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-xl border border-red-100">

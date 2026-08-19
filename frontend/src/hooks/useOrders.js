@@ -18,7 +18,7 @@ export default function useOrders(customer, showToast) {
     if (!customerId) return;
     setOrdersLoading(true);
     try {
-      const result = await getOrders({ page, limit: ORDERS_PAGE_SIZE, summary: true });
+      const result = await getOrders({ page, limit: ORDERS_PAGE_SIZE, summary: true, scope: 'personal' });
       const loadedOrders = Array.isArray(result) ? result : (result.data || []);
 
       setOrders((prev) => {

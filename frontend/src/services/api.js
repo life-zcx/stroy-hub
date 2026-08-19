@@ -128,6 +128,16 @@ export const getCartRecommendationsApi = async (cartItems = []) => {
   return response.data;
 };
 
+export const getReferralSummaryApi = async () => {
+  const response = await api.get('/referral/summary');
+  return response.data;
+};
+
+export const validateReferralCodeApi = async (code) => {
+  const response = await api.post('/referral/validate', { code });
+  return response.data;
+};
+
 export const getUserBonuses = async () => {
   const response = await api.get('/bonuses/summary');
   return response.data;
@@ -285,8 +295,29 @@ export const clearCartApi = async () => {
   return response.data;
 };
 
+let _settingsCache = null;
+let _settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 60000; // 1 minute
+
 export const getSystemSettings = async () => {
+  const now = Date.now();
+  if (_settingsCache && (now - _settingsCacheTime) < SETTINGS_CACHE_TTL) {
+    return _settingsCache;
+  }
   const response = await api.get('/settings');
+  _settingsCache = response.data;
+  _settingsCacheTime = now;
+  return _settingsCache;
+};
+
+export const invalidateSettingsCache = () => {
+  _settingsCache = null;
+  _settingsCacheTime = 0;
+};
+
+export const updateSystemSettings = async (settingsData) => {
+  const response = await api.post('/settings', settingsData);
+  invalidateSettingsCache();
   return response.data;
 };
 

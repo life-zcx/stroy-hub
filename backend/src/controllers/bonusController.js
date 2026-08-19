@@ -14,7 +14,7 @@ import { safeErrorMessage } from '../utils/apiError.js';
 export async function getAvailableBalance(userId, tx = prisma) {
   const [earnedResult, spentResult, returnDeductionsResult] = await Promise.all([
     tx.bonusTransaction.aggregate({
-      where: { userId, status: 'available', type: { in: ['earned', 'manual'] } },
+      where: { userId, status: 'available', type: { in: ['earned', 'manual', 'referral_earned'] } },
       _sum: { amount: true },
     }),
     tx.bonusTransaction.aggregate({
@@ -161,7 +161,7 @@ export const getUserBonusSummary = async (req, res) => {
       getAvailableBalance(userId),
       getPendingBalance(userId),
       prisma.bonusTransaction.aggregate({
-        where: { userId, type: { in: ['earned', 'manual'] }, status: { in: ['available', 'used'] } },
+        where: { userId, type: { in: ['earned', 'manual', 'referral_earned'] }, status: { in: ['available', 'used'] } },
         _sum: { amount: true },
       }),
       prisma.bonusTransaction.aggregate({

@@ -216,6 +216,7 @@ export default function useCustomerAuth(showToast) {
         setResendCooldown(60);
         setAuthTab('register-confirm');
       } else if (authTab === 'register-confirm') {
+        const storedRefCode = typeof window !== 'undefined' ? localStorage.getItem('tormag_referral_code') : null;
         const payload = {
           email: authEmail,
           password: authPassword,
@@ -229,6 +230,7 @@ export default function useCustomerAuth(showToast) {
           legalAddress: entityType === 'LEGAL' ? legalAddress : null,
           organizationType: entityType === 'LEGAL' ? organizationType : null,
           code: authResetCode,
+          referralCode: storedRefCode || undefined,
           sessionId: getAnalyticsSessionId(),
         };
         const data = await register(payload);

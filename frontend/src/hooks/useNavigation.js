@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 const KNOWN_PAGES = [
   'catalog', 'advisor', 'estimate', 'delivery', 'about', 'legal', 'favorites',
   'orders', 'services', 'payment-terms', 'delivery-terms', 'warranty', 'faq', 'requisites', 'partners', 'promotions', 'my-promotions', 'cart', 'checkout', 'cashback', 'cashback/history',
-  'cabinet', 'cabinet/orders', 'cabinet/cashback', 'cabinet/promotions', 'ai-assistant',
+  'cabinet', 'cabinet/orders', 'cabinet/cashback', 'cabinet/promotions', 'cabinet/referral', 'ai-assistant', 'referral', 'referral-program',
 ];
 
 // Cabinet tab → URL sub-path mapping
@@ -12,6 +12,7 @@ export const CABINET_TAB_PATHS = {
   orders:     'cabinet/orders',
   cashback:   'cabinet/cashback',
   promotions: 'cabinet/promotions',
+  referral:   'cabinet/referral',
 };
 
 export const PATH_TO_CABINET_TAB = {
@@ -19,6 +20,9 @@ export const PATH_TO_CABINET_TAB = {
   'cabinet/orders':     'orders',
   'cabinet/cashback':   'cashback',
   'cabinet/promotions': 'promotions',
+  'cabinet/referral':   'referral',
+  'referral':           'referral',
+  'referral-program':   'referral',
 };
 
 const getInitialPage = () => {

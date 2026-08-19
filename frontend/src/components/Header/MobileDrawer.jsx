@@ -2,6 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronRight, MapPin, User, X } from 'lucide-react';
 
+import { formatPrice } from '../../utils/formatPrice';
+
 export default function MobileDrawer({
   isOpen,
   onClose,
@@ -17,6 +19,7 @@ export default function MobileDrawer({
   onOpenRegion,
   favoritesCount = 0,
   cartItemsCount = 0,
+  bonuses,
 }) {
   if (!isOpen || typeof document === 'undefined') return null;
 
@@ -100,16 +103,36 @@ export default function MobileDrawer({
 
             {/* Menu List */}
             <div className="flex-1 divide-y divide-slate-100">
-              {/* Account & Quick Actions */}
+
+
               <button
                 type="button"
                 onClick={() => {
                   onClose();
-                  if (customer) onNavigate('cabinet'); else onOpenAuthLogin?.();
+                  if (customer) onNavigate('cashback'); else onOpenAuthLogin?.();
                 }}
                 className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors text-left group cursor-pointer"
               >
-                <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-950">Личный кабинет</span>
+                <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-950">Мой кешбэк</span>
+                <div className="flex items-center gap-2">
+                  {customer && bonuses && (
+                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                      {formatPrice(bonuses.availableBalance ?? 0)}
+                    </span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500" />
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (customer) onNavigate('cabinet/referral'); else onOpenAuthLogin?.();
+                }}
+                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors text-left group cursor-pointer"
+              >
+                <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-950">Реферальная программа</span>
                 <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500" />
               </button>
 

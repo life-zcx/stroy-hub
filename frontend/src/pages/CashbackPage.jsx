@@ -481,7 +481,7 @@ export default function CashbackPage({ customer, bonuses, onNavigate, onOpenAuth
                           hour: '2-digit', minute: '2-digit',
                         })}
                       </p>
-                      {tx.orderId && (
+                      {tx.orderId && tx.type !== 'referral_earned' && (
                         <Link
                           href={getPageHref('order-detail', tx.orderId)}
                           onClick={() => onNavigate?.('order-detail', tx.orderId)}

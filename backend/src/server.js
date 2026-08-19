@@ -28,6 +28,7 @@ import pushRoutes from './routes/pushRoutes.js';
 import aiLogRoutes from './routes/aiLogRoutes.js';
 import geoRoutes from './routes/geoRoutes.js';
 import bannerRoutes from './routes/bannerRoutes.js';
+import referralRoutes from './routes/referralRoutes.js';
 
 
 // Middlewares & Controllers imports
@@ -235,6 +236,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/ai-logs', aiLogRoutes);
 app.use('/api/geo', geoRoutes);
+app.use('/api/referral', referralRoutes);
 app.use('/api/ai', aiProxyHandler);
 
 // Health Check

@@ -9,6 +9,8 @@ import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
 import { sendTelegramAlert } from '../utils/telegram.js';
 import { normalizePhone } from '../utils/phoneUtils.js';
 import logger from '../utils/logger.js';
+import { generateUniqueReferralCode } from '../services/referralService.js';
+import { readSystemSettingsAsync } from './settingsController.js';
 
 const buildUserPayload = (user) => ({
   id: user.id,
@@ -138,18 +140,31 @@ export const sendRegisterCode = async (req, res) => {
       </div>
     `;
 
-    await sendEmail({
-      to: email,
-      subject: 'Код подтверждения регистрации - TORMAG.KZ',
-      html,
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`🔑 [DEV REGISTRATION OTP CODE] Email: ${email} | Code: ${code}`);
+    }
 
-    // Set lock in Redis only after email was sent successfully
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Код подтверждения регистрации - TORMAG.KZ',
+        html,
+      });
+    } catch (mailErr) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error(`Production email sending failed for ${email}: ${mailErr.message}`);
+        throw mailErr;
+      }
+      logger.warn(`Email sending failed for ${email} (${mailErr.message}), fallback to logged OTP code in dev console.`);
+    }
+
+    // Set lock in Redis only after code is generated and logged
     await redisClient.set(spamKey, '1', { EX: 60 });
 
     res.json({ message: 'Код подтверждения регистрации успешно отправлен на вашу почту.' });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при отправке кода подтверждения: '  });
+    logger.error('Error sending registration OTP code:', error);
+    res.status(500).json({ error: 'Ошибка при отправке кода подтверждения: ' + (error.message || '') });
   }
 };
 
@@ -240,6 +255,21 @@ export const register = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Check optional referral code
+    let referredById = null;
+    if (req.body.referralCode && typeof req.body.referralCode === 'string') {
+      const cleanRefCode = req.body.referralCode.trim().toUpperCase();
+      const referrerUser = await prisma.user.findUnique({
+        where: { referralCode: cleanRefCode },
+        select: { id: true },
+      });
+      if (referrerUser) {
+        referredById = referrerUser.id;
+      }
+    }
+
+    const newReferralCode = await generateUniqueReferralCode();
+
     // Create user
     const newUser = await prisma.user.create({
       data: {
@@ -256,9 +286,46 @@ export const register = async (req, res) => {
         legalAddress: legalAddress || null,
         organizationType: organizationType || null,
         role: 'CUSTOMER',
+        referralCode: newReferralCode,
+        referredById: referredById,
       },
       include: { supplier: true },
     });
+
+    // Credit Welcome Bonus (referral bonus from settings, or standard welcome bonus)
+    try {
+      const sysSettings = await readSystemSettingsAsync();
+      if (referredById) {
+        const refBonusAmount = sysSettings.referralBonusAmount ?? 500;
+        if (refBonusAmount > 0) {
+          await prisma.bonusTransaction.create({
+            data: {
+              userId: newUser.id,
+              type: 'manual',
+              status: 'available',
+              amount: refBonusAmount,
+              description: 'Приветственный бонус по приглашению друга',
+            },
+          });
+          logger.info(`Credited ${refBonusAmount} KZT referral welcome bonus to user #${newUser.id}`);
+        }
+      } else {
+        if (sysSettings.welcomeBonusEnabled && sysSettings.welcomeBonusAmount > 0) {
+          await prisma.bonusTransaction.create({
+            data: {
+              userId: newUser.id,
+              type: 'manual',
+              status: 'available',
+              amount: sysSettings.welcomeBonusAmount,
+              description: sysSettings.welcomeBonusTitle || 'Приветственный бонус при регистрации',
+            },
+          });
+          logger.info(`Credited ${sysSettings.welcomeBonusAmount} KZT welcome bonus from system settings to user #${newUser.id}`);
+        }
+      }
+    } catch (bonusErr) {
+      logger.error('Error crediting welcome bonus on registration:', bonusErr);
+    }
 
     // Delete token
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
@@ -523,13 +590,25 @@ export const forgotPassword = async (req, res) => {
         </div>
       `;
 
-      await sendEmail({
-        to: email,
-        subject: 'Код для восстановления пароля - TORMAG.KZ',
-        html,
-      });
+      if (process.env.NODE_ENV !== 'production') {
+        logger.info(`🔑 [DEV PASSWORD RESET OTP CODE] Email: ${email} | Code: ${code}`);
+      }
 
-      // Set lock in Redis only after email was sent successfully
+      try {
+        await sendEmail({
+          to: email,
+          subject: 'Код для восстановления пароля - TORMAG.KZ',
+          html,
+        });
+      } catch (mailErr) {
+        if (process.env.NODE_ENV === 'production') {
+          logger.error(`Production password reset email failed for ${email}: ${mailErr.message}`);
+          throw mailErr;
+        }
+        logger.warn(`Email sending failed for ${email} (${mailErr.message}), fallback to logged OTP code in dev console.`);
+      }
+
+      // Set lock in Redis
       await redisClient.set(spamKey, '1', { EX: 60 });
     }
 

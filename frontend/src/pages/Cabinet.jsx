@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, Building2, ClipboardList, Tag, LogOut, Edit3, Check, X,
-  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift, Plus, Trash2, CheckCircle2, Star,
+  Phone, Mail, MapPin, RefreshCw, ShieldCheck, Lock, Gift, Plus, Trash2, CheckCircle2, Star, Share2,
 } from 'lucide-react';
 import { updateProfile, forgotPassword, resetPassword } from '../services/api';
 import { CABINET_TAB_PATHS } from '../hooks/useNavigation';
 import MyOrders from './MyOrders';
 import MyPromotions from './MyPromotions';
+import ReferralPage from './ReferralPage';
 import { formatPrice } from '../utils/formatPrice';
 import AddressMapPicker from '../components/AddressMapPicker';
 import DeleteAccountModal from '../components/DeleteAccountModal';
@@ -329,6 +330,8 @@ function UserAddressesSection({ customer, showToast, onCustomerUpdate }) {
   );
 }
 
+
+
 // ─── Profile edit tab ─────────────────────────────────────────────────────────
 function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses, handleLogout }) {
   const [editing, setEditing] = useState(false);
@@ -522,6 +525,8 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses, handleLogo
           </div>
         </div>
       </div>
+
+
 
       {/* Form fields */}
       <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
@@ -812,6 +817,7 @@ function ProfileTab({ customer, showToast, onCustomerUpdate, bonuses, handleLogo
 const TABS = [
   { id: 'profile', label: 'Профиль', icon: User },
   { id: 'orders', label: 'Заказы', icon: ClipboardList },
+  { id: 'referral', label: 'Реферальная программа', icon: Share2 },
   { id: 'promotions', label: 'Промокоды', icon: Tag },
 ];
 
@@ -897,7 +903,7 @@ export default function Cabinet({
       </div>
 
       {/* Tab bar */}
-      <div className="grid grid-cols-3 gap-1 bg-slate-50/50 border border-slate-200/60 rounded-xl p-1 shadow-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-50/50 border border-slate-200/60 rounded-xl p-1 shadow-sm">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -951,6 +957,13 @@ export default function Cabinet({
           customer={customer}
           onOpenAuth={onOpenAuth}
           onNavigate={onNavigate}
+          showToast={showToast}
+        />
+      )}
+
+      {activeTab === 'referral' && (
+        <ReferralPage
+          customer={customer}
           showToast={showToast}
         />
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw, AlertTriangle, ToggleLeft, ToggleRight, LayoutTemplate } from 'lucide-react';
+import { Save, RefreshCw, AlertTriangle, ToggleLeft, ToggleRight, LayoutTemplate, Gift } from 'lucide-react';
 import { getSystemSettings, saveSystemSettings } from '../../../services/api';
 
 export default function SettingsPage({ showToast }) {
@@ -134,6 +134,83 @@ export default function SettingsPage({ showToast }) {
                 </div>
               </div>
             )}
+
+            {/* Welcome Bonus Settings Section */}
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-indigo-600" />
+                    <span className="font-black text-slate-900 uppercase tracking-widest text-xs">
+                      Приветственный бонус при обычной регистрации
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Автоматически начислять приветственные бонусные баллы новым покупателям при обычной регистрации.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, welcomeBonusEnabled: !prev.welcomeBonusEnabled }))}
+                  className="flex items-center focus:outline-none transition-colors"
+                >
+                  {settings.welcomeBonusEnabled ? (
+                    <ToggleRight className="h-14 w-14 text-indigo-600" />
+                  ) : (
+                    <ToggleLeft className="h-14 w-14 text-slate-300" />
+                  )}
+                </button>
+              </div>
+
+              {settings.welcomeBonusEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 animate-fade-in-up">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Сумма приветственного бонуса (₸)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={settings.welcomeBonusAmount ?? 500}
+                      onChange={(e) => setSettings(prev => ({ ...prev, welcomeBonusAmount: Math.max(0, Number(e.target.value) || 0) }))}
+                      placeholder="500"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Текст подписи в окне регистрации
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.welcomeBonusTitle || 'Приветственный бонус на первый заказ'}
+                      onChange={(e) => setSettings(prev => ({ ...prev, welcomeBonusTitle: e.target.value }))}
+                      placeholder="Приветственный бонус на первый заказ"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Реферальный бонус по приглашению (₸)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={settings.referralBonusAmount ?? 500}
+                      onChange={(e) => setSettings(prev => ({ ...prev, referralBonusAmount: Math.max(0, Number(e.target.value) || 0) }))}
+                      placeholder="500"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                    />
+                    <p className="text-[10px] text-slate-400 font-medium">Начисляется при регистрации по реферальной ссылке</p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Delivery Routes Settings Section */}
             <div className="pt-6 border-t border-slate-100 space-y-4">

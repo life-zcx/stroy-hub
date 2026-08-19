@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import logger from '../utils/logger.js';
+import prisma from '../config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,22 +115,45 @@ const DEFAULT_SETTINGS = {
   comingSoonMessage: 'Совсем скоро наш сайт заработает в полную силу! Сейчас вы можете ознакомиться с каталогом товаров и нашими услугами.',
   defaultWarehouseCity: 'Алматы',
   deliveryRoutes: DEFAULT_DELIVERY_ROUTES,
+  welcomeBonusEnabled: true,
+  welcomeBonusAmount: 500,
+  welcomeBonusTitle: 'Приветственный бонус на первый заказ',
+  referralBonusAmount: 500,
 };
 
-export function readSystemSettings() {
+export async function readSystemSettingsAsync() {
+  try {
+    const dbRecord = await prisma.systemSetting.findUnique({ where: { id: 'default' } });
+    if (dbRecord && dbRecord.data) {
+      return { ...DEFAULT_SETTINGS, ...dbRecord.data };
+    }
+  } catch (error) {
+    logger.error('Error reading system settings from DB:', error);
+  }
+
   try {
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf8');
       return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
     }
   } catch (error) {
-    logger.error('Error reading system settings:', error);
+    logger.error('Error reading system settings from file:', error);
   }
+
   return DEFAULT_SETTINGS;
 }
 
-function writeSystemSettings(settings) {
+
+
+
+async function writeSystemSettings(settings) {
   try {
+    await prisma.systemSetting.upsert({
+      where: { id: 'default' },
+      update: { data: settings },
+      create: { id: 'default', data: settings },
+    });
+
     const dir = path.dirname(settingsPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -144,7 +168,8 @@ function writeSystemSettings(settings) {
 
 export const getSettings = async (req, res) => {
   try {
-    const settings = readSystemSettings();
+    const settings = await readSystemSettingsAsync();
+    res.set('Cache-Control', 'public, max-age=60');
     res.json(settings);
   } catch (error) {
     logger.error('Error in getSettings controller:', error);
@@ -154,18 +179,22 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const { comingSoonModalEnabled, comingSoonTitle, comingSoonMessage, defaultWarehouseCity, deliveryRoutes } = req.body;
+    const { comingSoonModalEnabled, comingSoonTitle, comingSoonMessage, defaultWarehouseCity, deliveryRoutes, welcomeBonusEnabled, welcomeBonusAmount, welcomeBonusTitle, referralBonusAmount } = req.body;
 
-    const currentSettings = readSystemSettings();
+    const currentSettings = await readSystemSettingsAsync();
     const newSettings = {
       comingSoonModalEnabled: comingSoonModalEnabled !== undefined ? Boolean(comingSoonModalEnabled) : currentSettings.comingSoonModalEnabled,
       comingSoonTitle: comingSoonTitle !== undefined ? String(comingSoonTitle) : currentSettings.comingSoonTitle,
       comingSoonMessage: comingSoonMessage !== undefined ? String(comingSoonMessage) : currentSettings.comingSoonMessage,
       defaultWarehouseCity: defaultWarehouseCity !== undefined ? String(defaultWarehouseCity) : (currentSettings.defaultWarehouseCity || 'Алматы'),
       deliveryRoutes: Array.isArray(deliveryRoutes) ? deliveryRoutes : (currentSettings.deliveryRoutes || DEFAULT_DELIVERY_ROUTES),
+      welcomeBonusEnabled: welcomeBonusEnabled !== undefined ? Boolean(welcomeBonusEnabled) : (currentSettings.welcomeBonusEnabled ?? true),
+      welcomeBonusAmount: welcomeBonusAmount !== undefined ? Math.max(0, Number(welcomeBonusAmount) || 0) : (currentSettings.welcomeBonusAmount ?? 500),
+      welcomeBonusTitle: welcomeBonusTitle !== undefined ? String(welcomeBonusTitle) : (currentSettings.welcomeBonusTitle || 'Приветственный бонус на первый заказ'),
+      referralBonusAmount: referralBonusAmount !== undefined ? Math.max(0, Number(referralBonusAmount) || 0) : (currentSettings.referralBonusAmount ?? 500),
     };
 
-    const success = writeSystemSettings(newSettings);
+    const success = await writeSystemSettings(newSettings);
     if (success) {
       res.json({ message: 'Настройки успешно сохранены.', settings: newSettings });
     } else {

@@ -7,6 +7,7 @@ import {
   cancelBonusesForOrder,
 } from '../controllers/bonusController.js';
 import { broadcastNotification } from '../utils/pushNotifier.js';
+import { processReferralRewardForFirstOrder } from './referralService.js';
 
 export const calculateOrderBonusDiscount = async (userId, useBonuses, finalTotalAmount, tx) => {
   const loyalty = await getUserLoyaltyStatus(parseInt(userId, 10));
@@ -79,6 +80,7 @@ export const recalculateOrderBonusTransactions = async (userId, orderId, subtota
 export const handleOrderStatusBonusUpdates = async (orderId, existingUserId, nextStatus, tx) => {
   if (nextStatus === 'completed') {
     await activatePendingBonuses(orderId, tx);
+    await processReferralRewardForFirstOrder(orderId, tx);
     const earnedTx = await tx.bonusTransaction.findFirst({
       where: { orderId, type: 'earned' },
     });
