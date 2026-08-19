@@ -132,10 +132,16 @@ export const getMyPromotions = async () => {
   return response.data;
 };
 
+export const getPublicBanners = async () => {
+  const response = await api.get('/banners/public');
+  return response.data;
+};
+
 export const getBrands = async () => {
   const response = await api.get('/brands/public');
   return response.data;
 };
+
 
 export const validatePromotionCode = async (promoCode, items, subtotalAmount) => {
   const response = await api.post('/promotions/validate', { promoCode, items, subtotalAmount });

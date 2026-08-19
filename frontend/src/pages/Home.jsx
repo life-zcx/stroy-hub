@@ -5,7 +5,7 @@ import {
   Hammer, HardHat, ChevronLeft, ChevronRight,
   Gift, UserPlus, LogIn, Percent, ShoppingCart, Heart, Sparkles, LayoutGrid
 } from 'lucide-react';
-import { getBrands, getHomePromotions, getProductsPage } from '../services/api';
+import { getBrands, getHomePromotions, getProductsPage, getPublicBanners } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
@@ -13,6 +13,7 @@ import ProductCard from '../components/ProductCard';
 import ProductSkeleton from '../components/ProductSkeleton';
 import { getProductImage, getIpxImageUrl, FALLBACK_PRODUCT_IMAGE, markImageFailed } from '../utils/productImage';
 import KineticHeroBanner from '../components/KineticHeroBanner';
+
 
 
 const THEME_GRADIENTS = {
@@ -44,6 +45,7 @@ export default function Home({
 }) {
   const [brands, setBrands] = useState([]);
   const [homePromotions, setHomePromotions] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [popularProducts, setPopularProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
 
@@ -101,9 +103,10 @@ export default function Home({
     const loadHomeData = async () => {
       try {
         setProductsLoading(true);
-        const [loadedBrands, loadedPromotions, productsResult] = await Promise.all([
+        const [loadedBrands, loadedPromotions, loadedBanners, productsResult] = await Promise.all([
           getBrands(),
           getHomePromotions(),
+          getPublicBanners(),
           getProductsPage({ limit: 8, onlyHits: true })
         ]);
 
@@ -113,12 +116,14 @@ export default function Home({
 
         setBrands(loadedBrands);
         setHomePromotions(loadedPromotions);
+        setBanners(loadedBanners);
         setPopularProducts(productsResult?.data || []);
       } catch (error) {
         console.error(error);
         if (isMounted) {
           setBrands([]);
           setHomePromotions([]);
+          setBanners([]);
           setPopularProducts([]);
         }
       } finally {
@@ -134,6 +139,7 @@ export default function Home({
       isMounted = false;
     };
   }, []);
+
 
   const handleHeroSlideChange = useCallback((slideIndex) => {
     const dealsCount = Math.min(popularProducts.slice(0, 3).length, 3);
@@ -241,195 +247,18 @@ export default function Home({
   return (
     <div className="space-y-20 animate-fade-in-up font-sans text-slate-800">
 
-      {/* 🚀 HYBRID HERO SECTION: KINETIC GSAP SLIDER + LOYALTY WIDGET */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      {/* 🚀 HYBRID HERO SECTION: KINETIC GSAP SLIDER */}
+      <div className="w-full">
         <KineticHeroBanner
+          banners={banners}
           homePromotions={homePromotions}
+          loading={productsLoading}
           onNavigate={onNavigate}
           onSlideChange={handleHeroSlideChange}
         />
 
-        {/* Right Column: Product of the Day Deals Carousel (lg:col-span-4) - styled exactly like Technodom */}
-        <div 
-          onTouchStart={handleDealTouchStart}
-          onTouchMove={handleDealTouchMove}
-          onTouchEnd={() => handleDealTouchEnd(Math.min(popularProducts.slice(0, 3).length, 3))}
-          className="lg:col-span-4 flex flex-col justify-between rounded-[2rem] border border-slate-200/80 bg-white p-6 sm:p-7 pb-14 sm:pb-12 relative overflow-hidden shadow-sm h-[430px] sm:h-[450px] lg:h-[480px] text-slate-800 group/deal"
-        >
-          {(() => {
-            const deals = popularProducts.slice(0, 3);
-            return (
-              <>
-                {/* Header: Title and Countdown boxes */}
-                <div className="flex items-center justify-between pb-3 mb-4 z-10 relative shrink-0">
-                  <h3 className="font-extrabold text-slate-900 text-[15px] font-sans">Товар дня</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-slate-100 text-slate-900 px-2.5 py-1 rounded-xl font-bold text-xs sm:text-[13px] text-center tracking-tight">
-                      {String(timeLeft.hours).padStart(2, '0')}
-                    </span>
-                    <span className="text-slate-700 font-bold text-xs">:</span>
-                    <span className="bg-slate-100 text-slate-900 px-2.5 py-1 rounded-xl font-bold text-xs sm:text-[13px] text-center tracking-tight">
-                      {String(timeLeft.minutes).padStart(2, '0')}
-                    </span>
-                    <span className="text-slate-700 font-bold text-xs">:</span>
-                    <span className="bg-slate-100 text-slate-900 px-2.5 py-1 rounded-xl font-bold text-xs sm:text-[13px] text-center tracking-tight">
-                      {String(timeLeft.seconds).padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-
-                {deals.length > 0 ? (() => {
-                  const product = deals[currentDealIndex] || deals[0];
-                  const imageSrc = getProductImage(product);
-                  const isFav = isFavorite?.(product);
-
-                  return (
-                    <div className="flex flex-col justify-between flex-grow text-slate-850 z-10 relative">
-                      
-                      {/* Product Image zone with navigation chevrons and Favorite heart */}
-                      <div className="relative h-44 sm:h-48 flex items-center justify-center bg-transparent rounded-2xl w-full mb-3 overflow-hidden">
-                        
-                        {/* Favorite button */}
-                        <button
-                          type="button"
-                          aria-label="Добавить в избранное"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onToggleFavorite?.(product);
-                          }}
-                          className={`absolute top-2 right-2 z-30 p-2 rounded-full transition-all shadow-sm ${
-                            isFav 
-                              ? 'bg-rose-500 text-white' 
-                              : 'bg-white hover:text-rose-500 text-slate-400 border border-slate-100'
-                          }`}
-                        >
-                          <Heart className="h-4 w-4" />
-                        </button>
-
-                        {/* Chevrons */}
-                        {deals.length > 1 && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setCurrentDealIndex(prev => (prev - 1 + deals.length) % deals.length);
-                              }}
-                              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
-                              title="Предыдущий товар"
-                            >
-                              <ChevronLeft className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setCurrentDealIndex(prev => (prev + 1) % deals.length);
-                              }}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white rounded-full border border-slate-200/80 shadow-sm transition-all duration-200 z-30 cursor-pointer active:scale-95 opacity-0 group-hover/deal:opacity-100"
-                              title="Следующий товар"
-                            >
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-
-                        <Link
-                          href={getPageHref('product', product.slug || product.id)}
-                          onClick={() => onOpenDetails?.(product.slug || product.id)}
-                          className="w-full h-full flex items-center justify-center cursor-pointer p-2"
-                        >
-                          <img 
-                            src={imageSrc} 
-                            alt={product.name || 'Товар дня TORMAG'} 
-                            width="300"
-                            height="300"
-                            fetchpriority="high"
-                            decoding="async"
-                            className="max-h-full max-w-full object-contain" 
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              if (product?.image) markImageFailed(product.image);
-                              e.target.src = FALLBACK_PRODUCT_IMAGE;
-                            }}
-                          />
-                        </Link>
-                      </div>
-
-                      {/* Product details (Title and Price left-aligned) */}
-                      <Link
-                        href={getPageHref('product', product.slug || product.id)}
-                        onClick={() => onOpenDetails?.(product.slug || product.id)}
-                        className="flex flex-col text-left group/deal cursor-pointer justify-end mb-3"
-                      >
-                        <h4 className="text-slate-700 text-xs sm:text-sm leading-snug group-hover/deal:text-blue-700 transition-colors line-clamp-2 mb-1.5 font-medium">
-                          {product.name}
-                        </h4>
-
-                        <div>
-                          <span className="text-xl font-extrabold text-slate-900 font-outfit tracking-tight">
-                            {formatPrice(product.price)}
-                          </span>
-                        </div>
-                      </Link>
-
-                      {/* Unified brand blue button */}
-                      <button
-                        type="button"
-                        onClick={() => onAddToCart?.(product, 1)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer border-0 mt-auto z-20"
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        <span>В корзину</span>
-                      </button>
-                    </div>
-                  );
-                })() : (
-                  <div className="flex flex-col items-center justify-between py-6 text-slate-400 text-xs font-semibold gap-4 h-full animate-pulse">
-                    <div className="w-full h-44 bg-slate-100 rounded-2xl" />
-                    <div className="w-full space-y-2">
-                      <div className="h-4 bg-slate-100 rounded-md w-3/4" />
-                      <div className="h-6 bg-slate-100 rounded-md w-1/3" />
-                    </div>
-                    <div className="w-full h-11 bg-slate-200 rounded-2xl" />
-                  </div>
-                )}
-
-                {/* Indicators at the exact same bottom baseline as hero slider */}
-                {deals.length > 0 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-                    {deals.map((_, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setCurrentDealIndex(idx);
-                        }}
-                        className="w-8 h-8 p-0 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent"
-                        title={`Товар ${idx + 1}`}
-                        aria-label={`Товар ${idx + 1}`}
-                      >
-                        <span
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            currentDealIndex === idx
-                              ? 'w-7 bg-slate-900'
-                              : 'w-2 bg-slate-300/80 hover:bg-slate-400'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
       </div>
+
 
 
 

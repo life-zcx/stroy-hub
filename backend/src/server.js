@@ -27,6 +27,8 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import aiLogRoutes from './routes/aiLogRoutes.js';
 import geoRoutes from './routes/geoRoutes.js';
+import bannerRoutes from './routes/bannerRoutes.js';
+
 
 // Middlewares & Controllers imports
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
@@ -222,6 +224,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/callbacks', callbackRoutes);
 app.use('/api/partner-requests', partnerRequestRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/banners', bannerRoutes);
+
 app.use('/api/brands', brandRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/returns', returnRequestRoutes);

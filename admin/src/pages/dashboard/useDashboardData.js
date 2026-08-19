@@ -41,7 +41,12 @@ import {
   getWarrantyRules,
   createWarrantyRule,
   deleteWarrantyRule,
+  getBanners,
+  createBanner as createBannerAPI,
+  updateBanner as updateBannerAPI,
+  deleteBanner as deleteBannerAPI,
 } from '../../services/api';
+
 import { buildHierarchicalCategories, getCategoryPath } from './utils';
 
 function createEmptyProductForm({ categories, suppliers, isSupplier, user }) {
@@ -126,6 +131,22 @@ function createEmptyBrandForm() {
   };
 }
 
+function createEmptyBannerForm() {
+  return {
+    title: '',
+    subtitle: '',
+    buttonText: '',
+    linkUrl: '',
+    position: 'bottom-left',
+    imageDesktop: '',
+    imageMobile: '',
+    sortOrder: 0,
+    isActive: true,
+  };
+}
+
+
+
 function formatDateTimeInput(value) {
   if (!value) {
     return '';
@@ -163,6 +184,7 @@ export function useDashboardData({ user, showToast }) {
   const [callbacks, setCallbacks] = useState([]);
   const [partnerRequests, setPartnerRequests] = useState([]);
   const [promotions, setPromotions] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [brands, setBrands] = useState([]);
   const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -175,12 +197,14 @@ export function useDashboardData({ user, showToast }) {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [editingPromotion, setEditingPromotion] = useState(null);
+  const [editingBanner, setEditingBanner] = useState(null);
   const [editingBrand, setEditingBrand] = useState(null);
 
   const isSupplier = user.role === 'SUPPLIER';
@@ -191,12 +215,18 @@ export function useDashboardData({ user, showToast }) {
   const [supplierForm, setSupplierForm] = useState(createEmptySupplierForm);
   const [categoryForm, setCategoryForm] = useState(createEmptyCategoryForm);
   const [promotionForm, setPromotionForm] = useState(createEmptyPromotionForm);
+  const [bannerForm, setBannerForm] = useState(createEmptyBannerForm);
+  const [bannerButtons, setBannerButtons] = useState([]);
   const [brandForm, setBrandForm] = useState(createEmptyBrandForm);
 
   const [imageFile, setImageFile] = useState(null);
   const [additionalImageFiles, setAdditionalImageFiles] = useState([]);
   const [categoryImageFile, setCategoryImageFile] = useState(null);
   const [brandLogoFile, setBrandLogoFile] = useState(null);
+  const [bannerDesktopFile, setBannerDesktopFile] = useState(null);
+  const [bannerMobileFile, setBannerMobileFile] = useState(null);
+
+
   const [promotionImageHomeFile, setPromotionImageHomeFile] = useState(null);
   const [promotionImageCardFile, setPromotionImageCardFile] = useState(null);
   const [promotionImageDetailFile, setPromotionImageDetailFile] = useState(null);
@@ -254,6 +284,10 @@ export function useDashboardData({ user, showToast }) {
 
         const loadedPromotions = await getPromotions();
         setPromotions(loadedPromotions);
+
+        const loadedBanners = await getBanners();
+        setBanners(loadedBanners);
+
 
         const loadedBrands = await getBrands();
         setBrands(loadedBrands);
@@ -332,6 +366,7 @@ export function useDashboardData({ user, showToast }) {
   };
 
   const handleProductChange = (event) => {
+
     const { name, value, type, checked } = event.target;
 
     if (name === 'categoryId') {
@@ -825,6 +860,131 @@ export function useDashboardData({ user, showToast }) {
     }
   };
 
+  const resetBannerForm = () => {
+    setEditingBanner(null);
+    setBannerForm(createEmptyBannerForm());
+    setBannerButtons([]);
+    setBannerDesktopFile(null);
+    setBannerMobileFile(null);
+  };
+
+  const handleBannerFormChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setBannerForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleBannerDesktopFileChange = (e) => setBannerDesktopFile(e.target.files[0] || null);
+  const handleBannerMobileFileChange = (e) => setBannerMobileFile(e.target.files[0] || null);
+  const clearBannerDesktopImage = () => { setBannerDesktopFile(null); setBannerForm((p) => ({ ...p, imageDesktop: '' })); };
+  const clearBannerMobileImage = () => { setBannerMobileFile(null); setBannerForm((p) => ({ ...p, imageMobile: '' })); };
+
+  const handleAddBannerButton = () => {
+    if (bannerButtons.length >= 2) return;
+    setBannerButtons((prev) => [
+      ...prev,
+      {
+        id: 'btn_' + Date.now(),
+        text: prev.length === 0 ? 'Вступить в клуб →' : 'Правила программы',
+        url: prev.length === 0 ? '/cashback' : '/cashback#rules',
+        actionType: 'LINK',
+        variant: prev.length === 0 ? 'PRIMARY_BLUE' : 'OUTLINE_WHITE',
+        icon: 'arrow',
+      },
+    ]);
+  };
+
+  const handleRemoveBannerButton = (index) => {
+    setBannerButtons((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleBannerButtonChange = (index, field, value) => {
+    setBannerButtons((prev) =>
+      prev.map((btn, i) => (i === index ? { ...btn, [field]: value } : btn))
+    );
+  };
+
+  const handleBannerSubmit = async (event) => {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('title', bannerForm.title || '');
+    formData.append('subtitle', bannerForm.subtitle || '');
+    formData.append('buttonText', bannerForm.buttonText || '');
+    formData.append('linkUrl', bannerForm.linkUrl || '');
+    formData.append('position', bannerForm.position || 'bottom-left');
+    formData.append('buttons', JSON.stringify(bannerButtons));
+    formData.append('sortOrder', String(bannerForm.sortOrder ?? 0));
+    formData.append('isActive', String(bannerForm.isActive));
+
+    if (bannerDesktopFile) {
+      formData.append('imageDesktopFile', bannerDesktopFile);
+    } else if (bannerForm.imageDesktop) {
+      formData.append('imageDesktop', bannerForm.imageDesktop);
+    }
+
+    if (bannerMobileFile) {
+      formData.append('imageMobileFile', bannerMobileFile);
+    } else if (bannerForm.imageMobile) {
+      formData.append('imageMobile', bannerForm.imageMobile);
+    }
+
+    try {
+      if (editingBanner) {
+        await updateBannerAPI(editingBanner.id, formData);
+        showToast('✅ Баннер обновлен!');
+      } else {
+        await createBannerAPI(formData);
+        showToast('🎨 Новый баннер опубликован!');
+      }
+
+      resetBannerForm();
+      setIsBannerModalOpen(false);
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка сохранения баннера: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const startCreateBanner = () => {
+    resetBannerForm();
+    setIsBannerModalOpen(true);
+  };
+
+  const startEditBanner = (banner) => {
+    setEditingBanner(banner);
+    setBannerForm({
+      title: banner.title || '',
+      subtitle: banner.subtitle || '',
+      buttonText: banner.buttonText || '',
+      linkUrl: banner.linkUrl || '',
+      position: banner.position || 'bottom-left',
+      imageDesktop: banner.imageDesktop || '',
+      imageMobile: banner.imageMobile || '',
+      sortOrder: banner.sortOrder ?? 0,
+      isActive: banner.isActive ?? true,
+    });
+    setBannerButtons(Array.isArray(banner.buttons) ? banner.buttons : []);
+    setBannerDesktopFile(null);
+    setBannerMobileFile(null);
+    setIsBannerModalOpen(true);
+  };
+
+  const handleDeleteBanner = async (bannerId) => {
+    if (!confirm('Удалить этот баннер главной страницы?')) return;
+    try {
+      await deleteBannerAPI(bannerId);
+      showToast('🗑️ Баннер удален');
+      reloadData();
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка удаления баннера: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+
   const handleCategoryChange = (event) => {
     const { name, value } = event.target;
     setCategoryForm((prev) => ({ ...prev, [name]: value }));
@@ -1155,6 +1315,7 @@ export function useDashboardData({ user, showToast }) {
     callbacks,
     partnerRequests,
     promotions,
+    banners,
     brands,
     users,
     hierarchicalCategories,
@@ -1162,17 +1323,33 @@ export function useDashboardData({ user, showToast }) {
     isCategoryModalOpen,
     isSupplierModalOpen,
     isPromotionModalOpen,
+    isBannerModalOpen,
     isBrandModalOpen,
     editingProduct,
     editingCategory,
     editingSupplier,
     editingPromotion,
+    editingBanner,
     editingBrand,
     productForm,
     supplierForm,
     categoryForm,
     promotionForm,
+    bannerForm,
     brandForm,
+    bannerDesktopFile,
+    bannerMobileFile,
+    setIsBannerModalOpen,
+    handleBannerFormChange,
+    handleBannerDesktopFileChange,
+    handleBannerMobileFileChange,
+    clearBannerDesktopImage,
+    clearBannerMobileImage,
+    handleBannerSubmit,
+    startCreateBanner,
+    startEditBanner,
+    handleDeleteBanner,
+
     imageFile,
     categoryImageFile,
     previewCategoryImage,
@@ -1245,7 +1422,13 @@ export function useDashboardData({ user, showToast }) {
     resetCategoryForm,
     resetPromotionForm,
     resetBrandForm,
+    bannerButtons,
+    handleAddBannerButton,
+    handleRemoveBannerButton,
+    handleBannerButtonChange,
+    resetBannerForm,
     user,
+
     reviews,
     additionalImageFiles,
     handleAdditionalFilesChange,

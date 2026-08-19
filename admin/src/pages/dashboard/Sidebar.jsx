@@ -6,7 +6,9 @@ import {
   Package as PackageIcon,
   PhoneCall as PhoneCallIcon,
   TicketPercent as TicketPercentIcon,
+  Image as ImageIcon,
   ShieldAlert as ShieldAlertIcon,
+
   UserCheck as UserCheckIcon,
   MessageSquare,
   Handshake,
@@ -30,7 +32,9 @@ const tabIcons = {
   pricing: TrendingUp,
   analytics: BarChart3,
   promotions: TicketPercentIcon,
+  banners: ImageIcon,
   'review-promos': Gift,
+
   brands: Handshake,
   reviews: MessageSquare,
   callbacks: PhoneCallIcon,
@@ -52,7 +56,9 @@ const tabLabels = {
   analytics: 'Аналитика и Отчеты',
   callbacks: 'Обратные звонки',
   promotions: 'Акции и скидки',
+  banners: 'Баннеры главной',
   'review-promos': 'Промокоды',
+
   brands: 'Бренды-партнеры',
   reviews: 'Отзывы',
   partners: 'Партнеры',

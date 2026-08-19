@@ -24,7 +24,10 @@ import WarrantyRulesPage from './dashboard/pages/WarrantyRulesPage';
 import CashbackSettingsPage from './dashboard/pages/CashbackSettingsPage';
 import SettingsPage from './dashboard/pages/SettingsPage';
 import ChangelogPage from './dashboard/pages/ChangelogPage';
+import BannersPage from './dashboard/pages/BannersPage';
+import BannerModal from './dashboard/modals/BannerModal';
 import PromotionModal from './dashboard/modals/PromotionModal';
+
 import { useDashboardData } from './dashboard/useDashboardData';
 import {
   formatPrice,
@@ -36,7 +39,7 @@ import {
   getPartnerRequestStatusText,
 } from './dashboard/utils';
 
-const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users', 'user-portrait', 'settings', 'changelog'];
+const ADMIN_PAGES = ['orders', 'callbacks', 'partners', 'reviews', 'returns', 'warranty-rules', 'cashback', 'review-promos', 'promotions', 'banners', 'products', 'categories', 'brands', 'pricing', 'analytics', 'suppliers', 'users', 'user-portrait', 'settings', 'changelog'];
 const SUPPLIER_PAGES = ['products', 'orders'];
 
 const pageTitles = {
@@ -45,6 +48,7 @@ const pageTitles = {
   pricing: 'Ценообразование и Маржа',
   analytics: 'Аналитика и Отчеты',
   promotions: 'Акции и скидки',
+  banners: 'Баннеры главной страницы',
   'review-promos': 'Промокоды',
   brands: 'Бренды-партнеры',
   reviews: 'Модерация отзывов',
@@ -79,6 +83,7 @@ export default function Dashboard({ user, onLogout, showToast }) {
     callbacks,
     partnerRequests,
     promotions,
+    banners,
     brands,
     users,
     hierarchicalCategories,
@@ -86,17 +91,38 @@ export default function Dashboard({ user, onLogout, showToast }) {
     isCategoryModalOpen,
     isSupplierModalOpen,
     isPromotionModalOpen,
+    isBannerModalOpen,
     isBrandModalOpen,
     editingProduct,
     editingCategory,
     editingSupplier,
     editingPromotion,
+    editingBanner,
     editingBrand,
     productForm,
     supplierForm,
     categoryForm,
     promotionForm,
+    bannerForm,
+    bannerButtons,
     brandForm,
+    bannerDesktopFile,
+    bannerMobileFile,
+    setIsBannerModalOpen,
+    handleBannerFormChange,
+    handleBannerDesktopFileChange,
+    handleBannerMobileFileChange,
+    clearBannerDesktopImage,
+    clearBannerMobileImage,
+    handleAddBannerButton,
+    handleRemoveBannerButton,
+    handleBannerButtonChange,
+    handleBannerSubmit,
+    startCreateBanner,
+    startEditBanner,
+    handleDeleteBanner,
+
+
     imageFile,
     categoryImageFile,
     previewCategoryImage,
@@ -281,6 +307,16 @@ export default function Dashboard({ user, onLogout, showToast }) {
             formatPrice={formatPrice}
           />
         );
+      case 'banners':
+        return isSupplier ? null : (
+          <BannersPage
+            banners={banners}
+            onCreateBanner={startCreateBanner}
+            onEditBanner={startEditBanner}
+            onDeleteBanner={handleDeleteBanner}
+          />
+        );
+
       case 'review-promos':
         return isSupplier ? null : (
           <ReviewPromosPage
@@ -600,6 +636,27 @@ export default function Dashboard({ user, onLogout, showToast }) {
         onClearImageDetail={clearPromotionImageDetail}
         onClearImageMobile={clearPromotionImageMobile}
       />
+
+      <BannerModal
+        open={isBannerModalOpen}
+        onClose={() => setIsBannerModalOpen(false)}
+        onSubmit={handleBannerSubmit}
+        editingBanner={editingBanner}
+        bannerForm={bannerForm}
+        onFormChange={handleBannerFormChange}
+        buttons={bannerButtons}
+        onAddButton={handleAddBannerButton}
+        onRemoveButton={handleRemoveBannerButton}
+        onButtonChange={handleBannerButtonChange}
+        imageDesktopFile={bannerDesktopFile}
+        imageMobileFile={bannerMobileFile}
+        onDesktopFileChange={handleBannerDesktopFileChange}
+        onMobileFileChange={handleBannerMobileFileChange}
+        onClearDesktopImage={clearBannerDesktopImage}
+        onClearMobileImage={clearBannerMobileImage}
+      />
+
+
 
       <BrandModal
         open={isBrandModalOpen}

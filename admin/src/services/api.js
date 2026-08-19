@@ -245,6 +245,36 @@ export const deleteBrand = async (id) => {
   return response.data;
 };
 
+// Banners API
+export const getBanners = async () => {
+  const response = await api.get('/banners');
+  return response.data;
+};
+
+export const createBanner = async (formData) => {
+  const response = await api.post('/banners', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
+  return response.data;
+};
+
+export const updateBanner = async (id, formData) => {
+  const response = await api.put(`/banners/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    }
+  });
+  return response.data;
+};
+
+export const deleteBanner = async (id) => {
+  const response = await api.delete(`/banners/${id}`);
+  return response.data;
+};
+
+
 // Callbacks API
 export const getCallbacks = async () => {
   const response = await api.get('/callbacks');

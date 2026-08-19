@@ -146,8 +146,9 @@ export default function PromotionModal({
                   )}
                 </div>
                 <span className="block text-[10px] font-semibold text-slate-400 pl-1">
-                  Рекомендуемый размер: 1200×740 px (Слайдер на Главной)
+                  Рекомендуемый размер: 2432×960 px (Слайдер на Главной)
                 </span>
+
                 <div className="flex items-center gap-3 pt-1">
                   <input
                     type="file"
@@ -264,8 +265,9 @@ export default function PromotionModal({
                   )}
                 </div>
                 <span className="block text-[10px] font-semibold text-slate-400 pl-1">
-                  Рекомендуемый размер: 800×800 px (Квадратный баннер специально для экранов телефонов)
+                  Рекомендуемый размер: 780×860 px (Вертикальный баннер для экранов телефонов)
                 </span>
+
                 <div className="flex items-center gap-3 pt-1">
                   <input
                     type="file"
