@@ -111,6 +111,8 @@ export async function cancelBonusesForOrder(orderId, userId, tx = prisma) {
     data: { status: 'cancelled' },
   });
 
+  if (!userId) return;
+
   // 2. Находим spent-транзакции по этому заказу
   const spentTxs = await tx.bonusTransaction.findMany({
     where: { orderId, type: 'spent', status: 'used' },
@@ -155,7 +157,7 @@ export const getUserBonusSummary = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Пользователь не авторизован' });
 
-    const [availableBalance, pendingBalance, totalEarnedAgg, totalSpentAgg, loyalty] = await Promise.all([
+    const [availableBalance, pendingBalance, totalEarnedAgg, totalSpentAgg, returnDeductionsAgg, loyalty] = await Promise.all([
       getAvailableBalance(userId),
       getPendingBalance(userId),
       prisma.bonusTransaction.aggregate({
@@ -171,13 +173,27 @@ export const getUserBonusSummary = async (req, res) => {
         },
         _sum: { amount: true },
       }),
+      prisma.bonusTransaction.aggregate({
+        where: {
+          userId,
+          OR: [
+            { status: 'cancelled', type: 'cancelled' },
+            { type: 'spent', description: { contains: 'возврат товара' } },
+          ],
+        },
+        _sum: { amount: true },
+      }),
       getUserLoyaltyStatus(userId),
     ]);
+
+    const grossEarned = totalEarnedAgg._sum.amount || 0;
+    const returnDeductions = returnDeductionsAgg._sum.amount || 0;
+    const netEarned = Math.max(0, grossEarned - returnDeductions);
 
     res.json({
       availableBalance: Math.round(availableBalance),
       pendingBalance: Math.round(pendingBalance),
-      totalEarned: Math.round(totalEarnedAgg._sum.amount || 0),
+      totalEarned: Math.round(netEarned),
       totalSpent: Math.round(totalSpentAgg._sum.amount || 0),
       loyalty,
       // Оставляем старое поле для обратной совместимости

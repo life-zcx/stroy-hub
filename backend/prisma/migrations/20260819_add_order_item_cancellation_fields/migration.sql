@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "OrderItem" ADD COLUMN IF NOT EXISTS "cancellationReason" TEXT;
+ALTER TABLE "OrderItem" ADD COLUMN IF NOT EXISTS "cancelledQuantity" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "OrderItem" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'active';

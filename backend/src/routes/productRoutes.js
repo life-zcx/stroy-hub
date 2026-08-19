@@ -8,13 +8,16 @@ import { verifyToken, requireRoles } from '../middleware/auth.js';
 import { estimateUploadRateLimiter } from '../middleware/rateLimiter.js';
 import { imageUpload, excelUpload } from '../config/upload.js';
 
+import { getCartRecommendations } from '../controllers/recommendationController.js';
+
 const router = express.Router();
 
-// Pricing settings & logs routes (Must be registered BEFORE /:id)
+// Pricing settings, recommendations & logs routes (Must be registered BEFORE /:id)
 router.get('/pricing/settings', verifyToken, requireRoles(['ADMIN']), getPricingSettings);
 router.post('/pricing/settings', verifyToken, requireRoles(['ADMIN']), savePricingSettings);
 router.get('/pricing/logs', verifyToken, requireRoles(['ADMIN', 'SUPPLIER']), getPriceLogs);
 router.get('/ai-catalog', getAiCatalogProducts);
+router.get('/recommendations', getCartRecommendations);
 
 // Public endpoints
 router.get('/', getAllProducts);

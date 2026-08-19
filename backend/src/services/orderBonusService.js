@@ -54,6 +54,28 @@ export const recordOrderBonusTransactions = async (userId, orderId, bonusDiscoun
   return { earnedAmount };
 };
 
+export const recalculateOrderBonusTransactions = async (userId, orderId, subtotalAmount, finalTotalAmount, items, tx) => {
+  if (!userId) return;
+  const loyalty = await getUserLoyaltyStatus(parseInt(userId, 10));
+  let earnedAmount = 0;
+  const discountRatio = subtotalAmount > 0 ? (finalTotalAmount / subtotalAmount) : 0;
+
+  for (const item of items) {
+    if (item.quantity <= 0) continue;
+    const itemPrice = item.price;
+    const rate = itemPrice >= 1000000 ? loyalty.highValueCashback : loyalty.baseCashbackPercent;
+    const itemFinalTotal = item.price * item.quantity * discountRatio;
+    earnedAmount += Math.round(itemFinalTotal * (rate / 100));
+  }
+
+  await tx.bonusTransaction.updateMany({
+    where: { orderId: parseInt(orderId, 10), type: 'earned' },
+    data: { amount: earnedAmount },
+  });
+
+  return { earnedAmount };
+};
+
 export const handleOrderStatusBonusUpdates = async (orderId, existingUserId, nextStatus, tx) => {
   if (nextStatus === 'completed') {
     await activatePendingBonuses(orderId, tx);

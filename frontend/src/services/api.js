@@ -102,6 +102,32 @@ export const createOrder = async (orderData) => {
   return response.data;
 };
 
+export const cancelOrderApi = async (orderId, payload = {}) => {
+  const response = await api.post(`/orders/${orderId}/cancel`, payload);
+  return response.data;
+};
+
+const recMemoryCache = new Map();
+
+export const getCartRecommendationsApi = async (cartItems = []) => {
+  const productIds = (cartItems || []).map(item => item.productId || item.id).filter(Boolean).sort().join(',');
+  const categoryIds = (cartItems || []).map(item => item.product?.categoryId || item.categoryId).filter(Boolean).sort().join(',');
+  const cacheKey = `${productIds}:${categoryIds}`;
+
+  if (recMemoryCache.has(cacheKey)) {
+    return recMemoryCache.get(cacheKey);
+  }
+
+  const response = await api.get('/products/recommendations', {
+    params: { productIds, categoryIds },
+  });
+
+  if (response.data) {
+    recMemoryCache.set(cacheKey, response.data);
+  }
+  return response.data;
+};
+
 export const getUserBonuses = async () => {
   const response = await api.get('/bonuses/summary');
   return response.data;

@@ -11,8 +11,9 @@ import {
   ShieldCheck,
   X,
   Gift,
+  Sparkles,
 } from 'lucide-react';
-import { createOrder, validatePromotionCode, getUserBonuses } from '../services/api';
+import { createOrder, validatePromotionCode, getUserBonuses, getCartRecommendationsApi } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
@@ -107,6 +108,7 @@ export default function CartSidebar({
   const [promoPreview, setPromoPreview] = useState({ valid: false, discountAmount: 0, totalAmount: 0 });
   const [availableBonusPoints, setAvailableBonusPoints] = useState(0);
   const [useBonuses, setUseBonuses] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     if (customer) {
@@ -147,6 +149,25 @@ export default function CartSidebar({
     };
     fetchBonuses();
   }, [isOpen, customer]);
+
+  const cartProductKey = useMemo(() => {
+    return (cart || []).map(i => i.id || i.productId).filter(Boolean).sort().join(',');
+  }, [cart]);
+
+  // Load cart recommendations for drawer
+  useEffect(() => {
+    if (isOpen && cartProductKey && !checkoutMode) {
+      const fetchRecs = async () => {
+        try {
+          const data = await getCartRecommendationsApi(cart);
+          setRecommendations((data || []).slice(0, 4));
+        } catch (err) {
+          console.error('Failed to load drawer recommendations:', err);
+        }
+      };
+      fetchRecs();
+    }
+  }, [isOpen, cartProductKey, checkoutMode]);
 
   const finalTotalBeforeBonuses = promoPreview.valid ? promoPreview.totalAmount : cartTotal;
   const bonusDiscount = useBonuses ? Math.min(availableBonusPoints, finalTotalBeforeBonuses) : 0;
@@ -584,6 +605,46 @@ export default function CartSidebar({
                   </li>
                 ))}
               </ul>
+            )}
+
+            {/* Compact Drawer Recommendations */}
+            {cart.length > 0 && !checkoutMode && recommendations.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-gray-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                    С этим товаром покупают
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {recommendations.map((prod) => (
+                    <div key={prod.id} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-gray-150 shadow-2xs hover:border-blue-200 transition-all">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <img src={prod.image} alt={prod.name} className="w-10 h-10 object-contain rounded-lg bg-gray-50 p-1 shrink-0" />
+                        <div className="min-w-0 text-left">
+                          <span className="text-xs font-bold text-slate-900 truncate block max-w-[170px]" title={prod.name}>
+                            {prod.name}
+                          </span>
+                          <span className="text-xs font-black text-slate-950 font-outfit block">
+                            {formatPrice(prod.price)}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onUpdateQuantity(prod.id, 1, false);
+                          showToast?.(`Добавлено: ${prod.name}`);
+                        }}
+                        className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-extrabold transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Добавить в корзину"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

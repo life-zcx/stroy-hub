@@ -492,12 +492,14 @@ export const createPromotion = async (req, res) => {
     const [serializedPromotion] = await enrichPromotions([createdPromotion]);
     await clearPromotionsCache();
 
-    broadcastNotification({
-      title: `🔥 Акция: ${createdPromotion.title}`,
-      body: createdPromotion.description || 'Новое специальное предложение в TORMAG!',
-      icon: '/pwa-192x192.png',
-      data: { url: '/promotions' }
-    }).catch(() => {});
+    if (parseBoolean(req.body.notifyUsers, true) && createdPromotion.isActive && createdPromotion.showOnSite) {
+      broadcastNotification({
+        title: `🔥 Акция: ${createdPromotion.title}`,
+        body: createdPromotion.description || 'Новое специальное предложение в TORMAG!',
+        icon: '/pwa-192x192.png',
+        data: { url: '/promotions' }
+      }).catch(() => {});
+    }
 
     res.status(201).json(serializedPromotion);
   } catch (error) {
@@ -547,7 +549,7 @@ export const updatePromotion = async (req, res) => {
     const [serializedPromotion] = await enrichPromotions([updatedPromotion]);
     await clearPromotionsCache();
 
-    if (updatedPromotion.isActive && updatedPromotion.showOnSite) {
+    if (parseBoolean(req.body.notifyUsers, false) && updatedPromotion.isActive && updatedPromotion.showOnSite) {
       broadcastNotification({
         title: `🔥 Акция: ${updatedPromotion.title}`,
         body: updatedPromotion.description || 'Новые условия акции в TORMAG!',

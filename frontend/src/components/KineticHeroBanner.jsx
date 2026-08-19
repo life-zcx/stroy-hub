@@ -111,7 +111,9 @@ export default function KineticHeroBanner({
 
     // Reset initial targets cleanly without causing CLS layout shifts
     const textTargets = [titleRef.current, subtitleRef.current, textRef.current, ctaRef.current].filter(Boolean);
-    gsap.set(textTargets, { opacity: 0 });
+    if (textTargets.length > 0) {
+      gsap.set(textTargets, { opacity: 0 });
+    }
     
     if (visualCardRef.current) {
       gsap.set(visualCardRef.current, { opacity: 0, scale: 0.98 });
@@ -127,8 +129,8 @@ export default function KineticHeroBanner({
     }
 
     // Subtitle & text entrance
-    if (subtitleRef.current || textRef.current) {
-      const subTargets = [subtitleRef.current, textRef.current].filter(Boolean);
+    const subTargets = [subtitleRef.current, textRef.current].filter(Boolean);
+    if (subTargets.length > 0) {
       tl.fromTo(
         subTargets,
         { opacity: 0 },

@@ -114,6 +114,7 @@ function createEmptyPromotionForm() {
     isActive: true,
     showOnSite: true,
     showOnHome: false,
+    notifyUsers: true,
     imageHome: '',
     imageCard: '',
     imageDetail: '',
@@ -679,6 +680,7 @@ export function useDashboardData({ user, showToast }) {
     formData.append('isActive', String(promotionForm.isActive));
     formData.append('showOnSite', String(promotionForm.showOnSite));
     formData.append('showOnHome', String(promotionForm.showOnHome));
+    formData.append('notifyUsers', String(!!promotionForm.notifyUsers));
 
     promotionForm.targetProductIds.forEach((id) => formData.append('targetProductIds', id));
     promotionForm.targetCategoryIds.forEach((id) => formData.append('targetCategoryIds', id));
@@ -767,6 +769,7 @@ export function useDashboardData({ user, showToast }) {
       isActive: promotion.isActive ?? true,
       showOnSite: promotion.showOnSite ?? true,
       showOnHome: promotion.showOnHome ?? false,
+      notifyUsers: false,
       imageHome: promotion.imageHome || '',
       imageCard: promotion.imageCard || '',
       imageDetail: promotion.imageDetail || '',

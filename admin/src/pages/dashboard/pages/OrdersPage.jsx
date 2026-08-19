@@ -157,8 +157,12 @@ export default function OrdersPage({
         setCompanyBin(order.companyBin || '');
         setClientComment(order.clientComment || '');
         setOrderItems(order.items.map(item => ({
+          id: item.id,
           productId: item.productId,
           quantity: item.quantity,
+          cancelledQuantity: item.cancelledQuantity || 0,
+          status: item.status || 'active',
+          cancellationReason: item.cancellationReason || null,
           price: item.price,
           product: item.product,
           selectedOption: item.selectedOption || null
@@ -446,7 +450,8 @@ export default function OrdersPage({
   // --- PRINT INVOICE ---
   const handlePrintInvoice = (order) => {
     const printWindow = window.open('', '_blank');
-    const supplierGroups = groupItemsBySupplier(order.items);
+    const activeItems = (order.items || []).filter(item => item.quantity > 0 && item.status !== 'cancelled');
+    const supplierGroups = groupItemsBySupplier(activeItems);
 
     const htmlContent = `
       <html>
@@ -709,10 +714,17 @@ export default function OrdersPage({
                                 <span className="text-xs font-bold text-slate-800 block truncate max-w-[220px]" title={productObj.name}>
                                   {productObj.name}
                                 </span>
-                                {item.selectedOption && (
+                                 {item.selectedOption && (
                                   <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
                                     Вариант: {item.selectedOption}
                                   </span>
+                                )}
+                                {(item.cancelledQuantity > 0 || item.status === 'cancelled') && (
+                                  <div className="mt-1">
+                                    <span className="text-[11px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-block" title={item.cancellationReason || ''}>
+                                      ⚠️ Отменено покупателем: {item.cancelledQuantity || 0} шт {item.cancellationReason ? `— ${item.cancellationReason}` : ''}
+                                    </span>
+                                  </div>
                                 )}
                                 <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
                                   Артикул: {productObj.article || '—'}

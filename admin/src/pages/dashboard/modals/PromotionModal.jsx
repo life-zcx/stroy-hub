@@ -437,6 +437,25 @@ export default function PromotionModal({
               <label className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
+                  name="notifyUsers"
+                  checked={!!promotionForm.notifyUsers}
+                  onChange={onFormChange}
+                  className="mt-0.5 h-4.5 w-4.5 rounded-lg border-slate-350 text-blue-600 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer shrink-0"
+                />
+                <div>
+                  <span className="block text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">
+                    Отправить Push-уведомление клиентам на смартфоны (PWA)
+                  </span>
+                  <span className="block text-[11px] font-semibold text-slate-400 mt-0.5">
+                    При включенной галочке клиенты получат мгновенное Push-уведомление о старте акции. При редактировании галочка отключена по умолчанию, чтобы не спамить.
+                  </span>
+                </div>
+              </label>
+            </div>
+            <div className="sm:col-span-2 border-t border-slate-200 pt-4">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
                   name="isFirstOrderOnly"
                   checked={!!promotionForm.isFirstOrderOnly}
                   onChange={onFormChange}

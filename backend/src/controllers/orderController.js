@@ -5,7 +5,7 @@ import { evaluatePromotion } from '../utils/promotionUtils.js';
 import { buildEvaluationContext } from './promotionController.js';
 import { buildPromotionSnapshot } from '../utils/promotionUtils.js';
 import { prepareOrderItemsAndPricing } from '../services/orderPricingService.js';
-import { calculateOrderBonusDiscount, recordOrderBonusTransactions, handleOrderStatusBonusUpdates } from '../services/orderBonusService.js';
+import { calculateOrderBonusDiscount, recordOrderBonusTransactions, recalculateOrderBonusTransactions, handleOrderStatusBonusUpdates } from '../services/orderBonusService.js';
 import { triggerOrderCreatedNotifications, triggerOrderStatusChangedNotification } from '../services/orderNotificationService.js';
 
 function getSupplierId(user) {
@@ -44,7 +44,9 @@ function buildOrderWhere(user) {
 }
 
 function createStatusHistoryEntry(status, changedAt = new Date()) {
-  return { status, changedAt: changedAt.toISOString() };
+  const d = changedAt instanceof Date ? changedAt : new Date(changedAt);
+  const isoStr = !isNaN(d.getTime()) ? d.toISOString() : new Date().toISOString();
+  return { status, changedAt: isoStr };
 }
 
 function buildStatusHistory(existingOrder, nextStatus) {
@@ -502,3 +504,188 @@ export const updateOrder = async (req, res) => {
     res.status(500).json({ error: 'Ошибка обновления заказа: '  });
   }
 };
+
+// Customer Order Cancellation or Item Refusal before status 'shipped'
+export const cancelOrder = async (req, res) => {
+  const { id } = req.params;
+  const { cancellationReason, itemsToCancel } = req.body || {};
+  const userId = parseInt(req.user?.id, 10);
+
+  if (!userId || isNaN(userId)) {
+    return res.status(401).json({ error: 'Пользователь не аутентифицирован' });
+  }
+
+  const orderId = parseInt(id, 10);
+  if (Number.isNaN(orderId)) {
+    return res.status(400).json({ error: 'Неверный ID заказа' });
+  }
+
+  try {
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { include: { product: true } } },
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Заказ не найден' });
+    }
+
+    // Verify ownership (or ADMIN role)
+    if (req.user.role !== 'ADMIN' && existingOrder.userId !== userId) {
+      return res.status(403).json({ error: 'У вас нет прав на выполнение отмены по этому заказу' });
+    }
+
+    // Verify status eligibility: ONLY 'pending' or 'processing' allowed
+    const cancellableStatuses = ['pending', 'processing'];
+    if (!cancellableStatuses.includes(existingOrder.status)) {
+      if (existingOrder.status === 'shipped') {
+        return res.status(400).json({ error: 'Заказ уже передан в доставку и находится в пути. Отмена недоступна.' });
+      }
+      if (existingOrder.status === 'completed') {
+        return res.status(400).json({ error: 'Заказ уже выполнен. Вы можете оформить возврат.' });
+      }
+      if (existingOrder.status === 'cancelled') {
+        return res.status(400).json({ error: 'Заказ уже отменен.' });
+      }
+      return res.status(400).json({ error: `Отмена невозможна для заказа в статусе: ${existingOrder.status}` });
+    }
+
+    const reasonText = (cancellationReason || 'Отмена по инициативе покупателя').trim();
+
+    // Determine if this is full cancellation or partial item refusal
+    const isPartialCancellation = Array.isArray(itemsToCancel) && itemsToCancel.length > 0;
+
+    const cancelMap = new Map();
+    if (isPartialCancellation) {
+      itemsToCancel.forEach((item) => {
+        const idKey = item.itemId || item.productId;
+        if (idKey) cancelMap.set(parseInt(idKey, 10), parseInt(item.quantityToRemove || item.quantity || 0, 10));
+      });
+    }
+
+    const processedItems = existingOrder.items.map((currentItem) => {
+      const removeQty = cancelMap.get(currentItem.id) || cancelMap.get(currentItem.productId) || 0;
+      const currentActiveQty = currentItem.quantity;
+      const actualRemoveQty = Math.min(currentActiveQty, Math.max(0, removeQty));
+      const newActiveQty = currentActiveQty - actualRemoveQty;
+      const newCancelledQty = (currentItem.cancelledQuantity || 0) + actualRemoveQty;
+      const newStatus = newActiveQty > 0 ? 'active' : 'cancelled';
+
+      return {
+        id: currentItem.id,
+        productId: currentItem.productId,
+        price: currentItem.price,
+        selectedOption: currentItem.selectedOption,
+        newActiveQty,
+        newCancelledQty,
+        newStatus,
+        hasChanged: actualRemoveQty > 0,
+        cancellationReason: actualRemoveQty > 0 ? reasonText : currentItem.cancellationReason,
+      };
+    });
+
+    const remainingActiveItems = processedItems
+      .filter((item) => item.newActiveQty > 0)
+      .map((item) => ({
+        productId: item.productId,
+        quantity: item.newActiveQty,
+        price: item.price,
+        selectedOption: item.selectedOption,
+      }));
+
+    // If no remaining active items or not partial, it's a FULL cancellation
+    const isFullCancel = !isPartialCancellation || remainingActiveItems.length === 0;
+
+    const result = await prisma.$transaction(async (tx) => {
+      if (isFullCancel) {
+        const updated = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'cancelled',
+            cancellationReason: reasonText,
+            statusHistory: buildStatusHistory(existingOrder, 'cancelled'),
+          },
+          include: buildOrderItemsInclude(req.user),
+        });
+
+        await handleOrderStatusBonusUpdates(orderId, existingOrder.userId, 'cancelled', tx);
+        return updated;
+      }
+
+      // Partial item cancellation logic
+      const evaluationContext = await buildEvaluationContext(remainingActiveItems);
+      const subtotalAmount = evaluationContext.subtotalAmount;
+
+      let finalDiscount = 0;
+      let promoCodeToUse = existingOrder.promoCode;
+      let promotionIdToUse = existingOrder.promotionId;
+      let promotionTitleToUse = existingOrder.promotionTitle;
+      let promotionSnapshotToUse = existingOrder.promotionSnapshot;
+
+      if (promoCodeToUse) {
+        const promo = await tx.promotion.findUnique({ where: { promoCode: promoCodeToUse } });
+        if (promo) {
+          const evaluation = evaluatePromotion(promo, evaluationContext);
+          if (evaluation.valid) {
+            finalDiscount = evaluation.discountAmount;
+            promotionSnapshotToUse = buildPromotionSnapshot(promo, evaluation);
+          } else {
+            promoCodeToUse = null;
+            promotionIdToUse = null;
+            promotionTitleToUse = null;
+            promotionSnapshotToUse = null;
+          }
+        }
+      }
+
+      let usedBonusPoints = existingOrder.usedBonusPoints || 0;
+      let netTotal = Math.max(0, subtotalAmount - finalDiscount);
+      if (usedBonusPoints > netTotal) {
+        usedBonusPoints = netTotal;
+      }
+      const finalTotalAmount = Math.max(0, netTotal - usedBonusPoints);
+      finalDiscount += usedBonusPoints;
+
+      // Update OrderItems in place to maintain history
+      for (const item of processedItems) {
+        if (item.hasChanged) {
+          await tx.orderItem.update({
+            where: { id: item.id },
+            data: {
+              quantity: item.newActiveQty,
+              cancelledQuantity: item.newCancelledQty,
+              status: item.newStatus,
+              cancellationReason: item.cancellationReason,
+            },
+          });
+        }
+      }
+
+      await recalculateOrderBonusTransactions(existingOrder.userId, orderId, subtotalAmount, finalTotalAmount, remainingActiveItems, tx);
+
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          subtotalAmount,
+          discountAmount: finalDiscount,
+          totalAmount: finalTotalAmount,
+          usedBonusPoints,
+          promoCode: promoCodeToUse,
+          promotionId: promotionIdToUse,
+          promotionTitle: promotionTitleToUse,
+          promotionSnapshot: promotionSnapshotToUse,
+        },
+        include: buildOrderItemsInclude(req.user),
+      });
+
+      return updatedOrder;
+    });
+
+    triggerOrderStatusChangedNotification(result);
+    return res.json(result);
+  } catch (error) {
+    console.error('Error in cancelOrder endpoint:', error);
+    return res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при отмене заказа') });
+  }
+};
+

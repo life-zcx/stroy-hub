@@ -191,6 +191,9 @@ model OrderItem {
   quantity       Int
   price          Float
   selectedOption String?
+  status         String  @default("active") // "active", "cancelled"
+  cancelledQuantity Int  @default(0)
+  cancellationReason String?
 }
 
 model CallbackRequest {

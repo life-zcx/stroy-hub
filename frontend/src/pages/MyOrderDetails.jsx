@@ -7,6 +7,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatDateTime, getStatusMeta } from './MyOrders';
 import ReviewModal from '../components/ReviewModal';
 import ReturnRequestModal from '../components/ReturnRequestModal';
+import OrderCancelModal from '../components/OrderCancelModal';
 import { getMyReturnRequests, getWarrantyRules } from '../services/api';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
@@ -19,6 +20,7 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
   const [reviewedProductIds, setReviewedProductIds] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [warrantyRules, setWarrantyRules] = useState([]);
   const [isExpandedItems, setIsExpandedItems] = useState(false);
   const fetchedOrderRef = useRef(null);
@@ -220,10 +222,10 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
               {(isExpandedItems ? order.items : order.items.slice(0, 4)).map((item) => (
                 <div key={item.id} className="flex items-center gap-4 rounded-xl bg-slate-50/50 hover:bg-slate-50 border border-slate-100 p-3.5 transition-colors">
                   <Link
-                    href={item.product ? getPageHref('product', item.productId) : '#'}
+                    href={item.product ? getPageHref('product', item.product?.slug || item.productId || item.product?.id) : '#'}
                     onClick={(e) => {
                       if (!item.product) e.preventDefault();
-                      else onNavigate('product', item.productId);
+                      else onNavigate('product', item.product?.slug || item.productId || item.product?.id);
                     }}
                     className="w-12 h-12 bg-white border border-slate-150 rounded-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden shadow-inner cursor-pointer hover:border-slate-300 transition-colors block"
                   >
@@ -236,10 +238,10 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                   <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
                     <div className="text-left">
                       <Link
-                        href={item.product ? getPageHref('product', item.productId) : '#'}
+                        href={item.product ? getPageHref('product', item.product?.slug || item.productId || item.product?.id) : '#'}
                         onClick={(e) => {
                           if (!item.product) e.preventDefault();
-                          else onNavigate('product', item.productId);
+                          else onNavigate('product', item.product?.slug || item.productId || item.product?.id);
                         }}
                         className="text-sm font-black text-slate-900 leading-tight hover:text-blue-600 transition-colors cursor-pointer text-left block focus:outline-none"
                       >
@@ -250,7 +252,14 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                           {item.selectedOption}
                         </div>
                       )}
-                      <p className="mt-0.5 text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                        <p className="text-xs font-semibold text-slate-400">{formatPrice(item.price)} x {item.quantity} шт</p>
+                        {item.cancelledQuantity > 0 && (
+                          <span className="text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-block" title={item.cancellationReason ? `Причина: ${item.cancellationReason}` : 'Отказ покупателем'}>
+                            Отменено: {item.cancelledQuantity} шт {item.cancellationReason ? `(${item.cancellationReason})` : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 shrink-0 justify-between sm:justify-end">
                       <div className="text-right">
@@ -424,6 +433,29 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                 Повторить заказ
               </button>
 
+              {['pending', 'processing'].includes(order.status) && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full mt-2 px-4 py-3 bg-[#fff0f2] hover:bg-rose-100 border border-rose-200 text-rose-600 font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer text-center font-outfit flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <AlertCircle className="h-4 w-4 text-rose-600 stroke-[2.5]" />
+                  Отменить заказ
+                </button>
+              )}
+
+              {order.status === 'shipped' && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-center">
+                  <div className="text-[11px] font-extrabold text-amber-800 flex items-center justify-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5 text-amber-600" />
+                    Заказ передан в доставку
+                  </div>
+                  <p className="mt-0.5 text-[10px] font-semibold text-amber-700">
+                    Отмена недоступна, так как товар в пути. После получения можно оформить возврат.
+                  </p>
+                </div>
+              )}
+
               {isAnyItemReturnable && (
                 <button
                   type="button"
@@ -549,6 +581,20 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
           showToast={showToast}
           onSubmitSuccess={() => {
             fetchReturns();
+          }}
+        />
+      )}
+
+      {showCancelModal && (
+        <OrderCancelModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          order={order}
+          showToast={showToast}
+          onSuccess={(updatedOrder) => {
+            onLoadOrder?.(order.id);
+            onRefresh?.();
+            bonuses?.fetchSummary?.();
           }}
         />
       )}

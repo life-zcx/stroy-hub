@@ -58,16 +58,16 @@ export default function Login({ onAuthSuccess }) {
           </div>
 
           {/* Logo Brand Header */}
-          <div className="flex items-center gap-2 shrink-0 relative z-10">
-            <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[130px] -my-10 -ml-10 w-auto object-contain shrink-0" />
+          <div className="flex items-center shrink-0 relative z-10 mb-6">
+            <img src={logoImg} alt="TORMAG.KZ Logo" className="h-10 sm:h-11 w-auto object-contain shrink-0" />
           </div>
 
-          {/* Main Huge Heading */}
-          <div className="my-10 space-y-6 relative z-10 max-w-sm">
+          {/* Main Heading */}
+          <div className="my-auto py-6 space-y-6 relative z-10 max-w-sm">
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-[1.15] tracking-tight font-outfit text-left">
               Единый <br />
               кабинет <br />
-              администратора <br />
+              продавца <br />
               <span className="text-blue-600">и поставщика</span>
             </h2>
 

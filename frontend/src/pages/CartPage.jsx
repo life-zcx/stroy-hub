@@ -27,7 +27,7 @@ import {
   Trash2,
   Heart,
 } from 'lucide-react';
-import { createOrder, validatePromotionCode, getProducts, getProductById, getSystemSettings, updateProfile } from '../services/api';
+import { createOrder, validatePromotionCode, getProducts, getProductById, getSystemSettings, updateProfile, getCartRecommendationsApi } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatPromotionTargets, getPromotionScopeLabel } from '../utils/promotions';
 import { trackEvent } from '../utils/analytics';
@@ -35,6 +35,7 @@ import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import Link from '../components/Link';
 import { getPageHref } from '../utils/navigationHelper';
 import OrderSuccessCelebration from '../components/OrderSuccessCelebration';
+import CartRecommendationsCarousel from '../components/CartRecommendationsCarousel';
 
 const FREE_DELIVERY_THRESHOLD = 150000;
 
@@ -194,9 +195,11 @@ export default function CartPage({
   });
   const [savingNewAddr, setSavingNewAddr] = useState(false);
 
-  // Recommendations state
+  // Recommendations & Cross-sell state
   const [hits, setHits] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [step, setStep] = useState(() => currentPage === 'checkout' ? 'checkout' : 'cart');
@@ -296,6 +299,28 @@ export default function CartPage({
       loadRecs();
     }
   }, [cart.length]);
+
+  const cartProductKey = useMemo(() => {
+    return (cart || []).map(i => i.id || i.productId).filter(Boolean).sort().join(',');
+  }, [cart]);
+
+  // Load high-speed recommendations when cart items change
+  useEffect(() => {
+    if (cartProductKey && step === 'cart') {
+      const fetchCartRecs = async () => {
+        setLoadingRecs(true);
+        try {
+          const recs = await getCartRecommendationsApi(cart);
+          setRecommendations(recs || []);
+        } catch (err) {
+          console.error('Failed to load cart recommendations:', err);
+        } finally {
+          setLoadingRecs(false);
+        }
+      };
+      fetchCartRecs();
+    }
+  }, [cartProductKey, step]);
 
   // Получаем баланс из пропа bonuses (useBonuses хук из App.jsx)
   const availableBonusPoints = bonuses?.availableBalance ?? 0;
@@ -910,8 +935,14 @@ export default function CartPage({
                             Артикул: {item.article || item.id}
                           </div>
 
-                          <div className="text-base sm:text-lg font-black text-slate-950 font-outfit pt-0.5">
-                            {formatPrice(item.price)}
+                          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                            <span className="text-base sm:text-lg font-black text-slate-950 font-outfit">
+                              {formatPrice(item.price * item.quantity)}
+                            </span>
+                            <span className="bg-[#e6f7ef] text-[#00a046] text-[10px] font-black px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 border border-[#b2e6ce]" title="Бонусы за эту позицию">
+                              <span>+{formatPrice(Math.round(item.price * item.quantity * (item.cashbackPercent ?? 3) / 100))}</span>
+                              <span className="w-3 h-3 rounded-full bg-[#00a046] text-white font-black text-[8px] flex items-center justify-center shrink-0">Б</span>
+                            </span>
                           </div>
 
                           <div className="flex items-center gap-3 pt-1">
@@ -981,6 +1012,14 @@ export default function CartPage({
                   <div className="flex justify-between items-center text-slate-900 font-extrabold text-sm sm:text-base pt-2 border-t border-slate-100">
                     <span>Общая стоимость</span>
                     <span className="text-base sm:text-lg font-black text-slate-950 font-outfit">{formatPrice(cartTotal)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs sm:text-sm font-semibold pt-1">
+                    <span className="text-slate-500">Начислим бонусами</span>
+                    <span className="bg-[#e6f7ef] text-[#00a046] text-xs font-black px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-[#b2e6ce]">
+                      <span>+{formatPrice(estimatedEarnedBonuses)}</span>
+                      <span className="w-3.5 h-3.5 rounded-full bg-[#00a046] text-white font-black text-[9px] flex items-center justify-center shrink-0">Б</span>
+                    </span>
                   </div>
                 </div>
 
@@ -1543,6 +1582,14 @@ export default function CartPage({
                     <span className="text-2xl font-black text-slate-950 font-outfit">{formatPrice(finalTotal)}</span>
                   </div>
                 </div>
+
+                <div className="flex justify-between items-center text-xs sm:text-sm font-semibold pt-1">
+                  <span className="text-slate-500">Начислим бонусами:</span>
+                  <span className="bg-[#e6f7ef] text-[#00a046] text-xs font-black px-2 py-0.5 rounded-md inline-flex items-center gap-1 border border-[#b2e6ce]">
+                    <span>+{formatPrice(estimatedEarnedBonuses)}</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#00a046] text-white font-black text-[9px] flex items-center justify-center shrink-0">Б</span>
+                  </span>
+                </div>
               </div>
 
               <button
@@ -1568,6 +1615,20 @@ export default function CartPage({
           </div>
         )}
       </div>
+
+      {/* Full-width Dynamic Recommendations Section (Standalone Component) */}
+      {step === 'cart' && (
+        <CartRecommendationsCarousel
+          recommendations={recommendations}
+          cart={cart}
+          onAddToCart={onAddToCart}
+          onUpdateQuantity={onUpdateQuantity}
+          onToggleFavorite={onToggleFavorite}
+          isFavorite={isFavorite}
+          showToast={showToast}
+          onNavigate={onNavigate}
+        />
+      )}
 
 
       {/* Fullscreen modal to quick add new address during checkout */}
