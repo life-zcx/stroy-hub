@@ -120,6 +120,15 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+const getRealClientIp = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded && typeof forwarded === 'string') {
+    const firstIp = forwarded.split(',')[0].trim();
+    if (firstIp) return firstIp;
+  }
+  return req.ip || req.socket?.remoteAddress || '-';
+};
+
 // Response Error Interceptor for 500 status masking in Production
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
@@ -127,7 +136,7 @@ app.use((req, res, next) => {
     if (res.statusCode >= 500) {
       const errorMsg = body && typeof body === 'object' && body.error ? body.error : JSON.stringify(body);
       logger.error(`[HTTP 500] ${req.method} ${req.originalUrl}: ${errorMsg}`, {
-        ip: req.ip || req.socket?.remoteAddress,
+        ip: getRealClientIp(req),
         userId: req.user?.id || null,
         method: req.method,
         url: req.originalUrl,
@@ -175,7 +184,7 @@ app.use((req, res, next) => {
   const startedAt = Date.now();
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
-    const ip = req.ip || req.socket?.remoteAddress || '-';
+    const ip = getRealClientIp(req);
     const userId = req.user?.id || null;
     const message = `${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`;
     const meta = { ip, userId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs };
