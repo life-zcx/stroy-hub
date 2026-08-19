@@ -6,40 +6,40 @@ export default function PWAInstallPrompt({ showToast }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSTip, setShowIOSTip] = useState(false);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [loadingPush, setLoadingPush] = useState(false);
 
   useEffect(() => {
-    // Check if notification permission is already granted
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    if (typeof window === 'undefined') return;
+
+    // Check if Notification permission is already granted
+    if ('Notification' in window && Notification.permission === 'granted') {
       setPushSubscribed(true);
     }
 
-    // Check if dismissed before
-    const dismissed = localStorage.getItem('tormag_pwa_dismissed');
-    if (dismissed) return;
-
-    // Check if already in standalone mode
+    // Check if already running as installed standalone app
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (isStandalone) {
-      // In standalone, just check for push capability if not subscribed
-      if ('Notification' in window && Notification.permission !== 'granted') {
-        setShowPrompt(true);
-      }
-      return;
-    }
+    if (isStandalone) return;
 
-    // Detect mobile/desktop
+    // Check session dismissal
+    const dismissedSession = sessionStorage.getItem('tormag_pwa_dismissed');
+    if (dismissedSession) return;
+
+    // Detect mobile device
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    
+    const isMobile = /android|iphone|ipad|ipod/i.test(userAgent) || window.innerWidth < 768;
+
     if (isIosDevice) {
       setIsIOS(true);
-      setShowIOSTip(true);
     }
 
-    // Android / Desktop Chrome PWA prompt handler
+    // Show prompt for mobile browsers
+    if (isMobile) {
+      setShowPrompt(true);
+    }
+
+    // Capture Android Chrome beforeinstallprompt event
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -47,21 +47,25 @@ export default function PWAInstallPrompt({ showToast }) {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the PWA install prompt');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted PWA install prompt');
+      }
+      setDeferredPrompt(null);
+      setShowPrompt(false);
+    } else if (!isIOS) {
+      if (showToast) {
+        showToast('Откройте меню браузера (⋮) и выберите "Добавить на главный экран"', 'info');
+      }
     }
-    setDeferredPrompt(null);
-    setShowPrompt(false);
   };
 
   const handleEnablePush = async () => {
@@ -70,11 +74,8 @@ export default function PWAInstallPrompt({ showToast }) {
       await subscribeUserToPush();
       setPushSubscribed(true);
       if (showToast) {
-        showToast('Уведомления успешно включены!', 'success');
+        showToast('Уведомления успешно включены', 'success');
       }
-      setTimeout(() => {
-        handleDismiss();
-      }, 1500);
     } catch (err) {
       console.error(err);
       if (showToast) {
@@ -87,68 +88,59 @@ export default function PWAInstallPrompt({ showToast }) {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    setShowIOSTip(false);
-    localStorage.setItem('tormag_pwa_dismissed', 'true');
+    sessionStorage.setItem('tormag_pwa_dismissed', 'true');
   };
 
-  if (!showPrompt && !showIOSTip) return null;
-
-  const isMobile = typeof window !== 'undefined' && (/android|iphone|ipad|ipod/i.test(navigator.userAgent) || window.innerWidth < 768);
+  if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-[75] max-w-md animate-fade-in">
-      <div className="bg-white/95 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 shadow-xl shadow-emerald-900/10 flex flex-col gap-3 text-gray-800">
-        <div className="flex items-center justify-between gap-3">
+    <div className="fixed bottom-16 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-[75] max-w-sm w-full animate-fade-in font-sans">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl flex flex-col gap-3 text-white text-left">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shrink-0 shadow-md">
-              <Smartphone className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-200 shrink-0 border border-slate-700/50">
+              <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900 text-sm leading-tight">Приложение и Уведомления TORMAG</h4>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <h4 className="font-bold text-white text-xs uppercase tracking-wider">Приложение TORMAG</h4>
+              <p className="text-xs text-slate-400 mt-0.5 leading-snug">
                 {isIOS 
                   ? 'Нажмите «Поделиться» ⎋ и выберите «На экран "Домой"»'
-                  : isMobile 
-                    ? 'Быстрый доступ и статус заказов в 1 клик!'
-                    : 'Установите приложение TORMAG на свой рабочий стол!'}
+                  : 'Быстрый доступ к каталогу и отслеживанию заказов.'}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={handleDismiss}
-            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+            className="p-1 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors shrink-0 border-0 bg-transparent cursor-pointer"
             title="Закрыть"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-          {!isIOS && deferredPrompt && (
-            <button
-              onClick={handleInstallClick}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Установить PWA</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={handleInstallClick}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border-0 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Установить</span>
+          </button>
 
-          {!pushSubscribed ? (
+          {!pushSubscribed && (
             <button
+              type="button"
               onClick={handleEnablePush}
               disabled={loadingPush}
-              className="flex-1 border border-blue-600 hover:bg-blue-50 text-blue-600 font-bold text-xs py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Bell className="w-3.5 h-3.5" />
-              <span>{loadingPush ? 'Включение...' : 'Включить Push'}</span>
+              <Bell className="w-3.5 h-3.5 text-blue-400" />
+              <span>{loadingPush ? '...' : 'Push'}</span>
             </button>
-          ) : (
-            <div className="flex-1 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Push включен</span>
-            </div>
           )}
         </div>
       </div>

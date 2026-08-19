@@ -76,44 +76,41 @@ export default function PWAUpdatePrompt() {
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[99999] max-w-sm w-full animate-slide-up font-sans">
-      <div className="bg-slate-900/95 backdrop-blur-xl border border-blue-500/40 text-white p-4 sm:p-5 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] flex flex-col gap-3 relative overflow-hidden text-left">
-        {/* Soft Ambient Glow */}
-        <div className="absolute -top-10 -right-10 w-28 h-28 bg-blue-600/25 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="flex items-start justify-between gap-3 z-10">
+    <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[99999] max-w-sm w-full animate-fade-in font-sans">
+      <div className="bg-slate-900 border border-slate-800 text-white p-4 rounded-2xl shadow-2xl flex flex-col gap-3 relative text-left">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-blue-600/30 border border-blue-500/40 text-blue-400 shrink-0">
-              <Sparkles className="h-5 w-5 animate-pulse text-blue-400" />
+            <div className="p-2 rounded-xl bg-slate-800 text-slate-300 shrink-0">
+              <RefreshCw className="h-4 w-4" />
             </div>
             <div className="text-left">
-              <h4 className="text-sm font-extrabold text-white tracking-tight">
-                Доступно обновление сайта!
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                Доступна новая версия
               </h4>
-              <p className="text-xs text-slate-300 font-medium mt-0.5 leading-snug">
-                Вышла новая версия TORMAG. Нажмите кнопку для применения.
+              <p className="text-xs text-slate-400 font-normal mt-0.5 leading-snug">
+                Обновите страницу для применения изменений.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleDismiss}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer border-0 shrink-0"
+            className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-800 cursor-pointer border-0 shrink-0"
             title="Закрыть"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="pt-1 z-10">
+        <div className="pt-0.5">
           <button
             type="button"
             onClick={handleUpdate}
             disabled={updating}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 active:scale-98 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-4 rounded-2xl transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer border-0"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border-0 shadow-sm"
           >
-            <RefreshCw className={`h-4 w-4 ${updating ? 'animate-spin' : ''}`} />
-            <span>{updating ? 'Применение изменений...' : 'Обновить и применить'}</span>
+            <RefreshCw className={`h-3.5 w-3.5 ${updating ? 'animate-spin' : ''}`} />
+            <span>{updating ? 'Обновление...' : 'Обновить'}</span>
           </button>
         </div>
       </div>
