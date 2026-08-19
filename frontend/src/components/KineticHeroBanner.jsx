@@ -199,15 +199,13 @@ export default function KineticHeroBanner({
 
   if (loading || totalSlides === 0) {
     return (
-      <div className="kinetic-banner-container w-full relative overflow-hidden rounded-[2rem] bg-slate-100/90 border border-slate-200/80 h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-xs select-none">
-        <div className="w-full h-full bg-gradient-to-r from-slate-100 via-slate-200/60 to-slate-100 animate-pulse flex items-center px-8 sm:px-12">
+      <div className="kinetic-banner-container w-full relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-100/90 border border-slate-200/80 aspect-[39/43] sm:aspect-auto h-auto sm:h-[450px] lg:h-[480px] flex items-center shadow-xs select-none">
+        <div className="w-full h-full bg-gradient-to-r from-slate-100 via-slate-200/60 to-slate-100 animate-pulse flex items-center px-6 sm:px-12">
           <div className="space-y-4 max-w-lg w-full">
-            <div className="h-10 sm:h-12 bg-slate-200/80 rounded-2xl w-3/4 animate-pulse" />
-            <div className="h-5 sm:h-6 bg-slate-200/60 rounded-xl w-1/2 animate-pulse" />
-            <div className="h-4 bg-slate-200/40 rounded-lg w-5/6 animate-pulse" />
-            <div className="flex gap-3 pt-4">
-              <div className="h-12 bg-slate-200/80 rounded-2xl w-36 animate-pulse" />
-              <div className="h-12 bg-slate-200/60 rounded-2xl w-36 animate-pulse" />
+            <div className="h-8 sm:h-12 bg-slate-200/80 rounded-2xl w-3/4 animate-pulse" />
+            <div className="h-4 sm:h-6 bg-slate-200/60 rounded-xl w-1/2 animate-pulse" />
+            <div className="flex gap-3 pt-2">
+              <div className="h-9 sm:h-12 bg-slate-200/80 rounded-xl sm:rounded-2xl w-28 sm:w-36 animate-pulse" />
             </div>
           </div>
         </div>
@@ -237,7 +235,7 @@ export default function KineticHeroBanner({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="kinetic-banner-container w-full relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/85 group/hero h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800 select-none"
+      className="kinetic-banner-container w-full relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-white border border-slate-200/85 group/hero aspect-[39/43] sm:aspect-auto h-auto sm:h-[450px] lg:h-[480px] flex items-center shadow-sm text-slate-800 select-none"
     >
       {/* Soft Ambient Glow Orbs */}
       <div
@@ -270,19 +268,19 @@ export default function KineticHeroBanner({
 
           const pos = currentBanner.position || 'bottom-left';
           const posClass = pos === 'bottom-center'
-            ? 'bottom-5 left-1/2 -translate-x-1/2 sm:bottom-6 text-center items-center'
+            ? 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 text-center items-center'
             : pos === 'center-left'
-            ? 'top-1/2 -translate-y-1/2 left-6 sm:left-12 text-left'
-            : 'bottom-5 left-6 sm:bottom-6 sm:left-12 text-left';
+            ? 'top-1/2 -translate-y-1/2 left-4 right-4 sm:right-auto sm:left-12 text-left'
+            : 'bottom-4 left-4 right-4 sm:right-auto sm:bottom-6 sm:left-12 text-left';
 
 
           const hasOverlay = currentBanner.title || currentBanner.subtitle || bannerButtons.length > 0;
 
           const renderButtonIcon = (iconName) => {
-            if (iconName === 'sparkles') return <Sparkles className="h-4.5 w-4.5" />;
-            if (iconName === 'gift') return <Gift className="h-4.5 w-4.5" />;
-            if (iconName === 'shopping') return <ShoppingCart className="h-4.5 w-4.5" />;
-            if (iconName === 'arrow') return <ArrowRight className="h-4.5 w-4.5" />;
+            if (iconName === 'sparkles') return <Sparkles className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 shrink-0" />;
+            if (iconName === 'gift') return <Gift className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 shrink-0" />;
+            if (iconName === 'shopping') return <ShoppingCart className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 shrink-0" />;
+            if (iconName === 'arrow') return <ArrowRight className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 shrink-0" />;
             return null;
           };
 
@@ -313,7 +311,7 @@ export default function KineticHeroBanner({
           };
 
           const slideMarkup = (
-            <div className="absolute inset-0 w-full h-full block group/banner overflow-hidden rounded-[2rem]">
+            <div className="absolute inset-0 w-full h-full block group/banner overflow-hidden rounded-2xl sm:rounded-[2rem]">
               <picture className="w-full h-full block">
                 {currentBanner.imageMobile && (
                   <source media="(max-width: 640px)" srcSet={currentBanner.imageMobile} />
@@ -330,27 +328,27 @@ export default function KineticHeroBanner({
                   {Boolean(currentBanner.title || currentBanner.subtitle) && (
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
                   )}
-                  <div className={`absolute z-20 space-y-3 max-w-xl text-white ${posClass}`}>
+                  <div className={`absolute z-20 space-y-2 sm:space-y-3 max-w-xl text-white ${posClass}`}>
 
                     {currentBanner.title && (
-                      <h2 ref={titleRef} className="text-2xl sm:text-4xl font-extrabold font-outfit drop-shadow-md">
+                      <h2 ref={titleRef} className="text-lg sm:text-4xl font-extrabold font-outfit drop-shadow-md leading-tight">
                         {currentBanner.title}
                       </h2>
                     )}
                     {currentBanner.subtitle && (
-                      <p ref={subtitleRef} className="text-xs sm:text-sm font-semibold text-slate-200 leading-relaxed">
+                      <p ref={subtitleRef} className="text-xs sm:text-sm font-semibold text-slate-200 leading-normal line-clamp-2 sm:line-clamp-none">
                         {currentBanner.subtitle}
                       </p>
                     )}
 
                     {bannerButtons.length > 0 && (
-                      <div ref={ctaRef} className="pt-2 flex flex-wrap items-center gap-2.5">
+                      <div ref={ctaRef} className="pt-1 sm:pt-2 flex flex-col xs:flex-row items-stretch xs:items-center gap-2 sm:gap-2.5 w-full xs:w-auto">
                         {bannerButtons.map((btn, idx) => (
                           <button
                             key={btn.id || idx}
                             type="button"
                             onClick={(e) => handleButtonClick(btn, e)}
-                            className={`inline-flex items-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs uppercase tracking-wider font-extrabold transition-all duration-300 active:scale-95 cursor-pointer border-0 ${renderButtonClass(btn.variant)}`}
+                            className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs uppercase tracking-wider font-extrabold transition-all duration-300 active:scale-95 cursor-pointer border-0 shrink-0 ${renderButtonClass(btn.variant)}`}
                           >
                             <span>{btn.text}</span>
                             {renderButtonIcon(btn.icon)}
