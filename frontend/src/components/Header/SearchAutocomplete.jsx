@@ -28,7 +28,7 @@ export default function SearchAutocomplete({
           onChange={onSearchChange}
           onFocus={onFocus}
           onKeyDown={onKeyDown}
-          className="w-full pl-11 pr-10 py-2.5 bg-slate-100/70 hover:bg-slate-100 focus:bg-white border border-slate-200/90 focus:border-blue-500 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/15 text-xs font-medium text-slate-900 transition-all duration-300 placeholder-slate-400 h-[44px] shadow-2xs focus:shadow-md"
+          className="w-full pl-10 lg:pl-11 pr-10 py-1.5 lg:py-2.5 bg-slate-100/70 hover:bg-slate-100 focus:bg-white border border-slate-200/90 focus:border-blue-500 rounded-xl lg:rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/15 text-xs font-medium text-slate-900 transition-all duration-300 placeholder-slate-400 h-[38px] lg:h-[44px] shadow-2xs focus:shadow-md"
         />
         {localSearchQuery && (
           <button

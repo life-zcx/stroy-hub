@@ -325,7 +325,7 @@ export default function Home({
                     <img
                       src={optimizedSrc}
                       alt={cat.name}
-                      className="max-h-full max-w-full object-contain mix-blend-multiply"
+                      className="max-h-full max-w-full object-contain mix-blend-multiply contrast-[1.08] brightness-[1.04]"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         const fallbackEl = e.target.parentElement?.querySelector('.cat-fallback');

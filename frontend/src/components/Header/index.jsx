@@ -377,13 +377,13 @@ export default function Header({
       </div>
 
       {/* Row 2: Premium Main Navigation Header */}
-      <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} py-2.5 ${isScrolled
+      <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} py-1.5 lg:py-2.5 ${isScrolled
         ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/80'
         : 'bg-white border-b border-slate-200/60'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="flex justify-between items-center h-12 gap-4">
+          <div className="flex justify-between items-center h-10 lg:h-12 gap-3 sm:gap-4">
 
             {/* Left Mobile Hamburger Menu Button */}
             <div className="flex lg:hidden items-center">
@@ -606,8 +606,8 @@ export default function Header({
             </div>
           </div>
 
-          {/* Mobile Search Bar (Appears right above the hero banner on mobile) */}
-          <div className="block lg:hidden pt-2 pb-1 border-t border-slate-100/80 mt-2 relative z-50">
+          {/* Mobile Search Bar (Compact space-saving layout) */}
+          <div className="block lg:hidden mt-1 pb-0.5 relative z-50">
             <SearchAutocomplete
               localSearchQuery={localSearchQuery}
               onSearchChange={handleSearchChange}
