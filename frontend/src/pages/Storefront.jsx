@@ -400,9 +400,31 @@ export default function Storefront({
           ) : (currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
               {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map((cat) => {
-                const catProducts = products.filter(p => p.category === cat.slug || p.categoryId === cat.id || p.categoryRelation?.slug === cat.slug);
-                const count = cat._count?.products !== undefined ? cat._count.products : (catProducts.length || null);
-                
+                const descendantIds = new Set();
+                const descendantSlugs = new Set();
+                const collectDescendants = (cId, cSlug) => {
+                  if (cId) descendantIds.add(cId);
+                  if (cSlug) descendantSlugs.add(cSlug);
+                  categories.filter(ch => ch.parentId === cId).forEach(ch => collectDescendants(ch.id, ch.slug));
+                };
+                collectDescendants(cat.id, cat.slug);
+
+                let count = cat.totalProductsCount ?? cat._count?.products;
+                if (!count || count === 0) {
+                  let totalSum = 0;
+                  categories.forEach(c => {
+                    if (descendantIds.has(c.id) && c._count?.products) {
+                      totalSum += c._count.products;
+                    }
+                  });
+                  if (totalSum > 0) {
+                    count = totalSum;
+                  } else {
+                    const matchedProds = products.filter(p => descendantSlugs.has(p.category) || descendantIds.has(p.categoryId) || descendantSlugs.has(p.categoryRelation?.slug));
+                    count = matchedProds.length;
+                  }
+                }
+
                 // Formatter for count with Russian declension (e.g. "2 товаров", "406 520 товаров")
                 const formatCount = (num) => {
                   if (num === null || num === undefined) return 'Каталог';
@@ -416,6 +438,7 @@ export default function Storefront({
                   return `${n.toLocaleString('ru-RU')} ${word}`;
                 };
 
+                const catProducts = products.filter(p => descendantSlugs.has(p.category) || descendantIds.has(p.categoryId) || descendantSlugs.has(p.categoryRelation?.slug));
                 const firstProdImg = catProducts[0]?.image || catProducts[0]?.images?.[0];
                 const imageSrc = cat.image || cat.bg || firstProdImg;
                 const optimizedSrc = imageSrc ? getIpxImageUrl(imageSrc, '300x300') : null;

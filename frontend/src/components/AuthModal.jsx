@@ -75,8 +75,8 @@ export default function AuthModal({
           </button>
 
           <div className="text-center">
-            <div className="inline-flex items-center justify-center mb-1">
-              <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[80px] sm:h-[90px] -my-5 w-auto object-contain shrink-0" />
+            <div className="inline-flex items-center justify-center mb-2">
+              <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[38px] sm:h-[44px] w-auto object-contain shrink-0" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>
             <p className="text-slate-500 text-xs mt-0.5 font-medium">

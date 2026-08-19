@@ -29,7 +29,7 @@ export const getAllCategories = async (req, res) => {
     }
     
     logger.info('Categories cache miss, fetching from DB');
-    const categories = await prisma.category.findMany({
+    const rawCategories = await prisma.category.findMany({
       include: {
         children: true,
         _count: {
@@ -38,7 +38,37 @@ export const getAllCategories = async (req, res) => {
       },
       orderBy: { name: 'asc' }
     });
-    
+
+    // Helper to collect all descendant category IDs
+    const getDescendantIds = (catId) => {
+      const ids = new Set([catId]);
+      const children = rawCategories.filter(c => c.parentId === catId);
+      for (const child of children) {
+        const childIds = getDescendantIds(child.id);
+        childIds.forEach(id => ids.add(id));
+      }
+      return ids;
+    };
+
+    // Calculate total products count including subcategories
+    const categories = rawCategories.map(cat => {
+      const descendantIds = getDescendantIds(cat.id);
+      let totalProductsCount = 0;
+      rawCategories.forEach(c => {
+        if (descendantIds.has(c.id)) {
+          totalProductsCount += (c._count?.products || 0);
+        }
+      });
+
+      return {
+        ...cat,
+        totalProductsCount,
+        _count: {
+          products: totalProductsCount
+        }
+      };
+    });
+
     await redisClient.set(cacheKey, JSON.stringify(categories), { EX: 3600 });
     res.json(categories);
   } catch (error) {

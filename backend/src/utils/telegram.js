@@ -1,5 +1,6 @@
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID?.trim() || '';
+const TELEGRAM_ADMIN_CHAT_ID = (process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_CHAT_ID)?.trim() || '';
 const TELEGRAM_API_BASE = process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org';
 
 const cleanErrorText = (text) => {
@@ -70,9 +71,10 @@ export const sendTelegramNotification = async (order) => {
   }
 };
 
-export const sendTelegramAlert = async (text) => {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.warn('[TELEGRAM BYPASS] Telegram Bot Token or Chat ID not set. Skipping alert.');
+export const sendTelegramAlert = async (text, customChatId = null) => {
+  const targetChatId = customChatId || TELEGRAM_ADMIN_CHAT_ID || TELEGRAM_CHAT_ID;
+  if (!TELEGRAM_BOT_TOKEN || !targetChatId) {
+    console.warn('[TELEGRAM BYPASS] Telegram Bot Token or Admin Chat ID not set. Skipping alert.');
     return;
   }
   try {
@@ -82,7 +84,7 @@ export const sendTelegramAlert = async (text) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
+        chat_id: targetChatId,
         text,
         parse_mode: 'Markdown',
       }),
