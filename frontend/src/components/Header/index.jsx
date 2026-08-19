@@ -160,7 +160,7 @@ export default function Header({
       )}
 
       {/* Row 1: Premium Top Bar with Main Navigation Buttons */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-2.5 hidden lg:block">
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-300 text-xs py-2.5 hidden lg:block border-b border-slate-800/60 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <span
@@ -185,13 +185,13 @@ export default function Header({
             <div className="relative group">
               <button
                 type="button"
-                className="flex items-center gap-1 hover:text-white transition-colors py-1"
+                className="flex items-center gap-1 hover:text-white transition-colors py-1 cursor-pointer border-0 bg-transparent"
               >
                 <span>Клиенту</span>
                 <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-white transition-colors" />
               </button>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
-                <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
+                <div className="bg-white text-slate-800 rounded-2xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
                   <Link
                     href="/payment-terms"
                     onClick={() => navigateTo('payment-terms')}
@@ -228,13 +228,13 @@ export default function Header({
             <div className="relative group">
               <button
                 type="button"
-                className="flex items-center gap-1 hover:text-white transition-colors py-1"
+                className="flex items-center gap-1 hover:text-white transition-colors py-1 cursor-pointer border-0 bg-transparent"
               >
                 <span>Информация</span>
                 <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-white transition-colors" />
               </button>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 animate-fade-in">
-                <div className="bg-white text-slate-800 rounded-xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
+                <div className="bg-white text-slate-800 rounded-2xl shadow-xl py-2 w-48 border border-slate-100 overflow-hidden">
                   <Link
                     href="/about"
                     onClick={() => navigateTo('about')}
@@ -296,14 +296,14 @@ export default function Header({
               onClick={() => setIsAccessibilityModalOpen(true)}
               title="Версия для слабовидящих"
               aria-label="Панель настроек доступности"
-              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all mr-1"
+              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all mr-1 cursor-pointer border-0 bg-transparent"
             >
               <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
             <div className="relative group/phone">
               <a
                 href="tel:77077111653"
-                className="flex items-center gap-1.5 font-bold text-white hover:text-blue-500 transition-colors py-1"
+                className="flex items-center gap-1.5 font-bold text-white hover:text-blue-400 transition-colors py-1"
               >
                 <Phone className="h-3.5 w-3.5 text-blue-400 group-hover/phone:animate-pulse" /> 8 (707) 711-16-53
               </a>
@@ -378,8 +378,8 @@ export default function Header({
 
       {/* Row 2: Premium Main Navigation Header */}
       <header className={`z-40 transition-all duration-300 ${isMobileMenuOpen ? 'fixed top-0 inset-x-0 bg-white' : 'sticky top-0'} py-2.5 ${isScrolled
-        ? 'bg-white shadow-md border-b border-gray-200/50'
-        : 'bg-white border-b border-gray-100'
+        ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/80'
+        : 'bg-white border-b border-slate-200/60'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -391,7 +391,7 @@ export default function Header({
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label={isMobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
-                className="p-2 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 hover:bg-gray-100 h-[40px] w-[40px] flex items-center justify-center cursor-pointer"
+                className="p-2 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-200/80 h-[40px] w-[40px] flex items-center justify-center cursor-pointer border-0"
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5.5 w-5.5" />}
               </button>
@@ -404,20 +404,20 @@ export default function Header({
                 onNavigate('home');
                 setIsMegaMenuOpen(false);
               }}
-              className="flex items-center cursor-pointer group shrink-0"
+              className="flex items-center cursor-pointer group shrink-0 transition-transform active:scale-95"
             >
               <img src={logoImg} alt="TORMAG.KZ - Всё для стройки и ремонта" width="125" height="36" fetchpriority="high" className="h-9 w-[125px] object-contain" />
             </Link>
 
             {/* Catalog & Search Block in the center */}
-            <div className="hidden lg:flex items-center flex-grow max-w-5xl ml-4 mr-8 gap-3 catalog-menu-container">
+            <div className="hidden lg:flex items-center flex-grow max-w-5xl ml-4 mr-6 gap-3.5 catalog-menu-container">
               {/* Catalog Button (with mega-menu toggling) */}
               <button
                 type="button"
                 onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shrink-0 h-[42px]"
+                className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:to-slate-700 text-white rounded-2xl text-xs font-extrabold transition-all duration-300 shadow-md shadow-slate-900/15 shrink-0 h-[44px] border border-slate-800 active:scale-95 cursor-pointer"
               >
-                {isMegaMenuOpen ? <X className="h-4 w-4 text-blue-400" /> : <Menu className="h-4 w-4 text-slate-300" />}
+                {isMegaMenuOpen ? <X className="h-4 w-4 text-blue-400 transition-transform rotate-90 duration-200" /> : <Menu className="h-4 w-4 text-blue-400" />}
                 <span>Каталог</span>
               </button>
 
@@ -439,16 +439,16 @@ export default function Header({
             </div>
 
             {/* Right Action Icons with labels below */}
-            <div className="hidden lg:flex items-center gap-7">
+            <div className="hidden lg:flex items-center gap-4 sm:gap-5">
               {/* Cashback Balance */}
               {!isAuthChecking && customer && bonuses && (
                 <Link
                   href="/cashback"
                   onClick={() => onNavigate('cashback')}
-                  className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cashback' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
+                  className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-2xl transition-all duration-200 ${currentPage === 'cashback' ? 'text-blue-600 bg-blue-50/80' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100/80'}`}
                 >
                   <Gift className="h-5 w-5 mb-0.5" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide">
+                  <span className="text-[10px] font-black uppercase tracking-wide">
                     {formatPrice(bonuses.availableBalance ?? 0)}
                   </span>
                 </Link>
@@ -464,10 +464,10 @@ export default function Header({
                 <Link
                   href="/cabinet"
                   onClick={() => onNavigate('cabinet')}
-                  className={`flex flex-col items-center justify-center transition-all ${currentPage === 'cabinet' ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
+                  className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-2xl transition-all duration-200 ${currentPage === 'cabinet' ? 'text-blue-600 bg-blue-50/80' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100/80'}`}
                 >
                   <User className="h-5 w-5 mb-0.5" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide">
+                  <span className="text-[10px] font-black uppercase tracking-wide">
                     Профиль
                   </span>
                 </Link>
@@ -475,10 +475,10 @@ export default function Header({
                 <button
                   type="button"
                   onClick={onOpenAuthLogin}
-                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
+                  className="flex flex-col items-center justify-center p-1.5 px-2.5 rounded-2xl text-slate-600 hover:text-blue-600 hover:bg-slate-100/80 transition-all duration-200 border-0 bg-transparent cursor-pointer"
                 >
                   <User className="h-5 w-5 mb-0.5" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide">Войти</span>
+                  <span className="text-[10px] font-black uppercase tracking-wide">Войти</span>
                 </button>
               )}
 
@@ -486,30 +486,30 @@ export default function Header({
               <Link
                 href="/favorites"
                 onClick={onOpenFavorites}
-                className="relative flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all"
+                className={`relative flex flex-col items-center justify-center p-1.5 px-2.5 rounded-2xl transition-all duration-200 ${currentPage === 'favorites' ? 'text-blue-600 bg-blue-50/80' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100/80'}`}
               >
                 <div className="relative">
                   <Heart className="h-5 w-5 mb-0.5" />
                 </div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wide">Избранное</span>
+                <span className="text-[10px] font-black uppercase tracking-wide">Избранное</span>
               </Link>
 
               {/* Cart */}
               <div className="relative group/cart py-1">
-               <Link
+                <Link
                   href="/cart"
                   onClick={onOpenCart}
-                  className="flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 transition-all cursor-pointer"
+                  className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${currentPage === 'cart' ? 'text-blue-600 bg-blue-50/80' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100/80'}`}
                 >
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="h-5 w-5 mb-0.5" />
                     {cartItemsCount > 0 && (
-                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white">
+                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-700 px-1 text-[9px] font-black text-white shadow-xs">
                         {cartItemsCount > 99 ? '99+' : cartItemsCount}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide">Корзина</span>
+                  <span className="text-[10px] font-black uppercase tracking-wide">Корзина</span>
                 </Link>
 
                 {/* Premium Cart Popover Dropdown */}
@@ -594,11 +594,11 @@ export default function Header({
                 type="button"
                 onClick={onOpenCart}
                 aria-label="Корзина"
-                className="relative flex items-center justify-center p-2 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 hover:bg-gray-100 h-[40px] w-[40px] cursor-pointer"
+                className="relative flex items-center justify-center p-2 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-200/80 h-[40px] w-[40px] cursor-pointer border-0"
               >
                 <ShoppingCart className="h-5 w-5" />
                 {cartItemsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white font-black text-[9px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm font-mono">
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-black text-[9px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-xs font-mono">
                     {cartItemsCount > 99 ? '99+' : cartItemsCount}
                   </span>
                 )}
@@ -606,6 +606,24 @@ export default function Header({
             </div>
           </div>
 
+          {/* Mobile Search Bar (Appears right above the hero banner on mobile) */}
+          <div className="block lg:hidden pt-2 pb-1 border-t border-slate-100/80 mt-2 relative z-50">
+            <SearchAutocomplete
+              localSearchQuery={localSearchQuery}
+              onSearchChange={handleSearchChange}
+              onSearchSubmit={handleSearchSubmit}
+              onFocus={() => setIsSearchFocused(true)}
+              onKeyDown={handleKeyDown}
+              isSearchFocused={isSearchFocused}
+              matchedProducts={matchedProducts}
+              activeSuggestionIndex={activeSuggestionIndex}
+              getPageHref={getPageHref}
+              onNavigate={onNavigate}
+              setLocalSearchQuery={setLocalSearchQuery}
+              setIsSearchFocused={setIsSearchFocused}
+              categories={categories}
+            />
+          </div>
 
           <MegaMenu
             isOpen={isMegaMenuOpen}

@@ -31,7 +31,10 @@ export const getAllCategories = async (req, res) => {
     logger.info('Categories cache miss, fetching from DB');
     const categories = await prisma.category.findMany({
       include: {
-        children: true
+        children: true,
+        _count: {
+          select: { products: true }
+        }
       },
       orderBy: { name: 'asc' }
     });

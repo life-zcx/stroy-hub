@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
-import { ArrowRight, Award, ChevronLeft, ChevronRight, Sparkles, Copy, Check, Gift, ShoppingCart } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Copy, Check, Gift, ShoppingCart } from 'lucide-react';
 
 
 import Link from './Link';
@@ -74,43 +74,22 @@ export default function KineticHeroBanner({
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
-  const hasCustomBanners = banners.length > 0;
-  const totalSlides = hasCustomBanners
-    ? Math.max(1, banners.length + homePromotions.length)
-    : Math.max(1, 3 + homePromotions.length);
+  const totalSlides = banners.length + homePromotions.length;
 
-
-  // Current slide targets
-  let currentBanner = null;
-  let currentPromo = null;
-
-  if (hasCustomBanners) {
-    if (currentSlide < banners.length) {
-      currentBanner = banners[currentSlide];
-    } else {
-      const pIndex = currentSlide - banners.length;
-      if (pIndex < homePromotions.length) {
-        currentPromo = homePromotions[pIndex];
-      }
+  useEffect(() => {
+    if (totalSlides > 0 && currentSlide >= totalSlides) {
+      setCurrentSlide(0);
     }
-  } else {
-    const pIndex = currentSlide - 3;
-    if (currentSlide >= 3 && pIndex < homePromotions.length) {
-      currentPromo = homePromotions[pIndex];
-    }
-  }
-
-  const currentTheme = currentPromo ? currentPromo.theme : (
-    (!hasCustomBanners && currentSlide === 0) ? 'ocean' : (!hasCustomBanners && currentSlide === 1) ? 'royal' : 'emerald'
-  );
-  const glowColors = getThemeGlow(currentTheme);
+  }, [totalSlides, currentSlide]);
 
   const nextSlide = useCallback((isAutoplay = false) => {
+    if (totalSlides === 0) return;
     isAutoplayRef.current = Boolean(isAutoplay);
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
   }, [totalSlides]);
 
   const prevSlide = useCallback((isAutoplay = false) => {
+    if (totalSlides === 0) return;
     isAutoplayRef.current = Boolean(isAutoplay);
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
@@ -120,12 +99,9 @@ export default function KineticHeroBanner({
     setCurrentSlide(idx);
   }, []);
 
-
-
-
   // GSAP Kinetic Entrance Animation trigger ONLY on slide change
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || totalSlides === 0) return;
 
     if (timelineRef.current) timelineRef.current.kill();
     if (progressTimelineRef.current) progressTimelineRef.current.kill();
@@ -181,30 +157,23 @@ export default function KineticHeroBanner({
       );
     }
 
-    // Autoplay progress bar animation
-    if (progressBarRef.current) {
-      const pTl = gsap.timeline();
-      progressTimelineRef.current = pTl;
+    // Autoplay slide transition timer
+    let autoplayTimer = null;
+    if (totalSlides > 1) {
+      autoplayTimer = setTimeout(() => {
+        nextSlide(true);
+      }, 10000);
+    }
 
-      pTl.fromTo(
-        progressBarRef.current,
-        { width: '0%' },
-        {
-          width: '100%',
-          duration: 10,
-          ease: 'none',
-          onComplete: () => {
-            nextSlide(true);
-          }
-        }
-      );
+    if (onSlideChangeRef.current) {
+      onSlideChangeRef.current(currentSlide);
     }
 
     return () => {
       tl.kill();
-      if (progressTimelineRef.current) progressTimelineRef.current.kill();
+      if (autoplayTimer) clearTimeout(autoplayTimer);
     };
-  }, [currentSlide, nextSlide]);
+  }, [currentSlide, nextSlide, totalSlides]);
 
   // Touch handlers
   const handleTouchStart = (e) => {
@@ -226,13 +195,39 @@ export default function KineticHeroBanner({
     }
   };
 
-  if (loading) {
+  if (loading || totalSlides === 0) {
     return (
-      <div className="kinetic-banner-container w-full relative overflow-hidden rounded-[2rem] bg-slate-100 animate-pulse border border-slate-200/80 h-[430px] sm:h-[450px] lg:h-[480px] flex items-center justify-center shadow-xs">
-        <div className="w-full h-full bg-gradient-to-r from-slate-100 via-slate-200/50 to-slate-100 animate-pulse" />
+      <div className="kinetic-banner-container w-full relative overflow-hidden rounded-[2rem] bg-slate-100/90 border border-slate-200/80 h-[430px] sm:h-[450px] lg:h-[480px] flex items-center shadow-xs select-none">
+        <div className="w-full h-full bg-gradient-to-r from-slate-100 via-slate-200/60 to-slate-100 animate-pulse flex items-center px-8 sm:px-12">
+          <div className="space-y-4 max-w-lg w-full">
+            <div className="h-10 sm:h-12 bg-slate-200/80 rounded-2xl w-3/4 animate-pulse" />
+            <div className="h-5 sm:h-6 bg-slate-200/60 rounded-xl w-1/2 animate-pulse" />
+            <div className="h-4 bg-slate-200/40 rounded-lg w-5/6 animate-pulse" />
+            <div className="flex gap-3 pt-4">
+              <div className="h-12 bg-slate-200/80 rounded-2xl w-36 animate-pulse" />
+              <div className="h-12 bg-slate-200/60 rounded-2xl w-36 animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
+
+  // Current slide targets
+  let currentBanner = null;
+  let currentPromo = null;
+
+  if (currentSlide < banners.length) {
+    currentBanner = banners[currentSlide];
+  } else {
+    const pIndex = currentSlide - banners.length;
+    if (pIndex < homePromotions.length) {
+      currentPromo = homePromotions[pIndex];
+    }
+  }
+
+  const currentTheme = currentPromo?.theme || 'ocean';
+  const glowColors = getThemeGlow(currentTheme);
 
   return (
 
@@ -252,186 +247,10 @@ export default function KineticHeroBanner({
         style={{ backgroundColor: glowColors.secondary }}
       />
 
-      {/* Progress Bar for Autoplay */}
-      <div className="kinetic-progress-track">
-        <div ref={progressBarRef} className="kinetic-progress-bar" />
-      </div>
-
       {/* Main Slide Content Container */}
       <div ref={contentRef} className="w-full h-full relative z-10 flex items-center">
 
-        {/* ── SLIDE 0: MAIN USP (FALLBACK ONLY) ── */}
-        {!hasCustomBanners && currentSlide === 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
-            <div className="lg:col-span-12 flex flex-col justify-between text-left h-full w-full">
-              <div className="space-y-4">
-                <h1 ref={titleRef} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight font-outfit">
-                  Всё для стройки <br />
-                  <span className="text-blue-600">
-                    и ремонта
-                  </span>
-                </h1>
-
-                <div className="space-y-2.5">
-                  <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg font-bold text-slate-800 leading-snug font-outfit border-l-4 border-blue-700 pl-4">
-                    Прямые поставки строительных материалов <span className="text-blue-700 font-black">от ведущих дистрибьюторов</span>
-                  </p>
-
-                  <p ref={textRef} className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium max-w-xl">
-                    Комплексное снабжение строительных объектов, гарантированное качество и прозрачные оптовые условия для вашего бизнеса.
-                  </p>
-                </div>
-              </div>
-
-              <div ref={ctaRef} className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-auto">
-                <Link
-                  href={getPageHref('catalog')}
-                  onClick={() => onNavigate('catalog')}
-                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-colors duration-300 shadow-md flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer border-0"
-                >
-                  <span>Перейти в каталог</span>
-                  <ArrowRight className="h-4.5 w-4.5" />
-                </Link>
-                <Link
-                  href={getPageHref('estimate')}
-                  onClick={() => onNavigate('estimate')}
-                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-bold rounded-2xl transition-colors duration-200 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer shadow-xs"
-                >
-                  <span>Заказ по смете</span>
-                  <ArrowRight className="h-4.5 w-4.5 text-slate-600" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── SLIDE 1: LOYALTY INFO (FALLBACK ONLY) ── */}
-        {!hasCustomBanners && currentSlide === 1 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
-            {/* Left Column */}
-            <div className="lg:col-span-6 flex flex-col justify-between text-left h-full w-full pr-2">
-              <div className="space-y-4">
-                <h1 ref={titleRef} className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight font-outfit">
-                  Программа лояльности <br />
-                  <span className="text-blue-600">
-                    TORMAG Club
-                  </span>
-                </h1>
-
-                <div className="space-y-2.5">
-                  <p ref={subtitleRef} className="text-sm sm:text-base font-bold text-slate-800 leading-snug font-outfit border-l-4 border-blue-600 pl-4">
-                    Накапливайте кешбэк до 5% и оплачивайте бонусами до 100% заказов
-                  </p>
-
-                  <p ref={textRef} className="text-slate-500 text-xs sm:text-sm leading-relaxed font-normal max-w-md">
-                    Статус рассчитывается автоматически на основе общей суммы ваших выполненных заказов за календарный год.
-                  </p>
-                </div>
-              </div>
-
-              <div ref={ctaRef} className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-auto">
-                <Link
-                  href={getPageHref('cashback')}
-                  onClick={() => onNavigate('cashback')}
-                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-colors duration-300 shadow-md flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer border-0"
-                >
-                  <span>Узнать подробнее</span>
-                  <ArrowRight className="h-4.5 w-4.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Column: Clean Loyalty Tier Cards */}
-            <div ref={visualCardRef} className="hidden lg:flex relative lg:col-span-6 space-y-3 z-10 w-full flex-col justify-center pl-2">
-              
-              {/* Tier 1: Участник */}
-              <div className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm text-left">
-                <div className="flex items-center justify-between mb-1.5">
-                  <h2 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
-                    Уровень «Участник»
-                  </h2>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-lg shrink-0">
-                    Базовый
-                  </span>
-                </div>
-                <p className="text-slate-500 text-xs font-medium">
-                  Кешбэк <span className="text-blue-600 font-extrabold">3%</span> • Оплата бонусами до <span className="text-blue-600 font-extrabold">50%</span>
-                </p>
-              </div>
-
-              {/* Tier 2: Резидент */}
-              <div className="bg-gradient-to-r from-blue-50/70 via-white to-white border border-blue-200/80 border-l-4 border-l-blue-600 p-4 rounded-2xl shadow-sm text-left">
-                <div className="flex items-center justify-between mb-1.5">
-                  <h2 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
-                    Уровень «Резидент»
-                  </h2>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 bg-blue-100/90 text-blue-700 rounded-lg shrink-0">
-                    от 500 тыс. ₸
-                  </span>
-                </div>
-                <p className="text-slate-600 text-xs font-medium">
-                  Кешбэк <span className="text-blue-600 font-extrabold">4%</span> • Оплата бонусами до <span className="text-blue-600 font-extrabold">75%</span>
-                </p>
-              </div>
-
-              {/* Tier 3: Партнёр */}
-              <div className="bg-slate-900 text-white border border-slate-800 p-4 rounded-2xl shadow-md text-left">
-                <div className="flex items-center justify-between mb-1.5">
-                  <h2 className="font-extrabold text-white text-xs sm:text-sm tracking-tight">
-                    Уровень «Партнёр»
-                  </h2>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 bg-blue-600 text-white rounded-lg shrink-0">
-                    от 2 млн. ₸
-                  </span>
-                </div>
-                <p className="text-slate-300 text-xs font-medium">
-                  Кешбэк <span className="text-blue-400 font-extrabold">5%</span> • Оплата бонусами до <span className="text-blue-400 font-extrabold">100%</span>
-                </p>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* ── SLIDE 2: REVIEW PROMO (FALLBACK ONLY) ── */}
-        {!hasCustomBanners && currentSlide === 2 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full h-full px-6 sm:px-10 lg:px-12 py-7 sm:py-9 pb-14 sm:pb-12">
-            <div className="lg:col-span-12 flex flex-col justify-between text-left h-full w-full">
-              <div className="space-y-4">
-                <h1 ref={titleRef} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] tracking-tight font-outfit">
-                  Скидка 10% <br />
-                  <span className="text-blue-600">
-                    за ваш отзыв!
-                  </span>
-                </h1>
-
-                <div className="space-y-3">
-                  <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg font-bold text-slate-800 leading-snug font-outfit border-l-4 border-blue-600 pl-4">
-                    Оцените ваши прошлые покупки и сэкономьте на следующих заказах
-                  </p>
-
-                  <p ref={textRef} className="text-slate-500 text-xs sm:text-sm leading-relaxed font-normal max-w-xl">
-                    Помогите другим прорабам и закупщикам сделать правильный выбор! Напишите честный отзыв к любому купленному товару, и мы мгновенно вышлем вам промокод.
-                  </p>
-                </div>
-              </div>
-
-              <div ref={ctaRef} className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-auto">
-                <Link
-                  href={getPageHref('orders')}
-                  onClick={() => onNavigate('orders')}
-                  className="w-full sm:w-auto justify-center px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-colors duration-300 shadow-md flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer border-0"
-                >
-                  <span>Оценить покупки</span>
-                  <Award className="h-4.5 w-4.5 text-white" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-        {/* ── SLIDE 3+: DYNAMIC UPLOADED BANNERS (FROM ADMIN) ── */}
+        {/* ── DYNAMIC UPLOADED BANNERS (FROM ADMIN) ── */}
         {currentBanner && (() => {
           const targetUrl = currentBanner.linkUrl || '';
           const isExternal = targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
@@ -523,13 +342,13 @@ export default function KineticHeroBanner({
                     )}
 
                     {bannerButtons.length > 0 && (
-                      <div ref={ctaRef} className="pt-2 flex flex-wrap items-center gap-3">
+                      <div ref={ctaRef} className="pt-2 flex flex-wrap items-center gap-2.5">
                         {bannerButtons.map((btn, idx) => (
                           <button
                             key={btn.id || idx}
                             type="button"
                             onClick={(e) => handleButtonClick(btn, e)}
-                            className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider font-extrabold transition-all duration-300 active:scale-95 cursor-pointer border-0 ${renderButtonClass(btn.variant)}`}
+                            className={`inline-flex items-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs uppercase tracking-wider font-extrabold transition-all duration-300 active:scale-95 cursor-pointer border-0 ${renderButtonClass(btn.variant)}`}
                           >
                             <span>{btn.text}</span>
                             {renderButtonIcon(btn.icon)}
@@ -562,7 +381,7 @@ export default function KineticHeroBanner({
         })()}
 
 
-        {/* ── SLIDE 3+: DYNAMIC PROMOTIONS ── */}
+        {/* ── DYNAMIC PROMOTIONS ── */}
         {currentPromo && (() => {
           const bannerSrc = currentPromo.imageHome || currentPromo.imageCard || currentPromo.image;
           if (bannerSrc) {
@@ -588,10 +407,10 @@ export default function KineticHeroBanner({
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
 
                 {/* CTA Button placed at bottom-left */}
-                <div ref={ctaRef} className="absolute bottom-12 left-6 sm:bottom-8 sm:left-10 z-20">
-                  <span className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-900/40 text-xs uppercase tracking-wider transition-colors duration-300">
+                <div ref={ctaRef} className="absolute bottom-6 left-5 sm:bottom-8 sm:left-10 z-20">
+                  <span className="inline-flex items-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg shadow-blue-900/40 text-[10px] sm:text-xs uppercase tracking-wider transition-colors duration-300">
                     <span>Открыть акцию</span>
-                    <ArrowRight className="h-4.5 w-4.5" />
+                    <ArrowRight className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                   </span>
                 </div>
               </Link>
@@ -617,10 +436,10 @@ export default function KineticHeroBanner({
                   <Link
                     href={getPageHref('promotions', currentPromo.id)}
                     onClick={() => onNavigate('promotions', currentPromo.id)}
-                    className="w-full sm:w-auto justify-center px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-colors duration-300 shadow-md flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer border-0"
+                    className="w-full sm:w-auto justify-center px-4 py-2.5 sm:px-6 sm:py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl sm:rounded-2xl transition-colors duration-300 shadow-md flex items-center gap-1.5 text-[10px] sm:text-xs uppercase tracking-wider cursor-pointer border-0"
                   >
                     <span>Открыть акцию</span>
-                    <ArrowRight className="h-4.5 w-4.5" />
+                    <ArrowRight className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                   </Link>
                 </div>
               </div>
@@ -689,30 +508,6 @@ export default function KineticHeroBanner({
             <ChevronRight className="h-4 w-4" />
           </button>
         </>
-      )}
-
-      {/* Navigation Dots (Only if more than 1 slide) */}
-      {totalSlides > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-          {Array.from({ length: totalSlides }).map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => goToSlide(idx)}
-              className="w-8 h-8 flex items-center justify-center transition-all duration-300 cursor-pointer border-0 bg-transparent p-0"
-              title={`Слайд ${idx + 1}`}
-              aria-label={`Слайд ${idx + 1}`}
-            >
-              <span
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  currentSlide === idx
-                    ? 'w-7 bg-slate-900'
-                    : 'w-2 bg-slate-900/35 hover:bg-slate-900/60'
-                }`}
-              />
-            </button>
-          ))}
-        </div>
       )}
 
     </div>

@@ -29,6 +29,7 @@ export default function Storefront({
   selectedCategory,
   setSelectedCategory,
   searchQuery,
+  setSearchQuery,
   sortBy,
   setSortBy,
   priceRange,
@@ -140,6 +141,9 @@ export default function Storefront({
     setOnlyBulk(false);
     setSelectedSuppliers([]);
     setSelectedCategory('all');
+    if (typeof setSearchQuery === 'function') {
+      setSearchQuery('');
+    }
   };
 
   const rootCategories = categories.filter(c => !c.parentId);
@@ -188,27 +192,28 @@ export default function Storefront({
                 <Link
                   href={getPageHref('catalog', null, cat.slug)}
                   onClick={() => { setSelectedCategory(cat.slug); setIsMobileFiltersOpen(false); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left ${isActive
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left min-w-0 ${isActive
                       ? 'bg-slate-100 text-slate-900 font-bold border border-slate-200/80'
                       : 'text-slate-700 hover:bg-slate-50'
                     }`}
                 >
-                  <span>{cat.name}</span>
-                  <ChevronRight className={`h-3.5 w-3.5 transition-transform text-slate-400 ${isActive ? 'rotate-90 text-slate-800' : ''}`} />
+                  <span className="truncate pr-1" title={cat.name}>{cat.name}</span>
+                  <ChevronRight className={`h-3.5 w-3.5 transition-transform text-slate-400 shrink-0 ${isActive ? 'rotate-90 text-slate-800' : ''}`} />
                 </Link>
 
                 {/* Subcategories */}
                 {isActive && (
-                  <div className="pl-3.5 pb-1 space-y-0.5 flex flex-col border-l border-slate-200 ml-3 my-1">
+                  <div className="pl-3.5 pb-1 space-y-0.5 flex flex-col border-l border-slate-200 ml-3 my-1 overflow-hidden">
                     {categories.filter(c => c.parentId === cat.id).map(sub => (
                       <Link
                         key={sub.id}
                         href={getPageHref('catalog', null, sub.slug)}
                         onClick={() => { setSelectedCategory(sub.slug); setIsMobileFiltersOpen(false); }}
-                        className={`text-[11px] font-semibold py-1 px-2 rounded-lg text-left transition-colors ${selectedCategory === sub.slug
+                        className={`text-[11px] font-semibold py-1 px-2 rounded-lg text-left transition-colors truncate block w-full ${selectedCategory === sub.slug
                             ? 'text-blue-600 font-bold bg-blue-50/50'
                             : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                           }`}
+                        title={sub.name}
                       >
                         {sub.name}
                       </Link>
@@ -345,103 +350,135 @@ export default function Storefront({
       </aside>
 
       {/* ═══ MAIN CONTENT ═══ */}
-      <div className="flex-grow space-y-3">
-        
+      <div className="flex-grow space-y-3 min-w-0">
+
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1 text-xs text-slate-400 text-left">
-          <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-slate-600 cursor-pointer">Главная</Link>
-          <ChevronRight className="h-3 w-3 shrink-0" />
-          <Link href={getPageHref('catalog')} onClick={() => setSelectedCategory('all')} className="hover:text-slate-600 cursor-pointer">Каталог</Link>
-          {currentCategoryDetail?.breadcrumbs?.map((b, i) => (
-            <React.Fragment key={b.id}>
-              <ChevronRight className="h-3 w-3 shrink-0" />
-              <span className={i === (currentCategoryDetail.breadcrumbs.length - 1) ? 'text-slate-700 font-semibold truncate max-w-[120px]' : 'hover:text-slate-600 cursor-pointer'}>
-                {b.name}
-              </span>
-            </React.Fragment>
-          ))}
+        <nav className="flex items-center gap-1.5 text-xs text-slate-400 text-left flex-wrap mb-1.5 font-medium min-w-0">
+          <Link href={getPageHref('home')} onClick={() => onNavigate?.('home')} className="hover:text-slate-700 transition-colors shrink-0">Главная</Link>
+          <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+          {selectedCategory === 'all' && !searchQuery ? (
+            <span className="text-slate-400 font-normal shrink-0">Каталог</span>
+          ) : (
+            <>
+              <Link href={getPageHref('catalog')} onClick={() => { setSelectedCategory('all'); setSearchQuery?.(''); }} className="hover:text-slate-700 transition-colors shrink-0">Каталог</Link>
+              {searchQuery ? (
+                <>
+                  <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+                  <span className="text-slate-500 font-normal truncate max-w-[140px] sm:max-w-[200px]">Поиск: «{searchQuery}»</span>
+                </>
+              ) : (
+                currentCategoryDetail?.breadcrumbs?.map((b, i) => (
+                  <React.Fragment key={b.id}>
+                    <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+                    {i === (currentCategoryDetail.breadcrumbs.length - 1) ? (
+                      <span className="text-slate-400 font-normal truncate max-w-[140px] sm:max-w-[160px]">{b.name}</span>
+                    ) : (
+                      <Link href={getPageHref('catalog', null, b.slug)} onClick={() => setSelectedCategory(b.slug)} className="hover:text-slate-700 transition-colors truncate max-w-[110px] sm:max-w-[150px]">
+                        {b.name}
+                      </Link>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </>
+          )}
         </nav>
 
         {/* Page Title */}
-        <h1 className="text-[22px] font-bold text-slate-900 leading-tight text-left -mt-1">
-          {currentCategoryDetail?.name || 'Все товары'}
+        <h1 className="text-2xl sm:text-[26px] font-extrabold text-slate-900 leading-tight text-left mb-5 tracking-tight break-words [word-break:break-word] overflow-hidden">
+          {searchQuery ? `Результаты поиска по запросу «${searchQuery}»` : (currentCategoryDetail?.name || 'Все товары')}
         </h1>
 
-        {/* Category image tile grid — сразу под заголовком */}
-        {loading && categories.length === 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl bg-slate-200 animate-pulse" />
-            ))}
-          </div>
-        ) : (currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
-            {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map((cat) => {
-              const imageSrc = cat.image || cat.bg;
-              const optimizedSrc = imageSrc ? getIpxImageUrl(imageSrc, '400x300') : null;
+        {/* Category image tile grid — показываем только если нет поискового запроса */}
+        {!searchQuery && (
+          loading && categories.length === 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-full h-52 sm:h-56 lg:h-60 rounded-2xl sm:rounded-3xl bg-slate-200/70 animate-pulse" />
+              ))}
+            </div>
+          ) : (currentCategoryDetail?.children?.length > 0 || (selectedCategory === 'all' && rootCategories.length > 0)) && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
+              {(currentCategoryDetail?.children?.length > 0 ? currentCategoryDetail.children : rootCategories).map((cat) => {
+                const catProducts = products.filter(p => p.category === cat.slug || p.categoryId === cat.id || p.categoryRelation?.slug === cat.slug);
+                const count = cat._count?.products !== undefined ? cat._count.products : (catProducts.length || null);
+                
+                // Formatter for count with Russian declension (e.g. "2 товаров", "406 520 товаров")
+                const formatCount = (num) => {
+                  if (num === null || num === undefined) return 'Каталог';
+                  const n = Number(num);
+                  const mod10 = n % 10;
+                  const mod100 = n % 100;
+                  let word = 'товаров';
+                  if (mod100 >= 11 && mod100 <= 19) word = 'товаров';
+                  else if (mod10 === 1) word = 'товар';
+                  else if (mod10 >= 2 && mod10 <= 4) word = 'товара';
+                  return `${n.toLocaleString('ru-RU')} ${word}`;
+                };
 
-              return (
-                <Link
-                  key={cat.id}
-                  href={getPageHref('catalog', null, cat.slug)}
-                  onClick={() => setSelectedCategory(cat.slug)}
-                  className="relative w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
-                >
-                  {optimizedSrc ? (
-                    <>
-                      <img
-                        src={optimizedSrc}
-                        alt={cat.name}
-                        width="400"
-                        height="300"
-                        decoding="async"
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          const fallbackEl = e.target.parentElement?.querySelector('.category-fallback-box');
-                          if (fallbackEl) fallbackEl.classList.remove('hidden');
-                        }}
-                      />
-                      {/* Dark overlay for clean text contrast */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
-                    </>
-                  ) : null}
+                const firstProdImg = catProducts[0]?.image || catProducts[0]?.images?.[0];
+                const imageSrc = cat.image || cat.bg || firstProdImg;
+                const optimizedSrc = imageSrc ? getIpxImageUrl(imageSrc, '300x300') : null;
 
-                  {/* Clean Light Fallback Card (when image is missing) */}
-                  <div className={`category-fallback-box ${optimizedSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-4 sm:p-5 flex flex-col justify-end text-left`}>
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center mb-auto">
-                      <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
+                return (
+                  <Link
+                    key={cat.id}
+                    href={getPageHref('catalog', null, cat.slug)}
+                    onClick={() => setSelectedCategory(cat.slug)}
+                    className="bg-[#f3f4f6] hover:bg-[#eaecef] rounded-2xl sm:rounded-3xl p-4 sm:p-4.5 flex flex-col justify-between h-[200px] sm:h-[220px] lg:h-[235px] text-left transition-all duration-200 cursor-pointer group relative overflow-hidden"
+                  >
+                    <div className="space-y-0.5 z-10 text-left">
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 break-words [word-break:break-word] overflow-hidden" title={cat.name}>
+                        {cat.name}
+                      </h3>
+                      <span className="text-[11px] sm:text-xs font-normal text-slate-400 block mt-0.5">
+                        {formatCount(count)}
+                      </span>
                     </div>
-                  </div>
 
-                  {/* Category Title directly overlayed at the bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-left z-10">
-                    <h3 className={`text-sm sm:text-base md:text-xl font-extrabold leading-tight font-outfit ${optimizedSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
-                      {cat.name}
-                    </h3>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                    <div className="w-full h-28 sm:h-32 lg:h-36 flex items-center justify-center mt-auto p-1 overflow-hidden">
+                      {optimizedSrc ? (
+                        <img
+                          src={optimizedSrc}
+                          alt={cat.name}
+                          className="max-h-full max-w-full object-contain mix-blend-multiply"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const fallbackEl = e.target.parentElement?.querySelector('.cat-fallback');
+                            if (fallbackEl) fallbackEl.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`cat-fallback ${optimizedSrc ? 'hidden' : ''} w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border border-slate-200/60 shadow-2xs flex items-center justify-center text-slate-400`}>
+                        <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400 stroke-[1.6]" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )
         )}
 
         {/* Found count + view toggle */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">Найдено {total || processedProducts.length} товаров</p>
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 h-8">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-slate-500 font-medium">Найдено {total || processedProducts.length} товаров</p>
+          <div className="flex items-center bg-[#f3f4f6] p-0.5 rounded-xl border border-slate-200/70 h-9 gap-0.5">
             <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-all flex items-center justify-center cursor-pointer ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Сетка"
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
+              <LayoutGrid className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('list')}
-              className={`px-2 h-full rounded-md transition-all flex items-center justify-center ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-all flex items-center justify-center cursor-pointer ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Список"
             >
-              <List className="h-3.5 w-3.5" />
+              <List className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -474,8 +511,16 @@ export default function Storefront({
         </div>
 
         {/* Active filter chips */}
-        {activeFilterCount > 0 && (
+        {(activeFilterCount > 0 || searchQuery) && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide text-left">
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-full text-xs font-semibold whitespace-nowrap shrink-0 shadow-xs">
+                Поиск: «{searchQuery}»
+                <button onClick={() => setSearchQuery?.('')} className="cursor-pointer ml-0.5 hover:text-slate-200">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
             {selectedSuppliers.map(s => (
               <span key={s} className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
                 Бренд: {s}
@@ -505,7 +550,7 @@ export default function Storefront({
               </span>
             )}
             <button
-              onClick={resetFilters}
+              onClick={() => { resetFilters(); setSearchQuery?.(''); }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-600 cursor-pointer whitespace-nowrap shrink-0"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -514,33 +559,47 @@ export default function Storefront({
           </div>
         )}
 
-
-
-
         {/* ═══ PRODUCT GRID ═══ */}
         {loading && products.length === 0 ? (
-          <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 lg:gap-5">
             <ProductSkeleton count={12} />
           </div>
         ) : processedProducts.length === 0 ? (
-          <div className="text-center py-24 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-5">
-            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-inner">
-               <Search className="h-8 w-8 text-slate-200" />
+          <div className="text-center py-20 bg-slate-50/60 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-4 my-4">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xs border border-slate-200/60">
+              <Search className="h-7 w-7 text-slate-300" />
             </div>
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-bold text-slate-900">Ничего не нашли</h3>
-              <p className="text-slate-400 text-xs max-w-xs mx-auto">Попробуйте изменить параметры фильтра или сбросить их</p>
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-slate-900">
+                {searchQuery ? `Ничего не найдено по запросу «${searchQuery}»` : 'Ничего не нашли'}
+              </h3>
+              <p className="text-slate-400 text-xs max-w-sm mx-auto font-medium">
+                {searchQuery
+                  ? 'Проверьте правильность написания или попробуйте сформулировать запрос иначе'
+                  : 'Попробуйте изменить параметры фильтра или сбросить их'}
+              </p>
             </div>
-            <button
-              onClick={() => { resetFilters(); setSelectedCategory('all'); }}
-              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all"
-            >
-              Сбросить фильтры
-            </button>
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => { setSearchQuery?.(''); resetFilters(); }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer border-0 active:scale-95"
+              >
+                Сбросить поиск и показать все товары
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { resetFilters(); setSelectedCategory('all'); }}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border-0 active:scale-95"
+              >
+                Сбросить фильтры
+              </button>
+            )}
           </div>
         ) : viewMode === 'grid' ? (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:gap-5 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 lg:gap-5">
               {processedProducts.map(product => (
                 <ProductCard
                   key={product.id}

@@ -283,45 +283,59 @@ export default function Home({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3.5 sm:gap-4">
           {(rootCategories.length > 0 ? rootCategories : categoriesList).map((cat) => {
-            const imageSrc = cat.image || cat.bg;
+            const catProducts = (popularProducts || []).filter(p => p.category === cat.slug || p.categoryId === cat.id || p.categoryRelation?.slug === cat.slug);
+            const count = cat._count?.products !== undefined ? cat._count.products : (catProducts.length || null);
+            
+            const formatCount = (num) => {
+              if (num === null || num === undefined) return 'Каталог';
+              const n = Number(num);
+              const mod10 = n % 10;
+              const mod100 = n % 100;
+              let word = 'товаров';
+              if (mod100 >= 11 && mod100 <= 19) word = 'товаров';
+              else if (mod10 === 1) word = 'товар';
+              else if (mod10 >= 2 && mod10 <= 4) word = 'товара';
+              return `${n.toLocaleString('ru-RU')} ${word}`;
+            };
+
+            const firstProdImg = catProducts[0]?.image || catProducts[0]?.images?.[0];
+            const imageSrc = cat.image || cat.bg || firstProdImg;
+            const optimizedSrc = imageSrc ? getIpxImageUrl(imageSrc, '300x300') : null;
+
             return (
               <Link
                 key={cat.id || cat.slug}
                 href={getPageHref('catalog', null, cat.slug || cat.id)}
                 onClick={() => setSelectedCategory(cat.slug || cat.id)}
-                className="relative w-full h-32 sm:h-44 md:h-52 lg:h-56 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.99] cursor-pointer block"
+                className="bg-[#f3f4f6] hover:bg-[#eaecef] rounded-2xl sm:rounded-3xl p-4 sm:p-4.5 flex flex-col justify-between h-[200px] sm:h-[220px] lg:h-[235px] text-left transition-all duration-200 cursor-pointer group relative overflow-hidden"
               >
-                {imageSrc ? (
-                  <>
+                <div className="space-y-0.5 z-10 text-left">
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 break-words [word-break:break-word] overflow-hidden" title={cat.name}>
+                    {cat.name}
+                  </h3>
+                  <span className="text-[11px] sm:text-xs font-normal text-slate-400 block mt-0.5">
+                    {formatCount(count)}
+                  </span>
+                </div>
+
+                <div className="w-full h-28 sm:h-32 lg:h-36 flex items-center justify-center mt-auto p-1 overflow-hidden">
+                  {optimizedSrc ? (
                     <img
-                      src={getIpxImageUrl(imageSrc, '400x300')}
+                      src={optimizedSrc}
                       alt={cat.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
+                      className="max-h-full max-w-full object-contain mix-blend-multiply"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        const fallbackEl = e.target.parentElement?.querySelector('.category-fallback-box');
+                        const fallbackEl = e.target.parentElement?.querySelector('.cat-fallback');
                         if (fallbackEl) fallbackEl.classList.remove('hidden');
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent" />
-                  </>
-                ) : null}
-
-                {/* Clean Light Fallback Card (when image is missing) */}
-                <div className={`category-fallback-box ${imageSrc ? 'hidden' : ''} absolute inset-0 bg-slate-100 p-3 sm:p-4 flex flex-col justify-end text-left`}>
-                  <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center mb-auto">
-                    <LayoutGrid className="h-5 w-5 text-slate-400" />
+                  ) : null}
+                  <div className={`cat-fallback ${optimizedSrc ? 'hidden' : ''} w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border border-slate-200/60 shadow-2xs flex items-center justify-center text-slate-400`}>
+                    <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400 stroke-[1.6]" />
                   </div>
-                </div>
-
-                {/* Category Title directly overlayed at the bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6 text-left z-10">
-                  <h3 className={`text-sm sm:text-base md:text-xl font-extrabold leading-tight font-outfit ${imageSrc ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
-                    {cat.name}
-                  </h3>
                 </div>
               </Link>
             );
@@ -372,51 +386,59 @@ export default function Home({
 
       {/* 🛡️ KEY STRENGTHS (ПРЕИМУЩЕСТВА) */}
       <section className="space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Почему выбирают TORMAG?</h2>
-          <p className="text-slate-700 font-bold text-sm">Мы меняем подход к закупке строительных материалов в Казахстане</p>
+        <div className="text-left space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Почему стоит заказать материалы именно у нас?</h2>
+          <p className="text-slate-600 font-semibold text-sm">Мы меняем подход к закупке строительных материалов в Казахстане</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
-            <div className="glossy-icon-shell glossy-icon-emerald">
-              <Award className="h-6 w-6" strokeWidth={2.5} />
+          <div className="bg-slate-50/90 hover:bg-blue-50/60 border border-slate-200/90 hover:border-blue-200 p-7 sm:p-8 rounded-[2rem] text-left space-y-4 transition-all duration-300 shadow-2xs hover:shadow-md group">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs transition-colors">
+              <Award className="h-6.5 w-6.5 text-blue-600" strokeWidth={1.8} />
             </div>
-            <h3 className="font-extrabold text-slate-950 text-base">Цены дистрибьюторов</h3>
-            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
-              Вы заказываете товары напрямую с официальных региональных складов брендов, исключая наценки розничных магазинов.
-            </p>
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-outfit group-hover:text-blue-600 transition-colors">Цены дистрибьюторов</h3>
+              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium">
+                Прямые поставки — вы заказываете товары напрямую с официальных региональных складов брендов, исключая наценки розничных магазинов.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
-            <div className="glossy-icon-shell glossy-icon-blue">
-              <ShieldCheck className="h-6 w-6" strokeWidth={2.5} />
+          <div className="bg-slate-50/90 hover:bg-blue-50/60 border border-slate-200/90 hover:border-blue-200 p-7 sm:p-8 rounded-[2rem] text-left space-y-4 transition-all duration-300 shadow-2xs hover:shadow-md group">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs transition-colors">
+              <ShieldCheck className="h-6.5 w-6.5 text-blue-600" strokeWidth={1.8} />
             </div>
-            <h3 className="font-extrabold text-slate-950 text-base">100% Гарантия бренда</h3>
-            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
-              Все поставщики проходят жесткую модерацию. Предоставляем сертификаты соответствия на каждую партию товара.
-            </p>
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-outfit group-hover:text-blue-600 transition-colors">100% Гарантия бренда</h3>
+              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium">
+                Гарантия качества — все поставщики проходят жесткую модерацию. Предоставляем сертификаты соответствия на каждую партию.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
-            <div className="glossy-icon-shell glossy-icon-violet">
-              <Truck className="h-6 w-6" strokeWidth={2.5} />
+          <div className="bg-slate-50/90 hover:bg-blue-50/60 border border-slate-200/90 hover:border-blue-200 p-7 sm:p-8 rounded-[2rem] text-left space-y-4 transition-all duration-300 shadow-2xs hover:shadow-md group">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs transition-colors">
+              <Truck className="h-6.5 w-6.5 text-blue-600" strokeWidth={1.8} />
             </div>
-            <h3 className="font-extrabold text-slate-950 text-base">Быстрая доставка</h3>
-            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
-              Собственная курьерская сеть и грузовой транспорт гарантируют доставку в течение 24 часов с момента подтверждения.
-            </p>
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-outfit group-hover:text-blue-600 transition-colors">Быстрая доставка</h3>
+              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium">
+                Собственная курьерская сеть и грузовой транспорт гарантируют оперативную доставку по Алматы и области.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-350 p-6 rounded-3xl shadow-sm text-left space-y-4 hover:shadow-md transition-shadow">
-            <div className="glossy-icon-shell glossy-icon-green">
-              <Building2 className="h-6 w-6" strokeWidth={2.5} />
+          <div className="bg-slate-50/90 hover:bg-blue-50/60 border border-slate-200/90 hover:border-blue-200 p-7 sm:p-8 rounded-[2rem] text-left space-y-4 transition-all duration-300 shadow-2xs hover:shadow-md group">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs transition-colors">
+              <Building2 className="h-6.5 w-6.5 text-blue-600" strokeWidth={1.8} />
             </div>
-            <h3 className="font-extrabold text-slate-950 text-base">Удобно для бизнеса</h3>
-            <p className="text-slate-800 text-xs font-semibold leading-relaxed">
-              Полный пакет закрывающих документов для ТОО и ИП. Работаем с НДС, предоставляем отсрочку платежа постоянным клиентам.
-            </p>
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-outfit group-hover:text-blue-600 transition-colors">Удобно для бизнеса</h3>
+              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium">
+                Полный пакет закрывающих документов для ТОО и ИП. Работаем с НДС, предоставляем отсрочку платежа постоянным клиентам.
+              </p>
+            </div>
           </div>
 
         </div>
