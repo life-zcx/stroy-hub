@@ -76,7 +76,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
     <div className="h-full flex flex-col font-sans text-slate-800 text-left overflow-hidden">
 
       {/* Top Header Row with Breadcrumbs & Actions (Desktop only) */}
-      <div className="hidden sm:flex items-center justify-between gap-4 shrink-0 pt-5 pb-2">
+      <div className="hidden sm:flex items-center justify-between gap-4 shrink-0 pt-2 pb-2">
         <nav className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
           <Link
             href={getPageHref('home')}
@@ -111,14 +111,14 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
         </div>
       </div>
 
-      {/* Main Grid Layout - Fixed Viewport Height */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-1 overflow-hidden h-full lg:h-[calc(100vh-11rem)] lg:min-h-[580px] lg:max-h-[820px] pb-16 lg:pb-0">
+      {/* Main Grid Layout - Dynamic Flexible Viewport Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch flex-1 min-h-0 overflow-hidden pb-16 lg:pb-0">
 
         {/* Left Sidebar: Saved Chat Sessions & Quick Prompts */}
-        <div className="hidden lg:flex lg:col-span-4 flex-col gap-3 overflow-hidden">
+        <div className="hidden lg:flex lg:col-span-4 flex-col gap-3 overflow-hidden min-h-0">
 
           {/* Chat Sessions List */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 shrink-0">
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-2 shrink-0">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm text-slate-900">
                 Мои диалоги
@@ -133,12 +133,12 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
               </button>
             </div>
 
-            <div className="space-y-1.5 max-h-[140px] overflow-y-auto custom-scrollbar">
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
               {sessions.map((sess) => (
                 <div
                   key={sess.id}
                   onClick={() => setActiveSessionId(sess.id)}
-                  className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${sess.id === activeSessionId
+                  className={`w-full text-left p-2 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border ${sess.id === activeSessionId
                     ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-sm'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-medium'
                     }`}
@@ -163,19 +163,19 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
           </div>
 
           {/* Quick Prompts List */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5 flex-1 overflow-y-auto custom-scrollbar">
+          <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <h3 className="font-bold text-sm text-slate-900">
               Частые вопросы
             </h3>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {QUICK_PROMPTS.map((prompt, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSendMessage(prompt.text)}
                   disabled={loading}
-                  className="w-full text-left bg-slate-50 hover:bg-slate-100 border border-slate-200 p-2.5 rounded-xl transition-all cursor-pointer group"
+                  className="w-full text-left bg-slate-50 hover:bg-slate-100 border border-slate-200 p-2 rounded-xl transition-all cursor-pointer group"
                 >
                   <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 block">
                     {prompt.label}
@@ -190,7 +190,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
         </div>
 
         {/* Right Main Chat Window */}
-        <div className="lg:col-span-8 bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-2xl shadow-none sm:shadow-sm h-full flex flex-col overflow-hidden">
+        <div className="lg:col-span-8 bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-2xl shadow-none sm:shadow-sm h-full flex flex-col overflow-hidden min-h-0">
 
           {/* Mobile Toolbar (Visible on Mobile only) */}
           <div className="sm:hidden bg-white px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200 shrink-0 shadow-sm">
@@ -300,7 +300,7 @@ export default function AiAssistantPage({ onAddToCart, showToast, onNavigate }) 
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar bg-slate-50/50">
+          <div className="flex-1 min-h-0 p-3 sm:p-4 md:p-5 overflow-y-auto space-y-4 custom-scrollbar bg-slate-50/50">
             {messages.map((msg) => (
               <div
                 key={msg.id}

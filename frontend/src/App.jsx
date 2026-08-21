@@ -244,7 +244,7 @@ export default function App() {
         bonuses={bonuses}
       />
 
-      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-4 lg:p-6 h-[calc(100dvh-70px)] sm:h-[calc(100dvh-120px)] flex flex-col overflow-hidden' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-32 lg:pb-8 min-h-[70vh]'}`}>
+      <main className={`flex-grow w-full mx-auto ${currentPage === 'ai-assistant' ? 'max-w-7xl p-0 sm:p-2 md:p-4 lg:p-6 h-[calc(100dvh-70px)] sm:h-[calc(100dvh-130px)] flex flex-col overflow-hidden min-h-0' : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-32 lg:pb-8 min-h-[70vh]'}`}>
         <AppRoutes
           currentPage={currentPage}
           currentProductId={currentProductId}
