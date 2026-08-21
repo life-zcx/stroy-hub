@@ -17,10 +17,11 @@ export const validateRequest = (schema) => async (req, res, next) => {
     }
     next();
   } catch (error) {
-    if (error instanceof ZodError) {
-      const formattedErrors = error.errors.map((err) => ({
-        field: err.path.join('.'),
-        message: err.message,
+    if (error instanceof ZodError || error?.name === 'ZodError') {
+      const issues = Array.isArray(error.errors) ? error.errors : (Array.isArray(error.issues) ? error.issues : []);
+      const formattedErrors = issues.map((err) => ({
+        field: Array.isArray(err.path) ? err.path.join('.') : String(err.path || ''),
+        message: err.message || 'Некорректные данные',
       }));
       return res.status(400).json({
         error: 'Ошибка валидации данных',
