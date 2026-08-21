@@ -6,7 +6,7 @@ import { JWT_SECRET } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
 import crypto from 'crypto';
-import { clearAuthCookie, setAuthCookie, setRefreshTokenCookie, getRefreshTokenFromRequest } from '../utils/authCookie.js';
+import { clearAuthCookie, setAuthCookie, setRefreshTokenCookie, getRefreshTokenFromRequest, getTokenFromRequest } from '../utils/authCookie.js';
 import { sendTelegramAlert } from '../utils/telegram.js';
 import { normalizePhone } from '../utils/phoneUtils.js';
 import logger from '../utils/logger.js';

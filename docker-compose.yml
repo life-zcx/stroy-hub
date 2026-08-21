@@ -78,6 +78,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       AI_SERVICE_URL: http://ai-service:5005
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      IPX_ALLOWED_HOSTS: ${IPX_ALLOWED_HOSTS:-media.tormag.kz,storage.tssp.kz}
 
     ports:
       - "5000:5000"
