@@ -158,6 +158,7 @@ services:
       TZ: ${TZ:-Asia/Almaty}
       PORT: 5005
       BACKEND_API_URL: http://backend:5000
+      JWT_SECRET: ${JWT_SECRET:-tormag_dev_jwt_secret_local}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     volumes:
