@@ -402,11 +402,14 @@ export const getProductById = async (req, res) => {
 export const getAiCatalogProducts = async (req, res) => {
   try {
     const products = await prisma.product.findMany({
+      where: { isDeleted: false },
       select: {
         id: true,
         name: true,
         category: true,
+        categoryId: true,
         price: true,
+        oldPrice: true,
         article: true,
         slug: true,
         isHit: true,
@@ -416,10 +419,24 @@ export const getAiCatalogProducts = async (req, res) => {
       orderBy: { id: 'desc' },
     });
 
-    const truncated = products.map(p => ({
-      ...p,
-      description: p.description ? p.description.substring(0, 150) : null
-    }));
+    const settings = readPricingSettings();
+    const allCats = await getAllCategoriesCached();
+    const categoryMap = new Map(allCats.map(c => [c.id, c]));
+    const categorySlugMap = new Map(allCats.map(c => [c.slug, c]));
+
+    const truncated = products.map(p => {
+      const priced = applyRetailPricingToProduct(p, settings, categoryMap, categorySlugMap);
+      return {
+        id: priced.id,
+        name: priced.name,
+        category: priced.category,
+        price: priced.price, // Точная розничная цена с учетом наценок и настроек
+        article: priced.article,
+        slug: priced.slug,
+        isHit: priced.isHit,
+        description: priced.description ? priced.description.substring(0, 150) : null
+      };
+    });
 
     res.json(truncated);
   } catch (error) {
