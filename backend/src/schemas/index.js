@@ -35,16 +35,24 @@ export const forgotPasswordSchema = {
   }),
 };
 
+const passwordValidation = z.string()
+  .min(8, 'Пароль должен содержать минимум 8 символов')
+  .regex(/[A-ZА-ЯЁ]/, 'Пароль должен содержать хотя бы одну заглавную букву')
+  .regex(/\d/, 'Пароль должен содержать хотя бы одну цифру');
+
 export const resetPasswordSchema = {
   body: z.object({
     email: z.string().email('Некорректный формат email'),
     code: z.string().min(4, 'Некорректный проверочный код'),
-    // SEC-006: те же требования при сбросе пароля
-    newPassword: z.string()
-      .min(8, 'Пароль должен содержать минимум 8 символов')
-      .regex(/[A-ZА-ЯЁ]/, 'Пароль должен содержать хотя бы одну заглавную букву')
-      .regex(/\d/, 'Пароль должен содержать хотя бы одну цифру'),
-  }),
+    password: passwordValidation.optional(),
+    newPassword: passwordValidation.optional(),
+  }).refine((data) => Boolean(data.password || data.newPassword), {
+    message: 'Пароль обязателен',
+    path: ['password'],
+  }).transform((data) => ({
+    ...data,
+    password: data.password || data.newPassword,
+  })),
 };
 
 export const createOrderSchema = {
