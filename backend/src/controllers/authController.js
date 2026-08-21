@@ -5,7 +5,8 @@ import prisma from '../config/db.js';
 import { JWT_SECRET } from '../config/env.js';
 import { sendEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
-import { clearAuthCookie, setAuthCookie } from '../utils/authCookie.js';
+import crypto from 'crypto';
+import { clearAuthCookie, setAuthCookie, setRefreshTokenCookie, getRefreshTokenFromRequest } from '../utils/authCookie.js';
 import { sendTelegramAlert } from '../utils/telegram.js';
 import { normalizePhone } from '../utils/phoneUtils.js';
 import logger from '../utils/logger.js';
@@ -30,6 +31,23 @@ const buildUserPayload = (user) => ({
   supplierName: user.supplier?.name || null,
   isBlocked: user.isBlocked,
 });
+
+const issueUserTokens = (req, res, user) => {
+  const tokenPayload = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    supplierId: user.supplierId,
+  };
+
+  const accessToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ ...tokenPayload, type: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+
+  setAuthCookie(req, res, accessToken);
+  setRefreshTokenCookie(req, res, refreshToken);
+
+  return { accessToken, refreshToken };
+};
 
 const checkPhoneExists = async (phone) => {
   if (!phone) return false;
@@ -114,8 +132,8 @@ export const sendRegisterCode = async (req, res) => {
       return res.status(429).json({ error: 'Код подтверждения на эту почту уже отправлен. Пожалуйста, подождите 1 минуту перед повторным запросом.' });
     }
 
-    // Generate 6-digit verification code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // SEC-005: Используем crypto.randomInt вместо Math.random() (CSPRNG)
+    const code = (crypto.randomInt(0, 900000) + 100000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Save token to database
@@ -164,7 +182,7 @@ export const sendRegisterCode = async (req, res) => {
     res.json({ message: 'Код подтверждения регистрации успешно отправлен на вашу почту.' });
   } catch (error) {
     logger.error('Error sending registration OTP code:', error);
-    res.status(500).json({ error: 'Ошибка при отправке кода подтверждения: ' + (error.message || '') });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка при отправке кода подтверждения.') });
   }
 };
 
@@ -241,56 +259,66 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'Срок действия кода подтверждения истек. Запросите новый код.' });
     }
 
-    // Double check email and phone uniqueness
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Пользователь с таким email уже зарегистрирован' });
-    }
+    // SEC-011: Атомарная транзакция check+create — исключает race condition (TOCTOU)
+    let newUser;
+    try {
+      newUser = await prisma.$transaction(async (tx) => {
+        // Double check email uniqueness inside transaction
+        const existingByEmail = await tx.user.findUnique({ where: { email } });
+        if (existingByEmail) {
+          throw Object.assign(new Error('EMAIL_EXISTS'), { userFacing: 'Пользователь с таким email уже зарегистрирован' });
+        }
 
-    const phoneExists = await checkPhoneExists(phone);
-    if (phoneExists) {
-      return res.status(400).json({ error: 'Пользователь с таким номером телефона уже зарегистрирован' });
-    }
+        // Double check phone uniqueness inside transaction
+        const normalizedPh = normalizePhone(phone);
+        const existingByPhone = await tx.user.findFirst({
+          where: { phoneNormalized: normalizedPh },
+          select: { id: true },
+        });
+        if (existingByPhone) {
+          throw Object.assign(new Error('PHONE_EXISTS'), { userFacing: 'Пользователь с таким номером телефона уже зарегистрирован' });
+        }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+        // Check optional referral code inside transaction
+        let referredById = null;
+        if (req.body.referralCode && typeof req.body.referralCode === 'string') {
+          const cleanRefCode = req.body.referralCode.trim().toUpperCase();
+          const referrerUser = await tx.user.findUnique({
+            where: { referralCode: cleanRefCode },
+            select: { id: true },
+          });
+          if (referrerUser) referredById = referrerUser.id;
+        }
 
-    // Check optional referral code
-    let referredById = null;
-    if (req.body.referralCode && typeof req.body.referralCode === 'string') {
-      const cleanRefCode = req.body.referralCode.trim().toUpperCase();
-      const referrerUser = await prisma.user.findUnique({
-        where: { referralCode: cleanRefCode },
-        select: { id: true },
+        const newReferralCode = await generateUniqueReferralCode();
+
+        return tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name,
+            phone,
+            phoneNormalized: normalizedPh,
+            address: address || null,
+            entityType: entityType || 'PHYSICAL',
+            companyBin: companyBin || null,
+            companyName: companyName || null,
+            directorName: directorName || null,
+            legalAddress: legalAddress || null,
+            organizationType: organizationType || null,
+            role: 'CUSTOMER',
+            referralCode: newReferralCode,
+            referredById: referredById,
+          },
+          include: { supplier: true },
+        });
       });
-      if (referrerUser) {
-        referredById = referrerUser.id;
+    } catch (txErr) {
+      if (txErr.userFacing) {
+        return res.status(400).json({ error: txErr.userFacing });
       }
+      throw txErr;
     }
-
-    const newReferralCode = await generateUniqueReferralCode();
-
-    // Create user
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        phone,
-        phoneNormalized: normalizePhone(phone),
-        address: address || null,
-        entityType: entityType || 'PHYSICAL',
-        companyBin: companyBin || null,
-        companyName: companyName || null,
-        directorName: directorName || null,
-        legalAddress: legalAddress || null,
-        organizationType: organizationType || null,
-        role: 'CUSTOMER',
-        referralCode: newReferralCode,
-        referredById: referredById,
-      },
-      include: { supplier: true },
-    });
 
     // Credit Welcome Bonus (referral bonus from settings, or standard welcome bonus)
     try {
@@ -331,12 +359,7 @@ export const register = async (req, res) => {
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
     await redisClient.del(attemptsKey);
 
-    const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role, supplierId: newUser.supplierId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    setAuthCookie(req, res, token);
+    const { accessToken } = issueUserTokens(req, res, newUser);
 
     if (sessionId) {
       Promise.all([
@@ -353,9 +376,10 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       user: buildUserPayload(newUser),
+      token: accessToken,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при регистрации: '  });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка регистрации.') });
   }
 };
 
@@ -386,12 +410,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, supplierId: user.supplierId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    setAuthCookie(req, res, token);
+    const { accessToken } = issueUserTokens(req, res, user);
 
     // Send Telegram alert on admin/supplier login
     if (user.role === 'ADMIN' || user.role === 'SUPPLIER') {
@@ -416,13 +435,65 @@ export const login = async (req, res) => {
 
     res.json({
       user: buildUserPayload(user),
+      token: accessToken,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка входа: '  });
+    res.status(500).json({ error: safeErrorMessage(error, 'Ошибка входа в систему.') });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  const token = getRefreshTokenFromRequest(req);
+  if (!token) {
+    return res.status(401).json({ error: 'Токен обновления отсутствует' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // SEC-010: Проверяем что это именно refresh token, а не access token
+    if (!decoded || !decoded.id || decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'Недействительный токен обновления' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: { supplier: true },
+    });
+
+    if (!user || user.isBlocked || user.isDeleted) {
+      clearAuthCookie(req, res);
+      return res.status(403).json({ error: 'Доступ ограничен' });
+    }
+
+    const { accessToken } = issueUserTokens(req, res, user);
+
+    res.json({
+      user: buildUserPayload(user),
+      token: accessToken,
+    });
+  } catch (error) {
+    clearAuthCookie(req, res);
+    return res.status(401).json({ error: 'Срок действия сессии истек. Войдите заново.' });
   }
 };
 
 export const logout = async (req, res) => {
+  // SEC-009: Инвалидировать access token через Redis blacklist
+  const token = getTokenFromRequest(req);
+  if (token) {
+    try {
+      const decoded = jwt.decode(token);
+      if (decoded?.exp) {
+        const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+        if (ttl > 0) {
+          // Храним последние 32 символа — уникальны, но не хранят полный JWT
+          await redisClient.set(`jwt:bl:${token.slice(-32)}`, '1', { EX: ttl });
+        }
+      }
+    } catch {
+      // Ошибка blacklist не должна блокировать logout
+    }
+  }
   clearAuthCookie(req, res);
   res.json({ message: 'Вы успешно вышли из системы.' });
 };
@@ -564,8 +635,8 @@ export const forgotPassword = async (req, res) => {
     // Revealing whether an email is registered or not is a User Enumeration vulnerability.
     // Instead, we silently return 200 OK in both cases.
     if (user) {
-      // Generate 6-digit verification code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // SEC-005: Используем crypto.randomInt вместо Math.random() (CSPRNG)
+      const code = (crypto.randomInt(0, 900000) + 100000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
       // Save token to database (delete any old recovery tokens for this email first)
@@ -629,8 +700,9 @@ export const resetPassword = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
 
+    // SEC-007: Не раскрываем факт существования пользователя (User Enumeration)
     if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
+      return res.status(400).json({ error: 'Неверный код или email подтверждения' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -744,55 +816,26 @@ export const deleteAccount = async (req, res) => {
     const anonymizedName = `Удаленный аккаунт #${userId}`;
     const anonymizedEmail = `deleted_${userId}_${Date.now()}@deleted.tormag.kz`;
 
-    try {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          name: anonymizedName,
-          email: anonymizedEmail,
-          password: anonymizedPassword,
-          phone: null,
-          phoneNormalized: null,
-          address: null,
-          addresses: null,
-          companyBin: null,
-          companyName: null,
-          directorName: null,
-          legalAddress: null,
-          organizationType: null,
-          isDeleted: true,
-          deletionReason: reason || 'Не указана',
-          deletedAt: new Date(),
-        },
-      });
-    } catch (updateErr) {
-      logger.warn(`Prisma update failed with isDeleted field (${updateErr.message}), trying fallback...`);
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          name: anonymizedName,
-          email: anonymizedEmail,
-          password: anonymizedPassword,
-          phone: null,
-          phoneNormalized: null,
-          address: null,
-          addresses: null,
-          companyBin: null,
-          companyName: null,
-          directorName: null,
-          legalAddress: null,
-          organizationType: null,
-        },
-      });
-
-      await prisma.$executeRaw`
-        UPDATE "User" 
-        SET "isDeleted" = true, 
-            "deletionReason" = ${reason || 'Не указана'}, 
-            "deletedAt" = NOW() 
-        WHERE "id" = ${userId}
-      `.catch(() => {});
-    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: anonymizedName,
+        email: anonymizedEmail,
+        password: anonymizedPassword,
+        phone: null,
+        phoneNormalized: null,
+        address: null,
+        addresses: null,
+        companyBin: null,
+        companyName: null,
+        directorName: null,
+        legalAddress: null,
+        organizationType: null,
+        isDeleted: true,
+        deletionReason: reason || 'Не указана',
+        deletedAt: new Date(),
+      },
+    });
 
     // Clean up Redis session cache & password tokens
     try {
@@ -810,7 +853,7 @@ export const deleteAccount = async (req, res) => {
     res.json({ message: 'Учетная запись успешно удалена.' });
   } catch (error) {
     logger.error(`Error deleting user #${req.user?.id}: ${error.message}`);
-    res.status(500).json({ error: 'Ошибка при удалении учетной записи: '  });
+    res.status(500).json({ error: 'Ошибка при удалении учетной записи: ' });
   }
 };
 

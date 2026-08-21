@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.js';
+import { invalidateProductsCache } from '../utils/cacheRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,6 +77,9 @@ export async function clearProductsCache() {
     lastVersionFetchTime = Date.now();
     logger.info(`Product cache invalidated instantly (version bumped to ${newVersion})`);
     
+    // Invalidate tagged cache keys in Redis
+    await invalidateProductsCache();
+
     // Notify AI service asynchronously to reset catalog cache
     notifyAiServiceCacheReset().catch(err => logger.warn(`AI Service cache reset ping failed: ${err.message}`));
   } catch (err) {

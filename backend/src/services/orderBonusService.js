@@ -10,12 +10,23 @@ import { broadcastNotification } from '../utils/pushNotifier.js';
 import { processReferralRewardForFirstOrder } from './referralService.js';
 
 export const calculateOrderBonusDiscount = async (userId, useBonuses, finalTotalAmount, tx) => {
-  const loyalty = await getUserLoyaltyStatus(parseInt(userId, 10));
+  const numericUserId = parseInt(userId, 10);
+
+  // Pessimistic row locking for User to prevent concurrent race-condition double-spending of bonuses
+  if (tx && tx.$queryRaw) {
+    try {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${numericUserId} FOR UPDATE`;
+    } catch (lockErr) {
+      // Ignore lock error if DB driver doesn't support raw locking or in test mode
+    }
+  }
+
+  const loyalty = await getUserLoyaltyStatus(numericUserId, tx);
   let bonusDiscount = 0;
   let updatedTotalAmount = finalTotalAmount;
 
   if (useBonuses) {
-    const availableBalance = await getAvailableBalance(parseInt(userId, 10), tx);
+    const availableBalance = await getAvailableBalance(numericUserId, tx);
     if (availableBalance > 0) {
       let maxBonusToUse = availableBalance;
       const numericUseBonuses = typeof useBonuses === 'number' ? useBonuses : parseInt(useBonuses, 10);

@@ -130,15 +130,20 @@ export const getAllProducts = async (req, res) => {
 
   if (search && search.trim() !== '') {
     const q = search.trim();
-    searchConditions = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { article: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
-    ];
+    const tokens = q.split(/\s+/).filter(t => t.length > 0);
+
+    // Multi-token match: each word must match name, description, or article
+    searchConditions = tokens.map(token => ({
+      OR: [
+        { name: { contains: token, mode: 'insensitive' } },
+        { article: { contains: token, mode: 'insensitive' } },
+        { description: { contains: token, mode: 'insensitive' } },
+      ]
+    }));
 
     const searchId = parseInt(q, 10);
     if (!isNaN(searchId) && String(searchId) === q) {
-      searchConditions.push({ id: searchId });
+      searchConditions.push({ OR: [{ id: searchId }] });
     }
   }
 
@@ -212,11 +217,11 @@ export const getAllProducts = async (req, res) => {
 
     if (searchConditions && categoryConditions) {
       where.AND = [
-        { OR: searchConditions },
+        ...searchConditions,
         { OR: categoryConditions },
       ];
     } else if (searchConditions) {
-      where.OR = searchConditions;
+      where.AND = searchConditions;
     } else if (categoryConditions) {
       where.OR = categoryConditions;
     }
@@ -240,6 +245,40 @@ export const getAllProducts = async (req, res) => {
           take: limitNum,
         }),
       ]);
+
+      // Fuzzy pg_trgm fallback if 0 products found and search query exists
+      if (products.length === 0 && search && search.trim().length >= 3) {
+        const qTrimmed = search.trim();
+        try {
+          const fuzzyMatches = await prisma.$queryRaw`
+            SELECT id FROM "Product"
+            WHERE "isDeleted" = false
+              AND (
+                similarity(name, ${qTrimmed}) > 0.15
+                OR similarity(description, ${qTrimmed}) > 0.15
+              )
+            ORDER BY similarity(name, ${qTrimmed}) DESC
+            LIMIT ${limitNum}
+          `;
+          if (Array.isArray(fuzzyMatches) && fuzzyMatches.length > 0) {
+            const fuzzyIds = fuzzyMatches.map(p => p.id);
+            products = await prisma.product.findMany({
+              where: { id: { in: fuzzyIds } },
+              include: {
+                supplier: true,
+                categoryRelation: true,
+                reviewsList: {
+                  where: { isApproved: true },
+                  select: { rating: true }
+                }
+              }
+            });
+            total = products.length;
+          }
+        } catch (fuzzyErr) {
+          logger.warn(`[Fuzzy Search Fallback Warn] ${fuzzyErr.message}`);
+        }
+      }
     } catch (dbErr) {
       if (dbErr.message && dbErr.message.includes('isDeleted')) {
         delete where.isDeleted;

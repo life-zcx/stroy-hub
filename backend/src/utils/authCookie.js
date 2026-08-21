@@ -1,21 +1,24 @@
 export const AUTH_COOKIE_NAME = 'tormag_auth_token';
-export const ADMIN_AUTH_COOKIE_NAME = 'tormag_admin_auth_token';
-export const AUTH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// SEC-004: ADMIN_AUTH_COOKIE_NAME оставлен как псевдоним для обратной совместимости.
+// Новый код должен использовать AUTH_COOKIE_NAME для обоих интерфейсов.
+// Разграничение прав — через role в JWT-payload, не через отдельный cookie.
+export const ADMIN_AUTH_COOKIE_NAME = 'tormag_auth_token';
+export const REFRESH_COOKIE_NAME = 'tormag_refresh_token';
+
+export const AUTH_TOKEN_MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes for access token
+export const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days for refresh token
 
 function isProduction() {
   return process.env.NODE_ENV === 'production';
 }
 
-export function getCookieName(req) {
-  const referer = req.headers?.referer || '';
-  const origin = req.headers?.origin || '';
-  const isAdminRequest = 
-    referer.includes(':3001') || 
-    referer.includes('cabinet.tormag.kz') ||
-    origin.includes(':3001') ||
-    origin.includes('cabinet.tormag.kz');
-    
-  return isAdminRequest ? ADMIN_AUTH_COOKIE_NAME : AUTH_COOKIE_NAME;
+/**
+ * SEC-004: Всегда возвращает единый AUTH_COOKIE_NAME.
+ * Разграничение admin/customer — по role в JWT, не по Referer-заголовку.
+ * Ранее функция читала Referer/Origin (управляемые клиентом) — это убрано.
+ */
+export function getCookieName(_req) {
+  return AUTH_COOKIE_NAME;
 }
 
 function parseCookieHeader(cookieHeader = '') {
@@ -43,19 +46,28 @@ export function getTokenFromRequest(req) {
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (bearerToken) return bearerToken;
 
-  const cookies = parseCookieHeader(req.headers?.cookie || '');
-  const preferredName = getCookieName(req);
-  if (cookies[preferredName]) return cookies[preferredName];
+  const cookies = req.cookies || parseCookieHeader(req.headers?.cookie || '');
 
-  return cookies[ADMIN_AUTH_COOKIE_NAME] || cookies[AUTH_COOKIE_NAME] || null;
+  // Проверяем оба имени для совместимости с клиентами, хранящими старый admin cookie
+  return cookies[AUTH_COOKIE_NAME] || cookies['tormag_admin_auth_token'] || null;
 }
 
-function getCookieOptions(req) {
+export function getRefreshTokenFromRequest(req) {
+  const headerRefreshToken = req.headers['x-refresh-token'];
+  if (headerRefreshToken && typeof headerRefreshToken === 'string') {
+    return headerRefreshToken.trim();
+  }
+
+  const cookies = req.cookies || parseCookieHeader(req.headers?.cookie || '');
+  return cookies[REFRESH_COOKIE_NAME] || null;
+}
+
+function getCookieOptions(req, maxAge = AUTH_TOKEN_MAX_AGE_MS) {
   const options = {
     httpOnly: true,
     secure: isProduction(),
     sameSite: isProduction() ? 'none' : 'lax',
-    maxAge: AUTH_TOKEN_MAX_AGE_MS,
+    maxAge,
     path: '/',
   };
 
@@ -68,13 +80,18 @@ function getCookieOptions(req) {
 }
 
 export function setAuthCookie(req, res, token) {
-  res.cookie(getCookieName(req), token, getCookieOptions(req));
+  res.cookie(AUTH_COOKIE_NAME, token, getCookieOptions(req, AUTH_TOKEN_MAX_AGE_MS));
+}
+
+export function setRefreshTokenCookie(req, res, refreshToken) {
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions(req, REFRESH_TOKEN_MAX_AGE_MS));
 }
 
 export function clearAuthCookie(req, res) {
-  const options = getCookieOptions(req);
+  const options = getCookieOptions(req, 0);
 
-  const names = [AUTH_COOKIE_NAME, ADMIN_AUTH_COOKIE_NAME, getCookieName(req)];
+  // Чистим оба имени (старый admin и новый единый) для плавной миграции клиентов
+  const names = [AUTH_COOKIE_NAME, 'tormag_admin_auth_token', REFRESH_COOKIE_NAME];
   names.forEach((name) => {
     res.cookie(name, '', { ...options, maxAge: 0, expires: new Date(0) });
     const noDomainOptions = { ...options };

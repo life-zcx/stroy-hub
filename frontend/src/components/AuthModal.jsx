@@ -75,16 +75,16 @@ export default function AuthModal({
       <div className={`w-full ${isLegalReg ? 'max-w-4xl' : authTab === 'register' ? 'max-w-2xl' : 'max-w-md'} bg-white border border-gray-150 rounded-3xl shadow-2xl relative flex flex-col animate-fade-in-up transition-all duration-300 my-auto max-h-[calc(100dvh-2.5rem)] sm:max-h-[90vh] overflow-hidden`}>
         
         {/* ── Pinned Header Section (Logo, Title, Tabs, Entity Switcher) ── */}
-        <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 bg-white rounded-t-3xl relative shrink-0 space-y-3">
+        <div className="pt-2.5 sm:pt-3.5 px-4 sm:px-6 pb-3 sm:pb-4 border-b border-slate-100 bg-white rounded-t-3xl relative shrink-0 space-y-2.5">
           <button
             onClick={onClose}
-            className="absolute top-3.5 right-3.5 p-1.5 text-gray-400 hover:text-slate-900 hover:bg-gray-100 rounded-full transition-colors z-10"
+            className="absolute top-2.5 right-3 p-1.5 text-gray-400 hover:text-slate-900 hover:bg-gray-100 rounded-full transition-colors z-10"
           >
             <X className="h-5 w-5" />
           </button>
 
           <div className="text-center">
-            <div className="inline-flex items-center justify-center mb-2">
+            <div className="inline-flex items-center justify-center mb-1">
               <img src={logoImg} alt="TORMAG.KZ Logo" className="h-[38px] sm:h-[44px] w-auto object-contain shrink-0" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-outfit">Личный кабинет покупателя</h3>

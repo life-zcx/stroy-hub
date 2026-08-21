@@ -30,12 +30,12 @@ export const LOYALTY_TIERS = {
 /**
  * Calculates total spent by user on completed orders in the current calendar year.
  */
-export async function getCompletedSpentThisYear(userId) {
+export async function getCompletedSpentThisYear(userId, tx = prisma) {
   const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
   const uid = parseInt(userId, 10);
   if (isNaN(uid)) return 0;
 
-  const aggregate = await prisma.order.aggregate({
+  const aggregate = await tx.order.aggregate({
     where: {
       userId: uid,
       status: 'completed',
@@ -48,7 +48,7 @@ export async function getCompletedSpentThisYear(userId) {
   const totalOrderAmount = aggregate._sum.totalAmount || 0;
 
   // Subtract net paid amount of approved return requests
-  const approvedReturns = await prisma.returnRequest.findMany({
+  const approvedReturns = await tx.returnRequest.findMany({
     where: {
       userId: uid,
       status: 'approved',
@@ -96,7 +96,7 @@ export function getLoyaltyTier(spent) {
 /**
  * Gets the full loyalty status details for a user.
  */
-export async function getUserLoyaltyStatus(userId) {
+export async function getUserLoyaltyStatus(userId, tx = prisma) {
   if (!userId) {
     return {
       level: LOYALTY_TIERS.PARTICIPANT.key,
@@ -112,7 +112,7 @@ export async function getUserLoyaltyStatus(userId) {
     };
   }
 
-  const spent = await getCompletedSpentThisYear(userId);
+  const spent = await getCompletedSpentThisYear(userId, tx);
   const currentTier = getLoyaltyTier(spent);
 
   let nextLevel = null;

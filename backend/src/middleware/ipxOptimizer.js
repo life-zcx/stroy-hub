@@ -17,6 +17,39 @@ if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir, { recursive: true });
 }
 
+// SEC-002: Allowlist внешних хостов для загрузки изображений (SSRF защита)
+// Добавить допустимые домены через переменную окружения IPX_ALLOWED_HOSTS (через запятую)
+const ALLOWED_EXTERNAL_HOSTS = new Set(
+  (process.env.IPX_ALLOWED_HOSTS || 'media.tormag.kz,storage.tssp.kz')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+// Регулярное выражение для блокировки приватных IP-диапазонов и cloud metadata
+const PRIVATE_HOST_REGEX =
+  /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|::1)/i;
+
+/**
+ * SEC-002: Валидация внешнего URL перед fetch.
+ * Блокирует SSRF: приватные IP, cloud IMDS, хосты не из allowlist.
+ */
+function validateExternalUrl(urlStr) {
+  let parsed;
+  try {
+    parsed = new URL(urlStr);
+  } catch {
+    throw new Error('Недопустимый формат внешнего URL');
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  if (PRIVATE_HOST_REGEX.test(hostname)) {
+    throw new Error(`Доступ к приватному адресу запрещён: ${hostname}`);
+  }
+  if (!ALLOWED_EXTERNAL_HOSTS.has(hostname)) {
+    throw new Error(`Внешний хост не в списке разрешённых: ${hostname}`);
+  }
+}
+
 /**
  * Parses IPX modifier string like "f_webp&s_800x800" or "s_400x400"
  */
@@ -106,7 +139,14 @@ export const handleIpxImageRequest = async (req, res) => {
     let inputBuffer = null;
 
     if (targetUrlOrPath.startsWith('http://') || targetUrlOrPath.startsWith('https://')) {
-      const response = await fetch(targetUrlOrPath);
+      // SEC-002: SSRF protection — валидация хоста перед fetch
+      try {
+        validateExternalUrl(targetUrlOrPath);
+      } catch (validationErr) {
+        logger.warn(`[IPX OPTIMIZER] SSRF blocked: ${validationErr.message} | url=${targetUrlOrPath.substring(0, 100)}`);
+        return res.status(403).json({ error: 'Доступ к указанному URL запрещён.' });
+      }
+      const response = await fetch(targetUrlOrPath, { signal: AbortSignal.timeout(10000) });
       if (!response.ok) {
         return res.status(404).json({ error: 'Не удалось загрузить исходное изображение по внешнему URL' });
       }
@@ -117,13 +157,27 @@ export const handleIpxImageRequest = async (req, res) => {
       let normalizedPath = targetUrlOrPath.replace(/^\/+/, '');
       let localPath = path.join(process.cwd(), normalizedPath);
 
+      // SEC-003: Path Traversal protection — файл должен находиться внутри /uploads
+      const uploadsRoot = path.resolve(process.cwd(), 'uploads');
+      const resolvedPath = path.resolve(localPath);
+      const altPath = path.resolve(path.join(process.cwd(), 'uploads', path.basename(normalizedPath)));
+
+      if (
+        !resolvedPath.startsWith(uploadsRoot + path.sep) &&
+        resolvedPath !== uploadsRoot &&
+        !altPath.startsWith(uploadsRoot + path.sep)
+      ) {
+        logger.warn(`[IPX OPTIMIZER] Path traversal blocked: ${resolvedPath}`);
+        return res.status(403).json({ error: 'Доступ к файлу запрещён.' });
+      }
+
       if (!fs.existsSync(localPath)) {
         // Try inside uploads dir
         localPath = path.join(process.cwd(), 'uploads', path.basename(normalizedPath));
       }
 
       if (!fs.existsSync(localPath)) {
-        return res.status(404).json({ error: `Файл не найден: ${normalizedPath}` });
+        return res.status(404).json({ error: 'Файл не найден.' });
       }
 
       inputBuffer = fs.readFileSync(localPath);

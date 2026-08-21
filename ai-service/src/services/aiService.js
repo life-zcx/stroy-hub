@@ -4,6 +4,7 @@ import { fetchCatalogProducts, fetchSystemSettings, logAiResponseToDb } from './
 import { buildSystemInstruction, formatHistoryContents } from './promptBuilder.js';
 import { generateContentWithFallback } from './geminiClient.js';
 import { parseAiResponse } from '../parsers/responseParser.js';
+import { rankProductsByVectorSimilarity } from './embeddingService.js';
 
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
@@ -63,25 +64,11 @@ export const generateAiChatResponse = async ({ message, history = [] }) => {
     const siteSettings = settingsCache;
     // ---------------------------------------
 
-    // ИСПРАВЛЕНО: Собираем весь текст диалога (история + текущее сообщение), чтобы не терять контекст
+    // Собираем весь текст диалога (история + текущее сообщение)
     const fullDialogText = history.map(h => h.text).join(' ') + ' ' + message;
 
-    // Разбиваем ВЕСЬ текст диалога на слова для поиска (длиной > 2 символов)
-    const searchTerms = fullDialogText.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-
-    let filteredProducts = catalogProducts;
-
-    // Фильтруем закэшированный массив
-    if (searchTerms.length > 0) {
-      filteredProducts = catalogProducts.filter(p => {
-        const productName = (p.name || '').toLowerCase();
-        const productCategory = (p.category || '').toLowerCase();
-        return searchTerms.some(term => productName.includes(term) || productCategory.includes(term));
-      });
-    }
-
-    // ЖЕСТКИЙ ЛИМИТ: передаем ИИ максимум 20 товаров
-    const finalCatalogForAi = filteredProducts.slice(0, 20);
+    // Векторное ранжирование товаров по сходству эмбеддингов
+    const finalCatalogForAi = rankProductsByVectorSimilarity(fullDialogText, catalogProducts, 20);
 
     // Build system instruction
     const systemInstruction = buildSystemInstruction({

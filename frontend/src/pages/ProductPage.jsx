@@ -7,13 +7,14 @@ import {
   Truck, Package, CheckCircle2, Tag, RefreshCw, ChevronRight, ChevronLeft, X, ZoomIn, Maximize2,
   ChevronUp, ChevronDown, Heart, Scale, Share2, Eye, Info, HelpCircle, Coins, RotateCcw, Zap
 } from 'lucide-react';
-import { getProductById, getProductReviews, getProductStats, getSystemSettings } from '../services/api';
+import { getProductById, getProductReviews, getProductStats, getSystemSettings, getCartRecommendationsApi } from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { FALLBACK_PRODUCT_IMAGE, getProductImage, getIpxImageUrl, markImageFailed } from '../utils/productImage';
 import { trackEvent } from '../utils/analytics';
 import { getFriendlyErrorMessage } from '../utils/errorHelper';
 import InfoModals from '../components/InfoModals';
 import CityModal from '../components/CityModal';
+import CartRecommendationsCarousel from '../components/CartRecommendationsCarousel';
 
 const splitLines = (value) => {
   return value ? value.split('\n').map(line => line.trim()).filter(Boolean) : [];
@@ -97,6 +98,7 @@ export default function ProductPage({
   isFavorite
 }) {
   const [product, setProduct] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -402,9 +404,12 @@ export default function ProductPage({
           console.error('Error saving recently viewed product:', e);
         }
 
-        // Fetch reviews and stats with resolved numeric ID
+        // Fetch reviews, stats and companion recommendations
         loadReviews(data.id);
         loadStats(data.id);
+        getCartRecommendationsApi([{ productId: data.id, categoryId: data.categoryId }])
+          .then(recs => setRecommendations(recs || []))
+          .catch(err => console.error('Error loading recommendations:', err));
       } catch (err) {
         console.error(err);
         setError(getFriendlyErrorMessage(err));
@@ -1498,6 +1503,20 @@ export default function ProductPage({
           )}
         </div>
       </div>
+
+      {/* Companion & Related Materials Recommendation Carousel */}
+      {recommendations.length > 0 && (
+        <CartRecommendationsCarousel
+          recommendations={recommendations}
+          cart={cart}
+          onAddToCart={onAddToCart}
+          onUpdateQuantity={onUpdateCartQuantity}
+          onToggleFavorite={onToggleFavorite}
+          isFavorite={isFavorite}
+          showToast={showToast}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* Info Modals */}
       <InfoModals

@@ -134,7 +134,7 @@ export default function CartRecommendationsCarousel({
             const isFav = isFavorite ? isFavorite(prod) : false;
 
             return (
-              <div key={prod.id} className="w-[calc(50%-0.375rem)] sm:w-60 shrink-0">
+              <div key={prod.id} className="w-[calc(50%-0.375rem)] sm:w-60 shrink-0 flex flex-col">
                 <ProductCard
                   product={prod}
                   cartQuantity={cartQuantity}

@@ -1,5 +1,4 @@
 node_modules/
-.env*
 dist/
 build/
 .next/
@@ -17,11 +16,25 @@ yarn-error.log*
 *.sw?
 .DS_Store
 
+# === ENV FILES — никогда не коммитить ===
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.test
+.env.*.local
+backend/.env
+frontend/.env
+admin/.env
+ai-service/.env
+
 # Prisma & DB
 # /backend/prisma/migrations/ (removed so migrations are version controlled)
-.env
 /backend/uploads/*
 !/backend/uploads/.gitkeep
+/backend/data/*
+!/backend/data/.gitkeep
 postgres_data/
 
 # Logs

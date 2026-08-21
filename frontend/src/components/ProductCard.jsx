@@ -89,7 +89,7 @@ export default function ProductCard({
   }, [firstOption, product.price]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col relative overflow-hidden text-slate-800">
+    <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group flex flex-col justify-between relative overflow-hidden text-slate-800 h-full w-full">
 
       {/* ── Badges ── */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 pointer-events-none">
@@ -131,7 +131,7 @@ export default function ProductCard({
       {/* ── Link wrapper for clickable product area ── */}
       <Link
         href={getPageHref('product', product.slug || product.id)}
-        className="flex flex-col flex-1 cursor-pointer min-w-0 w-full"
+        className="flex flex-col flex-1 cursor-pointer min-w-0 w-full justify-between"
         onClick={() => onOpenDetails && onOpenDetails(product.slug || product.id)}
       >
         {/* ── Image zone ── */}
@@ -152,10 +152,8 @@ export default function ProductCard({
           />
         </div>
 
-
-
         {/* ── Content ── */}
-        <div className="flex flex-col flex-1 p-2 sm:p-3 pb-0 min-w-0 w-full">
+        <div className="flex flex-col flex-1 p-2 sm:p-3 pb-0 min-w-0 w-full justify-between">
           {/* Rating row - hidden on small mobile */}
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 mb-2 font-medium">
             <span className="flex items-center text-emerald-600 font-bold">
@@ -170,8 +168,8 @@ export default function ProductCard({
             </span>
           </div>
 
-          {/* Name — flex-grow pushes price to bottom */}
-          <h3 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2 break-words flex-grow">
+          {/* Name — fixed 2-line height alignment */}
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2 break-words h-10 flex items-center">
             {product.name}
           </h3>
 
@@ -204,7 +202,7 @@ export default function ProductCard({
       </Link>
 
       {/* ── Actions Zone ── */}
-      <div className="p-2 pt-1.5 sm:p-4 sm:pt-2">
+      <div className="p-2 pt-1.5 sm:p-4 sm:pt-2 mt-auto">
         {inCart ? (
           /* ── Степпер когда товар в корзине ── */
           <div className="flex items-center justify-between bg-blue-600 rounded-xl h-[38px] sm:h-[44px] px-1 shadow-md shadow-blue-600/20 overflow-hidden">

@@ -10,6 +10,16 @@ export const verifyToken = async (req, res, next) => {
     return res.status(401).json({ error: 'Доступ запрещен. Отсутствует авторизационный токен.' });
   }
 
+  // SEC-009: Проверка JWT blacklist (logout, принудительный revoke)
+  try {
+    const isBlacklisted = await redisClient.exists(`jwt:bl:${token.slice(-32)}`);
+    if (isBlacklisted) {
+      return res.status(401).json({ error: 'Сессия завершена. Войдите заново.' });
+    }
+  } catch {
+    // Redis недоступен — продолжаем без blacklist (fail-open, как и rate limiter)
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 

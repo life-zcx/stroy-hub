@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getProductsPage, getCategories } from '../services/api';
 
 const PRODUCT_PAGE_SIZE = 24;
@@ -6,7 +7,6 @@ const PRODUCT_PAGE_SIZE = 24;
 export default function useCatalog(showToast, initialCategory = 'all', currentPage = 'home') {
   const [products, setProducts] = useState([]);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -19,21 +19,15 @@ export default function useCatalog(showToast, initialCategory = 'all', currentPa
   const [onlyHits, setOnlyHits] = useState(false);
   const [onlyBulk, setOnlyBulk] = useState(false);
 
-  // Stable ref so loadProducts doesn't get recreated every time showToast changes
-  const showToastRef = useRef(showToast);
-  useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+  // TanStack Query for categories (30 min cache)
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: 30 * 60 * 1000,
+  });
 
   const catalogPages = ['home', 'catalog', 'advisor', 'promotions'];
   const isCatalogPage = !currentPage || catalogPages.includes(currentPage);
-
-  const loadCategories = async () => {
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    }
-  };
 
   const buildProductParams = (nextPage) => {
     const params = {
@@ -99,10 +93,6 @@ export default function useCatalog(showToast, initialCategory = 'all', currentPa
     } catch (error) {
       console.error('Error loading product suggestions:', error);
     }
-  }, []);
-
-  useEffect(() => {
-    loadCategories();
   }, []);
 
   useEffect(() => {

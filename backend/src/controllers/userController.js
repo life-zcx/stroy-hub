@@ -1,6 +1,7 @@
 // Updated Prisma schema bindings for User entity fields
 import bcrypt from 'bcryptjs';
 import prisma from '../config/db.js';
+import redisClient from '../config/redis.js';
 import { getUserLoyaltyStatus } from '../utils/loyaltyUtils.js';
 import { getAvailableBalance, getPendingBalance } from './bonusController.js';
 import { safeErrorMessage } from '../utils/apiError.js';
@@ -72,7 +73,68 @@ const ensureNotLastActiveAdmin = async (userId, dbClient = prisma) => {
 
 export const getAllUsers = async (req, res) => {
   try {
+    const isAll = req.query.all === 'true';
+    if (isAll) {
+      const users = await prisma.user.findMany({
+        include: {
+          supplier: true,
+          _count: { select: { orders: true } },
+        },
+        orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
+      });
+      return res.json(users.map(serializeUser));
+    }
+
+    const page = req.query.page ? Math.max(1, parseInt(req.query.page, 10) || 1) : null;
+    const limit = req.query.limit ? Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20)) : null;
+
+    const role = req.query.role;
+    const search = req.query.search;
+    const status = req.query.status;
+
+    const where = {};
+    if (role && role !== 'ALL') where.role = role;
+    if (status === 'ACTIVE') where.isBlocked = false;
+    if (status === 'BLOCKED') where.isBlocked = true;
+
+    if (search) {
+      const q = search.toLowerCase().trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+        { companyName: { contains: q, mode: 'insensitive' } },
+        { companyBin: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+      const [users, total] = await prisma.$transaction([
+        prisma.user.findMany({
+          where,
+          include: {
+            supplier: true,
+            _count: { select: { orders: true } },
+          },
+          orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
+          skip,
+          take: limit,
+        }),
+        prisma.user.count({ where }),
+      ]);
+
+      return res.json({
+        data: users.map(serializeUser),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      });
+    }
+
     const users = await prisma.user.findMany({
+      where,
       include: {
         supplier: true,
         _count: {
@@ -280,6 +342,7 @@ export const updateUser = async (req, res) => {
       });
     });
 
+    await redisClient.del(`user:session:${userId}`).catch(() => {});
     res.json(serializeUser(updatedUser));
   } catch (error) {
     const status = error.statusCode || 500;
@@ -314,6 +377,7 @@ export const updateUserPassword = async (req, res) => {
       data: { password: hashedPassword },
     });
 
+    await redisClient.del(`user:session:${userId}`).catch(() => {});
     res.json({ message: 'Пароль пользователя обновлен.' });
   } catch (error) {
     res.status(500).json({ error: safeErrorMessage(error, 'Ошибка обновления пароля.') });
@@ -376,6 +440,7 @@ export const updateUserBlockStatus = async (req, res) => {
       });
     });
 
+    await redisClient.del(`user:session:${userId}`).catch(() => {});
     res.json(serializeUser(updatedUser));
   } catch (error) {
     const status = error.statusCode || 500;

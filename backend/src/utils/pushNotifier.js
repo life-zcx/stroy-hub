@@ -12,23 +12,31 @@ try {
   logger.warn(`[WEB PUSH] Optional dependency 'web-push' not installed in container node_modules yet. Dynamic Push API disabled.`);
 }
 
-const DEFAULT_VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || 'BLw0vCLr34eFOA9DPxTjuxAvWRIX17QYZAKC2e1q7pCeftG_Br0o5KIRjl643rXqSAEgCey60iaX-aW4T7cFyeY';
-const DEFAULT_VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || 'cOTcXWVCQ67Fe-vGSC2KT67Jf4f-USQ2qAJLTujI0Mo';
+// SEC-012: VAPID keys обязательно задаются через env — нет дефолтных значений в коде
+const DEFAULT_VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
+const DEFAULT_VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 
 if (webPush) {
-  try {
-    webPush.setVapidDetails(
-      'mailto:support@tormag.kz',
-      DEFAULT_VAPID_PUBLIC,
-      DEFAULT_VAPID_PRIVATE
-    );
-    logger.info('[WEB PUSH] VAPID details initialized successfully.');
-  } catch (e) {
-    logger.warn(`[WEB PUSH] VAPID initialization error: ${e.message}`);
+  if (!DEFAULT_VAPID_PUBLIC || !DEFAULT_VAPID_PRIVATE) {
+    logger.error('[WEB PUSH] VAPID_PUBLIC_KEY и/или VAPID_PRIVATE_KEY не заданы в env. Push-уведомления отключены.');
+    webPush = null;
+  } else {
+    try {
+      webPush.setVapidDetails(
+        'mailto:support@tormag.kz',
+        DEFAULT_VAPID_PUBLIC,
+        DEFAULT_VAPID_PRIVATE
+      );
+      logger.info('[WEB PUSH] VAPID details initialized successfully.');
+    } catch (e) {
+      logger.warn(`[WEB PUSH] VAPID initialization error: ${e.message}`);
+      webPush = null;
+    }
   }
 }
 
-const SUB_FILE = path.join(process.cwd(), 'uploads', 'push_subscriptions.json');
+// SEC-013: Файл подписок хранится в /data (не в /uploads, который обслуживается express.static)
+const SUB_FILE = path.join(process.cwd(), 'data', 'push_subscriptions.json');
 
 const loadSubscriptions = () => {
   try {

@@ -276,18 +276,34 @@ export const manualAdjustBonus = async (req, res) => {
     const finalDescription = `${description} (Выполнил: ${adminName})`;
 
     const isDeduction = parsedAmount < 0;
+    const targetUserId = parseInt(userId, 10);
 
-    const transaction = await prisma.bonusTransaction.create({
-      data: {
-        userId: parseInt(userId),
-        type: isDeduction ? 'spent' : 'manual',
-        status: isDeduction ? 'used' : 'available',
-        amount: Math.abs(parsedAmount),
-        description: finalDescription,
-      },
+    const { transaction, newBalance } = await prisma.$transaction(async (tx) => {
+      try {
+        await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${targetUserId} FOR UPDATE`;
+      } catch {}
+
+      if (isDeduction) {
+        const currentBalance = await getAvailableBalance(targetUserId, tx);
+        if (Math.abs(parsedAmount) > currentBalance) {
+          throw new Error(`Невозможно списать ${Math.abs(parsedAmount)} ₸. На балансе пользователя доступно только ${Math.round(currentBalance)} ₸.`);
+        }
+      }
+
+      const txRecord = await tx.bonusTransaction.create({
+        data: {
+          userId: targetUserId,
+          type: isDeduction ? 'spent' : 'manual',
+          status: isDeduction ? 'used' : 'available',
+          amount: Math.abs(parsedAmount),
+          description: finalDescription,
+        },
+      });
+
+      const updatedBalance = await getAvailableBalance(targetUserId, tx);
+
+      return { transaction: txRecord, newBalance: updatedBalance };
     });
-
-    const newBalance = await getAvailableBalance(parseInt(userId));
 
     broadcastNotification({
       title: `💰 Бонусы TORMAG`,

@@ -38,6 +38,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    # SEC-016: Redis требует пароль. Порт только на localhost (для опционального отладочного доступа)
+    command: redis-server --requirepass ${REDIS_PASSWORD} --loglevel warning
     ports:
       - "127.0.0.1:6379:6379"
 
@@ -62,7 +64,7 @@ services:
       TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}
       TELEGRAM_API_BASE: ${TELEGRAM_API_BASE:-https://api.telegram.org}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       YANDEX_DISK_USER: ${YANDEX_DISK_USER}
       YANDEX_DISK_PASS: ${YANDEX_DISK_PASS}
       R2_ENDPOINT: ${R2_ENDPOINT}

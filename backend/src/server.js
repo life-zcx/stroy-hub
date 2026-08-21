@@ -31,6 +31,8 @@ import bannerRoutes from './routes/bannerRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 
 
+import cookieParser from 'cookie-parser';
+
 // Middlewares & Controllers imports
 import { handleIpxImageRequest } from './middleware/ipxOptimizer.js';
 import { getDynamicSitemap } from './controllers/sitemapController.js';
@@ -65,12 +67,32 @@ const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+// SEC-014: Явный список dev-портов вместо wildcard
+// Включены http и https варианты, стандартные порты Vite (5173) и React (3000/3001)
+const DEV_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:5173',
+  'https://localhost:3000',
+  'https://localhost:3001',
+  'https://localhost:5173',
+  'https://127.0.0.1:3000',
+  'https://127.0.0.1:3001',
+  'https://127.0.0.1:5173',
+];
+
 const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   origin(origin, callback) {
-    if (!origin || (!isProduction && allowedOrigins.length === 0) || allowedOrigins.includes(origin)) {
+    const effectiveAllowed = allowedOrigins.length > 0 ? allowedOrigins : (isProduction ? [] : DEV_ORIGINS);
+    // Запросы без Origin (curl, сервер-к-серверу) пропускаем
+    if (!origin || effectiveAllowed.includes(origin)) {
       callback(null, true);
       return;
     }
@@ -96,9 +118,9 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // NOTE: 'unsafe-inline' is kept for style/script compatibility with the SPA framework.
-        // 'unsafe-eval' has been REMOVED — it was previously allowing arbitrary code execution.
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
+        // SEC-015: Убран 'unsafe-inline' из scriptSrc.
+        // Если SPA требует inline-скрипты — использовать nonce через meta-тег в index.html.
+        scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -117,6 +139,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
