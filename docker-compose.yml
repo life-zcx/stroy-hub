@@ -6,6 +6,8 @@ services:
     container_name: tormag_postgres
     restart: always
     environment:
+      TZ: ${TZ:-Asia/Almaty}
+      PGTZ: ${TZ:-Asia/Almaty}
       POSTGRES_USER: ${POSTGRES_USER:-tormag_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tormag_secure_pass}
       POSTGRES_DB: ${POSTGRES_DB:-tormag}
@@ -13,6 +15,7 @@ services:
     # Для локальной работы: docker exec -it tormag_postgres psql -U tormag_user -d tormag
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tormag_user} -d ${POSTGRES_DB:-tormag}"]
       interval: 5s
@@ -24,10 +27,12 @@ services:
     restart: always
     volumes:
       - db_backups:/backups
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       db:
         condition: service_healthy
     environment:
+      - TZ=${TZ:-Asia/Almaty}
       - POSTGRES_HOST=db
       - POSTGRES_DB=${POSTGRES_DB:-tormag}
       - POSTGRES_USER=${POSTGRES_USER:-tormag_user}
@@ -42,6 +47,10 @@ services:
     image: redis:7-alpine
     container_name: tormag_redis
     restart: always
+    environment:
+      TZ: ${TZ:-Asia/Almaty}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     # SEC-016: Требуем пароль для Redis. Порт не пробрасывается наружу
     command: redis-server --requirepass ${REDIS_PASSWORD:-changeme_redis_pass} --loglevel warning
 
@@ -50,10 +59,12 @@ services:
     container_name: tormag_telegram_api
     restart: always
     environment:
+      TZ: ${TZ:-Asia/Almaty}
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
     volumes:
       - telegram_bot_api_data:/var/lib/telegram-bot-api
+      - /etc/localtime:/etc/localtime:ro
 
   backend:
     build:
@@ -62,6 +73,7 @@ services:
     container_name: tormag_backend
     restart: always
     environment:
+      TZ: ${TZ:-Asia/Almaty}
       DATABASE_URL: postgresql://${POSTGRES_USER:-tormag_user}:${POSTGRES_PASSWORD:-tormag_secure_pass}@db:5432/${POSTGRES_DB:-tormag}?schema=public
       PORT: 5000
       NODE_ENV: development
@@ -88,6 +100,7 @@ services:
       - ./backend:/app
       - /app/node_modules
       - backend_uploads:/app/uploads
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       db:
         condition: service_healthy
@@ -105,11 +118,13 @@ services:
     ports:
       - "3000:3000"
     environment:
+      TZ: ${TZ:-Asia/Almaty}
       VITE_API_PROXY_TARGET: http://backend:5000
       VITE_YANDEX_MAPS_KEY: ${VITE_YANDEX_MAPS_KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       - backend
 
@@ -122,10 +137,12 @@ services:
     ports:
       - "3001:3001"
     environment:
+      TZ: ${TZ:-Asia/Almaty}
       VITE_API_PROXY_TARGET: http://backend:5000
     volumes:
       - ./admin:/app
       - /app/node_modules
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       - backend
 
@@ -138,6 +155,7 @@ services:
     ports:
       - "127.0.0.1:5005:5005"
     environment:
+      TZ: ${TZ:-Asia/Almaty}
       PORT: 5005
       BACKEND_API_URL: http://backend:5000
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -145,6 +163,7 @@ services:
     volumes:
       - ./ai-service:/app
       - /app/node_modules
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       - backend
 
