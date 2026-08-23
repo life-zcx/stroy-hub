@@ -935,6 +935,16 @@ export default function CartPage({
                             Артикул: {item.article || item.id}
                           </div>
 
+                          {item.selectedOption && (
+                            <div className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100/80 inline-block">
+                              {item.selectedOptionLabel
+                                ? `${item.selectedOptionLabel.trim().endsWith(':') ? item.selectedOptionLabel.trim() : item.selectedOptionLabel.trim() + ':'} ${item.selectedOption}`
+                                : item.options?.label
+                                ? `${item.options.label.trim().endsWith(':') ? item.options.label.trim() : item.options.label.trim() + ':'} ${item.selectedOption}`
+                                : item.selectedOption}
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                             <span className="text-base sm:text-lg font-black text-slate-950 font-outfit">
                               {formatPrice(item.price * item.quantity)}

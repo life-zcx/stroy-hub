@@ -3,12 +3,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
+const useSsl = process.env.VITE_USE_SSL === 'true';
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://backend:5000';
 
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),
+    ...(useSsl ? [basicSsl()] : []),
     VitePWA({
       registerType: 'prompt',
       injectRegister: 'auto',

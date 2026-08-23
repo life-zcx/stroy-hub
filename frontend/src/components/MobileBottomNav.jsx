@@ -8,6 +8,8 @@ export default function MobileBottomNav({
   customer,
   onOpenAuthLogin,
 }) {
+  if (currentPage === 'product') return null;
+
   const navItems = [
     {
       id: 'home',

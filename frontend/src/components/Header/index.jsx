@@ -615,24 +615,26 @@ export default function Header({
             </div>
           </div>
 
-          {/* Mobile Search Bar (Compact space-saving layout) */}
-          <div className="block lg:hidden mt-1 pb-0.5 relative z-50">
-            <SearchAutocomplete
-              localSearchQuery={localSearchQuery}
-              onSearchChange={handleSearchChange}
-              onSearchSubmit={handleSearchSubmit}
-              onFocus={() => setIsSearchFocused(true)}
-              onKeyDown={handleKeyDown}
-              isSearchFocused={isSearchFocused}
-              matchedProducts={matchedProducts}
-              activeSuggestionIndex={activeSuggestionIndex}
-              getPageHref={getPageHref}
-              onNavigate={onNavigate}
-              setLocalSearchQuery={setLocalSearchQuery}
-              setIsSearchFocused={setIsSearchFocused}
-              categories={categories}
-            />
-          </div>
+          {/* Mobile Search Bar (Compact space-saving layout - hidden on product page) */}
+          {currentPage !== 'product' && (
+            <div className="block lg:hidden mt-1 pb-0.5 relative z-50">
+              <SearchAutocomplete
+                localSearchQuery={localSearchQuery}
+                onSearchChange={handleSearchChange}
+                onSearchSubmit={handleSearchSubmit}
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={handleKeyDown}
+                isSearchFocused={isSearchFocused}
+                matchedProducts={matchedProducts}
+                activeSuggestionIndex={activeSuggestionIndex}
+                getPageHref={getPageHref}
+                onNavigate={onNavigate}
+                setLocalSearchQuery={setLocalSearchQuery}
+                setIsSearchFocused={setIsSearchFocused}
+                categories={categories}
+              />
+            </div>
+          )}
 
           <MegaMenu
             isOpen={isMegaMenuOpen}

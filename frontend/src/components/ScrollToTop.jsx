@@ -46,7 +46,7 @@ export default function ScrollToTop({ cartItemsCount = 0 }) {
       aria-label="Наверх"
       title="Наверх"
       style={{ bottom: bottomOffset }}
-      className="fixed left-4 sm:left-6 z-40 p-3 bg-slate-900/90 hover:bg-emerald-600 text-white backdrop-blur-md rounded-2xl shadow-xl border border-slate-700/60 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer group animate-fade-in"
+      className="fixed left-4 sm:left-6 z-40 p-3 bg-slate-900/90 hover:bg-emerald-600 text-white backdrop-blur-md rounded-2xl shadow-xl border border-slate-700/60 transition-all duration-300 hover:scale-110 active:scale-95 hidden sm:flex items-center justify-center cursor-pointer group animate-fade-in"
     >
       <ArrowUp className="h-5 w-5 stroke-[2.5] group-hover:-translate-y-0.5 transition-transform" />
     </button>

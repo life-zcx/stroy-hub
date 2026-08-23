@@ -188,7 +188,7 @@ export function applyRetailPricingToProduct(product, settings, categoryMap, cate
   if (product.options && typeof product.options === 'object' && Array.isArray(product.options.items)) {
     const items = product.options.items.map(item => {
       if (item.price !== undefined && item.price !== null && item.price !== '' && !isNaN(parseFloat(item.price))) {
-        const itemWholesale = parseFloat(item.price);
+        const itemWholesale = item.wholesalePrice !== undefined && item.wholesalePrice !== null ? parseFloat(item.wholesalePrice) : parseFloat(item.price);
         const itemRetail = calculatePriceBottomUp(itemWholesale, activeMarkup, settings);
         return {
           ...item,

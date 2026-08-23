@@ -245,7 +245,7 @@ export default function Home({
     : fallbackBrands;
 
   return (
-    <div className="space-y-20 animate-fade-in-up font-sans text-slate-800">
+    <div className="space-y-10 sm:space-y-16 lg:space-y-20 animate-fade-in-up font-sans text-slate-800">
 
       {/* 🚀 HYBRID HERO SECTION: KINETIC GSAP SLIDER */}
       <div className="w-full">
@@ -264,7 +264,7 @@ export default function Home({
 
 
       {/* 📂 QUICK CATEGORIES PREVIEW */}
-      <section className="space-y-8">
+      <section className="space-y-4 sm:space-y-6 lg:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="text-left space-y-2">
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные категории</h2>
@@ -367,11 +367,11 @@ export default function Home({
       </section>
 
       {/* 🔥 POPULAR PRODUCTS / HITS */}
-      <section className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="text-left space-y-2">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные товары</h2>
-            <p className="text-slate-600 font-semibold text-sm">Хиты продаж и востребованные строительные материалы</p>
+      <section className="space-y-4 sm:space-y-6 lg:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 sm:gap-4">
+          <div className="text-left space-y-1 sm:space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Популярные товары</h2>
+            <p className="text-slate-600 font-semibold text-xs sm:text-sm">Хиты продаж и востребованные строительные материалы</p>
           </div>
           <Link
             href={getPageHref('catalog')}
@@ -379,10 +379,10 @@ export default function Home({
               setSelectedCategory('all');
               onNavigate('catalog');
             }}
-            className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            className="flex items-center gap-1 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
           >
             Смотреть все товары
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Link>
         </div>
 
@@ -408,7 +408,7 @@ export default function Home({
       </section>
 
       {/* 🛡️ KEY STRENGTHS (ПРЕИМУЩЕСТВА) */}
-      <section className="space-y-8">
+      <section className="space-y-4 sm:space-y-6 lg:space-y-8">
         <div className="text-left space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-outfit">Почему стоит заказать материалы именно у нас?</h2>
           <p className="text-slate-600 font-semibold text-sm">Мы меняем подход к закупке строительных материалов в Казахстане</p>

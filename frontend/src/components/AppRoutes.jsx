@@ -217,6 +217,8 @@ export default function AppRoutes({
           onToggleFavorite={favorites.toggleFavorite}
           isFavorite={favorites.isFavorite}
           showToast={showToast}
+          customer={auth.customer}
+          onOpenAuthLogin={auth.openLoginModal}
         />
       )}
 

@@ -76,7 +76,7 @@ export default function PWAUpdatePrompt() {
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[99999] max-w-sm w-full animate-fade-in font-sans">
+    <div className="fixed bottom-[92px] sm:bottom-24 md:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[99999] max-w-sm w-full animate-fade-in font-sans">
       <div className="bg-slate-900 border border-slate-800 text-white p-4 rounded-2xl shadow-2xl flex flex-col gap-3 relative text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">

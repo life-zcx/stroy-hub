@@ -570,7 +570,11 @@ export default function CartSidebar({
                       </h3>
                       {item.selectedOption && (
                         <div className="text-[11px] font-bold text-blue-600 bg-blue-50/80 border border-blue-100 px-2 py-0.5 rounded-md w-fit mb-1">
-                          {item.selectedOption}
+                          {item.selectedOptionLabel
+                            ? `${item.selectedOptionLabel.trim().endsWith(':') ? item.selectedOptionLabel.trim() : item.selectedOptionLabel.trim() + ':'} ${item.selectedOption}`
+                            : item.options?.label
+                            ? `${item.options.label.trim().endsWith(':') ? item.options.label.trim() : item.options.label.trim() + ':'} ${item.selectedOption}`
+                            : item.selectedOption}
                         </div>
                       )}
                       <div className="text-[10px] text-slate-500 mb-3 flex items-center gap-1">

@@ -541,7 +541,17 @@ export function useDashboardData({ user, showToast }) {
       images: Array.isArray(product.images) ? product.images : [],
       article: product.article || '',
       slug: product.slug || '',
-      options: product.options && typeof product.options === 'object' && product.options.label ? product.options : { label: '', items: [] },
+      options: product.options && typeof product.options === 'object' && product.options.label
+        ? {
+            ...product.options,
+            items: Array.isArray(product.options.items)
+              ? product.options.items.map((item) => ({
+                  ...item,
+                  price: item.wholesalePrice !== undefined && item.wholesalePrice !== null ? item.wholesalePrice : item.price,
+                }))
+              : [],
+          }
+        : { label: '', items: [] },
     });
     setImageFile(null);
     setAdditionalImageFiles([]);

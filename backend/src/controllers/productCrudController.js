@@ -279,6 +279,7 @@ export const updateProduct = async (req, res) => {
     if (isHit !== undefined) data.isHit = isHit === 'true' || isHit === true;
     if (bulkDiscount !== undefined) data.bulkDiscount = bulkDiscount || null;
     if (cashbackPercent !== undefined) data.cashbackPercent = cashbackPercent !== '' ? parseInt(cashbackPercent) : null;
+    if (article !== undefined) data.article = article ? article.toString().trim() : null;
     if (slug || name || !existing.slug) {
       let desiredSlug = slugify(slug || name || existing.name) || 'product';
       if (desiredSlug !== existing.slug) {

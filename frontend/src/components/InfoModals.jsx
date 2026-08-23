@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Tag, Truck, ShieldCheck, CheckCircle2, AlertCircle, ChevronDown, ChevronUp,
   CreditCard, DollarSign, Wallet, Percent, MapPin, Calendar, Clock, RotateCcw,
-  Coins, ArrowRight, Copy, Share2
+  Coins, ArrowRight, Copy, Share2, MessageCircle, Send
 } from 'lucide-react';
 
 export default function InfoModals({ isOpen, type, onClose, showToast }) {
@@ -367,16 +367,20 @@ function ShareContent({ onClose, showToast }) {
 
       <div className="grid grid-cols-2 gap-3 pt-2">
         <button
+          type="button"
           onClick={() => handleShareClick('WhatsApp', `https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`)}
-          className="p-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/60 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+          className="p-3.5 bg-[#25D366] hover:bg-[#20ba5a] active:scale-95 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer text-xs shadow-sm"
         >
+          <MessageCircle className="h-4 w-4" />
           <span>WhatsApp</span>
         </button>
 
         <button
+          type="button"
           onClick={() => handleShareClick('Telegram', `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`)}
-          className="p-3.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200/60 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+          className="p-3.5 bg-[#0088cc] hover:bg-[#0077b5] active:scale-95 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer text-xs shadow-sm"
         >
+          <Send className="h-4 w-4" />
           <span>Telegram</span>
         </button>
       </div>

@@ -132,7 +132,14 @@ export default function ProductCard({
       <Link
         href={getPageHref('product', product.slug || product.id)}
         className="flex flex-col flex-1 cursor-pointer min-w-0 w-full justify-between"
-        onClick={() => onOpenDetails && onOpenDetails(product.slug || product.id)}
+        onClick={(e) => {
+          const targetId = product.slug || product.id;
+          if (onOpenDetails) {
+            onOpenDetails(targetId);
+          } else if (onNavigate) {
+            onNavigate('product', targetId);
+          }
+        }}
       >
         {/* ── Image zone ── */}
         <div className="aspect-square w-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative p-2 sm:p-3 rounded-t-2xl">
@@ -168,8 +175,8 @@ export default function ProductCard({
             </span>
           </div>
 
-          {/* Name — fixed 2-line height alignment */}
-          <h3 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2 break-words h-10 flex items-center">
+          {/* Name — flexible 2 to 3-line height alignment without top clipping */}
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2 sm:line-clamp-3 mb-2 break-words min-h-[2.5rem] flex flex-col justify-start">
             {product.name}
           </h3>
 

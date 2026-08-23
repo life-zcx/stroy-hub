@@ -9,7 +9,7 @@ html {
 
 @layer base {
   body {
-    @apply bg-slate-50/50 text-slate-800 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden;
+    @apply bg-[#f4f6f8] text-slate-800 font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden;
   }
   input::placeholder, textarea::placeholder {
     color: #64748b;
@@ -517,7 +517,7 @@ html {
 /* PWA Standalone Mode Bottom Navigation Elevation */
 @media (display-mode: standalone) {
   .pwa-bottom-nav {
-    padding-bottom: max(2px, env(safe-area-inset-bottom, 2px));
+    padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 12px));
   }
 }
 

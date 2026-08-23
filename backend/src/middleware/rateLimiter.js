@@ -214,14 +214,15 @@ export const heavyQueryRateLimiter = async (req, res, next) => {
   if (process.env.DISABLE_RATE_LIMIT === 'true') return next();
 
   const actor = req.user?.id ? `user:${req.user.id}` : `ip:${getClientIp(req)}`;
+  const maxHeavy = process.env.NODE_ENV === 'production' ? 300 : 3000;
 
   try {
     const key = `rate-limit:heavy:${actor}`;
     const count = await redisClient.incr(key);
     if (count === 1) await redisClient.expire(key, 60);
 
-    if (count > 30) {
-      logger.warn(`[Heavy Query Rate Limit] ${actor} exceeded 30 heavy req/min`);
+    if (count > maxHeavy) {
+      logger.warn(`[Heavy Query Rate Limit] ${actor} exceeded ${maxHeavy} heavy req/min`);
       return res.status(429).json({
         error: 'Слишком много тяжёлых запросов. Пожалуйста, подождите минуту.',
       });

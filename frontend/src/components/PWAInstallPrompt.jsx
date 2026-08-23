@@ -110,7 +110,7 @@ export default function PWAInstallPrompt({ showToast }) {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-20 inset-x-4 md:inset-x-auto md:right-6 md:bottom-6 z-[75] max-w-sm md:w-[360px] mx-auto animate-fade-in font-sans">
+    <div className="fixed bottom-[92px] sm:bottom-24 md:bottom-6 inset-x-4 md:inset-x-auto md:right-6 z-[120] max-w-sm md:w-[360px] mx-auto animate-fade-in font-sans">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl flex flex-col gap-3 text-white text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">

@@ -143,6 +143,7 @@ export default function CartRecommendationsCarousel({
                   onToggleFavorite={onToggleFavorite}
                   isFavorite={isFav}
                   onNavigate={onNavigate}
+                  onOpenDetails={(id) => onNavigate?.('product', id)}
                 />
               </div>
             );

@@ -67,7 +67,7 @@ export default function useCatalog(showToast, initialCategory = 'all', currentPa
       setHasMore(Boolean(result.hasMore));
     } catch (error) {
       console.error(error);
-      showToastRef.current?.('⚠️ Ошибка соединения с сервером');
+      showToast?.('⚠️ Ошибка соединения с сервером');
     } finally {
       setLoading(false);
       setLoadingMore(false);

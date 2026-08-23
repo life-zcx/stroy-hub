@@ -249,7 +249,11 @@ export default function MyOrderDetails({ customer, orderId, orders = [], loading
                       </Link>
                       {item.selectedOption && (
                         <div className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md inline-block mt-0.5">
-                          {item.selectedOption}
+                          {item.selectedOptionLabel
+                            ? `${item.selectedOptionLabel.trim().endsWith(':') ? item.selectedOptionLabel.trim() : item.selectedOptionLabel.trim() + ':'} ${item.selectedOption}`
+                            : item.options?.label
+                            ? `${item.options.label.trim().endsWith(':') ? item.options.label.trim() : item.options.label.trim() + ':'} ${item.selectedOption}`
+                            : item.selectedOption}
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-2 mt-0.5">
