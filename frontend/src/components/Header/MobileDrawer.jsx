@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, MapPin, User, X } from 'lucide-react';
+import { ChevronRight, MapPin, User, X, Smartphone, Download, Bell } from 'lucide-react';
 
 import { formatPrice } from '../../utils/formatPrice';
+import { subscribeUserToPush } from '../../services/pushService';
 
 export default function MobileDrawer({
   isOpen,
   onClose,
   currentRegion,
   customer,
+  isPwa,
+  showToast,
   onNavigate,
   setSelectedCategory,
   onOpenAuthLogin,
   onOpenCart,
   onOpenCallback,
+  onOpenAppInstallModal,
   onOpenFavorites,
   onOpenOrders,
   onOpenRegion,
@@ -21,6 +25,28 @@ export default function MobileDrawer({
   cartItemsCount = 0,
   bonuses,
 }) {
+  const [pushStatus, setPushStatus] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'default';
+  });
+  const [loadingPush, setLoadingPush] = useState(false);
+
+  const handleEnablePush = async (e) => {
+    e?.stopPropagation();
+    setLoadingPush(true);
+    try {
+      await subscribeUserToPush();
+      setPushStatus('granted');
+      showToast?.('🎉 Уведомления успешно включены!');
+    } catch (err) {
+      showToast?.(err.message || 'Ошибка включения уведомлений', 'error');
+    } finally {
+      setLoadingPush(false);
+    }
+  };
+
   if (!isOpen || typeof document === 'undefined') return null;
 
   const regionLabel = typeof currentRegion === 'string'
@@ -104,7 +130,41 @@ export default function MobileDrawer({
             {/* Menu List */}
             <div className="flex-1 divide-y divide-slate-100">
 
+              {/* Show App Download button in browser mode */}
+              {!isPwa && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAppInstallModal?.();
+                  }}
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-blue-50/70 hover:bg-blue-100/70 transition-colors text-left group cursor-pointer border-b border-blue-100/60"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Smartphone className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-blue-700">Приложение TORMAG</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">Скачать</span>
+                </button>
+              )}
 
+              {/* Show Enable Push button ONLY in PWA app if not yet enabled */}
+              {isPwa && pushStatus !== 'granted' && (
+                <button
+                  type="button"
+                  onClick={handleEnablePush}
+                  disabled={loadingPush}
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-blue-50/70 hover:bg-blue-100/70 transition-colors text-left group cursor-pointer border-b border-blue-100/60"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bell className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-blue-700">Включить уведомления</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+                    {loadingPush ? '...' : 'Включить'}
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

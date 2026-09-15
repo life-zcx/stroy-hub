@@ -22,7 +22,6 @@ export default function PWAInstallPrompt() {
 
     if (isIosDevice) {
       setIsIOS(true);
-      setShowIOSTip(true);
     }
 
     // Android / Desktop Chrome PWA prompt handler
@@ -56,7 +55,7 @@ export default function PWAInstallPrompt() {
     localStorage.setItem('tormag_admin_pwa_dismissed', 'true');
   };
 
-  if (!showPrompt && !showIOSTip) return null;
+  if (!showPrompt) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-50 max-w-md animate-fade-in font-sans">

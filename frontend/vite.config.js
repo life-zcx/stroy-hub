@@ -93,8 +93,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    hmr: {
+      overlay: false,
+    },
     watch: {
       usePolling: true,
+      ignored: ['**/node_modules/**', '**/dist/**', '**/dev-dist/**', '**/.git/**'],
     },
     proxy: {
       '/_ipx': {

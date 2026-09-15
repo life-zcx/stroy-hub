@@ -193,8 +193,8 @@ export default function About() {
             </div>
             <div className="space-y-1">
               <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Телефон поддержки</span>
-              <a href="tel:77077111653" className="block text-lg font-bold text-slate-950 hover:text-emerald-600 transition-colors">
-                8 (707) 711-16-53
+              <a href="tel:77473039336" className="block text-lg font-bold text-slate-950 hover:text-emerald-600 transition-colors">
+                8 (747) 303-93-36
               </a>
             </div>
           </div>

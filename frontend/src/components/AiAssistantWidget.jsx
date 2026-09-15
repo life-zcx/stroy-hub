@@ -145,7 +145,7 @@ export default function AiAssistantWidget({ onAddToCart, showToast, onNavigate, 
 
   const handleQuickPrompt = (prompt) => {
     if (prompt.isWhatsapp) {
-      window.open('https://wa.me/77077111653?text=' + encodeURIComponent('Здравствуйте! Мне нужна помощь в выборе строительных материалов.'), '_blank');
+      window.open('https://wa.me/77473039336?text=' + encodeURIComponent('Здравствуйте! Мне нужна помощь в выборе строительных материалов.'), '_blank');
       return;
     }
     handleSendMessage(prompt.text);

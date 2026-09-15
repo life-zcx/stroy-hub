@@ -67,17 +67,17 @@ export default function Services({ onOpenCallback }) {
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up space-y-8 font-sans text-slate-800 text-left px-4 pt-6 pb-8">
-      
+
       {/* Hero Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-8 md:p-12 shadow-xl border border-slate-800">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"></div>
-        
+
         {/* SVG Services Tools Background */}
-        <svg 
-          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block" 
-          viewBox="0 0 120 80" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className="absolute right-4 bottom-0 h-[100%] w-auto text-emerald-500/10 pointer-events-none z-0 select-none hidden md:block"
+          viewBox="0 0 120 80"
+          fill="none"
+          stroke="currentColor"
           strokeWidth="0.8"
         >
           {/* Ruler/Scale */}
@@ -118,15 +118,13 @@ export default function Services({ onOpenCallback }) {
             <button
               key={idx}
               onClick={() => setActiveTab(idx)}
-              className={`flex items-center gap-2 md:gap-3 px-3 py-3 md:px-5 md:py-4 rounded-2xl md:rounded-3xl text-left transition-all duration-300 w-full cursor-pointer ${
-                isActive
+              className={`flex items-center gap-2 md:gap-3 px-3 py-3 md:px-5 md:py-4 rounded-2xl md:rounded-3xl text-left transition-all duration-300 w-full cursor-pointer ${isActive
                   ? 'bg-slate-900 text-white shadow-md scale-[1.01] z-10'
                   : 'bg-transparent hover:bg-white/60 text-slate-700 border border-transparent'
-              }`}
+                }`}
             >
-              <div className={`p-2 md:p-2.5 rounded-xl md:rounded-2xl transition-colors duration-300 shrink-0 ${
-                isActive ? 'bg-white/10 text-white' : 'bg-white text-slate-700 border border-slate-200/50 shadow-sm'
-              }`}>
+              <div className={`p-2 md:p-2.5 rounded-xl md:rounded-2xl transition-colors duration-300 shrink-0 ${isActive ? 'bg-white/10 text-white' : 'bg-white text-slate-700 border border-slate-200/50 shadow-sm'
+                }`}>
                 {s.icon}
               </div>
               <div className="space-y-0.5 min-w-0">
@@ -143,8 +141,8 @@ export default function Services({ onOpenCallback }) {
       </div>
 
       {/* Details Box */}
-      <div 
-        key={activeTab} 
+      <div
+        key={activeTab}
         className="bg-white border border-slate-200/60 rounded-[2.5rem] p-8 md:p-12 shadow-sm hover:shadow-md transition-all duration-500 animate-slide-up space-y-6"
       >
         <div className="space-y-3">
@@ -152,7 +150,7 @@ export default function Services({ onOpenCallback }) {
             {activeService.title}
           </h2>
         </div>
-        
+
         <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-3xl">
           {activeService.longDesc}
         </p>
@@ -188,7 +186,7 @@ export default function Services({ onOpenCallback }) {
             Оставить заявку
           </button>
           <a
-            href="https://wa.me/77077111653"
+            href="https://wa.me/77473039336"
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-950 border border-slate-200/80 font-bold rounded-2xl transition-all shadow-sm text-xs uppercase tracking-wider font-outfit"

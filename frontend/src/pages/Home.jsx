@@ -179,7 +179,7 @@ export default function Home({
   useEffect(() => {
     // Set descriptive title and meta description for SEO
     const prevTitle = document.title;
-    document.title = "TORMAG — Строительная B2B-платформа в Алматы | Купить стройматериалы оптом";
+    document.title = "TORMAG — Строительная платформа | Купить стройматериалы оптом";
 
     let metaDesc = document.querySelector('meta[name="description"]');
     let createdMeta = false;
@@ -191,7 +191,7 @@ export default function Home({
       document.head.appendChild(metaDesc);
       createdMeta = true;
     }
-    metaDesc.setAttribute('content', 'Строительная B2B-платформа TORMAG в Алматы. Прямые оптовые поставки строительных материалов от ведущих дистрибьюторов по выгодным ценам. Доставка по Алматы и Казахстану.');
+    metaDesc.setAttribute('content', 'Строительная платформа TORMAG. Прямые оптовые поставки строительных материалов от ведущих дистрибьюторов по выгодным ценам. Доставка по Алматы и Казахстану.');
 
     // Add Organization Schema JSON-LD
     const oldScript = document.getElementById('jsonld-org-schema');
@@ -205,7 +205,7 @@ export default function Home({
       "name": "TORMAG",
       "url": "https://tormag.kz",
       "logo": "https://tormag.kz/src/favicon.png",
-      "description": "Строительная B2B-платформа TORMAG в Алматы. Прямые оптовые поставки строительных материалов от ведущих дистрибьюторов.",
+      "description": "Строительная платформа TORMAG. Прямые оптовые поставки строительных материалов от ведущих дистрибьюторов.",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Алматы",
@@ -309,7 +309,7 @@ export default function Home({
                 count = matchedProds.length;
               }
             }
-            
+
             const formatCount = (num) => {
               if (num === null || num === undefined) return 'Каталог';
               const n = Number(num);

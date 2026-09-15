@@ -25,10 +25,10 @@ export default function Footer({
   return (
     <footer className="bg-slate-900 text-slate-300 mt-12 pt-6 lg:pt-12 pb-24 lg:pb-6 border-t border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Desktop Layout & Mobile Accordion Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 mb-8">
-          
+
           {/* Column 1: Brand Info (Desktop only) */}
           <div className="space-y-3 hidden lg:block">
             <div className="flex items-center">
@@ -128,7 +128,7 @@ export default function Footer({
               <li className="flex items-start gap-3">
                 <Phone className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <a href="tel:77077111653" className="text-white font-bold hover:text-emerald-500 transition-colors block">8 (707) 711-16-53</a>
+                  <a href="tel:77473039336" className="text-white font-bold hover:text-emerald-500 transition-colors block">8 (747) 303-93-36</a>
                 </div>
               </li>
               <li className="flex flex-col gap-1">
@@ -158,7 +158,7 @@ export default function Footer({
                 <span className="text-xs font-bold text-slate-300 group-hover/soc:text-white transition-colors">Telegram</span>
               </a>
               <a
-                href="https://wa.me/77077111653"
+                href="https://wa.me/77473039336"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 bg-slate-800/50 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/20 rounded-xl transition-all group/soc"

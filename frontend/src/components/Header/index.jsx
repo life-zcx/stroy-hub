@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ShoppingCart, Menu, X, Phone,
-  MapPin, User, ChevronDown, Heart, Eye, Gift,
+  MapPin, User, ChevronDown, Heart, Eye, Gift, Smartphone, Download,
 } from 'lucide-react';
 import logoImg from '../../tormag.png';
 import { trackEvent } from '../../utils/analytics';
@@ -14,6 +14,8 @@ import SearchAutocomplete from './SearchAutocomplete';
 
 export default function Header({
   isScrolled,
+  isPwa,
+  showToast,
   currentRegion,
   onOpenRegion,
   customer,
@@ -31,6 +33,7 @@ export default function Header({
   onOpenCart,
   onOpenAuthLogin,
   onOpenCallback,
+  onOpenAppInstallModal,
   onOpenFavorites,
   favoritesCount = 0,
   onOpenOrders,
@@ -98,12 +101,12 @@ export default function Header({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveSuggestionIndex((prev) => 
+      setActiveSuggestionIndex((prev) =>
         prev < matchedProducts.length - 1 ? prev + 1 : 0
       );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveSuggestionIndex((prev) => 
+      setActiveSuggestionIndex((prev) =>
         prev > 0 ? prev - 1 : matchedProducts.length - 1
       );
     } else if (e.key === 'Escape') {
@@ -291,6 +294,17 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-4">
+            {!isPwa && (
+              <button
+                type="button"
+                onClick={onOpenAppInstallModal}
+                title="Скачать приложение TORMAG"
+                aria-label="Скачать приложение TORMAG"
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all mr-1 cursor-pointer border-0 bg-transparent"
+              >
+                <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsAccessibilityModalOpen(true)}
@@ -302,10 +316,10 @@ export default function Header({
             </button>
             <div className="relative group/phone">
               <a
-                href="tel:77077111653"
+                href="tel:77473039336"
                 className="flex items-center gap-1.5 font-bold text-white hover:text-blue-400 transition-colors py-1"
               >
-                <Phone className="h-3.5 w-3.5 text-blue-400 group-hover/phone:animate-pulse" /> 8 (707) 711-16-53
+                <Phone className="h-3.5 w-3.5 text-blue-400 group-hover/phone:animate-pulse" /> 8 (747) 303-93-36
               </a>
 
               {/* Contact Information Cards (Popup) */}
@@ -314,7 +328,7 @@ export default function Header({
                   {/* Top Card */}
                   <div className="bg-white p-6 pb-5">
                     <div className="flex flex-col gap-1 mb-4">
-                      <span className="text-lg font-bold text-slate-900 leading-tight">8 (707) 711-16-53</span>
+                      <span className="text-lg font-bold text-slate-900 leading-tight">8 (747) 303-93-36</span>
                       <span className="text-slate-400 text-[11px] font-medium font-outfit uppercase tracking-tighter">По всем вопросам</span>
                     </div>
                     <button
@@ -349,7 +363,7 @@ export default function Header({
                         </svg>
                       </a>
                       <a
-                        href="https://wa.me/77077111653"
+                        href="https://wa.me/77473039336"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50 transition-all group/social"
@@ -652,11 +666,14 @@ export default function Header({
         onClose={() => setIsMobileMenuOpen(false)}
         currentRegion={currentRegion}
         customer={customer}
+        isPwa={isPwa}
+        showToast={showToast}
         onNavigate={onNavigate}
         setSelectedCategory={setSelectedCategory}
         onOpenAuthLogin={onOpenAuthLogin}
         onOpenCart={onOpenCart}
         onOpenCallback={onOpenCallback}
+        onOpenAppInstallModal={onOpenAppInstallModal}
         onOpenFavorites={onOpenFavorites}
         onOpenOrders={onOpenOrders}
         onOpenRegion={onOpenRegion}

@@ -12,13 +12,25 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export const subscribeUserToPush = async () => {
+  if (typeof window === 'undefined') {
+    throw new Error('Уведомления недоступны');
+  }
+
+  if (!('Notification' in window)) {
+    throw new Error('Ваш браузер не поддерживает Push-уведомления');
+  }
+
+  if (Notification.permission === 'denied') {
+    throw new Error('Уведомления заблокированы в настройках сайта. Разрешите уведомления в параметрах браузера');
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    throw new Error('Push-уведомления не поддерживаются вашим браузером');
+    throw new Error('Push-уведомления требуют защищенное соединение HTTPS или iOS 16.4+');
   }
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    throw new Error('Разрешение на уведомления отклонено');
+    throw new Error('Разрешение на уведомления не было предоставлено');
   }
 
   let registration;
@@ -33,6 +45,7 @@ export const subscribeUserToPush = async () => {
     await registration.update();
     await navigator.serviceWorker.ready;
   } catch (e) {
+    console.warn('Service worker registration fallback:', e);
     registration = await navigator.serviceWorker.ready;
   }
   

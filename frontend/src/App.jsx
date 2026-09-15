@@ -11,6 +11,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ComingSoonModal from './components/ComingSoonModal';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+import AppInstallModal from './components/AppInstallModal';
 import AiAssistantWidget from './components/AiAssistantWidget';
 
 import SeoHeadManager from './components/SeoHeadManager';
@@ -39,9 +40,20 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false);
+  const [isAppInstallModalOpen, setIsAppInstallModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [legalTab, setLegalTab] = useState('user-agreement');
   const [systemSettings, setSystemSettings] = useState(null);
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
   const { toast, showToast, hideToast } = useToast();
   const { currentPage, currentProductId, currentCategorySlug, currentOrderId, setCurrentPage, openProductPage } = useNavigation();
@@ -215,6 +227,8 @@ export default function App() {
 
       <Header
         isScrolled={isScrolled}
+        isPwa={isPwa}
+        showToast={showToast}
         currentRegion={region.currentRegion}
         onOpenRegion={() => region.setRegionModalOpen(true)}
         customer={auth.customer}
@@ -232,6 +246,7 @@ export default function App() {
         onOpenCart={() => setCurrentPage('cart')}
         onOpenAuthLogin={auth.openLoginModal}
         onOpenCallback={() => setIsCallbackModalOpen(true)}
+        onOpenAppInstallModal={() => setIsAppInstallModalOpen(true)}
         onOpenFavorites={() => setCurrentPage('favorites')}
         favoritesCount={favorites.favoritesCount}
         onOpenOrders={() => setCurrentPage('cabinet')}
@@ -335,6 +350,14 @@ export default function App() {
         isOpen={isCallbackModalOpen}
         onClose={() => setIsCallbackModalOpen(false)}
         onNavigate={setCurrentPage}
+        showToast={showToast}
+      />
+
+      <AppInstallModal
+        isOpen={isAppInstallModalOpen}
+        onClose={() => setIsAppInstallModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+        setDeferredPrompt={setDeferredPrompt}
         showToast={showToast}
       />
 
