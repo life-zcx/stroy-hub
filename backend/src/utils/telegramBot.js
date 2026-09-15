@@ -536,6 +536,9 @@ const handleCommand = async (chatId, text) => {
     try {
       const ghToken = process.env.GITHUB_TOKEN || process.env.GH_PAT;
       const repo = process.env.GITHUB_REPOSITORY || 'life-zcx/stroy-hub';
+      
+      let dispatchSuccess = false;
+
       if (ghToken) {
         const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/build-push.yml/dispatches`, {
           method: 'POST',
@@ -547,21 +550,22 @@ const handleCommand = async (chatId, text) => {
           body: JSON.stringify({ ref: 'main' }),
         });
         if (res.ok || res.status === 204) {
-          await sendMsg(chatId, `🟢 *Сигнал деплоя успешно отправлен!*%0A%0AGitHub Actions заставит VPS обновиться. Ожидайте итоговый отчет.`);
+          dispatchSuccess = true;
+          await sendMsg(chatId, `🟢 *Сигнал деплоя успешно отправлен в GitHub Actions!*\n\nGitHub Actions собирает образ и обновит VPS. Ожидайте отчет.`);
+          return;
         } else {
-          const errText = await res.text().catch(() => '');
-          await sendMsg(chatId, `⚠️ *GitHub API ответил (${res.status}):* \`${errText.slice(0, 150)}\``);
+          console.warn(`[TELEGRAM BOT] GitHub API returned ${res.status}`);
         }
-      } else {
-        // Fallback execution using sh
-        exec('sh deploy/deploy.sh || /bin/sh deploy/deploy.sh', (error, stdout, stderr) => {
-          if (error) {
-            sendMsg(chatId, `⚠️ *Для авто-деплоя через GitHub Actions укажите GITHUB_TOKEN в .env.production*\n\nОшибка локального запуска: \`${error.message.slice(0, 200)}\``);
-          } else {
-            sendMsg(chatId, `🟢 *Деплой успешно выполнен!*`);
-          }
-        });
       }
+
+      // If GitHub API dispatch failed (e.g. 401 Bad credentials), fallback to local script or inform user
+      exec('sh deploy/deploy.sh || /bin/sh deploy/deploy.sh', (error, stdout, stderr) => {
+        if (error) {
+          sendMsg(chatId, `⚠️ *GitHub API ответил (401 Bad credentials):*\nИстек или недействителен \`GITHUB_TOKEN\` в файле \`.env.production\` на сервере.\n\n💡 *Поскольку вы только что сделали \`git push\`, GitHub Actions запустился АВТОМАТИЧЕСКИ по триггеру пуша в \`main\`!*`);
+        } else {
+          sendMsg(chatId, `🟢 *Локальный скрипт деплоя успешно выполнен!*`);
+        }
+      });
     } catch (err) {
       await sendMsg(chatId, `🔴 *Сбой выполнения команды /deploy:* \`${err.message}\``);
     }
